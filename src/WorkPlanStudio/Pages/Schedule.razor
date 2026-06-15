@@ -1,0 +1,199 @@
+@page "/schedule"
+@inject IStringLocalizer<SharedResource> L
+@inject WorkPlanSchedulingService Scheduler
+
+<PageTitle>@L["Schedule_Title"] · WorkPlan Studio</PageTitle>
+
+<div class="page-head">
+    <div>
+        <h1>@L["Schedule_Title"]</h1>
+        <p class="page-sub">@L["Schedule_Subtitle"]</p>
+    </div>
+</div>
+
+<section class="card schedule-controls">
+    <div class="field compact">
+        <span>@L["Schedule_StartDate"]</span>
+        <input class="input" type="date" @bind="_startDate" @bind:format="yyyy-MM-dd" />
+    </div>
+    <label class="field check compact">
+        <input type="checkbox" @bind="_includeDrafts" />
+        <span>@L["Schedule_IncludeDrafts"]</span>
+    </label>
+    <button class="btn btn-primary" @onclick="RecalculateAsync">@L["Schedule_Recalculate"]</button>
+    <span class="schedule-rule">@L["Schedule_Rule"]</span>
+</section>
+
+@if (_loading)
+{
+    <div class="loading-row"><span class="spinner"></span></div>
+}
+else if (_schedule is null || _schedule.Items.Count == 0)
+{
+    <div class="empty-state">
+        <svg viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h16" /><path d="M8 5v6M14 12v6M18 5v6" /></svg>
+        <p>@L["Schedule_Empty"]</p>
+    </div>
+}
+else
+{
+    @if (_schedule.Warnings.Count > 0)
+    {
+        <div class="form-banner warning">
+            @foreach (var warning in _schedule.Warnings)
+            {
+                <div>@warning</div>
+            }
+        </div>
+    }
+
+    <div class="stat-grid schedule-kpis">
+        <div class="stat-card accent-indigo">
+            <div class="stat-top"><span class="stat-value">@_schedule.ScheduledPlans</span></div>
+            <div class="stat-label">@L["Schedule_Plans"]</div>
+        </div>
+        <div class="stat-card accent-green">
+            <div class="stat-top"><span class="stat-value">@_schedule.ScheduledOperations</span></div>
+            <div class="stat-label">@L["Schedule_Operations"]</div>
+        </div>
+        <div class="stat-card accent-amber">
+            <div class="stat-top"><span class="stat-value">@Format.Hours(_schedule.TotalBookedMinutes)</span></div>
+            <div class="stat-label">@L["Schedule_Load"]</div>
+        </div>
+        <div class="stat-card accent-slate">
+            <div class="stat-top"><span class="stat-value">@_schedule.EndAt.ToString("g")</span></div>
+            <div class="stat-label">@L["Schedule_Finish"]</div>
+        </div>
+    </div>
+
+    <section class="card">
+        <div class="card-head">
+            <h2>@L["Schedule_Timeline"]</h2>
+            <span class="muted">@_schedule.StartAt.ToString("g") - @_schedule.EndAt.ToString("g")</span>
+        </div>
+        <div class="card-body">
+            <div class="timeline">
+                @foreach (var group in TimelineGroups)
+                {
+                    <div class="timeline-row">
+                        <div class="timeline-label">
+                            <strong>@group.Key.Code</strong>
+                            <span>@group.Key.Name</span>
+                        </div>
+                        <div class="timeline-track">
+                            @foreach (var item in group)
+                            {
+                                <div class="timeline-bar plan-color-@ColorIndex(item)" style="@BarStyle(item)" title="@BarTitle(item)">
+                                    <span>@item.PlanNumber</span>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </section>
+
+    <div class="schedule-columns">
+        <section class="card no-pad">
+            <div class="card-head pad"><h2>@L["Schedule_Details"]</h2></div>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>@L["Field_PlanNumber"]</th>
+                        <th>@L["Field_OperationNo"]</th>
+                        <th>@L["Field_WorkCenter"]</th>
+                        <th>@L["Field_Description"]</th>
+                        <th class="num">@L["Schedule_Start"]</th>
+                        <th class="num">@L["Schedule_End"]</th>
+                        <th class="num">@L["Schedule_Duration"]</th>
+                        <th class="num">@L["Schedule_Queue"]</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in _schedule.Items)
+                    {
+                        <tr>
+                            <td><span class="mono">@item.PlanNumber</span></td>
+                            <td>@item.OperationNumber</td>
+                            <td><span class="mono">@item.WorkCenterCode</span></td>
+                            <td>@item.Description</td>
+                            <td class="num">@item.StartAt.ToString("g")</td>
+                            <td class="num">@item.EndAt.ToString("g")</td>
+                            <td class="num">@Format.Hours(item.DurationMinutes)</td>
+                            <td class="num">@Format.Minutes((decimal)item.QueueDelayMinutes)</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card no-pad">
+            <div class="card-head pad"><h2>@L["Schedule_WorkCenterLoad"]</h2></div>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>@L["Field_WorkCenter"]</th>
+                        <th class="num">@L["Schedule_Load"]</th>
+                        <th class="num">@L["Schedule_Utilization"]</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var center in _schedule.WorkCenters)
+                    {
+                        <tr>
+                            <td>
+                                <span class="mono">@center.WorkCenterCode</span>
+                                <div class="muted">@center.WorkCenterName</div>
+                            </td>
+                            <td class="num">@Format.Hours(center.BookedMinutes)</td>
+                            <td class="num">@center.UtilizationPercent.ToString("N0")%</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </section>
+    </div>
+}
+
+@code {
+    private bool _loading = true;
+    private DateTime _startDate = DateTime.Today;
+    private bool _includeDrafts;
+    private SchedulingResult? _schedule;
+
+    protected override async Task OnInitializedAsync() => await RecalculateAsync();
+
+    private async Task RecalculateAsync()
+    {
+        _loading = true;
+        _schedule = await Scheduler.CreateScheduleAsync(new SchedulingOptions
+        {
+            StartAt = _startDate.Date.AddHours(8),
+            IncludeDrafts = _includeDrafts
+        });
+        _loading = false;
+    }
+
+    private IEnumerable<IGrouping<(string Code, string Name), ScheduledOperation>> TimelineGroups =>
+        (_schedule?.Items ?? Array.Empty<ScheduledOperation>())
+        .GroupBy(i => (Code: i.WorkCenterCode, Name: i.WorkCenterName))
+        .OrderBy(g => g.Key.Code);
+
+    private string BarStyle(ScheduledOperation item)
+    {
+        if (_schedule is null)
+            return "";
+
+        var total = Math.Max(1, (_schedule.EndAt - _schedule.StartAt).TotalMinutes);
+        var left = Math.Max(0, (item.StartAt - _schedule.StartAt).TotalMinutes / total * 100);
+        var width = Math.Max(1.8, (item.EndAt - item.StartAt).TotalMinutes / total * 100);
+
+        return string.Create(CultureInfo.InvariantCulture, $"left:{left:0.###}%;width:{width:0.###}%;");
+    }
+
+    private string BarTitle(ScheduledOperation item) =>
+        $"{item.PlanNumber} / {item.OperationNumber}: {item.Description} ({item.StartAt:g} - {item.EndAt:g})";
+
+    private static int ColorIndex(ScheduledOperation item) => item.WorkPlanId % 5 + 1;
+}

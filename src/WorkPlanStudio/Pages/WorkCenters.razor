@@ -1,0 +1,210 @@
+@page "/work-centers"
+@inject IStringLocalizer<SharedResource> L
+@inject WorkCenterService Centers
+
+<PageTitle>@L["WorkCenters_Title"] · WorkPlan Studio</PageTitle>
+
+<div class="page-head">
+    <h1>@L["WorkCenters_Title"]</h1>
+    <button class="btn btn-primary" @onclick="New">
+        <span class="btn-plus">+</span> @L["WorkCenters_New"]
+    </button>
+</div>
+
+@if (_loading)
+{
+    <div class="loading-row"><span class="spinner"></span></div>
+}
+else if (_centers.Count == 0)
+{
+    <div class="empty-state">
+        <svg viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="1" /><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3" /></svg>
+        <p>@L["WorkCenters_Empty"]</p>
+    </div>
+}
+else
+{
+    <div class="card no-pad">
+        <table class="data-table hover">
+            <thead>
+                <tr>
+                    <th>@L["Field_Code"]</th>
+                    <th>@L["Field_Name"]</th>
+                    <th>@L["Field_CostCenter"]</th>
+                    <th class="num">@L["Field_HourlyRate"]</th>
+                    <th>@L["Field_Status"]</th>
+                    <th class="num">@L["Field_Operations"]</th>
+                    <th class="actions-col">@L["Common_Actions"]</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var wc in _centers)
+                {
+                    var usage = _usage.GetValueOrDefault(wc.Id);
+                    <tr>
+                        <td><span class="mono">@wc.Code</span></td>
+                        <td>@wc.Name</td>
+                        <td><span class="muted">@wc.CostCenter</span></td>
+                        <td class="num">@Format.Number(wc.HourlyRate)</td>
+                        <td>
+                            <span class="pill @(wc.IsActive ? "ok" : "off")">
+                                @(wc.IsActive ? L["Common_Active"] : L["Common_Inactive"])
+                            </span>
+                        </td>
+                        <td class="num muted">@usage</td>
+                        <td class="actions-col">
+                            <button class="icon-btn" title="@L["Common_Edit"]" @onclick="() => Edit(wc)">
+                                <svg viewBox="0 0 24 24"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
+                            </button>
+                            @if (usage > 0)
+                            {
+                                <button class="icon-btn" disabled title="@L["WorkCenters_InUse"]">
+                                    <svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" /></svg>
+                                </button>
+                            }
+                            else
+                            {
+                                <button class="icon-btn danger" title="@L["Common_Delete"]" @onclick="() => AskDelete(wc)">
+                                    <svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" /></svg>
+                                </button>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+<Modal @bind-Visible="_showEditor" Title="@(_editing.Id == 0 ? L["WorkCenters_NewTitle"] : L["WorkCenters_EditTitle"])">
+    <ChildContent>
+    <div class="form-grid">
+        <label class="field">
+            <span>@L["Field_Code"]</span>
+            <input class="input @(_formErrors.ContainsKey("Code") ? "error" : null)" @bind="_editing.Code" />
+            @if (_formErrors.TryGetValue("Code", out var ce))
+            {
+                <span class="field-error">@ce</span>
+            }
+        </label>
+        <label class="field">
+            <span>@L["Field_CostCenter"]</span>
+            <input class="input" @bind="_editing.CostCenter" />
+        </label>
+        <label class="field wide">
+            <span>@L["Field_Name"]</span>
+            <input class="input @(_formErrors.ContainsKey("Name") ? "error" : null)" @bind="_editing.Name" />
+            @if (_formErrors.TryGetValue("Name", out var ne))
+            {
+                <span class="field-error">@ne</span>
+            }
+        </label>
+        <label class="field">
+            <span>@L["Field_HourlyRate"]</span>
+            <input class="input" type="number" min="0" step="1" @bind="_editing.HourlyRate" />
+        </label>
+        <label class="field check">
+            <input type="checkbox" @bind="_editing.IsActive" />
+            <span>@L["Common_Active"]</span>
+        </label>
+    </div>
+    </ChildContent>
+    <Footer>
+        <button class="btn btn-ghost" @onclick="() => _showEditor = false">@L["Common_Cancel"]</button>
+        <button class="btn btn-primary" @onclick="SaveAsync">@L["Common_Save"]</button>
+    </Footer>
+</Modal>
+
+<Modal @bind-Visible="_showDelete" Title="@L["Confirm_DeleteWorkCenterTitle"]">
+    <ChildContent>
+        <p>@(string.Format(L["Confirm_DeleteWorkCenterBody"], _pendingDelete?.Code))</p>
+    </ChildContent>
+    <Footer>
+        <button class="btn btn-ghost" @onclick="() => _showDelete = false">@L["Common_Cancel"]</button>
+        <button class="btn btn-danger" @onclick="ConfirmDeleteAsync">@L["Common_Delete"]</button>
+    </Footer>
+</Modal>
+
+@code {
+    private bool _loading = true;
+    private List<WorkCenter> _centers = new();
+    private Dictionary<int, int> _usage = new();
+
+    private bool _showEditor;
+    private WorkCenter _editing = new() { IsActive = true };
+    private readonly Dictionary<string, string> _formErrors = new();
+
+    private bool _showDelete;
+    private WorkCenter? _pendingDelete;
+
+    protected override async Task OnInitializedAsync() => await ReloadAsync();
+
+    private async Task ReloadAsync()
+    {
+        _loading = true;
+        _centers = await Centers.GetAllAsync();
+        _usage = new Dictionary<int, int>();
+        foreach (var wc in _centers)
+            _usage[wc.Id] = await Centers.UsageCountAsync(wc.Id);
+        _loading = false;
+    }
+
+    private void New()
+    {
+        _editing = new WorkCenter { IsActive = true };
+        _formErrors.Clear();
+        _showEditor = true;
+    }
+
+    private void Edit(WorkCenter wc)
+    {
+        _editing = new WorkCenter
+        {
+            Id = wc.Id,
+            Code = wc.Code,
+            Name = wc.Name,
+            CostCenter = wc.CostCenter,
+            HourlyRate = wc.HourlyRate,
+            IsActive = wc.IsActive
+        };
+        _formErrors.Clear();
+        _showEditor = true;
+    }
+
+    private async Task SaveAsync()
+    {
+        _formErrors.Clear();
+
+        if (string.IsNullOrWhiteSpace(_editing.Code))
+            _formErrors["Code"] = L["Val_Required"];
+        else if (await Centers.CodeExistsAsync(_editing.Code.Trim(), _editing.Id))
+            _formErrors["Code"] = L["Val_CodeTaken"];
+
+        if (string.IsNullOrWhiteSpace(_editing.Name))
+            _formErrors["Name"] = L["Val_Required"];
+
+        if (_formErrors.Count > 0)
+            return;
+
+        _editing.Code = _editing.Code.Trim();
+        await Centers.SaveAsync(_editing);
+        _showEditor = false;
+        await ReloadAsync();
+    }
+
+    private void AskDelete(WorkCenter wc)
+    {
+        _pendingDelete = wc;
+        _showDelete = true;
+    }
+
+    private async Task ConfirmDeleteAsync()
+    {
+        if (_pendingDelete is not null)
+            await Centers.DeleteAsync(_pendingDelete.Id);
+
+        _showDelete = false;
+        _pendingDelete = null;
+        await ReloadAsync();
+    }
+}

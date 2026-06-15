@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+
+  <data name="AppTagline" xml:space="preserve"><value>Fertigungs-Arbeitspläne &amp; Routings</value></data>
+  <data name="Footer_Note" xml:space="preserve"><value>Portfolio-Demo — läuft komplett im Browser</value></data>
+
+  <data name="Nav_Dashboard" xml:space="preserve"><value>Übersicht</value></data>
+  <data name="Nav_WorkPlans" xml:space="preserve"><value>Arbeitspläne</value></data>
+  <data name="Nav_WorkCenters" xml:space="preserve"><value>Arbeitsplätze</value></data>
+  <data name="Nav_Schedule" xml:space="preserve"><value>Kapazitätsplan</value></data>
+  <data name="Nav_About" xml:space="preserve"><value>Über</value></data>
+
+  <data name="Common_New" xml:space="preserve"><value>Neu</value></data>
+  <data name="Common_Save" xml:space="preserve"><value>Speichern</value></data>
+  <data name="Common_Cancel" xml:space="preserve"><value>Abbrechen</value></data>
+  <data name="Common_Delete" xml:space="preserve"><value>Löschen</value></data>
+  <data name="Common_Edit" xml:space="preserve"><value>Bearbeiten</value></data>
+  <data name="Common_Back" xml:space="preserve"><value>Zurück</value></data>
+  <data name="Common_Actions" xml:space="preserve"><value>Aktionen</value></data>
+  <data name="Common_All" xml:space="preserve"><value>Alle</value></data>
+  <data name="Common_Active" xml:space="preserve"><value>Aktiv</value></data>
+  <data name="Common_Inactive" xml:space="preserve"><value>Inaktiv</value></data>
+
+  <data name="Status_Draft" xml:space="preserve"><value>Entwurf</value></data>
+  <data name="Status_Released" xml:space="preserve"><value>Freigegeben</value></data>
+  <data name="Status_Archived" xml:space="preserve"><value>Archiviert</value></data>
+
+  <data name="Field_PlanNumber" xml:space="preserve"><value>Plan-Nr.</value></data>
+  <data name="Field_PartNumber" xml:space="preserve"><value>Teile-Nr.</value></data>
+  <data name="Field_PartName" xml:space="preserve"><value>Teilebezeichnung</value></data>
+  <data name="Field_Revision" xml:space="preserve"><value>Revision</value></data>
+  <data name="Field_RevisionShort" xml:space="preserve"><value>Rev.</value></data>
+  <data name="Field_Status" xml:space="preserve"><value>Status</value></data>
+  <data name="Field_LotSize" xml:space="preserve"><value>Losgröße</value></data>
+  <data name="Field_Operations" xml:space="preserve"><value>Arbeitsgänge</value></data>
+  <data name="Field_Modified" xml:space="preserve"><value>Geändert</value></data>
+  <data name="Field_Created" xml:space="preserve"><value>Erstellt</value></data>
+  <data name="Field_OperationNo" xml:space="preserve"><value>AG</value></data>
+  <data name="Field_WorkCenter" xml:space="preserve"><value>Arbeitsplatz</value></data>
+  <data name="Field_Description" xml:space="preserve"><value>Beschreibung</value></data>
+  <data name="Field_SetupTime" xml:space="preserve"><value>Rüstzeit (min)</value></data>
+  <data name="Field_TimePerPiece" xml:space="preserve"><value>Stückzeit (min)</value></data>
+  <data name="Field_Remarks" xml:space="preserve"><value>Bemerkungen</value></data>
+  <data name="Field_Code" xml:space="preserve"><value>Kürzel</value></data>
+  <data name="Field_Name" xml:space="preserve"><value>Name</value></data>
+  <data name="Field_CostCenter" xml:space="preserve"><value>Kostenstelle</value></data>
+  <data name="Field_HourlyRate" xml:space="preserve"><value>Satz (€/h)</value></data>
+  <data name="Field_TotalTime" xml:space="preserve"><value>Gesamtzeit</value></data>
+  <data name="Field_TotalCost" xml:space="preserve"><value>Kosten (gesch.)</value></data>
+
+  <data name="Dashboard_Title" xml:space="preserve"><value>Übersicht</value></data>
+  <data name="Dashboard_Subtitle" xml:space="preserve"><value>Überblick über Ihre Fertigungs-Arbeitspläne</value></data>
+  <data name="Dashboard_TotalPlans" xml:space="preserve"><value>Arbeitspläne</value></data>
+  <data name="Dashboard_Released" xml:space="preserve"><value>Freigegeben</value></data>
+  <data name="Dashboard_WorkCenters" xml:space="preserve"><value>Arbeitsplätze</value></data>
+  <data name="Dashboard_Operations" xml:space="preserve"><value>Arbeitsgänge</value></data>
+  <data name="Dashboard_ByStatus" xml:space="preserve"><value>Pläne nach Status</value></data>
+  <data name="Dashboard_Recent" xml:space="preserve"><value>Zuletzt geändert</value></data>
+  <data name="Dashboard_ViewAll" xml:space="preserve"><value>Alle anzeigen</value></data>
+
+  <data name="WorkPlans_Title" xml:space="preserve"><value>Arbeitspläne</value></data>
+  <data name="WorkPlans_New" xml:space="preserve"><value>Neuer Arbeitsplan</value></data>
+  <data name="WorkPlans_SearchPlaceholder" xml:space="preserve"><value>Nach Nummer oder Teil suchen…</value></data>
+  <data name="WorkPlans_Empty" xml:space="preserve"><value>Keine Arbeitspläne gefunden.</value></data>
+
+  <data name="Editor_NewTitle" xml:space="preserve"><value>Neuer Arbeitsplan</value></data>
+  <data name="Editor_EditTitle" xml:space="preserve"><value>Arbeitsplan bearbeiten</value></data>
+  <data name="Editor_HeaderSection" xml:space="preserve"><value>Kopfdaten</value></data>
+  <data name="Editor_OperationsSection" xml:space="preserve"><value>Arbeitsgänge</value></data>
+  <data name="Editor_AddOperation" xml:space="preserve"><value>Arbeitsgang hinzufügen</value></data>
+  <data name="Editor_NoOperations" xml:space="preserve"><value>Noch keine Arbeitsgänge — fügen Sie den ersten hinzu.</value></data>
+  <data name="Editor_Summary" xml:space="preserve"><value>Zusammenfassung</value></data>
+  <data name="Editor_SetupSum" xml:space="preserve"><value>Rüstzeit gesamt</value></data>
+  <data name="Editor_UnitSum" xml:space="preserve"><value>Stückzeit gesamt</value></data>
+  <data name="Editor_LotTime" xml:space="preserve"><value>Zeit pro Los</value></data>
+  <data name="Editor_LotCost" xml:space="preserve"><value>Kosten pro Los</value></data>
+
+  <data name="Val_Required" xml:space="preserve"><value>Pflichtfeld</value></data>
+  <data name="Val_PlanNumberTaken" xml:space="preserve"><value>Diese Plan-Nr. existiert bereits.</value></data>
+  <data name="Val_CodeTaken" xml:space="preserve"><value>Dieses Kürzel existiert bereits.</value></data>
+  <data name="Val_NeedOperation" xml:space="preserve"><value>Fügen Sie mindestens einen Arbeitsgang hinzu.</value></data>
+  <data name="Val_OperationIncomplete" xml:space="preserve"><value>Jeder Arbeitsgang braucht einen Arbeitsplatz und eine Beschreibung.</value></data>
+
+  <data name="WorkCenters_Title" xml:space="preserve"><value>Arbeitsplätze</value></data>
+  <data name="WorkCenters_New" xml:space="preserve"><value>Neuer Arbeitsplatz</value></data>
+  <data name="WorkCenters_Empty" xml:space="preserve"><value>Noch keine Arbeitsplätze.</value></data>
+  <data name="WorkCenters_InUse" xml:space="preserve"><value>In Verwendung — nicht löschbar</value></data>
+  <data name="WorkCenters_EditTitle" xml:space="preserve"><value>Arbeitsplatz bearbeiten</value></data>
+  <data name="WorkCenters_NewTitle" xml:space="preserve"><value>Neuer Arbeitsplatz</value></data>
+  <data name="WorkCenters_UsageOps" xml:space="preserve"><value>Arbeitsgänge</value></data>
+
+  <data name="Schedule_Title" xml:space="preserve"><value>Kapazitätsplan</value></data>
+  <data name="Schedule_Subtitle" xml:space="preserve"><value>Freigegebene Arbeitspläne gegen verfügbare Arbeitsplatzkapazität terminieren.</value></data>
+  <data name="Schedule_StartDate" xml:space="preserve"><value>Startdatum</value></data>
+  <data name="Schedule_IncludeDrafts" xml:space="preserve"><value>Entwürfe einbeziehen</value></data>
+  <data name="Schedule_Recalculate" xml:space="preserve"><value>Neu berechnen</value></data>
+  <data name="Schedule_Rule" xml:space="preserve"><value>Regel: 08:00-16:00, Montag-Freitag; Arbeitsgänge behalten die Planreihenfolge und konkurrieren um Arbeitsplatzkapazität.</value></data>
+  <data name="Schedule_Empty" xml:space="preserve"><value>Keine freigegebenen Arbeitspläne mit Arbeitsgängen für die Planung verfügbar.</value></data>
+  <data name="Schedule_Plans" xml:space="preserve"><value>Geplante Arbeitspläne</value></data>
+  <data name="Schedule_Operations" xml:space="preserve"><value>Geplante Arbeitsgänge</value></data>
+  <data name="Schedule_Load" xml:space="preserve"><value>Gebuchte Last</value></data>
+  <data name="Schedule_Finish" xml:space="preserve"><value>Voraussichtliches Ende</value></data>
+  <data name="Schedule_Timeline" xml:space="preserve"><value>Arbeitsplatz-Zeitachse</value></data>
+  <data name="Schedule_Details" xml:space="preserve"><value>Geplante Arbeitsgänge</value></data>
+  <data name="Schedule_WorkCenterLoad" xml:space="preserve"><value>Arbeitsplatzlast</value></data>
+  <data name="Schedule_Start" xml:space="preserve"><value>Start</value></data>
+  <data name="Schedule_End" xml:space="preserve"><value>Ende</value></data>
+  <data name="Schedule_Duration" xml:space="preserve"><value>Dauer</value></data>
+  <data name="Schedule_Queue" xml:space="preserve"><value>Wartezeit</value></data>
+  <data name="Schedule_Utilization" xml:space="preserve"><value>Auslastung</value></data>
+
+  <data name="About_Title" xml:space="preserve"><value>Über dieses Projekt</value></data>
+  <data name="About_Intro" xml:space="preserve"><value>WorkPlan Studio ist eine kleine Portfolio-Anwendung zur Verwaltung von Fertigungs-Arbeitsplänen: die Folge der Arbeitsgänge zur Herstellung eines Teils, die zugehörigen Arbeitsplätze sowie die daraus resultierenden Zeiten und Kosten.</value></data>
+  <data name="About_TechTitle" xml:space="preserve"><value>Technischer Aufbau</value></data>
+  <data name="About_Tech1" xml:space="preserve"><value>.NET 10 Blazor WebAssembly — wird als statische Seite ausgeliefert, ohne Backend.</value></data>
+  <data name="About_Tech2" xml:space="preserve"><value>EF Core mit SQLite, nach WebAssembly kompiliert — eine echte relationale Datenbank im Browser.</value></data>
+  <data name="About_Tech3" xml:space="preserve"><value>Ihre Daten werden lokal gespeichert (localStorage) und verlassen Ihr Gerät nie.</value></data>
+  <data name="About_Tech4" xml:space="preserve"><value>Englische / deutsche Oberfläche über IStringLocalizer und .resx-Ressourcen.</value></data>
+  <data name="About_DataTitle" xml:space="preserve"><value>Daten</value></data>
+  <data name="About_DataNote" xml:space="preserve"><value>Alle Änderungen werden lokal im Browser gespeichert.</value></data>
+  <data name="About_Reset" xml:space="preserve"><value>Auf Beispieldaten zurücksetzen</value></data>
+  <data name="About_ResetConfirm" xml:space="preserve"><value>Ihre Änderungen verwerfen und die ursprünglichen Beispieldaten wiederherstellen?</value></data>
+  <data name="About_LanguageTitle" xml:space="preserve"><value>Sprache</value></data>
+
+  <data name="Confirm_DeletePlanTitle" xml:space="preserve"><value>Arbeitsplan löschen</value></data>
+  <data name="Confirm_DeletePlanBody" xml:space="preserve"><value>Arbeitsplan {0} löschen? Dies kann nicht rückgängig gemacht werden.</value></data>
+  <data name="Confirm_DeleteWorkCenterTitle" xml:space="preserve"><value>Arbeitsplatz löschen</value></data>
+  <data name="Confirm_DeleteWorkCenterBody" xml:space="preserve"><value>Arbeitsplatz {0} löschen?</value></data>
+
+  <data name="NotFound_Title" xml:space="preserve"><value>Seite nicht gefunden</value></data>
+  <data name="NotFound_Body" xml:space="preserve"><value>Die gesuchte Seite existiert nicht.</value></data>
+  <data name="NotFound_Home" xml:space="preserve"><value>Zur Übersicht</value></data>
+
+  <data name="Lang_English" xml:space="preserve"><value>Englisch</value></data>
+  <data name="Lang_German" xml:space="preserve"><value>Deutsch</value></data>
+</root>

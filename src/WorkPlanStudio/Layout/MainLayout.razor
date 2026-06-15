@@ -1,0 +1,55 @@
+@inherits LayoutComponentBase
+@implements IDisposable
+@inject IStringLocalizer<SharedResource> L
+@inject NavigationManager Nav
+
+<div class="app-shell @(_navOpen ? "nav-open" : null)">
+    <aside class="sidebar">
+        <div class="brand">
+            <span class="brand-mark">WP</span>
+            <span class="brand-text">
+                <span class="brand-name">WorkPlan Studio</span>
+                <span class="brand-tag">@L["AppTagline"]</span>
+            </span>
+        </div>
+        <NavMenu />
+        <div class="sidebar-footer">@L["Footer_Note"]</div>
+    </aside>
+
+    <div class="scrim" @onclick="CloseNav"></div>
+
+    <div class="content-area">
+        <header class="topbar">
+            <button class="hamburger" type="button" aria-label="Menu" @onclick="ToggleNav">
+                <svg viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18" /></svg>
+            </button>
+            <div class="topbar-spacer"></div>
+            <CultureSelector />
+        </header>
+
+        <main class="page-body">
+            @Body
+        </main>
+    </div>
+</div>
+
+@code {
+    private bool _navOpen;
+
+    protected override void OnInitialized() => Nav.LocationChanged += OnLocationChanged;
+
+    private void ToggleNav() => _navOpen = !_navOpen;
+
+    private void CloseNav()
+    {
+        if (!_navOpen) return;
+        _navOpen = false;
+        StateHasChanged();
+    }
+
+    // Collapse the mobile drawer whenever the route changes.
+    private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
+        => CloseNav();
+
+    public void Dispose() => Nav.LocationChanged -= OnLocationChanged;
+}

@@ -1,0 +1,37 @@
+@inject IJSRuntime JS
+@inject NavigationManager Nav
+
+<div class="culture-selector" role="group">
+    @foreach (var option in _cultures)
+    {
+        <button type="button"
+                class="culture-btn @(IsCurrent(option.Code) ? "active" : null)"
+                title="@option.Name"
+                @onclick="() => SetCultureAsync(option.Code)">
+            @option.Short
+        </button>
+    }
+</div>
+
+@code {
+    private sealed record CultureOption(string Code, string Short, string Name);
+
+    private readonly CultureOption[] _cultures =
+    {
+        new("en-US", "EN", "English"),
+        new("de-DE", "DE", "Deutsch")
+    };
+
+    private static bool IsCurrent(string code) => CultureInfo.CurrentCulture.Name == code;
+
+    private async Task SetCultureAsync(string code)
+    {
+        if (CultureInfo.CurrentCulture.Name == code)
+            return;
+
+        // Persist the choice, then reload so the whole app re-renders in the new
+        // culture (Program.cs reads this value on startup).
+        await JS.InvokeVoidAsync("blazorCulture.set", code);
+        Nav.NavigateTo(Nav.Uri, forceLoad: true);
+    }
+}

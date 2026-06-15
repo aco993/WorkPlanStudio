@@ -1,0 +1,40 @@
+@if (Visible)
+{
+    <div class="modal-backdrop-custom" @onclick="OnBackdropAsync">
+        <div class="modal-card" @onclick:stopPropagation="true">
+            @if (!string.IsNullOrEmpty(Title))
+            {
+                <div class="modal-head">
+                    <h3>@Title</h3>
+                    <button type="button" class="icon-btn" aria-label="Close" @onclick="CloseAsync">✕</button>
+                </div>
+            }
+            <div class="modal-body">
+                @ChildContent
+            </div>
+            @if (Footer is not null)
+            {
+                <div class="modal-foot">
+                    @Footer
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool Visible { get; set; }
+    [Parameter] public EventCallback<bool> VisibleChanged { get; set; }
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public RenderFragment? Footer { get; set; }
+    [Parameter] public bool CloseOnBackdrop { get; set; } = true;
+
+    private async Task CloseAsync()
+    {
+        Visible = false;
+        await VisibleChanged.InvokeAsync(false);
+    }
+
+    private Task OnBackdropAsync() => CloseOnBackdrop ? CloseAsync() : Task.CompletedTask;
+}

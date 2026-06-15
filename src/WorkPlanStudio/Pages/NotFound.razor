@@ -1,0 +1,12 @@
+@page "/not-found"
+@layout MainLayout
+@inject IStringLocalizer<SharedResource> L
+
+<PageTitle>@L["NotFound_Title"] · WorkPlan Studio</PageTitle>
+
+<div class="notfound">
+    <div class="notfound-code">404</div>
+    <h1>@L["NotFound_Title"]</h1>
+    <p class="muted">@L["NotFound_Body"]</p>
+    <a class="btn btn-primary" href="">@L["NotFound_Home"]</a>
+</div>

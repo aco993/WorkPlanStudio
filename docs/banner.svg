@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="300" viewBox="0 0 1200 300" role="img" aria-label="WorkPlan Studio">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1d2130"/>
+      <stop offset="1" stop-color="#13151f"/>
+    </linearGradient>
+    <linearGradient id="mark" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#4f46e5"/>
+      <stop offset="1" stop-color="#7c3aed"/>
+    </linearGradient>
+    <style>
+      text { font-family: "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif; }
+    </style>
+  </defs>
+
+  <rect width="1200" height="300" fill="url(#bg)"/>
+
+  <!-- logo mark -->
+  <rect x="72" y="102" width="96" height="96" rx="22" fill="url(#mark)"/>
+  <text x="120" y="163" font-size="36" font-weight="700" fill="#ffffff" text-anchor="middle">WP</text>
+
+  <!-- title + tagline -->
+  <text x="202" y="138" font-size="50" font-weight="700" fill="#ffffff">WorkPlan Studio</text>
+  <text x="204" y="174" font-size="21" fill="#aab1c0">Manufacturing routings &amp; work plans — a .NET 10 Blazor portfolio app</text>
+
+  <!-- tech badges -->
+  <g fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.16)">
+    <rect x="204" y="206" width="92"  height="34" rx="17"/>
+    <rect x="308" y="206" width="186" height="34" rx="17"/>
+    <rect x="506" y="206" width="168" height="34" rx="17"/>
+    <rect x="686" y="206" width="150" height="34" rx="17"/>
+    <rect x="848" y="206" width="92"  height="34" rx="17"/>
+  </g>
+  <g font-size="15" fill="#c7cdd9" text-anchor="middle">
+    <text x="250" y="228">.NET 10</text>
+    <text x="401" y="228">Blazor WebAssembly</text>
+    <text x="590" y="228">EF Core + SQLite</text>
+    <text x="761" y="228">Runs in the browser</text>
+    <text x="894" y="228">EN / DE</text>
+  </g>
+</svg>

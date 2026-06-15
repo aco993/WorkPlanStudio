@@ -1,0 +1,82 @@
+@page "/about"
+@inject IStringLocalizer<SharedResource> L
+@inject BrowserDatabase Db
+@inject NavigationManager Nav
+
+<PageTitle>@L["Nav_About"] · WorkPlan Studio</PageTitle>
+
+<div class="page-head">
+    <h1>@L["About_Title"]</h1>
+</div>
+
+<div class="about-grid">
+    <section class="card">
+        <div class="card-body">
+            <p class="lead">@L["About_Intro"]</p>
+
+            <h3 class="about-sub">@L["About_TechTitle"]</h3>
+            <ul class="tech-list">
+                @foreach (var line in _tech)
+                {
+                    <li>
+                        <svg class="tick" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" /></svg>
+                        <span>@L[line]</span>
+                    </li>
+                }
+            </ul>
+
+            <div class="tech-badges">
+                <span class="tech-badge">.NET 10</span>
+                <span class="tech-badge">Blazor WebAssembly</span>
+                <span class="tech-badge">EF Core</span>
+                <span class="tech-badge">SQLite (WASM)</span>
+                <span class="tech-badge">IStringLocalizer</span>
+            </div>
+        </div>
+    </section>
+
+    <aside class="about-side">
+        <section class="card">
+            <div class="card-head"><h2>@L["About_LanguageTitle"]</h2></div>
+            <div class="card-body">
+                <CultureSelector />
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="card-head"><h2>@L["About_DataTitle"]</h2></div>
+            <div class="card-body">
+                <p class="muted small-text">@L["About_DataNote"]</p>
+                <button class="btn btn-outline danger full" @onclick="() => _showReset = true">
+                    @L["About_Reset"]
+                </button>
+            </div>
+        </section>
+    </aside>
+</div>
+
+<Modal @bind-Visible="_showReset" Title="@L["About_Reset"]">
+    <ChildContent>
+        <p>@L["About_ResetConfirm"]</p>
+    </ChildContent>
+    <Footer>
+        <button class="btn btn-ghost" @onclick="() => _showReset = false">@L["Common_Cancel"]</button>
+        <button class="btn btn-danger" @onclick="ResetAsync">@L["About_Reset"]</button>
+    </Footer>
+</Modal>
+
+@code {
+    private bool _showReset;
+
+    private readonly string[] _tech =
+    {
+        "About_Tech1", "About_Tech2", "About_Tech3", "About_Tech4"
+    };
+
+    private async Task ResetAsync()
+    {
+        await Db.ResetAsync();
+        // Reload from a clean slate so every page re-queries the fresh database.
+        Nav.NavigateTo("", forceLoad: true);
+    }
+}

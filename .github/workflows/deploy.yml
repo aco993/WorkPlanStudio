@@ -1,0 +1,68 @@
+name: Deploy to GitHub Pages
+
+# Builds the Blazor WebAssembly app and publishes it as a static site to GitHub Pages.
+# The app runs entirely in the browser (EF Core + SQLite compiled to WebAssembly),
+# so no server or backend is required.
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+# Allow the GITHUB_TOKEN to deploy to Pages.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Only one concurrent deployment.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Install WebAssembly tools (native SQLite relink)
+        run: dotnet workload install wasm-tools
+
+      - name: Publish
+        run: dotnet publish src/WorkPlanStudio/WorkPlanStudio.csproj -c Release -o release
+
+      # GitHub Pages serves the app from https://<user>.github.io/<repo>/,
+      # so the <base href> must point at the repository sub-path.
+      - name: Rewrite base href for project page
+        run: sed -i 's#<base href="/" />#<base href="/${{ github.event.repository.name }}/" />#g' release/wwwroot/index.html
+
+      # Single-page-app fallback so deep links (e.g. /work-plans/3) resolve.
+      - name: Add SPA 404 fallback
+        run: cp release/wwwroot/index.html release/wwwroot/404.html
+
+      # Stop GitHub Pages' Jekyll from ignoring the _framework folder.
+      - name: Add .nojekyll
+        run: touch release/wwwroot/.nojekyll
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: release/wwwroot
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

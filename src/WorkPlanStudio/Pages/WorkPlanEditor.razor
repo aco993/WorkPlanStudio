@@ -1,0 +1,238 @@
+@page "/work-plans/new"
+@page "/work-plans/{Id:int}"
+@inject IStringLocalizer<SharedResource> L
+@inject WorkPlanService Plans
+@inject WorkCenterService Centers
+@inject NavigationManager Nav
+
+<PageTitle>@Title · WorkPlan Studio</PageTitle>
+
+<div class="page-head">
+    <div>
+        <a class="link back" href="work-plans">← @L["Common_Back"]</a>
+        <h1>@Title</h1>
+    </div>
+    <div class="head-actions">
+        <button class="btn btn-ghost" @onclick="Cancel">@L["Common_Cancel"]</button>
+        <button class="btn btn-primary" @onclick="SaveAsync">@L["Common_Save"]</button>
+    </div>
+</div>
+
+@if (_loading)
+{
+    <div class="loading-row"><span class="spinner"></span></div>
+}
+else
+{
+    <div class="editor-grid">
+        <section class="card">
+            <div class="card-head"><h2>@L["Editor_HeaderSection"]</h2></div>
+            <div class="card-body">
+                <div class="form-grid">
+                    <label class="field">
+                        <span>@L["Field_PlanNumber"]</span>
+                        <input class="input @(_errors.ContainsKey("PlanNumber") ? "error" : null)" @bind="_model.PlanNumber" />
+                        @if (_errors.TryGetValue("PlanNumber", out var pe))
+                        {
+                            <span class="field-error">@pe</span>
+                        }
+                    </label>
+                    <label class="field">
+                        <span>@L["Field_Status"]</span>
+                        <select class="input" @bind="_model.Status">
+                            @foreach (var s in Enum.GetValues<WorkPlanStatus>())
+                            {
+                                <option value="@s">@StatusLabel(s)</option>
+                            }
+                        </select>
+                    </label>
+                    <label class="field">
+                        <span>@L["Field_PartNumber"]</span>
+                        <input class="input" @bind="_model.PartNumber" />
+                    </label>
+                    <label class="field">
+                        <span>@L["Field_Revision"]</span>
+                        <input class="input" @bind="_model.Revision" />
+                    </label>
+                    <label class="field wide">
+                        <span>@L["Field_PartName"]</span>
+                        <input class="input @(_errors.ContainsKey("PartName") ? "error" : null)" @bind="_model.PartName" />
+                        @if (_errors.TryGetValue("PartName", out var ne))
+                        {
+                            <span class="field-error">@ne</span>
+                        }
+                    </label>
+                    <label class="field">
+                        <span>@L["Field_LotSize"]</span>
+                        <input class="input" type="number" min="1" @bind="_model.LotSize" />
+                    </label>
+                </div>
+            </div>
+        </section>
+
+        <section class="card summary-card">
+            <div class="card-head"><h2>@L["Editor_Summary"]</h2></div>
+            <div class="card-body">
+                <dl class="summary">
+                    <div><dt>@L["Editor_SetupSum"]</dt><dd>@Format.Minutes(SetupSum)</dd></div>
+                    <div><dt>@L["Editor_UnitSum"]</dt><dd>@Format.Minutes(UnitSum)</dd></div>
+                    <div><dt>@L["Editor_LotTime"]</dt><dd>@Format.Hours(LotTime)</dd></div>
+                    <div class="highlight"><dt>@L["Editor_LotCost"]</dt><dd>@Format.Euro(LotCost)</dd></div>
+                </dl>
+            </div>
+        </section>
+    </div>
+
+    <section class="card no-pad">
+        <div class="card-head pad">
+            <h2>@L["Editor_OperationsSection"]</h2>
+            <button class="btn btn-outline" @onclick="AddOperation">
+                <span class="btn-plus">+</span> @L["Editor_AddOperation"]
+            </button>
+        </div>
+
+        @if (_errors.TryGetValue("Operations", out var oe))
+        {
+            <div class="form-banner error">@oe</div>
+        }
+
+        @if (_model.Operations.Count == 0)
+        {
+            <div class="empty-state small">
+                <p>@L["Editor_NoOperations"]</p>
+            </div>
+        }
+        else
+        {
+            <table class="data-table op-table">
+                <thead>
+                    <tr>
+                        <th class="num narrow">@L["Field_OperationNo"]</th>
+                        <th class="wc-col">@L["Field_WorkCenter"]</th>
+                        <th>@L["Field_Description"]</th>
+                        <th class="num">@L["Field_SetupTime"]</th>
+                        <th class="num">@L["Field_TimePerPiece"]</th>
+                        <th>@L["Field_Remarks"]</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var op in _model.Operations)
+                    {
+                        <tr>
+                            <td class="num narrow"><input class="input mini num" type="number" min="0" step="10" @bind="op.OperationNumber" /></td>
+                            <td class="wc-col">
+                                <select class="input" @bind="op.WorkCenterId">
+                                    <option value="0">—</option>
+                                    @foreach (var wc in _workCenters)
+                                    {
+                                        <option value="@wc.Id">@wc.Code — @wc.Name</option>
+                                    }
+                                </select>
+                            </td>
+                            <td><input class="input" @bind="op.Description" /></td>
+                            <td class="num"><input class="input mini num" type="number" min="0" step="0.1" @bind="op.SetupTimeMinutes" /></td>
+                            <td class="num"><input class="input mini num" type="number" min="0" step="0.1" @bind="op.TimePerPieceMinutes" /></td>
+                            <td><input class="input" @bind="op.Remarks" /></td>
+                            <td class="actions-col">
+                                <button class="icon-btn danger" title="@L["Common_Delete"]" @onclick="() => RemoveOperation(op)">
+                                    <svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" /></svg>
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </section>
+}
+
+@code {
+    [Parameter] public int? Id { get; set; }
+
+    private bool _loading = true;
+    private WorkPlan _model = new() { Status = WorkPlanStatus.Draft, LotSize = 1 };
+    private List<WorkCenter> _workCenters = new();
+    private readonly Dictionary<string, string> _errors = new();
+
+    private bool IsNew => Id is null;
+    private string Title => IsNew ? L["Editor_NewTitle"] : L["Editor_EditTitle"];
+
+    protected override async Task OnInitializedAsync()
+    {
+        _workCenters = await Centers.GetAllAsync();
+
+        if (IsNew)
+        {
+            _model = new WorkPlan
+            {
+                Status = WorkPlanStatus.Draft,
+                LotSize = 100,
+                PlanNumber = await Plans.SuggestPlanNumberAsync()
+            };
+        }
+        else
+        {
+            _model = await Plans.GetAsync(Id!.Value) ?? new WorkPlan { Status = WorkPlanStatus.Draft, LotSize = 1 };
+        }
+
+        _loading = false;
+    }
+
+    // ----- live summary -----
+    private decimal SetupSum => _model.Operations.Sum(o => o.SetupTimeMinutes);
+    private decimal UnitSum => _model.Operations.Sum(o => o.TimePerPieceMinutes);
+    private decimal LotTime => _model.Operations.Sum(o => o.SetupTimeMinutes + o.TimePerPieceMinutes * _model.LotSize);
+    private decimal LotCost => _model.Operations.Sum(o =>
+        (o.SetupTimeMinutes + o.TimePerPieceMinutes * _model.LotSize) / 60m * RateOf(o.WorkCenterId));
+
+    private decimal RateOf(int workCenterId) =>
+        _workCenters.FirstOrDefault(w => w.Id == workCenterId)?.HourlyRate ?? 0m;
+
+    private string StatusLabel(WorkPlanStatus s) => s switch
+    {
+        WorkPlanStatus.Draft => L["Status_Draft"],
+        WorkPlanStatus.Released => L["Status_Released"],
+        WorkPlanStatus.Archived => L["Status_Archived"],
+        _ => s.ToString()
+    };
+
+    private void AddOperation()
+    {
+        var next = _model.Operations.Count == 0 ? 10 : _model.Operations.Max(o => o.OperationNumber) + 10;
+        _model.Operations.Add(new Operation { OperationNumber = next });
+    }
+
+    private void RemoveOperation(Operation op) => _model.Operations.Remove(op);
+
+    private async Task SaveAsync()
+    {
+        _errors.Clear();
+
+        if (string.IsNullOrWhiteSpace(_model.PlanNumber))
+            _errors["PlanNumber"] = L["Val_Required"];
+        else if (await Plans.PlanNumberExistsAsync(_model.PlanNumber.Trim(), _model.Id))
+            _errors["PlanNumber"] = L["Val_PlanNumberTaken"];
+
+        if (string.IsNullOrWhiteSpace(_model.PartName))
+            _errors["PartName"] = L["Val_Required"];
+
+        if (_model.Operations.Count == 0)
+            _errors["Operations"] = L["Val_NeedOperation"];
+        else if (_model.Operations.Any(o => o.WorkCenterId == 0 || string.IsNullOrWhiteSpace(o.Description)))
+            _errors["Operations"] = L["Val_OperationIncomplete"];
+
+        if (_errors.Count > 0)
+            return;
+
+        _model.PlanNumber = _model.PlanNumber.Trim();
+        if (IsNew)
+            await Plans.CreateAsync(_model);
+        else
+            await Plans.UpdateAsync(_model);
+
+        Nav.NavigateTo("work-plans");
+    }
+
+    private void Cancel() => Nav.NavigateTo("work-plans");
+}
