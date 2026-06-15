@@ -1,0 +1,154 @@
+@page "/work-plans"
+@inject IStringLocalizer<SharedResource> L
+@inject WorkPlanService Plans
+@inject NavigationManager Nav
+
+<PageTitle>@L["WorkPlans_Title"] · WorkPlan Studio</PageTitle>
+
+<div class="page-head">
+    <h1>@L["WorkPlans_Title"]</h1>
+    <button class="btn btn-primary" @onclick='() => Nav.NavigateTo("work-plans/new")'>
+        <span class="btn-plus">+</span> @L["WorkPlans_New"]
+    </button>
+</div>
+
+<div class="toolbar">
+    <div class="search">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+        <input type="search" placeholder="@L["WorkPlans_SearchPlaceholder"]"
+               value="@_search" @oninput="OnSearch" />
+    </div>
+    <div class="seg">
+        <button class="@(_statusFilter is null ? "active" : null)" @onclick="() => _statusFilter = null">@L["Common_All"]</button>
+        @foreach (var s in _statuses)
+        {
+            <button class="@(_statusFilter == s ? "active" : null)" @onclick="() => _statusFilter = s">@StatusLabel(s)</button>
+        }
+    </div>
+</div>
+
+@if (_loading)
+{
+    <div class="loading-row"><span class="spinner"></span></div>
+}
+else if (!Filtered.Any())
+{
+    <div class="empty-state">
+        <svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2" /><path d="M9 4v2h6V4" /><path d="M9 11h6M9 15h4" /></svg>
+        <p>@L["WorkPlans_Empty"]</p>
+    </div>
+}
+else
+{
+    <div class="card no-pad">
+        <table class="data-table hover">
+            <thead>
+                <tr>
+                    <th>@L["Field_PlanNumber"]</th>
+                    <th>@L["Field_PartNumber"]</th>
+                    <th>@L["Field_PartName"]</th>
+                    <th class="center">@L["Field_RevisionShort"]</th>
+                    <th>@L["Field_Status"]</th>
+                    <th class="num">@L["Field_Operations"]</th>
+                    <th class="num">@L["Field_LotSize"]</th>
+                    <th class="num">@L["Field_TotalTime"]</th>
+                    <th class="num">@L["Field_TotalCost"]</th>
+                    <th class="actions-col">@L["Common_Actions"]</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var p in Filtered)
+                {
+                    <tr class="clickable" @onclick="() => Open(p.Id)">
+                        <td><span class="mono">@p.PlanNumber</span></td>
+                        <td><span class="mono muted">@p.PartNumber</span></td>
+                        <td>@p.PartName</td>
+                        <td class="center">@p.Revision</td>
+                        <td><StatusBadge Status="p.Status" /></td>
+                        <td class="num">@p.OperationCount</td>
+                        <td class="num">@Format.Number(p.LotSize)</td>
+                        <td class="num">@Format.Hours(p.TotalTimeMinutes)</td>
+                        <td class="num">@Format.Euro(p.TotalCost)</td>
+                        <td class="actions-col" @onclick:stopPropagation="true">
+                            <button class="icon-btn" title="@L["Common_Edit"]" @onclick="() => Open(p.Id)">
+                                <svg viewBox="0 0 24 24"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
+                            </button>
+                            <button class="icon-btn danger" title="@L["Common_Delete"]" @onclick="() => AskDelete(p)">
+                                <svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" /></svg>
+                            </button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+<Modal @bind-Visible="_showDelete" Title="@L["Confirm_DeletePlanTitle"]">
+    <ChildContent>
+        <p>@(string.Format(L["Confirm_DeletePlanBody"], _pendingDelete?.PlanNumber))</p>
+    </ChildContent>
+    <Footer>
+        <button class="btn btn-ghost" @onclick="() => _showDelete = false">@L["Common_Cancel"]</button>
+        <button class="btn btn-danger" @onclick="ConfirmDeleteAsync">@L["Common_Delete"]</button>
+    </Footer>
+</Modal>
+
+@code {
+    private bool _loading = true;
+    private List<WorkPlan> _plans = new();
+    private string _search = "";
+    private WorkPlanStatus? _statusFilter;
+
+    private bool _showDelete;
+    private WorkPlan? _pendingDelete;
+
+    private readonly WorkPlanStatus[] _statuses =
+    {
+        WorkPlanStatus.Draft, WorkPlanStatus.Released, WorkPlanStatus.Archived
+    };
+
+    protected override async Task OnInitializedAsync() => await ReloadAsync();
+
+    private async Task ReloadAsync()
+    {
+        _loading = true;
+        _plans = await Plans.GetAllAsync();
+        _loading = false;
+    }
+
+    private void OnSearch(ChangeEventArgs e) => _search = e.Value?.ToString() ?? "";
+
+    private IEnumerable<WorkPlan> Filtered => _plans
+        .Where(p => _statusFilter is null || p.Status == _statusFilter)
+        .Where(p => string.IsNullOrWhiteSpace(_search)
+            || p.PlanNumber.Contains(_search, StringComparison.OrdinalIgnoreCase)
+            || p.PartNumber.Contains(_search, StringComparison.OrdinalIgnoreCase)
+            || p.PartName.Contains(_search, StringComparison.OrdinalIgnoreCase));
+
+    private string StatusLabel(WorkPlanStatus s) => s switch
+    {
+        WorkPlanStatus.Draft => L["Status_Draft"],
+        WorkPlanStatus.Released => L["Status_Released"],
+        WorkPlanStatus.Archived => L["Status_Archived"],
+        _ => s.ToString()
+    };
+
+    private void Open(int id) => Nav.NavigateTo($"work-plans/{id}");
+
+    private void AskDelete(WorkPlan plan)
+    {
+        _pendingDelete = plan;
+        _showDelete = true;
+    }
+
+    private async Task ConfirmDeleteAsync()
+    {
+        if (_pendingDelete is not null)
+            await Plans.DeleteAsync(_pendingDelete.Id);
+
+        _showDelete = false;
+        _pendingDelete = null;
+        await ReloadAsync();
+    }
+}

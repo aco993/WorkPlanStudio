@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <OverrideHtmlAssetPlaceholders>true</OverrideHtmlAssetPlaceholders>
+
+    <!-- Load full ICU data so German (de-DE) number, date and currency
+         formatting is correct in the browser, not just the invariant culture. -->
+    <BlazorWebAssemblyLoadAllGlobalizationData>true</BlazorWebAssemblyLoadAllGlobalizationData>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.8" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="10.0.8" PrivateAssets="all" />
+
+    <!-- EF Core + SQLite. On WebAssembly the native SQLite engine is relinked
+         into the app (requires the 'wasm-tools' workload), so the whole data
+         layer runs in the browser with no backend. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.9" />
+
+    <!-- IStringLocalizer-based UI translations (English / German). -->
+    <PackageReference Include="Microsoft.Extensions.Localization" Version="10.0.9" />
+  </ItemGroup>
+
+</Project>

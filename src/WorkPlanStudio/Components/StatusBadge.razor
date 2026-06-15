@@ -1,0 +1,16 @@
+@inject IStringLocalizer<SharedResource> L
+
+<span class="badge status-@Status.ToString().ToLowerInvariant()">@Label</span>
+
+@code {
+    [Parameter, EditorRequired]
+    public WorkPlanStatus Status { get; set; }
+
+    private string Label => Status switch
+    {
+        WorkPlanStatus.Draft => L["Status_Draft"],
+        WorkPlanStatus.Released => L["Status_Released"],
+        WorkPlanStatus.Archived => L["Status_Archived"],
+        _ => Status.ToString()
+    };
+}

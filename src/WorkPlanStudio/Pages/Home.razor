@@ -1,0 +1,132 @@
+@page "/"
+@inject IStringLocalizer<SharedResource> L
+@inject WorkPlanService Plans
+@inject WorkCenterService Centers
+@inject NavigationManager Nav
+
+<PageTitle>WorkPlan Studio</PageTitle>
+
+<div class="page-head">
+    <div>
+        <h1>@L["Dashboard_Title"]</h1>
+        <p class="page-sub">@L["Dashboard_Subtitle"]</p>
+    </div>
+</div>
+
+@if (_loading)
+{
+    <div class="loading-row"><span class="spinner"></span></div>
+}
+else
+{
+    <div class="stat-grid">
+        <div class="stat-card accent-indigo">
+            <div class="stat-top">
+                <span class="stat-value">@_plans.Count</span>
+                <svg class="stat-icon" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2" /><path d="M9 4v2h6V4" /><path d="M9 11h6M9 15h4" /></svg>
+            </div>
+            <div class="stat-label">@L["Dashboard_TotalPlans"]</div>
+        </div>
+        <div class="stat-card accent-green">
+            <div class="stat-top">
+                <span class="stat-value">@Count(WorkPlanStatus.Released)</span>
+                <svg class="stat-icon" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" /></svg>
+            </div>
+            <div class="stat-label">@L["Dashboard_Released"]</div>
+        </div>
+        <div class="stat-card accent-amber">
+            <div class="stat-top">
+                <span class="stat-value">@_workCenters</span>
+                <svg class="stat-icon" viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="1" /><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3" /></svg>
+            </div>
+            <div class="stat-label">@L["Dashboard_WorkCenters"]</div>
+        </div>
+        <div class="stat-card accent-slate">
+            <div class="stat-top">
+                <span class="stat-value">@TotalOperations</span>
+                <svg class="stat-icon" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10" /></svg>
+            </div>
+            <div class="stat-label">@L["Dashboard_Operations"]</div>
+        </div>
+    </div>
+
+    <div class="dash-columns">
+        <section class="card">
+            <div class="card-head"><h2>@L["Dashboard_ByStatus"]</h2></div>
+            <div class="card-body">
+                <div class="status-bar">
+                    @foreach (var s in _statuses)
+                    {
+                        var count = Count(s);
+                        <div class="status-seg status-@s.ToString().ToLowerInvariant()" style="flex:@(count)"></div>
+                    }
+                </div>
+                <ul class="legend">
+                    @foreach (var s in _statuses)
+                    {
+                        <li>
+                            <StatusBadge Status="s" />
+                            <span class="legend-count">@Count(s)</span>
+                        </li>
+                    }
+                </ul>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="card-head">
+                <h2>@L["Dashboard_Recent"]</h2>
+                <a class="link" href="work-plans">@L["Dashboard_ViewAll"]</a>
+            </div>
+            <div class="card-body no-pad">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>@L["Field_PlanNumber"]</th>
+                            <th>@L["Field_PartName"]</th>
+                            <th>@L["Field_Status"]</th>
+                            <th class="num">@L["Field_TotalTime"]</th>
+                            <th class="num">@L["Field_Modified"]</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var p in Recent)
+                        {
+                            <tr class="clickable" @onclick="() => Open(p.Id)">
+                                <td><span class="mono">@p.PlanNumber</span></td>
+                                <td>@p.PartName</td>
+                                <td><StatusBadge Status="p.Status" /></td>
+                                <td class="num">@Format.Hours(p.TotalTimeMinutes)</td>
+                                <td class="num muted">@p.ModifiedUtc.ToString("d")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+}
+
+@code {
+    private bool _loading = true;
+    private List<WorkPlan> _plans = new();
+    private int _workCenters;
+
+    private readonly WorkPlanStatus[] _statuses =
+    {
+        WorkPlanStatus.Draft, WorkPlanStatus.Released, WorkPlanStatus.Archived
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        _plans = await Plans.GetAllAsync();
+        _workCenters = (await Centers.GetAllAsync()).Count;
+        _loading = false;
+    }
+
+    private int Count(WorkPlanStatus status) => _plans.Count(p => p.Status == status);
+    private int TotalOperations => _plans.Sum(p => p.OperationCount);
+    private IEnumerable<WorkPlan> Recent => _plans.OrderByDescending(p => p.ModifiedUtc).Take(5);
+
+    private void Open(int id) => Nav.NavigateTo($"work-plans/{id}");
+}
