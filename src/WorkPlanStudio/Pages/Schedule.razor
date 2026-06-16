@@ -1,199 +1,334 @@
 @page "/schedule"
+@using System.Globalization
 @inject IStringLocalizer<SharedResource> L
-@inject WorkPlanSchedulingService Scheduler
+@inject IProductionScheduleService Scheduler
 
-<PageTitle>@L["Schedule_Title"] · WorkPlan Studio</PageTitle>
+<PageTitle>@L["Sched_Title"] · WorkPlan Studio</PageTitle>
 
 <div class="page-head">
     <div>
-        <h1>@L["Schedule_Title"]</h1>
-        <p class="page-sub">@L["Schedule_Subtitle"]</p>
+        <h1>@L["Sched_Title"]</h1>
+        <p class="page-sub">@L["Sched_Subtitle"]</p>
     </div>
+    <button class="btn btn-primary" @onclick="GenerateAsync" disabled="@_running">
+        <svg class="btn-ico" viewBox="0 0 24 24"><path d="M12 3v2m0 14v2m9-9h-2M5 12H3m14.5-6.5-1.4 1.4M7.9 16.1l-1.4 1.4m12 0-1.4-1.4M7.9 7.9 6.5 6.5"/><circle cx="12" cy="12" r="3.2"/></svg>
+        @(_running ? L["Sched_Generating"] : L["Sched_Generate"])
+    </button>
 </div>
 
-<section class="card schedule-controls">
-    <div class="field compact">
-        <span>@L["Schedule_StartDate"]</span>
-        <input class="input" type="date" @bind="_startDate" @bind:format="yyyy-MM-dd" />
-    </div>
-    <label class="field check compact">
-        <input type="checkbox" @bind="_includeDrafts" />
-        <span>@L["Schedule_IncludeDrafts"]</span>
-    </label>
-    <button class="btn btn-primary" @onclick="RecalculateAsync">@L["Schedule_Recalculate"]</button>
-    <span class="schedule-rule">@L["Schedule_Rule"]</span>
-</section>
-
-@if (_loading)
-{
-    <div class="loading-row"><span class="spinner"></span></div>
-}
-else if (_schedule is null || _schedule.Items.Count == 0)
-{
-    <div class="empty-state">
-        <svg viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h16" /><path d="M8 5v6M14 12v6M18 5v6" /></svg>
-        <p>@L["Schedule_Empty"]</p>
-    </div>
-}
-else
-{
-    @if (_schedule.Warnings.Count > 0)
-    {
-        <div class="form-banner warning">
-            @foreach (var warning in _schedule.Warnings)
-            {
-                <div>@warning</div>
-            }
-        </div>
-    }
-
-    <div class="stat-grid schedule-kpis">
-        <div class="stat-card accent-indigo">
-            <div class="stat-top"><span class="stat-value">@_schedule.ScheduledPlans</span></div>
-            <div class="stat-label">@L["Schedule_Plans"]</div>
-        </div>
-        <div class="stat-card accent-green">
-            <div class="stat-top"><span class="stat-value">@_schedule.ScheduledOperations</span></div>
-            <div class="stat-label">@L["Schedule_Operations"]</div>
-        </div>
-        <div class="stat-card accent-amber">
-            <div class="stat-top"><span class="stat-value">@Format.Hours(_schedule.TotalBookedMinutes)</span></div>
-            <div class="stat-label">@L["Schedule_Load"]</div>
-        </div>
-        <div class="stat-card accent-slate">
-            <div class="stat-top"><span class="stat-value">@_schedule.EndAt.ToString("g")</span></div>
-            <div class="stat-label">@L["Schedule_Finish"]</div>
-        </div>
-    </div>
-
-    <section class="card">
-        <div class="card-head">
-            <h2>@L["Schedule_Timeline"]</h2>
-            <span class="muted">@_schedule.StartAt.ToString("g") - @_schedule.EndAt.ToString("g")</span>
-        </div>
+<div class="sched-layout">
+    <section class="card param-card">
+        <div class="card-head"><h2>@L["Sched_Parameters"]</h2></div>
         <div class="card-body">
-            <div class="timeline">
-                @foreach (var group in TimelineGroups)
+            <div class="param-grid">
+                <label class="field">
+                    <span>@L["Sched_DispatchRule"]</span>
+                    <select class="input" @bind="_form.DispatchRule">
+                        @foreach (var r in Enum.GetValues<DispatchRule>())
+                        {
+                            <option value="@r">@DispatchLabel(r)</option>
+                        }
+                    </select>
+                </label>
+
+                <label class="field">
+                    <span>@L["Sched_DueRule"]</span>
+                    <select class="input" @bind="_form.DueDateRule">
+                        @foreach (var r in Enum.GetValues<DueDateRule>())
+                        {
+                            <option value="@r">@DueLabel(r)</option>
+                        }
+                    </select>
+                </label>
+
+                @switch (_form.DueDateRule)
                 {
-                    <div class="timeline-row">
-                        <div class="timeline-label">
-                            <strong>@group.Key.Code</strong>
-                            <span>@group.Key.Name</span>
-                        </div>
-                        <div class="timeline-track">
-                            @foreach (var item in group)
-                            {
-                                <div class="timeline-bar plan-color-@ColorIndex(item)" style="@BarStyle(item)" title="@BarTitle(item)">
-                                    <span>@item.PlanNumber</span>
-                                </div>
-                            }
-                        </div>
-                    </div>
+                    case DueDateRule.TotalWorkContent:
+                        <label class="field">
+                            <span>@L["Sched_TwkFactor"]</span>
+                            <input class="input num" type="number" step="0.1" min="1" @bind="_form.TwkFlowFactor" />
+                        </label>
+                        break;
+                    case DueDateRule.NumberOfOperations:
+                        <label class="field">
+                            <span>@L["Sched_NopMinutes"]</span>
+                            <input class="input num" type="number" min="0" @bind="_form.NopMinutesPerOp" />
+                        </label>
+                        break;
+                    case DueDateRule.EqualSlack:
+                        <label class="field">
+                            <span>@L["Sched_SlackMinutes"]</span>
+                            <input class="input num" type="number" min="0" @bind="_form.SlackMinutes" />
+                        </label>
+                        break;
+                    default:
+                        <label class="field">
+                            <span>@L["Sched_ConMinutes"]</span>
+                            <input class="input num" type="number" min="0" @bind="_form.ConMinutes" />
+                        </label>
+                        break;
                 }
+
+                <label class="field">
+                    <span>@L["Sched_MultiStart"]</span>
+                    <input class="input num" type="number" min="1" max="200" @bind="_form.MultiStartRuns" />
+                </label>
+                <label class="field">
+                    <span>@L["Sched_LocalSearch"]</span>
+                    <input class="input num" type="number" min="0" @bind="_form.LocalSearchMaxSteps" />
+                </label>
+                <label class="field">
+                    <span>@L["Sched_Seed"]</span>
+                    <input class="input num" type="number" @bind="_form.Seed" />
+                </label>
+                <label class="field">
+                    <span>@L["Sched_MinutesPerDay"]</span>
+                    <input class="input num" type="number" min="1" @bind="_form.MinutesPerWorkingDay" />
+                </label>
             </div>
         </div>
     </section>
 
-    <div class="schedule-columns">
-        <section class="card no-pad">
-            <div class="card-head pad"><h2>@L["Schedule_Details"]</h2></div>
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>@L["Field_PlanNumber"]</th>
-                        <th>@L["Field_OperationNo"]</th>
-                        <th>@L["Field_WorkCenter"]</th>
-                        <th>@L["Field_Description"]</th>
-                        <th class="num">@L["Schedule_Start"]</th>
-                        <th class="num">@L["Schedule_End"]</th>
-                        <th class="num">@L["Schedule_Duration"]</th>
-                        <th class="num">@L["Schedule_Queue"]</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var item in _schedule.Items)
-                    {
-                        <tr>
-                            <td><span class="mono">@item.PlanNumber</span></td>
-                            <td>@item.OperationNumber</td>
-                            <td><span class="mono">@item.WorkCenterCode</span></td>
-                            <td>@item.Description</td>
-                            <td class="num">@item.StartAt.ToString("g")</td>
-                            <td class="num">@item.EndAt.ToString("g")</td>
-                            <td class="num">@Format.Hours(item.DurationMinutes)</td>
-                            <td class="num">@Format.Minutes((decimal)item.QueueDelayMinutes)</td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </section>
+    <div class="sched-results">
+        @if (_result is null)
+        {
+            <div class="loading-row"><span class="spinner"></span></div>
+        }
+        else if (!_result.HasData)
+        {
+            <div class="card"><div class="empty-state">
+                <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 4v16"/></svg>
+                <p>@L["Sched_Empty"]</p>
+            </div></div>
+        }
+        else
+        {
+            <div class="stat-grid">
+                <div class="stat-card accent-indigo">
+                    <div class="stat-top"><span class="stat-value">@Hours(_result.Kpis.MakespanSeconds)</span></div>
+                    <div class="stat-label">@L["Sched_KpiMakespan"]</div>
+                </div>
+                <div class="stat-card accent-green">
+                    <div class="stat-top"><span class="stat-value">@Percent(_result.Kpis.OnTimeRate)</span></div>
+                    <div class="stat-label">@L["Sched_KpiOnTime"] · @(_result.Kpis.JobCount - _result.Kpis.LateJobCount)/@_result.Kpis.JobCount</div>
+                </div>
+                <div class="stat-card accent-amber">
+                    <div class="stat-top"><span class="stat-value">@Hours(_result.Kpis.TotalTardinessSeconds)</span></div>
+                    <div class="stat-label">@L["Sched_KpiTardiness"] · @_result.Kpis.LateJobCount @L["Sched_LateJobs"]</div>
+                </div>
+                <div class="stat-card accent-slate">
+                    <div class="stat-top"><span class="stat-value">@Percent(_result.Kpis.AverageUtilization)</span></div>
+                    <div class="stat-label">@L["Sched_KpiUtilization"]</div>
+                </div>
+            </div>
 
-        <section class="card no-pad">
-            <div class="card-head pad"><h2>@L["Schedule_WorkCenterLoad"]</h2></div>
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>@L["Field_WorkCenter"]</th>
-                        <th class="num">@L["Schedule_Load"]</th>
-                        <th class="num">@L["Schedule_Utilization"]</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var center in _schedule.WorkCenters)
-                    {
+            <section class="card">
+                <div class="card-head">
+                    <h2>@L["Sched_Gantt"]</h2>
+                    <div class="gantt-head-meta">
+                        @if (_result!.Kpis.LateJobCount > 0)
+                        {
+                            <span class="gantt-legend"><span class="gantt-legend-swatch late"></span>@L["Sched_Late"]</span>
+                        }
+                        <span class="muted gantt-legend-note">@L["Sched_DayShort"] = @_form.MinutesPerWorkingDay min</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="gantt">
+                        @foreach (var row in _result.Rows)
+                        {
+                            <div class="gantt-row">
+                                <div class="gantt-label" title="@row.WorkCenterName">@row.WorkCenterName</div>
+                                <div class="gantt-track">
+                                    @foreach (var d in DayBoundaries())
+                                    {
+                                        <div class="gantt-grid" style="left:@Pct(d)%"></div>
+                                    }
+                                    @foreach (var bar in row.Bars)
+                                    {
+                                        <div class="@BarCss(bar)"
+                                             style="left:@Pct(bar.StartSeconds)%;width:@BarWidth(bar)%"
+                                             title="@BarTitle(bar)">
+                                            <span>@bar.JobReference</span>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+                        <div class="gantt-axis">
+                            <div class="gantt-label"></div>
+                            <div class="gantt-track">
+                                @foreach (var d in DayBoundaries())
+                                {
+                                    <span class="gantt-tick" style="left:@Pct(d)%">@DayLabel(d)</span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card no-pad">
+                <div class="card-head pad"><h2>@L["Sched_JobsTable"]</h2></div>
+                <table class="data-table">
+                    <thead>
                         <tr>
-                            <td>
-                                <span class="mono">@center.WorkCenterCode</span>
-                                <div class="muted">@center.WorkCenterName</div>
-                            </td>
-                            <td class="num">@Format.Hours(center.BookedMinutes)</td>
-                            <td class="num">@center.UtilizationPercent.ToString("N0")%</td>
+                            <th>@L["Field_PlanNumber"]</th>
+                            <th>@L["Field_PartName"]</th>
+                            <th class="num">@L["Sched_Target"]</th>
+                            <th class="num">@L["Sched_Completion"]</th>
+                            <th class="num">@L["Sched_Lateness"]</th>
+                            <th>@L["Field_Status"]</th>
                         </tr>
-                    }
-                </tbody>
-            </table>
-        </section>
+                    </thead>
+                    <tbody>
+                        @foreach (var j in _result.Jobs)
+                        {
+                            <tr>
+                                <td><span class="color-dot job-color-@j.ColorIndex"></span><span class="mono">@j.Reference</span></td>
+                                <td>@j.PartName</td>
+                                <td class="num">@DayTime(j.DueSeconds)</td>
+                                <td class="num">@DayTime(j.CompletionSeconds)</td>
+                                <td class="num @(j.IsLate ? "late-text" : null)">@Lateness(j.LatenessSeconds)</td>
+                                <td>
+                                    @if (j.IsLate)
+                                    {
+                                        <span class="pill late">@L["Sched_Late"]</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="pill ontime">@L["Sched_OnTime"]</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </section>
+        }
     </div>
-}
+</div>
 
 @code {
-    private bool _loading = true;
-    private DateTime _startDate = DateTime.Today;
-    private bool _includeDrafts;
-    private SchedulingResult? _schedule;
+    private readonly Form _form = new();
+    private ScheduleResult? _result;
+    private bool _running;
 
-    protected override async Task OnInitializedAsync() => await RecalculateAsync();
+    protected override Task OnInitializedAsync() => GenerateAsync();
 
-    private async Task RecalculateAsync()
+    private async Task GenerateAsync()
     {
-        _loading = true;
-        _schedule = await Scheduler.CreateScheduleAsync(new SchedulingOptions
+        _running = true;
+        _result ??= null;
+        StateHasChanged();
+
+        _result = await Scheduler.GenerateAsync(_form.ToParameters());
+
+        _running = false;
+    }
+
+    // ----- display helpers (CSS numbers MUST be invariant; text uses UI culture) -----
+    private long DayLengthSeconds => Math.Max(1, _form.MinutesPerWorkingDay) * 60L;
+
+    private string Pct(long seconds)
+    {
+        long makespan = _result?.MakespanSeconds ?? 0;
+        double pct = makespan <= 0 ? 0 : (double)seconds / makespan * 100.0;
+        return pct.ToString("0.###", CultureInfo.InvariantCulture);
+    }
+
+    private string BarWidth(GanttBar bar)
+    {
+        long makespan = _result?.MakespanSeconds ?? 0;
+        double pct = makespan <= 0 ? 0 : (double)bar.DurationSeconds / makespan * 100.0;
+        return Math.Max(0.6, pct).ToString("0.###", CultureInfo.InvariantCulture);
+    }
+
+    private static string BarCss(GanttBar bar) =>
+        bar.IsLate ? $"gantt-bar job-color-{bar.ColorIndex} late" : $"gantt-bar job-color-{bar.ColorIndex}";
+
+    private string BarTitle(GanttBar bar)
+    {
+        var title = $"{bar.JobReference} · {L["Field_OperationNo"]} {bar.StepNumber} · {Hours(bar.DurationSeconds)}";
+        return bar.IsLate ? $"{title} · {L["Sched_Late"]}" : title;
+    }
+
+    private IEnumerable<long> DayBoundaries()
+    {
+        long makespan = _result?.MakespanSeconds ?? 0;
+        for (long t = DayLengthSeconds; t < makespan; t += DayLengthSeconds)
+            yield return t;
+    }
+
+    private string Hours(long seconds) => Format.Hours(seconds / 60m);
+
+    private string DayLabel(long seconds) => $"{L["Sched_DayShort"]}{seconds / DayLengthSeconds + 1}";
+
+    private string DayTime(long seconds)
+    {
+        long day = seconds / DayLengthSeconds + 1;
+        long within = seconds % DayLengthSeconds;
+        long hh = within / 3600;
+        long mm = within % 3600 / 60;
+        return $"{L["Sched_DayShort"]}{day} {hh:00}:{mm:00}";
+    }
+
+    private string Lateness(long seconds)
+    {
+        if (seconds == 0) return "0";
+        string sign = seconds > 0 ? "+" : "−";
+        return sign + Hours(Math.Abs(seconds));
+    }
+
+    private static string Percent(double rate) => (rate * 100).ToString("0") + " %";
+
+    private string DispatchLabel(DispatchRule r) => r switch
+    {
+        DispatchRule.Fifo => L["Sched_Rule_Fifo"],
+        DispatchRule.ShortestProcessingTime => L["Sched_Rule_Spt"],
+        DispatchRule.LongestProcessingTime => L["Sched_Rule_Lpt"],
+        DispatchRule.EarliestDueDate => L["Sched_Rule_Edd"],
+        DispatchRule.CriticalRatio => L["Sched_Rule_Cr"],
+        DispatchRule.WeightedShortestProcessingTime => L["Sched_Rule_Wspt"],
+        _ => r.ToString()
+    };
+
+    private string DueLabel(DueDateRule r) => r switch
+    {
+        DueDateRule.Explicit => L["Sched_Due_Explicit"],
+        DueDateRule.TotalWorkContent => L["Sched_Due_Twk"],
+        DueDateRule.NumberOfOperations => L["Sched_Due_Nop"],
+        DueDateRule.EqualSlack => L["Sched_Due_Slk"],
+        DueDateRule.ConstantAllowance => L["Sched_Due_Con"],
+        _ => r.ToString()
+    };
+
+    /// <summary>Mutable view-model for the parameter form, projected into immutable engine parameters.</summary>
+    private sealed class Form
+    {
+        public DispatchRule DispatchRule { get; set; } = DispatchRule.EarliestDueDate;
+        public DueDateRule DueDateRule { get; set; } = DueDateRule.TotalWorkContent;
+        public double TwkFlowFactor { get; set; } = 2.0;
+        public int NopMinutesPerOp { get; set; } = 60;
+        public int SlackMinutes { get; set; } = 120;
+        public int ConMinutes { get; set; } = 480;
+        public int MultiStartRuns { get; set; } = 8;
+        public int LocalSearchMaxSteps { get; set; } = 2000;
+        public int Seed { get; set; } = 20260616;
+        public int MinutesPerWorkingDay { get; set; } = 480;
+
+        public SchedulingParameters ToParameters() => new()
         {
-            StartAt = _startDate.Date.AddHours(8),
-            IncludeDrafts = _includeDrafts
-        });
-        _loading = false;
+            DispatchRule = DispatchRule,
+            DueDateRule = DueDateRule,
+            TwkFlowFactor = TwkFlowFactor,
+            NopSecondsPerOp = NopMinutesPerOp * 60L,
+            SlackSeconds = SlackMinutes * 60L,
+            ConstantAllowanceSeconds = ConMinutes * 60L,
+            MultiStartRuns = Math.Max(1, MultiStartRuns),
+            LocalSearchMaxSteps = Math.Max(0, LocalSearchMaxSteps),
+            Seed = Seed,
+            MinutesPerWorkingDay = Math.Max(1, MinutesPerWorkingDay)
+        };
     }
-
-    private IEnumerable<IGrouping<(string Code, string Name), ScheduledOperation>> TimelineGroups =>
-        (_schedule?.Items ?? Array.Empty<ScheduledOperation>())
-        .GroupBy(i => (Code: i.WorkCenterCode, Name: i.WorkCenterName))
-        .OrderBy(g => g.Key.Code);
-
-    private string BarStyle(ScheduledOperation item)
-    {
-        if (_schedule is null)
-            return "";
-
-        var total = Math.Max(1, (_schedule.EndAt - _schedule.StartAt).TotalMinutes);
-        var left = Math.Max(0, (item.StartAt - _schedule.StartAt).TotalMinutes / total * 100);
-        var width = Math.Max(1.8, (item.EndAt - item.StartAt).TotalMinutes / total * 100);
-
-        return string.Create(CultureInfo.InvariantCulture, $"left:{left:0.###}%;width:{width:0.###}%;");
-    }
-
-    private string BarTitle(ScheduledOperation item) =>
-        $"{item.PlanNumber} / {item.OperationNumber}: {item.Description} ({item.StartAt:g} - {item.EndAt:g})";
-
-    private static int ColorIndex(ScheduledOperation item) => item.WorkPlanId % 5 + 1;
 }

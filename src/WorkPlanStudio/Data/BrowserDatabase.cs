@@ -14,9 +14,11 @@ public sealed class BrowserDatabase
     // Path inside the WebAssembly virtual file system.
     private const string DbPath = "/data/workplan.db";
 
-    // Bump when the schema changes so an incompatible stored database is
-    // discarded instead of crashing the app.
-    private const int SchemaVersion = 1;
+    // Bump when the schema OR the seed content changes so a stale stored database
+    // is discarded and re-seeded instead of being reused.
+    // v2: enriched the sample data to seven released plans so the scheduler has a
+    //     non-trivial problem (dispatch rule and seed visibly change the result).
+    private const int SchemaVersion = 2;
 
     private readonly IDbContextFactory<AppDbContext> _factory;
     private readonly IJSRuntime _js;

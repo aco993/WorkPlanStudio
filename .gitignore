@@ -13,10 +13,11 @@ bld/
 [Ll]og/
 [Ll]ogs/
 
-# Visual Studio / Rider / VS Code
+# Visual Studio / Rider / VS Code / Claude Code
 .vs/
 .vscode/
 .idea/
+.claude/
 *.user
 *.suo
 *.userosscache

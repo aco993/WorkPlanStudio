@@ -1,0 +1,80 @@
+name: CI
+
+# Build and test on every pull request. Split into two jobs by what they need:
+#   • engine-tests — the pure scheduling library; no Blazor, no SQLite, no
+#     WebAssembly, so it runs in seconds and also measures code coverage.
+#   • web-tests    — the mapper and bUnit component tests; these reference the
+#     Blazor WASM app, so the job installs the wasm-tools workload to build it.
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  engine-tests:
+    name: Engine tests + coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', 'Directory.Packages.props') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      - name: Test scheduling engine (with coverage)
+        run: >
+          dotnet test tests/WorkPlanStudio.Scheduling.Tests/WorkPlanStudio.Scheduling.Tests.csproj -c Release
+          --coverage --coverage-output-format cobertura --coverage-output coverage.cobertura.xml
+
+      - name: Build coverage report
+        if: always()
+        run: |
+          dotnet tool install --global dotnet-reportgenerator-globaltool
+          reportgenerator -reports:'**/coverage.cobertura.xml' -targetdir:coverage-report -reporttypes:'Html;TextSummary'
+          echo '### Engine code coverage' >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          cat coverage-report/Summary.txt >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage-report
+          if-no-files-found: ignore
+
+  web-tests:
+    name: Mapper & component tests (bUnit)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', 'Directory.Packages.props') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      - name: Install WebAssembly tools (needed to build the referenced app)
+        run: dotnet workload install wasm-tools
+
+      - name: Test mapper & components
+        run: dotnet test tests/WorkPlanStudio.Web.Tests/WorkPlanStudio.Web.Tests.csproj -c Release

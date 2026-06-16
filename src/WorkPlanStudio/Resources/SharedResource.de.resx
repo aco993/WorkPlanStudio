@@ -65,7 +65,6 @@
   <data name="Nav_Dashboard" xml:space="preserve"><value>Übersicht</value></data>
   <data name="Nav_WorkPlans" xml:space="preserve"><value>Arbeitspläne</value></data>
   <data name="Nav_WorkCenters" xml:space="preserve"><value>Arbeitsplätze</value></data>
-  <data name="Nav_Schedule" xml:space="preserve"><value>Kapazitätsplan</value></data>
   <data name="Nav_About" xml:space="preserve"><value>Über</value></data>
 
   <data name="Common_New" xml:space="preserve"><value>Neu</value></data>
@@ -147,26 +146,6 @@
   <data name="WorkCenters_NewTitle" xml:space="preserve"><value>Neuer Arbeitsplatz</value></data>
   <data name="WorkCenters_UsageOps" xml:space="preserve"><value>Arbeitsgänge</value></data>
 
-  <data name="Schedule_Title" xml:space="preserve"><value>Kapazitätsplan</value></data>
-  <data name="Schedule_Subtitle" xml:space="preserve"><value>Freigegebene Arbeitspläne gegen verfügbare Arbeitsplatzkapazität terminieren.</value></data>
-  <data name="Schedule_StartDate" xml:space="preserve"><value>Startdatum</value></data>
-  <data name="Schedule_IncludeDrafts" xml:space="preserve"><value>Entwürfe einbeziehen</value></data>
-  <data name="Schedule_Recalculate" xml:space="preserve"><value>Neu berechnen</value></data>
-  <data name="Schedule_Rule" xml:space="preserve"><value>Regel: 08:00-16:00, Montag-Freitag; Arbeitsgänge behalten die Planreihenfolge und konkurrieren um Arbeitsplatzkapazität.</value></data>
-  <data name="Schedule_Empty" xml:space="preserve"><value>Keine freigegebenen Arbeitspläne mit Arbeitsgängen für die Planung verfügbar.</value></data>
-  <data name="Schedule_Plans" xml:space="preserve"><value>Geplante Arbeitspläne</value></data>
-  <data name="Schedule_Operations" xml:space="preserve"><value>Geplante Arbeitsgänge</value></data>
-  <data name="Schedule_Load" xml:space="preserve"><value>Gebuchte Last</value></data>
-  <data name="Schedule_Finish" xml:space="preserve"><value>Voraussichtliches Ende</value></data>
-  <data name="Schedule_Timeline" xml:space="preserve"><value>Arbeitsplatz-Zeitachse</value></data>
-  <data name="Schedule_Details" xml:space="preserve"><value>Geplante Arbeitsgänge</value></data>
-  <data name="Schedule_WorkCenterLoad" xml:space="preserve"><value>Arbeitsplatzlast</value></data>
-  <data name="Schedule_Start" xml:space="preserve"><value>Start</value></data>
-  <data name="Schedule_End" xml:space="preserve"><value>Ende</value></data>
-  <data name="Schedule_Duration" xml:space="preserve"><value>Dauer</value></data>
-  <data name="Schedule_Queue" xml:space="preserve"><value>Wartezeit</value></data>
-  <data name="Schedule_Utilization" xml:space="preserve"><value>Auslastung</value></data>
-
   <data name="About_Title" xml:space="preserve"><value>Über dieses Projekt</value></data>
   <data name="About_Intro" xml:space="preserve"><value>WorkPlan Studio ist eine kleine Portfolio-Anwendung zur Verwaltung von Fertigungs-Arbeitsplänen: die Folge der Arbeitsgänge zur Herstellung eines Teils, die zugehörigen Arbeitsplätze sowie die daraus resultierenden Zeiten und Kosten.</value></data>
   <data name="About_TechTitle" xml:space="preserve"><value>Technischer Aufbau</value></data>
@@ -191,4 +170,47 @@
 
   <data name="Lang_English" xml:space="preserve"><value>Englisch</value></data>
   <data name="Lang_German" xml:space="preserve"><value>Deutsch</value></data>
+
+  <data name="Nav_Scheduling" xml:space="preserve"><value>Planung</value></data>
+
+  <data name="Sched_Title" xml:space="preserve"><value>Produktionsplanung</value></data>
+  <data name="Sched_Subtitle" xml:space="preserve"><value>Kapazitätsbeschränkte Terminierung freigegebener Arbeitspläne, mit Zielterminen und Verspätungs-Kennzahlen.</value></data>
+  <data name="Sched_Generate" xml:space="preserve"><value>Plan erzeugen</value></data>
+  <data name="Sched_Generating" xml:space="preserve"><value>Wird geplant…</value></data>
+  <data name="Sched_Parameters" xml:space="preserve"><value>Parameter</value></data>
+  <data name="Sched_DispatchRule" xml:space="preserve"><value>Prioritätsregel</value></data>
+  <data name="Sched_DueRule" xml:space="preserve"><value>Zieltermin-Regel</value></data>
+  <data name="Sched_TwkFactor" xml:space="preserve"><value>Durchlauffaktor (× Arbeit)</value></data>
+  <data name="Sched_NopMinutes" xml:space="preserve"><value>Zuschlag / Arbeitsgang (min)</value></data>
+  <data name="Sched_SlackMinutes" xml:space="preserve"><value>Puffer (min)</value></data>
+  <data name="Sched_ConMinutes" xml:space="preserve"><value>Zuschlag (min)</value></data>
+  <data name="Sched_MultiStart" xml:space="preserve"><value>Multi-Start-Läufe</value></data>
+  <data name="Sched_LocalSearch" xml:space="preserve"><value>Lokale-Suche-Schritte</value></data>
+  <data name="Sched_Seed" xml:space="preserve"><value>Startwert</value></data>
+  <data name="Sched_MinutesPerDay" xml:space="preserve"><value>Minuten / Arbeitstag</value></data>
+  <data name="Sched_Rule_Fifo" xml:space="preserve"><value>FIFO — First In, First Out</value></data>
+  <data name="Sched_Rule_Spt" xml:space="preserve"><value>SPT — kürzeste Bearbeitungszeit</value></data>
+  <data name="Sched_Rule_Lpt" xml:space="preserve"><value>LPT — längste Bearbeitungszeit</value></data>
+  <data name="Sched_Rule_Edd" xml:space="preserve"><value>EDD — frühester Termin</value></data>
+  <data name="Sched_Rule_Cr" xml:space="preserve"><value>CR — kritisches Verhältnis</value></data>
+  <data name="Sched_Rule_Wspt" xml:space="preserve"><value>WSPT — gewichtete kürzeste Zeit</value></data>
+  <data name="Sched_Due_Explicit" xml:space="preserve"><value>Explizit / konstanter Rückfall</value></data>
+  <data name="Sched_Due_Twk" xml:space="preserve"><value>TWK — gesamter Arbeitsinhalt</value></data>
+  <data name="Sched_Due_Nop" xml:space="preserve"><value>NOP — Anzahl Arbeitsgänge</value></data>
+  <data name="Sched_Due_Slk" xml:space="preserve"><value>SLK — gleicher Puffer</value></data>
+  <data name="Sched_Due_Con" xml:space="preserve"><value>CON — konstanter Zuschlag</value></data>
+  <data name="Sched_KpiMakespan" xml:space="preserve"><value>Durchlaufzeit</value></data>
+  <data name="Sched_KpiOnTime" xml:space="preserve"><value>Termintreu</value></data>
+  <data name="Sched_KpiTardiness" xml:space="preserve"><value>Gesamtverspätung</value></data>
+  <data name="Sched_KpiUtilization" xml:space="preserve"><value>Ø Auslastung</value></data>
+  <data name="Sched_LateJobs" xml:space="preserve"><value>verspätet</value></data>
+  <data name="Sched_Gantt" xml:space="preserve"><value>Plan (Gantt)</value></data>
+  <data name="Sched_JobsTable" xml:space="preserve"><value>Aufträge &amp; Ziele</value></data>
+  <data name="Sched_Target" xml:space="preserve"><value>Ziel</value></data>
+  <data name="Sched_Completion" xml:space="preserve"><value>Fertig</value></data>
+  <data name="Sched_Lateness" xml:space="preserve"><value>Verspätung</value></data>
+  <data name="Sched_Late" xml:space="preserve"><value>Verspätet</value></data>
+  <data name="Sched_OnTime" xml:space="preserve"><value>Termintreu</value></data>
+  <data name="Sched_DayShort" xml:space="preserve"><value>T</value></data>
+  <data name="Sched_Empty" xml:space="preserve"><value>Keine freigegebenen Arbeitspläne. Setzen Sie den Status eines Plans auf „Freigegeben“.</value></data>
 </root>

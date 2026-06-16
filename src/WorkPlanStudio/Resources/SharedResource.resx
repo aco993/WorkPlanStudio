@@ -65,7 +65,6 @@
   <data name="Nav_Dashboard" xml:space="preserve"><value>Dashboard</value></data>
   <data name="Nav_WorkPlans" xml:space="preserve"><value>Work Plans</value></data>
   <data name="Nav_WorkCenters" xml:space="preserve"><value>Work Centers</value></data>
-  <data name="Nav_Schedule" xml:space="preserve"><value>Schedule</value></data>
   <data name="Nav_About" xml:space="preserve"><value>About</value></data>
 
   <data name="Common_New" xml:space="preserve"><value>New</value></data>
@@ -147,26 +146,6 @@
   <data name="WorkCenters_NewTitle" xml:space="preserve"><value>New work center</value></data>
   <data name="WorkCenters_UsageOps" xml:space="preserve"><value>operations</value></data>
 
-  <data name="Schedule_Title" xml:space="preserve"><value>Capacity Schedule</value></data>
-  <data name="Schedule_Subtitle" xml:space="preserve"><value>Sequence released work plans against available work-center capacity.</value></data>
-  <data name="Schedule_StartDate" xml:space="preserve"><value>Start date</value></data>
-  <data name="Schedule_IncludeDrafts" xml:space="preserve"><value>Include draft plans</value></data>
-  <data name="Schedule_Recalculate" xml:space="preserve"><value>Recalculate</value></data>
-  <data name="Schedule_Rule" xml:space="preserve"><value>Rule: 08:00-16:00, Monday-Friday; operations keep plan order and compete for work-center capacity.</value></data>
-  <data name="Schedule_Empty" xml:space="preserve"><value>No released work plans with operations are available for scheduling.</value></data>
-  <data name="Schedule_Plans" xml:space="preserve"><value>Scheduled plans</value></data>
-  <data name="Schedule_Operations" xml:space="preserve"><value>Scheduled operations</value></data>
-  <data name="Schedule_Load" xml:space="preserve"><value>Booked load</value></data>
-  <data name="Schedule_Finish" xml:space="preserve"><value>Projected finish</value></data>
-  <data name="Schedule_Timeline" xml:space="preserve"><value>Work-center timeline</value></data>
-  <data name="Schedule_Details" xml:space="preserve"><value>Scheduled operations</value></data>
-  <data name="Schedule_WorkCenterLoad" xml:space="preserve"><value>Work-center load</value></data>
-  <data name="Schedule_Start" xml:space="preserve"><value>Start</value></data>
-  <data name="Schedule_End" xml:space="preserve"><value>End</value></data>
-  <data name="Schedule_Duration" xml:space="preserve"><value>Duration</value></data>
-  <data name="Schedule_Queue" xml:space="preserve"><value>Queue</value></data>
-  <data name="Schedule_Utilization" xml:space="preserve"><value>Utilization</value></data>
-
   <data name="About_Title" xml:space="preserve"><value>About this project</value></data>
   <data name="About_Intro" xml:space="preserve"><value>WorkPlan Studio is a small portfolio application for managing manufacturing routings (work plans): the sequence of operations needed to produce a part, the work centers they run on, and the resulting time and cost.</value></data>
   <data name="About_TechTitle" xml:space="preserve"><value>How it is built</value></data>
@@ -191,4 +170,47 @@
 
   <data name="Lang_English" xml:space="preserve"><value>English</value></data>
   <data name="Lang_German" xml:space="preserve"><value>German</value></data>
+
+  <data name="Nav_Scheduling" xml:space="preserve"><value>Scheduling</value></data>
+
+  <data name="Sched_Title" xml:space="preserve"><value>Production Scheduling</value></data>
+  <data name="Sched_Subtitle" xml:space="preserve"><value>Finite-capacity schedule for released work plans, with target dates and tardiness KPIs.</value></data>
+  <data name="Sched_Generate" xml:space="preserve"><value>Generate schedule</value></data>
+  <data name="Sched_Generating" xml:space="preserve"><value>Scheduling…</value></data>
+  <data name="Sched_Parameters" xml:space="preserve"><value>Parameters</value></data>
+  <data name="Sched_DispatchRule" xml:space="preserve"><value>Dispatch rule</value></data>
+  <data name="Sched_DueRule" xml:space="preserve"><value>Target-date rule</value></data>
+  <data name="Sched_TwkFactor" xml:space="preserve"><value>Flow factor (× work)</value></data>
+  <data name="Sched_NopMinutes" xml:space="preserve"><value>Allowance / operation (min)</value></data>
+  <data name="Sched_SlackMinutes" xml:space="preserve"><value>Slack (min)</value></data>
+  <data name="Sched_ConMinutes" xml:space="preserve"><value>Allowance (min)</value></data>
+  <data name="Sched_MultiStart" xml:space="preserve"><value>Multi-start runs</value></data>
+  <data name="Sched_LocalSearch" xml:space="preserve"><value>Local-search steps</value></data>
+  <data name="Sched_Seed" xml:space="preserve"><value>Seed</value></data>
+  <data name="Sched_MinutesPerDay" xml:space="preserve"><value>Minutes / working day</value></data>
+  <data name="Sched_Rule_Fifo" xml:space="preserve"><value>FIFO — first in, first out</value></data>
+  <data name="Sched_Rule_Spt" xml:space="preserve"><value>SPT — shortest processing time</value></data>
+  <data name="Sched_Rule_Lpt" xml:space="preserve"><value>LPT — longest processing time</value></data>
+  <data name="Sched_Rule_Edd" xml:space="preserve"><value>EDD — earliest due date</value></data>
+  <data name="Sched_Rule_Cr" xml:space="preserve"><value>CR — critical ratio</value></data>
+  <data name="Sched_Rule_Wspt" xml:space="preserve"><value>WSPT — weighted shortest processing</value></data>
+  <data name="Sched_Due_Explicit" xml:space="preserve"><value>Explicit / constant fallback</value></data>
+  <data name="Sched_Due_Twk" xml:space="preserve"><value>TWK — total work content</value></data>
+  <data name="Sched_Due_Nop" xml:space="preserve"><value>NOP — number of operations</value></data>
+  <data name="Sched_Due_Slk" xml:space="preserve"><value>SLK — equal slack</value></data>
+  <data name="Sched_Due_Con" xml:space="preserve"><value>CON — constant allowance</value></data>
+  <data name="Sched_KpiMakespan" xml:space="preserve"><value>Makespan</value></data>
+  <data name="Sched_KpiOnTime" xml:space="preserve"><value>On time</value></data>
+  <data name="Sched_KpiTardiness" xml:space="preserve"><value>Total tardiness</value></data>
+  <data name="Sched_KpiUtilization" xml:space="preserve"><value>Avg. utilization</value></data>
+  <data name="Sched_LateJobs" xml:space="preserve"><value>late</value></data>
+  <data name="Sched_Gantt" xml:space="preserve"><value>Schedule (Gantt)</value></data>
+  <data name="Sched_JobsTable" xml:space="preserve"><value>Jobs &amp; targets</value></data>
+  <data name="Sched_Target" xml:space="preserve"><value>Target</value></data>
+  <data name="Sched_Completion" xml:space="preserve"><value>Completion</value></data>
+  <data name="Sched_Lateness" xml:space="preserve"><value>Lateness</value></data>
+  <data name="Sched_Late" xml:space="preserve"><value>Late</value></data>
+  <data name="Sched_OnTime" xml:space="preserve"><value>On time</value></data>
+  <data name="Sched_DayShort" xml:space="preserve"><value>D</value></data>
+  <data name="Sched_Empty" xml:space="preserve"><value>No released work plans to schedule. Set a plan's status to “Released” to include it.</value></data>
 </root>

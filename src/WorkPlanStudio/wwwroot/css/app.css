@@ -263,7 +263,6 @@ select.input { cursor: pointer; }
 .field-error { font-size: .76rem; color: var(--red); }
 .form-banner { padding: .65rem 1.2rem; font-size: .85rem; }
 .form-banner.error { background: var(--red-soft); color: var(--red); border-bottom: 1px solid #f3c9c9; }
-.form-banner.warning { background: var(--amber-soft); color: var(--amber); border: 1px solid #f5d58a; border-radius: var(--radius-sm); margin-bottom: 1rem; }
 
 /* ----- Editor ----- */
 .editor-grid { display: grid; grid-template-columns: 1fr 300px; gap: 1rem; margin-bottom: 1rem; align-items: start; }
@@ -281,54 +280,6 @@ select.input { cursor: pointer; }
 .op-table .narrow { width: 70px; }
 .op-table .wc-col { width: 230px; }
 .op-table .input.mini.num { width: 80px; }
-
-/* ----- Scheduling ----- */
-.schedule-controls {
-    display: flex;
-    align-items: flex-end;
-    gap: .9rem;
-    padding: 1rem 1.2rem;
-    margin-bottom: 1rem;
-    flex-wrap: wrap;
-}
-.field.compact { width: 180px; }
-.field.check.compact { width: auto; padding-bottom: .55rem; }
-.schedule-rule { color: var(--text-muted); font-size: .84rem; margin-left: auto; padding-bottom: .5rem; }
-.schedule-kpis .stat-value { font-size: 1.35rem; }
-.schedule-columns { display: grid; grid-template-columns: 1fr 320px; gap: 1rem; align-items: start; margin-top: 1rem; }
-.timeline { display: flex; flex-direction: column; gap: .75rem; }
-.timeline-row { display: grid; grid-template-columns: 180px 1fr; gap: .8rem; align-items: center; }
-.timeline-label { min-width: 0; display: flex; flex-direction: column; gap: .15rem; font-size: .86rem; }
-.timeline-label span { color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.timeline-track {
-    position: relative;
-    height: 38px;
-    background: var(--surface-2);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    overflow: hidden;
-}
-.timeline-bar {
-    position: absolute;
-    top: 6px;
-    height: 24px;
-    min-width: 18px;
-    border-radius: 6px;
-    color: #fff;
-    display: flex;
-    align-items: center;
-    padding: 0 .45rem;
-    font-size: .72rem;
-    font-weight: 700;
-    box-shadow: var(--shadow-sm);
-    overflow: hidden;
-}
-.timeline-bar span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.plan-color-1 { background: #4f46e5; }
-.plan-color-2 { background: #15803d; }
-.plan-color-3 { background: #b45309; }
-.plan-color-4 { background: #0f766e; }
-.plan-color-5 { background: #be123c; }
 
 /* ----- Empty / loading ----- */
 .empty-state { text-align: center; padding: 3.5rem 1rem; color: var(--text-muted); }
@@ -371,10 +322,9 @@ select.input { cursor: pointer; }
 /* ----- Mobile drawer ----- */
 .scrim { display: none; }
 @media (max-width: 920px) {
-    .dash-columns, .editor-grid, .about-grid, .schedule-columns { grid-template-columns: 1fr; }
+    .dash-columns, .editor-grid, .about-grid { grid-template-columns: 1fr; }
     .stat-grid { grid-template-columns: repeat(2, 1fr); }
     .summary-card { position: static; }
-    .schedule-rule { margin-left: 0; flex-basis: 100%; }
 }
 @media (max-width: 720px) {
     .sidebar { position: fixed; left: 0; top: 0; z-index: 60; transform: translateX(-100%); transition: transform .2s ease; }
@@ -385,8 +335,56 @@ select.input { cursor: pointer; }
     .page-head { flex-direction: column; }
     .form-grid { grid-template-columns: 1fr; }
     .data-table { font-size: .84rem; }
-    .timeline-row { grid-template-columns: 1fr; }
-    .field.compact { width: 100%; }
+}
+
+/* ----- Scheduling ----- */
+.sched-layout { display: grid; grid-template-columns: 290px 1fr; gap: 1rem; align-items: start; }
+.param-card { position: sticky; top: 76px; }
+.param-grid { display: flex; flex-direction: column; gap: .85rem; }
+.sched-results { display: flex; flex-direction: column; gap: 1rem; min-width: 0; }
+.sched-results .stat-grid { margin-bottom: 0; }
+.sched-results .stat-value { font-size: 1.5rem; }
+
+.btn-ico { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+
+/* Gantt chart */
+.gantt { display: flex; flex-direction: column; gap: 6px; overflow-x: auto; }
+.gantt-row { display: flex; align-items: center; gap: .8rem; }
+.gantt-label { width: 150px; flex-shrink: 0; font-size: .8rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gantt-track { position: relative; flex: 1; height: 26px; background: var(--surface-2); border-radius: 6px; min-width: 340px; }
+.gantt-grid { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--border-strong); opacity: .7; }
+.gantt-bar { position: absolute; top: 3px; bottom: 3px; min-width: 3px; border-radius: 4px; display: flex; align-items: center; padding: 0 .4rem; overflow: hidden; box-shadow: var(--shadow-sm); cursor: default; }
+.gantt-bar span { font-size: .7rem; font-weight: 600; color: #fff; white-space: nowrap; text-shadow: 0 1px 1px rgba(0, 0, 0, .3); }
+.gantt-axis { display: flex; align-items: center; gap: .8rem; margin-top: 2px; height: 16px; }
+.gantt-axis .gantt-track { height: 16px; background: none; min-width: 340px; }
+.gantt-tick { position: absolute; top: 0; transform: translateX(-50%); font-size: .68rem; color: var(--text-soft); white-space: nowrap; }
+.gantt-legend-note { font-size: .76rem; }
+
+/* a late job's bars get a red ring so tightening the targets is immediately visible */
+.gantt-bar.late { outline: 2px solid var(--red); outline-offset: -2px; }
+.gantt-head-meta { display: flex; align-items: center; gap: .9rem; }
+.gantt-legend { display: inline-flex; align-items: center; gap: .35rem; font-size: .76rem; color: var(--red); font-weight: 600; }
+.gantt-legend-swatch { width: 12px; height: 12px; border-radius: 3px; }
+.gantt-legend-swatch.late { background: var(--red-soft); outline: 2px solid var(--red); outline-offset: -2px; }
+
+/* Job colour palette (shared by Gantt bars and the table dots) */
+.job-color-0 { background: #4f46e5; }
+.job-color-1 { background: #0891b2; }
+.job-color-2 { background: #16a34a; }
+.job-color-3 { background: #d97706; }
+.job-color-4 { background: #db2777; }
+.job-color-5 { background: #7c3aed; }
+.job-color-6 { background: #dc2626; }
+.job-color-7 { background: #0d9488; }
+.color-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: .55rem; vertical-align: middle; }
+
+.pill.ontime { background: var(--green-soft); color: var(--green); }
+.pill.late { background: var(--red-soft); color: var(--red); }
+.late-text { color: var(--red); font-weight: 600; }
+
+@media (max-width: 920px) {
+    .sched-layout { grid-template-columns: 1fr; }
+    .param-card { position: static; }
 }
 
 /* ============================================================
