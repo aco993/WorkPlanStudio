@@ -41,8 +41,7 @@ adapt it to my machine.
 
 Give me the exact commands to: initialise git, make the first commit, create the
 repository and push. Then:
-- list every place I must replace the "your-username" placeholder (search the repo
-  for it) and give me the corrected lines;
+- confirm the repository and live-demo URLs in the README match my GitHub account;
 - tell me how to enable the GitHub Pages live demo;
 - tell me how to confirm the CI and Deploy workflows went green.
 Stop and wait for me after each major step.

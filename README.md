@@ -1,4 +1,4 @@
-![WorkPlan Studio](docs/banner.svg)
+[![WorkPlan Studio](docs/banner.svg)](https://aco993.github.io/WorkPlanStudio/)
 
 # WorkPlan Studio
 
@@ -7,7 +7,7 @@
 [![.NET](https://img.shields.io/badge/.NET-10-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
 [![Blazor WebAssembly](https://img.shields.io/badge/Blazor-WebAssembly-512BD4?logo=blazor&logoColor=white)](https://learn.microsoft.com/aspnet/core/blazor/)
 [![EF Core + SQLite](https://img.shields.io/badge/EF%20Core-SQLite%20in%20browser-003B57?logo=sqlite&logoColor=white)](https://learn.microsoft.com/ef/core/)
-[![CI](https://github.com/your-username/WorkPlanStudio/actions/workflows/ci.yml/badge.svg)](.github/workflows/ci.yml)
+[![CI](https://github.com/aco993/WorkPlanStudio/actions/workflows/ci.yml/badge.svg)](https://github.com/aco993/WorkPlanStudio/actions/workflows/ci.yml)
 [![Tests](https://img.shields.io/badge/tests-91%20passing-brightgreen)](docs/TESTING.md)
 [![Coverage](https://img.shields.io/badge/engine%20coverage-98%25-brightgreen)](docs/TESTING.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
@@ -16,8 +16,7 @@
 
 The whole thing — including a **real relational database** — runs entirely in the browser as a static WebAssembly app. There is no backend, no API and no server-side storage: it can be hosted for free on GitHub Pages and still behaves like a proper data-driven application.
 
-> 🌐 **Live demo:** `https://<your-username>.github.io/WorkPlanStudio/`
-> _(available once GitHub Pages is enabled — see [Deployment](#deployment))_
+> 🌐 **Live demo:** [https://aco993.github.io/WorkPlanStudio/](https://aco993.github.io/WorkPlanStudio/)
 
 The interface is available in **English and German**, switchable at runtime.
 
@@ -109,7 +108,6 @@ Beyond the feature itself, the repository is wired up the way a production codeb
 - **Layered tests + coverage** — 91 tests across four layers, ~98 % engine line coverage, all run in CI.
 - **Architecture enforced by a test** — the engine cannot accrue a Blazor / EF / JS dependency.
 - **Decisions recorded** — see the [Architecture Decision Records](docs/adr).
-- **Dependency hygiene** — [Dependabot](.github/dependabot.yml) keeps NuGet and GitHub Actions current.
 - **CI/CD** — per-layer test workflows on every PR plus a test-gated GitHub Pages deploy.
 
 ## Project structure
