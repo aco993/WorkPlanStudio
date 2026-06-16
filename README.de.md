@@ -1,4 +1,4 @@
-![WorkPlan Studio](docs/banner.de.svg)
+[![WorkPlan Studio](docs/banner.de.svg)](https://aco993.github.io/WorkPlanStudio/)
 
 # WorkPlan Studio
 
@@ -7,7 +7,7 @@
 [![.NET](https://img.shields.io/badge/.NET-10-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
 [![Blazor WebAssembly](https://img.shields.io/badge/Blazor-WebAssembly-512BD4?logo=blazor&logoColor=white)](https://learn.microsoft.com/aspnet/core/blazor/)
 [![EF Core + SQLite](https://img.shields.io/badge/EF%20Core-SQLite%20im%20Browser-003B57?logo=sqlite&logoColor=white)](https://learn.microsoft.com/ef/core/)
-[![CI](https://github.com/your-username/WorkPlanStudio/actions/workflows/ci.yml/badge.svg)](.github/workflows/ci.yml)
+[![CI](https://github.com/aco993/WorkPlanStudio/actions/workflows/ci.yml/badge.svg)](https://github.com/aco993/WorkPlanStudio/actions/workflows/ci.yml)
 [![Tests](https://img.shields.io/badge/Tests-91%20bestanden-brightgreen)](docs/TESTING.de.md)
 [![Abdeckung](https://img.shields.io/badge/Engine--Abdeckung-98%25-brightgreen)](docs/TESTING.de.md)
 [![Lizenz: MIT](https://img.shields.io/badge/Lizenz-MIT-green.svg)](LICENSE)
@@ -16,8 +16,7 @@
 
 Das Ganze — inklusive einer **echten relationalen Datenbank** — läuft vollständig im Browser als statische WebAssembly-App. Es gibt kein Backend, keine API und keine serverseitige Speicherung: die App lässt sich kostenlos über GitHub Pages hosten und verhält sich dennoch wie eine vollwertige datengetriebene Anwendung.
 
-> 🌐 **Live-Demo:** `https://<your-username>.github.io/WorkPlanStudio/`
-> _(verfügbar, sobald GitHub Pages aktiviert ist — siehe [Deployment](#deployment))_
+> 🌐 **Live-Demo:** [https://aco993.github.io/WorkPlanStudio/](https://aco993.github.io/WorkPlanStudio/)
 
 Die Oberfläche ist in **Englisch und Deutsch** verfügbar und zur Laufzeit umschaltbar.
 
@@ -108,7 +107,6 @@ Die Beispieldaten liefern **sieben freigegebene Pläne**, die um dieselben Masch
 - **Geschichtete Tests + Abdeckung** — 91 Tests über vier Schichten, ~98 % Zeilenabdeckung der Engine, alle in der CI.
 - **Architektur per Test erzwungen** — die Engine kann keine Blazor-/EF-/JS-Abhängigkeit ansammeln.
 - **Entscheidungen dokumentiert** — siehe die [Architecture Decision Records](docs/adr).
-- **Abhängigkeits-Hygiene** — [Dependabot](.github/dependabot.yml) hält NuGet und GitHub Actions aktuell.
 - **CI/CD** — Test-Workflows je Schicht bei jedem PR plus ein test-gesichertes GitHub-Pages-Deploy.
 
 ## Projektstruktur

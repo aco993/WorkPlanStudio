@@ -17,25 +17,15 @@ git commit -m "Initial commit: WorkPlan Studio"
 The repo already ships a `.gitignore` (build output, `artifacts/`, `.claude/`) and a
 `.gitattributes` (line-ending normalisation), so nothing unwanted is committed.
 
-## 2. Replace the placeholders
+## 2. Repository URLs
 
-Two files reference a `your-username` placeholder — replace it with your GitHub
-username. Search for it first:
+This published copy is configured for:
 
-```bash
-git grep -n "your-username"
-```
+- Repository: `https://github.com/aco993/WorkPlanStudio`
+- Live demo: `https://aco993.github.io/WorkPlanStudio/`
 
-You'll find it in **`README.md`** and **`README.de.md`**:
-
-- the **CI badge** URL — `https://github.com/your-username/WorkPlanStudio/...`
-- the **live-demo** URL — `https://<your-username>.github.io/WorkPlanStudio/`
-
-Fix them, then:
-
-```bash
-git commit -am "Set GitHub username in README"
-```
+If you fork or copy this project to a different account, update the README badge
+and live-demo URLs to match the new owner.
 
 ## 3. Create the repository and push
 
@@ -49,7 +39,7 @@ gh repo create WorkPlanStudio --public --source=. --remote=origin --push
 then:
 
 ```bash
-git remote add origin https://github.com/<your-username>/WorkPlanStudio.git
+git remote add origin https://github.com/aco993/WorkPlanStudio.git
 git push -u origin main
 ```
 
@@ -58,7 +48,7 @@ git push -u origin main
 1. On GitHub, open **Settings → Pages**.
 2. Set **Source = GitHub Actions**.
 3. The `deploy.yml` workflow runs on every push to `main`; once it finishes, the app
-   is live at `https://<your-username>.github.io/WorkPlanStudio/`.
+   is live at `https://aco993.github.io/WorkPlanStudio/`.
 
 The deploy is **gated on the engine tests** — if they fail, it won't publish.
 
