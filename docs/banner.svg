@@ -21,7 +21,7 @@
 
   <!-- title + tagline -->
   <text x="202" y="138" font-size="50" font-weight="700" fill="#ffffff">WorkPlan Studio</text>
-  <text x="204" y="174" font-size="21" fill="#aab1c0">Manufacturing routings &amp; work plans — a .NET 10 Blazor portfolio app</text>
+  <text x="204" y="174" font-size="21" fill="#aab1c0">Production scheduling for manufacturing routings — a .NET 10 Blazor portfolio app</text>
 
   <!-- tech badges -->
   <g fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.16)">

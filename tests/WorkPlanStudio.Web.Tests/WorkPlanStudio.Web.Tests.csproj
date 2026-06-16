@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Tests that need the Blazor app assembly: the EF→domain mapping (ScheduleMapper)
+    and the Schedule page rendered with bUnit. These reference the WebAssembly app,
+    so unlike the engine tests they do build the app — hence a separate project and
+    a separate (wasm-enabled) CI job.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>WorkPlanStudio.Web.Tests</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="bunit.web" />
+    <PackageReference Include="xunit.v3.mtp-v2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\WorkPlanStudio\WorkPlanStudio.csproj" />
+  </ItemGroup>
+
+</Project>

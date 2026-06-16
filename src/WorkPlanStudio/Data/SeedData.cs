@@ -57,7 +57,7 @@ public static class SeedData
             new WorkPlan
             {
                 PlanNumber = "WP-1003", PartNumber = "HSG-31-205", PartName = "Gearbox housing",
-                Revision = "C", Status = WorkPlanStatus.Draft, LotSize = 40,
+                Revision = "C", Status = WorkPlanStatus.Released, LotSize = 40,
                 CreatedUtc = new DateTime(2026, 5, 6, 14, 45, 0, DateTimeKind.Utc),
                 ModifiedUtc = new DateTime(2026, 6, 1, 9, 15, 0, DateTimeKind.Utc),
                 Operations =
@@ -80,6 +80,63 @@ public static class SeedData
                     new Operation { OperationNumber = 20, Description = "Turn to diameter",  WorkCenter = lathe, SetupTimeMinutes = 20m, TimePerPieceMinutes = 1.4m },
                     new Operation { OperationNumber = 30, Description = "Grind & polish",    WorkCenter = grind, SetupTimeMinutes = 18m, TimePerPieceMinutes = 1.1m, Remarks = "Ra 0.4" },
                     new Operation { OperationNumber = 40, Description = "Sample inspection", WorkCenter = insp,  SetupTimeMinutes = 5m,  TimePerPieceMinutes = 0.4m },
+                }
+            },
+            new WorkPlan
+            {
+                PlanNumber = "WP-1005", PartNumber = "FLG-44-330", PartName = "Flange ring",
+                Revision = "A", Status = WorkPlanStatus.Released, LotSize = 80,
+                CreatedUtc = new DateTime(2026, 3, 11, 8, 20, 0, DateTimeKind.Utc),
+                ModifiedUtc = new DateTime(2026, 5, 19, 11, 5, 0, DateTimeKind.Utc),
+                Operations =
+                {
+                    new Operation { OperationNumber = 10, Description = "Saw blank",           WorkCenter = saw,   SetupTimeMinutes = 8m,  TimePerPieceMinutes = 0.6m },
+                    new Operation { OperationNumber = 20, Description = "Turn faces & bore",   WorkCenter = lathe, SetupTimeMinutes = 40m, TimePerPieceMinutes = 5.0m },
+                    new Operation { OperationNumber = 30, Description = "Drill bolt circle",   WorkCenter = drill, SetupTimeMinutes = 15m, TimePerPieceMinutes = 1.2m },
+                    new Operation { OperationNumber = 40, Description = "Final inspection",    WorkCenter = insp,  SetupTimeMinutes = 5m,  TimePerPieceMinutes = 0.8m },
+                }
+            },
+            new WorkPlan
+            {
+                PlanNumber = "WP-1006", PartNumber = "SPN-17-088", PartName = "Drive spindle",
+                Revision = "B", Status = WorkPlanStatus.Released, LotSize = 60,
+                CreatedUtc = new DateTime(2026, 4, 2, 7, 45, 0, DateTimeKind.Utc),
+                ModifiedUtc = new DateTime(2026, 5, 28, 9, 30, 0, DateTimeKind.Utc),
+                Operations =
+                {
+                    new Operation { OperationNumber = 10, Description = "Cut bar to length",   WorkCenter = saw,   SetupTimeMinutes = 10m, TimePerPieceMinutes = 0.7m },
+                    new Operation { OperationNumber = 20, Description = "Turn & thread",       WorkCenter = lathe, SetupTimeMinutes = 45m, TimePerPieceMinutes = 6.5m, Remarks = "M20×1.5" },
+                    new Operation { OperationNumber = 30, Description = "Grind journals",      WorkCenter = grind, SetupTimeMinutes = 25m, TimePerPieceMinutes = 3.0m },
+                    new Operation { OperationNumber = 40, Description = "Inspect runout",      WorkCenter = insp,  SetupTimeMinutes = 6m,  TimePerPieceMinutes = 1.0m },
+                }
+            },
+            new WorkPlan
+            {
+                PlanNumber = "WP-1007", PartNumber = "CVR-09-201", PartName = "Cover plate",
+                Revision = "A", Status = WorkPlanStatus.Released, LotSize = 200,
+                CreatedUtc = new DateTime(2026, 2, 24, 13, 10, 0, DateTimeKind.Utc),
+                ModifiedUtc = new DateTime(2026, 5, 30, 15, 40, 0, DateTimeKind.Utc),
+                Operations =
+                {
+                    new Operation { OperationNumber = 10, Description = "Shear blank",         WorkCenter = saw,   SetupTimeMinutes = 7m,  TimePerPieceMinutes = 0.4m },
+                    new Operation { OperationNumber = 20, Description = "Mill pocket",         WorkCenter = mill,  SetupTimeMinutes = 30m, TimePerPieceMinutes = 2.4m },
+                    new Operation { OperationNumber = 30, Description = "Drill & tap holes",   WorkCenter = drill, SetupTimeMinutes = 12m, TimePerPieceMinutes = 0.8m },
+                    new Operation { OperationNumber = 40, Description = "Deburr & inspect",    WorkCenter = insp,  SetupTimeMinutes = 4m,  TimePerPieceMinutes = 0.5m },
+                }
+            },
+            new WorkPlan
+            {
+                PlanNumber = "WP-1008", PartNumber = "HUB-26-145", PartName = "Coupling hub",
+                Revision = "C", Status = WorkPlanStatus.Released, LotSize = 120,
+                CreatedUtc = new DateTime(2026, 3, 30, 10, 0, 0, DateTimeKind.Utc),
+                ModifiedUtc = new DateTime(2026, 6, 3, 8, 50, 0, DateTimeKind.Utc),
+                Operations =
+                {
+                    new Operation { OperationNumber = 10, Description = "Saw billet",          WorkCenter = saw,   SetupTimeMinutes = 9m,  TimePerPieceMinutes = 0.6m },
+                    new Operation { OperationNumber = 20, Description = "Turn outer profile",  WorkCenter = lathe, SetupTimeMinutes = 38m, TimePerPieceMinutes = 4.0m },
+                    new Operation { OperationNumber = 30, Description = "Mill keyway & slots", WorkCenter = mill,  SetupTimeMinutes = 28m, TimePerPieceMinutes = 2.6m },
+                    new Operation { OperationNumber = 40, Description = "Press bushings",      WorkCenter = asm,   SetupTimeMinutes = 12m, TimePerPieceMinutes = 2.0m },
+                    new Operation { OperationNumber = 50, Description = "Final inspection",    WorkCenter = insp,  SetupTimeMinutes = 6m,  TimePerPieceMinutes = 0.9m },
                 }
             }
         );

@@ -1,0 +1,23 @@
+<Project>
+
+  <!--
+    Settings shared by every project in the solution. Centralising them keeps the
+    individual .csproj files small and guarantees consistent language version,
+    nullable reference types and a strict, warning-free build.
+  -->
+  <PropertyGroup>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+
+    <!-- Reproducible builds + treat warnings as errors so nothing rots silently. -->
+    <Deterministic>true</Deterministic>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+
+    <!-- WASM0001 is an unavoidable, benign warning from relinking native SQLite
+         into WebAssembly (varargs in e_sqlite3); it must not fail the build. -->
+    <WarningsNotAsErrors>$(WarningsNotAsErrors);WASM0001</WarningsNotAsErrors>
+  </PropertyGroup>
+
+</Project>

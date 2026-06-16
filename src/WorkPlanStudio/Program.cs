@@ -25,7 +25,7 @@ builder.Services.AddDbContextFactory<AppDbContext>(options =>
 builder.Services.AddSingleton<BrowserDatabase>();
 builder.Services.AddScoped<WorkPlanService>();
 builder.Services.AddScoped<WorkCenterService>();
-builder.Services.AddScoped<WorkPlanSchedulingService>();
+builder.Services.AddScoped<IProductionScheduleService, ProductionScheduleService>();
 
 var host = builder.Build();
 

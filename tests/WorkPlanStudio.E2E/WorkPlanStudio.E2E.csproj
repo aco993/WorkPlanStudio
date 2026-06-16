@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    End-to-end tests: drive a real Chromium browser against the running app with
+    Playwright. Black-box — references no project, only an HTTP URL (E2E_BASE_URL,
+    default http://localhost:5235). The server is started by the developer or the
+    e2e.yml workflow; these tests just navigate and assert. Screenshots are written
+    to E2E_ARTIFACTS for the CI workflow to upload.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>WorkPlanStudio.E2E</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Playwright" />
+    <PackageReference Include="xunit.v3.mtp-v2" />
+  </ItemGroup>
+
+</Project>
