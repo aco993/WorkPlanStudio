@@ -109,6 +109,30 @@ Die Beispieldaten liefern **sieben freigegebene Pläne**, die um dieselben Masch
 - **Entscheidungen dokumentiert** — siehe die [Architecture Decision Records](docs/adr).
 - **CI/CD** — Test-Workflows je Schicht bei jedem PR plus ein test-gesichertes GitHub-Pages-Deploy.
 
+## Was dieses Projekt zeigt
+
+Dies ist ein öffentliches **Lern- und Portfolio-Projekt** — es nutzt bewusst eine
+generische Fertigungs-Domäne und fiktive Daten und teilt keinen Code mit einem
+proprietären System. Es soll zeigen, *wie* ich baue, nicht nur, dass ein Feature
+funktioniert:
+
+| Bereich | Wo zu finden | Was es zeigt |
+| --- | --- | --- |
+| **Clean Architecture** | `src/WorkPlanStudio.Scheduling` vs. App | ein reiner Domänenkern hinter einer *erzwungenen* Abhängigkeitsgrenze |
+| **Algorithmen** | `SchedulingEngine`, `DispatchScheduler`, `LocalSearch` | endliche Kapazitätsplanung, Prioritätsregeln, lokale Suche |
+| **Determinismus & Korrektheit** | `DeterministicRandom`, `DeterminismTests` | reproduzierbare Ergebnisse, durch Golden-Value-Tests fixiert |
+| **Teststrategie** | `tests/`, [`docs/TESTING.de.md`](docs/TESTING.de.md) | vier Schichten von Unit bis End-to-End, plus ein Architektur-Test |
+| **Modernes .NET** | `Directory.*.props`, `.editorconfig` | .NET 10, Nullable, Analyzer, Warnings-as-Errors, zentrale Pakete |
+| **Front-End** | `Pages/Schedule.razor`, `wwwroot/css` | Blazor WebAssembly, ein handgeschriebenes Design-System, ein Gantt-Diagramm |
+| **Data Engineering** | `Data/BrowserDatabase.cs` | eine echte relationale DB (EF Core + SQLite) im Browser |
+| **Internationalisierung** | `Resources/`, `CultureSelector` | vollständige EN/DE-Lokalisierung mit kulturkorrekter Formatierung |
+| **Dokumentation** | `docs/`, ADRs, `AGENTS.md` | Entscheidungen dokumentiert, nicht nur Code geschrieben |
+| **KI-gestützte Entwicklung** | `AGENTS.md`, [`docs/CODEX.md`](docs/CODEX.md) | das Repo ist darauf ausgelegt, mit KI-Agenten gebaut *und geprüft* zu werden |
+| **DevOps** | `.github/workflows` | CI je Schicht und ein test-gesichertes Deploy |
+
+Wenig Zeit? Der schnellste Rundgang ist `AGENTS.md` → `SchedulingEngine.cs` →
+`DeterminismTests.cs` → `ScheduleMapper.cs` → `Pages/Schedule.razor`.
+
 ## Projektstruktur
 
 ```
