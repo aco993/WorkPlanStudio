@@ -110,6 +110,30 @@ Beyond the feature itself, the repository is wired up the way a production codeb
 - **Decisions recorded** — see the [Architecture Decision Records](docs/adr).
 - **CI/CD** — per-layer test workflows on every PR plus a test-gated GitHub Pages deploy.
 
+## What this project demonstrates
+
+This is a public **learning and portfolio** project — it deliberately uses a
+generic manufacturing domain and fictitious data, and shares no code with any
+proprietary system. The point is to show *how* I build, not just that a feature
+works:
+
+| Area | Where to look | What it shows |
+| --- | --- | --- |
+| **Clean architecture** | `src/WorkPlanStudio.Scheduling` vs the app | a pure domain core behind an *enforced* dependency boundary |
+| **Algorithms** | `SchedulingEngine`, `DispatchScheduler`, `LocalSearch` | finite-capacity scheduling, dispatch rules, local-search optimisation |
+| **Determinism & correctness** | `DeterministicRandom`, `DeterminismTests` | reproducible results pinned by golden-value tests |
+| **Testing strategy** | `tests/`, [`docs/TESTING.md`](docs/TESTING.md) | four layers from unit to end-to-end, plus an architecture test |
+| **Modern .NET** | `Directory.*.props`, `.editorconfig` | .NET 10, nullable, analyzers, warnings-as-errors, central packages |
+| **Front-end** | `Pages/Schedule.razor`, `wwwroot/css` | Blazor WebAssembly, a hand-written design system, a Gantt chart |
+| **Data engineering** | `Data/BrowserDatabase.cs` | a real relational DB (EF Core + SQLite) running client-side |
+| **Internationalisation** | `Resources/`, `CultureSelector` | full EN/DE localization with culture-correct formatting |
+| **Documentation** | `docs/`, ADRs, `AGENTS.md` | decisions recorded, not just code written |
+| **AI-assisted development** | `AGENTS.md`, [`docs/CODEX.md`](docs/CODEX.md) | the repo is set up to be built *and reviewed* with AI agents |
+| **DevOps** | `.github/workflows` | per-layer CI and a test-gated deploy |
+
+Short on time? The fastest tour is `AGENTS.md` → `SchedulingEngine.cs` →
+`DeterminismTests.cs` → `ScheduleMapper.cs` → `Pages/Schedule.razor`.
+
 ## Project structure
 
 ```
