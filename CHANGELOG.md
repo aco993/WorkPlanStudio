@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Schedule assistant** — a deterministic, on-device explanation of each
+  scheduling run (the bottleneck work center, why each job is late, and one
+  *computed* recommendation), rendered as localized EN/DE narration. Plus an
+  optional **bring-your-own-key** AI narrator behind a provider abstraction that
+  falls back to the built-in explanation on any error. The key is stored only in
+  the browser. See [`docs/AI-ASSISTANT.md`](docs/AI-ASSISTANT.md) and
+  [ADR 0005](docs/adr/0005-explainable-scheduling-and-optional-ai.md).
+
+### Changed
+
+- Suppressed one transitive NuGet advisory (GHSA-2m69-gcr7-jv3q — native SQLite
+  pulled in by EF Core) with a documented justification in `Directory.Build.props`;
+  the security audit stays strict for every other package.
+
 ## [0.1.0] — 2026-07-08
 
 Initial public release.

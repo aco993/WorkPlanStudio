@@ -29,6 +29,7 @@ Die Oberfläche ist in **Englisch und Deutsch** verfügbar und zur Laufzeit umsc
 - 🏭 **Arbeitsplätze** — Stammdaten mit Stundensätzen und Kostenstellen, samt Schutz gegen das Löschen eines Arbeitsplatzes, der noch von Arbeitsgängen verwendet wird.
 - 📊 **Dashboard** — Kennzahlen, ein Statusverteilungs-Balken und die zuletzt geänderten Pläne.
 - 🗓️ **Produktionsplanung** — ein kapazitätsbeschränkter Planer, der jedem freigegebenen Plan einen Zieltermin zuweist und seine Arbeitsgänge über die Arbeitsplätze einplant: sechs Prioritätsregeln, konfigurierbare Zieltermin-Vergabe, Multi-Start- und Lokalsuche-Optimierung, ein Gantt-Diagramm und Termintreue-/Verspätungs-Kennzahlen. Deterministisch und durch Tests abgedeckt.
+- 🤖 **Planungs-Assistent** — erklärt jeden Lauf in einfacher Sprache (der Engpass-Arbeitsplatz, warum ein Auftrag zu spät ist, eine *berechnete* Empfehlung), **auf dem Gerät** und ohne Schlüssel. Ein optionaler AI-Erzähler mit eigenem API-Schlüssel kann sie umformulieren, mit sauberem Fallback auf die eingebaute Erklärung. Siehe [`docs/AI-ASSISTANT.md`](docs/AI-ASSISTANT.md).
 - 🌍 **Zweisprachige Oberfläche (EN / DE)** — vollständige Lokalisierung über `IStringLocalizer` und `.resx`-Ressourcen, inklusive kulturkorrekter Zahlen-, Datums- und Währungsformatierung.
 - 💾 **Echte Datenbank im Browser** — EF Core spricht mit einer SQLite-Datenbank, die nach WebAssembly kompiliert und im `localStorage` persistiert wird, sodass die Daten Seiten-Neuladungen überstehen.
 - 📱 **Responsiv** — funktioniert vom breiten Desktop bis zum mobilen Drawer-Layout.
@@ -90,6 +91,7 @@ Die Beispieldaten liefern **sieben freigegebene Pläne**, die um dieselben Masch
 | --- | --- | --- |
 | Projektübersicht | [README.md](README.md) | dieses README |
 | Planungs-Algorithmus | [docs/SCHEDULING.md](docs/SCHEDULING.md) | [docs/SCHEDULING.de.md](docs/SCHEDULING.de.md) |
+| Planungs-Assistent (KI) | [docs/AI-ASSISTANT.md](docs/AI-ASSISTANT.md) | — |
 | Teststrategie | [docs/TESTING.md](docs/TESTING.md) | [docs/TESTING.de.md](docs/TESTING.de.md) |
 | Entscheidungsprotokolle (ADR) | [docs/adr](docs/adr) | — |
 | Mitwirken | [CONTRIBUTING.md](CONTRIBUTING.md) | — |

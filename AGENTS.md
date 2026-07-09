@@ -32,9 +32,11 @@ localisation sit around it. Full picture: [README.md](README.md).
 | Path | What |
 | --- | --- |
 | `src/WorkPlanStudio.Scheduling/` | the pure engine (Inputs, Parameters, Core, Evaluation, Outputs, `SchedulingEngine.cs`) |
+| `src/WorkPlanStudio.Scheduling/Explain/` | the deterministic `ScheduleExplainer` (structured, language-neutral) |
 | `src/WorkPlanStudio/` | the Blazor app (Models, Data, Services, Pages, Layout, Resources, wwwroot) |
 | `src/WorkPlanStudio/Services/ScheduleMapper.cs` | the EF→engine boundary (the one `decimal`→seconds spot) |
-| `src/WorkPlanStudio/Pages/Schedule.razor` | the scheduling UI (parameters, Gantt, KPIs) |
+| `src/WorkPlanStudio/Services/Assistant/` | the schedule assistant: rule-based (default) + optional BYOK AI narrator ([docs](docs/AI-ASSISTANT.md)) |
+| `src/WorkPlanStudio/Pages/Schedule.razor` | the scheduling UI (parameters, Gantt, KPIs, assistant) |
 | `tests/WorkPlanStudio.Scheduling.Tests/` | engine unit + architecture tests |
 | `tests/WorkPlanStudio.Web.Tests/` | mapper + bUnit component tests |
 | `tests/WorkPlanStudio.E2E/` | Playwright end-to-end |
@@ -69,6 +71,9 @@ E2E (Playwright) needs the app running + a browser — see [docs/TESTING.md](doc
 ## If you change…
 
 - …**scheduling behaviour** → add/extend engine tests and update `docs/SCHEDULING.md`.
+- …the **schedule explanation / AI narration** → keep the engine explanation
+  deterministic (the AI only *rephrases* facts, never invents them); see
+  `docs/AI-ASSISTANT.md`. Never commit an API key.
 - …the **EF model or seed data** → bump `SchemaVersion` in `Data/BrowserDatabase.cs`
   so stored databases are re-seeded.
 - …a **UI string** → update both `.resx` files.
