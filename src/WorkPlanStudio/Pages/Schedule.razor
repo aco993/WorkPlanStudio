@@ -2,6 +2,8 @@
 @using System.Globalization
 @inject IStringLocalizer<SharedResource> L
 @inject IProductionScheduleService Scheduler
+@inject ScheduleAssistant Assistant
+@inject IAssistantConfig AssistantConfig
 
 <PageTitle>@L["Sched_Title"] · WorkPlan Studio</PageTitle>
 
@@ -205,26 +207,148 @@
                     </tbody>
                 </table>
             </section>
+
+            <section class="card assistant-card">
+                <div class="card-head">
+                    <div class="assistant-head-left">
+                        <h2>@L["Sched_Ai_Title"]</h2>
+                        @if (_narration is not null)
+                        {
+                            <span class="pill @(_narration.Source == NarrationSource.Ai ? "ai" : "off")">@_narration.SourceLabel</span>
+                        }
+                    </div>
+                    <div class="assistant-actions">
+                        @if (_aiEnabled)
+                        {
+                            <button class="btn btn-outline btn-sm" @onclick="AskAiAsync" disabled="@_aiBusy">
+                                @(_aiBusy ? L["Sched_Ai_Thinking"] : L["Sched_Ai_AskAi"])
+                            </button>
+                        }
+                        <button class="icon-btn" aria-label="@L["Sched_Ai_Configure"]" title="@L["Sched_Ai_Configure"]" @onclick="OpenAiSettingsAsync">
+                            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3m-4.9-7.1-2.1 2.1m-8 8-2.1 2.1m0-12.2 2.1 2.1m8 8 2.1 2.1"/></svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="assistant-sub muted">@L["Sched_Ai_Subtitle"]</p>
+                    @if (_narration is null)
+                    {
+                        <div class="loading-row"><span class="spinner"></span></div>
+                    }
+                    else
+                    {
+                        <ul class="assistant-lines">
+                            @foreach (var line in _narration.Lines)
+                            {
+                                <li class="assistant-line @ToneClass(line.Tone)">
+                                    <span class="assistant-dot"></span>
+                                    <span>@line.Text</span>
+                                </li>
+                            }
+                        </ul>
+                        @if (_narration.Note is not null)
+                        {
+                            <p class="assistant-note">@_narration.Note</p>
+                        }
+                    }
+                </div>
+            </section>
         }
     </div>
 </div>
+
+<Modal @bind-Visible="_showAiSettings" Title="@L["Sched_Ai_SettingsTitle"]">
+    <ChildContent>
+        <div class="form-grid">
+            <label class="field check wide">
+                <input type="checkbox" @bind="_aiForm.Enabled" />
+                <span>@L["Sched_Ai_EnableLabel"]</span>
+            </label>
+            <label class="field wide">
+                <span>@L["Sched_Ai_Endpoint"]</span>
+                <input class="input" @bind="_aiForm.Endpoint" />
+            </label>
+            <label class="field">
+                <span>@L["Sched_Ai_Model"]</span>
+                <input class="input" @bind="_aiForm.Model" />
+            </label>
+            <label class="field">
+                <span>@L["Sched_Ai_ApiKey"]</span>
+                <input class="input" type="password" autocomplete="off" @bind="_aiForm.ApiKey" />
+            </label>
+            <p class="assistant-privacy wide">@L["Sched_Ai_Privacy"]</p>
+        </div>
+    </ChildContent>
+    <Footer>
+        <button class="btn btn-ghost" @onclick="() => _showAiSettings = false">@L["Common_Cancel"]</button>
+        <button class="btn btn-primary" @onclick="SaveAiSettingsAsync">@L["Common_Save"]</button>
+    </Footer>
+</Modal>
 
 @code {
     private readonly Form _form = new();
     private ScheduleResult? _result;
     private bool _running;
 
-    protected override Task OnInitializedAsync() => GenerateAsync();
+    // ----- assistant state -----
+    private readonly AiForm _aiForm = new();
+    private NarrationResult? _narration;
+    private bool _aiEnabled;
+    private bool _aiBusy;
+    private bool _showAiSettings;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _aiEnabled = await Assistant.IsAiEnabledAsync();
+        await GenerateAsync();
+    }
 
     private async Task GenerateAsync()
     {
         _running = true;
-        _result ??= null;
+        _narration = null;
         StateHasChanged();
 
         _result = await Scheduler.GenerateAsync(_form.ToParameters());
-
         _running = false;
+
+        // Instant, offline, deterministic explanation of the run just produced.
+        if (_result.Explanation is not null)
+            _narration = await Assistant.ExplainAsync(_result.Explanation);
+    }
+
+    private async Task AskAiAsync()
+    {
+        if (_result?.Explanation is null)
+            return;
+
+        _aiBusy = true;
+        StateHasChanged();
+        _narration = await Assistant.ExplainWithAiAsync(_result.Explanation);
+        _aiBusy = false;
+    }
+
+    private async Task OpenAiSettingsAsync()
+    {
+        var settings = await AssistantConfig.LoadAsync();
+        _aiForm.Enabled = settings.Enabled;
+        _aiForm.Endpoint = settings.Endpoint;
+        _aiForm.Model = settings.Model;
+        _aiForm.ApiKey = settings.ApiKey;
+        _showAiSettings = true;
+    }
+
+    private async Task SaveAiSettingsAsync()
+    {
+        await AssistantConfig.SaveAsync(new AssistantSettings
+        {
+            Enabled = _aiForm.Enabled,
+            Endpoint = _aiForm.Endpoint.Trim(),
+            Model = _aiForm.Model.Trim(),
+            ApiKey = _aiForm.ApiKey.Trim()
+        });
+        _aiEnabled = await Assistant.IsAiEnabledAsync();
+        _showAiSettings = false;
     }
 
     // ----- display helpers (CSS numbers MUST be invariant; text uses UI culture) -----
@@ -282,6 +406,13 @@
 
     private static string Percent(double rate) => (rate * 100).ToString("0") + " %";
 
+    private static string ToneClass(FindingTone tone) => tone switch
+    {
+        FindingTone.Good => "tone-good",
+        FindingTone.Info => "tone-info",
+        _ => "tone-warning"
+    };
+
     private string DispatchLabel(DispatchRule r) => r switch
     {
         DispatchRule.Fifo => L["Sched_Rule_Fifo"],
@@ -330,5 +461,14 @@
             Seed = Seed,
             MinutesPerWorkingDay = Math.Max(1, MinutesPerWorkingDay)
         };
+    }
+
+    /// <summary>Mutable view-model for the AI assistant settings dialog.</summary>
+    private sealed class AiForm
+    {
+        public bool Enabled { get; set; }
+        public string Endpoint { get; set; } = "https://api.openai.com/v1";
+        public string Model { get; set; } = "gpt-4o-mini";
+        public string ApiKey { get; set; } = "";
     }
 }

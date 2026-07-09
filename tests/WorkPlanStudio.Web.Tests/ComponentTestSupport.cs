@@ -17,6 +17,20 @@ internal sealed class FakeScheduleService : IProductionScheduleService
     }
 }
 
+/// <summary>A test double for the assistant config that returns fixed settings.</summary>
+internal sealed class FakeAssistantConfig : IAssistantConfig
+{
+    public AssistantSettings Settings { get; set; } = AssistantSettings.Default;
+
+    public ValueTask<AssistantSettings> LoadAsync() => ValueTask.FromResult(Settings);
+
+    public Task SaveAsync(AssistantSettings settings)
+    {
+        Settings = settings;
+        return Task.CompletedTask;
+    }
+}
+
 /// <summary>
 /// A localizer that echoes the resource key. Component tests assert on structure
 /// and keys, not on translated copy, so this keeps them independent of the .resx.
@@ -44,12 +58,26 @@ internal static class Sample
             new JobRow(1, "WP-1", "Drive shaft", 0, DueSeconds: 5000, CompletionSeconds: 600, LatenessSeconds: -4400, IsLate: false),
             new JobRow(2, "WP-2", "Bracket",     1, DueSeconds: 5000, CompletionSeconds: 1200, LatenessSeconds: -3800, IsLate: false),
         ],
-        MakespanSeconds: 1200, MinutesPerWorkingDay: 480, LocalSearchSteps: 0);
+        MakespanSeconds: 1200, MinutesPerWorkingDay: 480, LocalSearchSteps: 0)
+    {
+        Explanation = new ScheduleExplanation(
+            new ScheduleSummary(JobCount: 2, OnTimeCount: 2, MakespanSeconds: 1200, TotalTardinessSeconds: 0, AverageUtilization: 0.8),
+            new BottleneckFinding(1, "SAW-10 — Cut-off Saw", 0.8, 1),
+            [],
+            new ScheduleRecommendation(RecommendationKind.AlreadyOnTime, DispatchRule.EarliestDueDate, null, 0, 0))
+    };
 
     public static ScheduleResult WithLateJob() => new(
         HasData: true,
         Kpis: new ScheduleKpis(MakespanSeconds: 600, OnTimeRate: 0.0, TotalTardinessSeconds: 300, AverageUtilization: 1.0, LateJobCount: 1, JobCount: 1),
         Rows: [new GanttRow("SAW-10 — Cut-off Saw", [new GanttBar(1, "WP-1", 0, 1, 0, 600, IsLate: true)])],
         Jobs: [new JobRow(1, "WP-1", "Drive shaft", 0, DueSeconds: 300, CompletionSeconds: 600, LatenessSeconds: 300, IsLate: true)],
-        MakespanSeconds: 600, MinutesPerWorkingDay: 480, LocalSearchSteps: 0);
+        MakespanSeconds: 600, MinutesPerWorkingDay: 480, LocalSearchSteps: 0)
+    {
+        Explanation = new ScheduleExplanation(
+            new ScheduleSummary(JobCount: 1, OnTimeCount: 0, MakespanSeconds: 600, TotalTardinessSeconds: 300, AverageUtilization: 1.0),
+            new BottleneckFinding(1, "SAW-10 — Cut-off Saw", 1.0, 1),
+            [new LateJobFinding(1, "WP-1", 300, 200, "SAW-10 — Cut-off Saw")],
+            new ScheduleRecommendation(RecommendationKind.SwitchDispatchRule, DispatchRule.LongestProcessingTime, DispatchRule.ShortestProcessingTime, 300, 0))
+    };
 }

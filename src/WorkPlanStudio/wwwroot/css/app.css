@@ -420,3 +420,18 @@ select.input { cursor: pointer; }
 .loading-progress circle:last-child { stroke: var(--primary); stroke-dasharray: calc(3.141 * var(--blazor-load-percentage, 0%) * 0.8), 500%; transition: stroke-dasharray 0.05s ease-in-out; }
 .loading-progress-text { position: absolute; text-align: center; font-weight: bold; inset: calc(20vh + 3.25rem) 0 auto 0.2rem; color: var(--text-muted); }
 .loading-progress-text:after { content: var(--blazor-load-percentage-text, "Loading"); }
+
+/* ----- Schedule assistant ----- */
+.assistant-head-left { display: flex; align-items: center; gap: .6rem; }
+.assistant-actions { display: flex; align-items: center; gap: .5rem; }
+.btn-sm { padding: .35rem .7rem; font-size: .82rem; }
+.pill.ai { background: var(--primary-soft); color: var(--primary); }
+.assistant-sub { font-size: .84rem; margin-bottom: .9rem; }
+.assistant-lines { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .6rem; }
+.assistant-line { display: flex; gap: .6rem; align-items: baseline; font-size: .9rem; line-height: 1.45; }
+.assistant-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; margin-top: .45em; background: var(--slate); }
+.assistant-line.tone-good .assistant-dot { background: var(--green); }
+.assistant-line.tone-info .assistant-dot { background: var(--primary); }
+.assistant-line.tone-warning .assistant-dot { background: var(--amber); }
+.assistant-note { margin-top: .9rem; padding: .5rem .7rem; font-size: .82rem; color: var(--amber); background: var(--amber-soft); border-radius: var(--radius-sm); }
+.assistant-privacy { font-size: .8rem; color: var(--text-muted); line-height: 1.4; margin: 0; }

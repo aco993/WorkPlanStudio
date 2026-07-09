@@ -27,6 +27,12 @@ builder.Services.AddScoped<WorkPlanService>();
 builder.Services.AddScoped<WorkCenterService>();
 builder.Services.AddScoped<IProductionScheduleService, ProductionScheduleService>();
 
+// Schedule assistant: an always-on rule-based narrator plus an optional,
+// bring-your-own-key AI one behind the same façade (see docs/AI-ASSISTANT.md).
+builder.Services.AddScoped<RuleBasedNarrator>();
+builder.Services.AddScoped<IAssistantConfig, AssistantSettingsService>();
+builder.Services.AddScoped<ScheduleAssistant>();
+
 var host = builder.Build();
 
 // Apply the language the user picked last time (stored in the browser).

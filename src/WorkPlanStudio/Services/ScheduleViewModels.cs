@@ -1,3 +1,5 @@
+using WorkPlanStudio.Scheduling;
+
 namespace WorkPlanStudio.Services;
 
 /// <summary>Everything the scheduling page needs to render one run.</summary>
@@ -10,6 +12,13 @@ public sealed record ScheduleResult(
     int MinutesPerWorkingDay,
     int LocalSearchSteps)
 {
+    /// <summary>
+    /// The structured, deterministic explanation of this run (bottleneck, late jobs,
+    /// recommendation), or <c>null</c> when there is nothing to explain. Consumed by
+    /// the assistant to produce the narration shown on the page.
+    /// </summary>
+    public ScheduleExplanation? Explanation { get; init; }
+
     /// <summary>The result shown when there is nothing to schedule.</summary>
     public static ScheduleResult Empty(int minutesPerWorkingDay) =>
         new(false, new ScheduleKpis(0, 1, 0, 0, 0, 0), [], [], 0, minutesPerWorkingDay, 0);
