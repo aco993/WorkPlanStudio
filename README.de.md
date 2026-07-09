@@ -1,4 +1,4 @@
-[![WorkPlan Studio](docs/banner.de.svg)](https://aco993.github.io/WorkPlanStudio/)
+![WorkPlan Studio](docs/banner.de.svg)
 
 # WorkPlan Studio
 
@@ -7,8 +7,8 @@
 [![.NET](https://img.shields.io/badge/.NET-10-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
 [![Blazor WebAssembly](https://img.shields.io/badge/Blazor-WebAssembly-512BD4?logo=blazor&logoColor=white)](https://learn.microsoft.com/aspnet/core/blazor/)
 [![EF Core + SQLite](https://img.shields.io/badge/EF%20Core-SQLite%20im%20Browser-003B57?logo=sqlite&logoColor=white)](https://learn.microsoft.com/ef/core/)
-[![CI](https://github.com/aco993/WorkPlanStudio/actions/workflows/ci.yml/badge.svg)](https://github.com/aco993/WorkPlanStudio/actions/workflows/ci.yml)
-[![Tests](https://img.shields.io/badge/Tests-91%20bestanden-brightgreen)](docs/TESTING.de.md)
+[![CI](https://github.com/your-username/WorkPlanStudio/actions/workflows/ci.yml/badge.svg)](.github/workflows/ci.yml)
+[![Tests](https://img.shields.io/badge/Tests-113%20bestanden-brightgreen)](docs/TESTING.de.md)
 [![Abdeckung](https://img.shields.io/badge/Engine--Abdeckung-98%25-brightgreen)](docs/TESTING.de.md)
 [![Lizenz: MIT](https://img.shields.io/badge/Lizenz-MIT-green.svg)](LICENSE)
 
@@ -16,7 +16,8 @@
 
 Das Ganze — inklusive einer **echten relationalen Datenbank** — läuft vollständig im Browser als statische WebAssembly-App. Es gibt kein Backend, keine API und keine serverseitige Speicherung: die App lässt sich kostenlos über GitHub Pages hosten und verhält sich dennoch wie eine vollwertige datengetriebene Anwendung.
 
-> 🌐 **Live-Demo:** [https://aco993.github.io/WorkPlanStudio/](https://aco993.github.io/WorkPlanStudio/)
+> 🌐 **Live-Demo:** `https://<your-username>.github.io/WorkPlanStudio/`
+> _(verfügbar, sobald GitHub Pages aktiviert ist — siehe [Deployment](#deployment))_
 
 Die Oberfläche ist in **Englisch und Deutsch** verfügbar und zur Laufzeit umschaltbar.
 
@@ -58,7 +59,7 @@ Einige Entscheidungen heben es vom Spielzeug zur Referenz:
 
 - **Deterministisch.** Alle Zeiten sind ganzzahlige Sekunden und der Zufall stammt aus einem kleinen PRNG mit festem Algorithmus, sodass derselbe Seed auf dem Desktop, in der CI und im Browser einen bit-identischen Plan liefert.
 - **Per Konstruktion zulässig.** Die Lokalsuche permutiert die *Prioritätsreihenfolge* der Aufträge und plant neu ein, sodass jeder bewertete Kandidat ein gültiger Plan ist.
-- **Auf jeder Ebene getestet.** ~90 Tests über vier Schichten — Engine-Unit-Tests, ein Architektur-Test, der die Pure-Library-Grenze *erzwingt*, EF→Domain-Mapping-Tests, bUnit-Komponententests der Seite und Playwright-End-to-End-Tests in einem echten Browser.
+- **Auf jeder Ebene getestet.** ~110 Tests — Engine-Unit-Tests, **eigenschaftsbasierte Invarianten-Tests** (CsCheck erzeugt hunderte zufällige Probleme und prüft, dass Machbarkeit, Determinismus und die „nie schlechter als die Regel"-Garantie gelten), ein Architektur-Test, der die Pure-Library-Grenze *erzwingt*, EF→Domain-Mapping-Tests, bUnit-Komponententests der Seite und Playwright-End-to-End-Tests in einem echten Browser.
 
 Siehe [`docs/SCHEDULING.de.md`](docs/SCHEDULING.de.md) für die Algorithmus-Beschreibung und [`docs/TESTING.de.md`](docs/TESTING.de.md) für die Teststrategie.
 
@@ -82,7 +83,7 @@ Die Beispieldaten liefern **sieben freigegebene Pläne**, die um dieselben Masch
 | Lokalisierung | `Microsoft.Extensions.Localization`, `IStringLocalizer`, `.resx` |
 | Styling | Handgeschriebenes CSS-Designsystem (CSS Custom Properties) |
 | Planung | Reine C#-Domänenbibliothek — kapazitätsbeschränktes Dispatching + Zieltermin-Vergabe |
-| Tests | xUnit v3 (Microsoft Testing Platform), bUnit-Komponenten, Playwright-E2E |
+| Tests | xUnit v3 (Microsoft Testing Platform), CsCheck-Property-Tests, bUnit-Komponenten, Playwright-E2E |
 | CI / Hosting | GitHub Actions — geschichtete Test-Workflows + test-gesichertes GitHub-Pages-Deploy |
 
 ## Dokumentation
@@ -106,9 +107,10 @@ Die Beispieldaten liefern **sieben freigegebene Pläne**, die um dieselben Masch
 - **Strikte Builds** — Nullable Reference Types, .NET-Analyzer und **Warnungen als Fehler** (`Directory.Build.props`).
 - **Central Package Management** — jede NuGet-Version in einer [`Directory.Packages.props`](Directory.Packages.props).
 - **Einheitlicher Stil** — eine umfassende [`.editorconfig`](.editorconfig) und Zeilenende-Normalisierung über [`.gitattributes`](.gitattributes).
-- **Geschichtete Tests + Abdeckung** — 91 Tests über vier Schichten, ~98 % Zeilenabdeckung der Engine, alle in der CI.
+- **Geschichtete Tests + Abdeckung** — 113 Tests über vier Schichten (plus eigenschaftsbasierte Invarianten-Tests), ~98 % Zeilenabdeckung der Engine, alle in der CI.
 - **Architektur per Test erzwungen** — die Engine kann keine Blazor-/EF-/JS-Abhängigkeit ansammeln.
 - **Entscheidungen dokumentiert** — siehe die [Architecture Decision Records](docs/adr).
+- **Abhängigkeits-Hygiene** — [Dependabot](.github/dependabot.yml) hält NuGet und GitHub Actions aktuell.
 - **CI/CD** — Test-Workflows je Schicht bei jedem PR plus ein test-gesichertes GitHub-Pages-Deploy.
 
 ## Was dieses Projekt zeigt

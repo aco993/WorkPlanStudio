@@ -1,4 +1,4 @@
-[![WorkPlan Studio](docs/banner.svg)](https://aco993.github.io/WorkPlanStudio/)
+![WorkPlan Studio](docs/banner.svg)
 
 # WorkPlan Studio
 
@@ -7,8 +7,8 @@
 [![.NET](https://img.shields.io/badge/.NET-10-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
 [![Blazor WebAssembly](https://img.shields.io/badge/Blazor-WebAssembly-512BD4?logo=blazor&logoColor=white)](https://learn.microsoft.com/aspnet/core/blazor/)
 [![EF Core + SQLite](https://img.shields.io/badge/EF%20Core-SQLite%20in%20browser-003B57?logo=sqlite&logoColor=white)](https://learn.microsoft.com/ef/core/)
-[![CI](https://github.com/aco993/WorkPlanStudio/actions/workflows/ci.yml/badge.svg)](https://github.com/aco993/WorkPlanStudio/actions/workflows/ci.yml)
-[![Tests](https://img.shields.io/badge/tests-91%20passing-brightgreen)](docs/TESTING.md)
+[![CI](https://github.com/your-username/WorkPlanStudio/actions/workflows/ci.yml/badge.svg)](.github/workflows/ci.yml)
+[![Tests](https://img.shields.io/badge/tests-113%20passing-brightgreen)](docs/TESTING.md)
 [![Coverage](https://img.shields.io/badge/engine%20coverage-98%25-brightgreen)](docs/TESTING.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
@@ -16,7 +16,8 @@
 
 The whole thing — including a **real relational database** — runs entirely in the browser as a static WebAssembly app. There is no backend, no API and no server-side storage: it can be hosted for free on GitHub Pages and still behaves like a proper data-driven application.
 
-> 🌐 **Live demo:** [https://aco993.github.io/WorkPlanStudio/](https://aco993.github.io/WorkPlanStudio/)
+> 🌐 **Live demo:** `https://<your-username>.github.io/WorkPlanStudio/`
+> _(available once GitHub Pages is enabled — see [Deployment](#deployment))_
 
 The interface is available in **English and German**, switchable at runtime.
 
@@ -58,7 +59,7 @@ A few choices make it portfolio-grade rather than a toy:
 
 - **Deterministic.** All time is integer seconds and randomness comes from a small fixed-algorithm PRNG, so the same seed yields a bit-for-bit identical schedule on the desktop, in CI and in the browser.
 - **Feasible by construction.** Local search perturbs the job *priority order* and re-dispatches, so every candidate it evaluates is a valid schedule.
-- **Tested at every level.** ~90 tests across four layers — engine unit tests, an architecture test that *enforces* the pure-library boundary, EF→domain mapping tests, bUnit component tests for the page, and Playwright end-to-end tests in a real browser.
+- **Tested at every level.** ~110 tests — engine unit tests, **property-based invariant tests** (CsCheck generates hundreds of random problems and asserts feasibility, determinism and the "never worse than the rule" guarantee hold), an architecture test that *enforces* the pure-library boundary, EF→domain mapping tests, bUnit component tests for the page, and Playwright end-to-end tests in a real browser.
 
 See [`docs/SCHEDULING.md`](docs/SCHEDULING.md) for the algorithm write-up and [`docs/TESTING.md`](docs/TESTING.md) for the test strategy.
 
@@ -83,7 +84,7 @@ The sample data ships **seven released plans** competing for the same machines, 
 | Localization | `Microsoft.Extensions.Localization`, `IStringLocalizer`, `.resx` |
 | Styling | Hand-written CSS design system (CSS custom properties) |
 | Scheduling | Pure C# domain library — finite-capacity dispatch + due-date assignment |
-| Testing | xUnit v3 (Microsoft Testing Platform), bUnit components, Playwright E2E |
+| Testing | xUnit v3 (Microsoft Testing Platform), CsCheck property tests, bUnit components, Playwright E2E |
 | CI / Hosting | GitHub Actions — layered test workflows + test-gated GitHub Pages deploy |
 
 ## Documentation
@@ -107,9 +108,10 @@ Beyond the feature itself, the repository is wired up the way a production codeb
 - **Strict builds** — nullable reference types, .NET analyzers and **warnings treated as errors** (`Directory.Build.props`).
 - **Central Package Management** — every NuGet version in one [`Directory.Packages.props`](Directory.Packages.props).
 - **Consistent style** — a comprehensive [`.editorconfig`](.editorconfig) and line-ending normalisation via [`.gitattributes`](.gitattributes).
-- **Layered tests + coverage** — 91 tests across four layers, ~98 % engine line coverage, all run in CI.
+- **Layered tests + coverage** — 113 tests across four layers (plus property-based invariant tests), ~98 % engine line coverage, all run in CI.
 - **Architecture enforced by a test** — the engine cannot accrue a Blazor / EF / JS dependency.
 - **Decisions recorded** — see the [Architecture Decision Records](docs/adr).
+- **Dependency hygiene** — [Dependabot](.github/dependabot.yml) keeps NuGet and GitHub Actions current.
 - **CI/CD** — per-layer test workflows on every PR plus a test-gated GitHub Pages deploy.
 
 ## What this project demonstrates
