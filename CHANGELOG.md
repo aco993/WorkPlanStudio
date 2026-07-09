@@ -16,6 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   falls back to the built-in explanation on any error. The key is stored only in
   the browser. See [`docs/AI-ASSISTANT.md`](docs/AI-ASSISTANT.md) and
   [ADR 0005](docs/adr/0005-explainable-scheduling-and-optional-ai.md).
+- **Property-based tests** (CsCheck) for the scheduling engine: hundreds of
+  randomly generated problems assert the invariants — precedence, capacity,
+  determinism, a makespan lower bound and "never worse than the pure rule".
 
 ### Changed
 
