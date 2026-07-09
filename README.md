@@ -29,6 +29,7 @@ The interface is available in **English and German**, switchable at runtime.
 - 🏭 **Work centers** — master data with hourly rates and cost centers, plus a guard that prevents deleting a work center still used by operations.
 - 📊 **Dashboard** — key figures, a status distribution bar and the most recently updated plans.
 - 🗓️ **Production scheduling** — a finite-capacity scheduler that assigns each released plan a target date and sequences its operations across the work centers, with six dispatch rules, configurable due-date assignment, multi-start + local-search optimisation, a Gantt chart and on-time / tardiness KPIs. Deterministic and covered by unit tests.
+- 🤖 **Schedule assistant** — explains each run in plain language (the bottleneck work center, why a job is late, a *computed* recommendation), derived **on-device** with no key needed. An optional **bring-your-own-key** AI narrator can rephrase it, with a graceful fallback to the built-in explanation. See [`docs/AI-ASSISTANT.md`](docs/AI-ASSISTANT.md).
 - 🌍 **Bilingual UI (EN / DE)** — full localization via `IStringLocalizer` and `.resx` resources, including culture-correct number, date and currency formatting.
 - 💾 **Real database in the browser** — EF Core talks to a SQLite database that is compiled to WebAssembly and persisted to `localStorage`, so your data survives page reloads.
 - 📱 **Responsive** — works from wide desktops down to a mobile drawer layout.
@@ -91,6 +92,7 @@ The sample data ships **seven released plans** competing for the same machines, 
 | --- | --- | --- |
 | Project overview | this README | [README.de.md](README.de.md) |
 | Scheduling algorithm | [docs/SCHEDULING.md](docs/SCHEDULING.md) | [docs/SCHEDULING.de.md](docs/SCHEDULING.de.md) |
+| Schedule assistant (AI) | [docs/AI-ASSISTANT.md](docs/AI-ASSISTANT.md) | — |
 | Testing strategy | [docs/TESTING.md](docs/TESTING.md) | [docs/TESTING.de.md](docs/TESTING.de.md) |
 | Decision records (ADR) | [docs/adr](docs/adr) | — |
 | Contributing | [CONTRIBUTING.md](CONTRIBUTING.md) | — |

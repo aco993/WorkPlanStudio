@@ -11,3 +11,4 @@ the decision and its consequences, in the spirit of
 | [0002](0002-integer-seconds-time.md) | Model all internal time as integer seconds | Accepted |
 | [0003](0003-forward-only-scheduling.md) | Ship forward scheduling only (no backward pass) | Accepted |
 | [0004](0004-deterministic-prng.md) | Use a hand-rolled deterministic PRNG, not `System.Random` | Accepted |
+| [0005](0005-explainable-scheduling-and-optional-ai.md) | Deterministic explanation first; AI is an optional narrator | Accepted |
