@@ -17,15 +17,34 @@ git commit -m "Initial commit: WorkPlan Studio"
 The repo already ships a `.gitignore` (build output, `artifacts/`, `.claude/`) and a
 `.gitattributes` (line-ending normalisation), so nothing unwanted is committed.
 
-## 2. Repository URLs
+## 2. Replace the placeholders
 
-This published copy is configured for:
+A few files reference a `your-username` placeholder — replace it with your GitHub
+username. Search for it first:
 
-- Repository: `https://github.com/aco993/WorkPlanStudio`
-- Live demo: `https://aco993.github.io/WorkPlanStudio/`
+```bash
+git grep -n "your-username"
+```
 
-If you fork or copy this project to a different account, update the README badge
-and live-demo URLs to match the new owner.
+Replace it in **`README.md`**, **`README.de.md`** and **`CHANGELOG.md`**:
+
+- the **CI badge** URL — `https://github.com/your-username/WorkPlanStudio/...`
+- the **live-demo** URL — `https://<your-username>.github.io/WorkPlanStudio/`
+- the **CHANGELOG** compare/release links at the bottom of the file
+
+(The remaining hits are inside `docs/PUBLISHING.md` and `docs/CODEX.md`, which
+*describe* the placeholder — leave those as they are.) A one-liner does them all:
+
+```bash
+git grep -l "your-username" -- README.md README.de.md CHANGELOG.md \
+  | xargs sed -i "s/your-username/YOUR_GITHUB_USERNAME/g"
+```
+
+Fix them, then:
+
+```bash
+git commit -am "Set GitHub username in README"
+```
 
 ## 3. Create the repository and push
 
@@ -39,7 +58,7 @@ gh repo create WorkPlanStudio --public --source=. --remote=origin --push
 then:
 
 ```bash
-git remote add origin https://github.com/aco993/WorkPlanStudio.git
+git remote add origin https://github.com/<your-username>/WorkPlanStudio.git
 git push -u origin main
 ```
 
@@ -48,7 +67,7 @@ git push -u origin main
 1. On GitHub, open **Settings → Pages**.
 2. Set **Source = GitHub Actions**.
 3. The `deploy.yml` workflow runs on every push to `main`; once it finishes, the app
-   is live at `https://aco993.github.io/WorkPlanStudio/`.
+   is live at `https://<your-username>.github.io/WorkPlanStudio/`.
 
 The deploy is **gated on the engine tests** — if they fail, it won't publish.
 
