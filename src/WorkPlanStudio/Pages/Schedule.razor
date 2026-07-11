@@ -48,44 +48,44 @@
                     case DueDateRule.TotalWorkContent:
                         <label class="field">
                             <span>@L["Sched_TwkFactor"]</span>
-                            <input class="input num" type="number" step="0.1" min="1" @bind="_form.TwkFlowFactor" />
+                            <input class="input num" type="number" step="0.1" min="0.1" @bind="_form.TwkFlowFactor" @bind:event="oninput" />
                         </label>
                         break;
                     case DueDateRule.NumberOfOperations:
                         <label class="field">
                             <span>@L["Sched_NopMinutes"]</span>
-                            <input class="input num" type="number" min="0" @bind="_form.NopMinutesPerOp" />
+                            <input class="input num" type="number" min="0" @bind="_form.NopMinutesPerOp" @bind:event="oninput" />
                         </label>
                         break;
                     case DueDateRule.EqualSlack:
                         <label class="field">
                             <span>@L["Sched_SlackMinutes"]</span>
-                            <input class="input num" type="number" min="0" @bind="_form.SlackMinutes" />
+                            <input class="input num" type="number" min="0" @bind="_form.SlackMinutes" @bind:event="oninput" />
                         </label>
                         break;
                     default:
                         <label class="field">
                             <span>@L["Sched_ConMinutes"]</span>
-                            <input class="input num" type="number" min="0" @bind="_form.ConMinutes" />
+                            <input class="input num" type="number" min="0" @bind="_form.ConMinutes" @bind:event="oninput" />
                         </label>
                         break;
                 }
 
                 <label class="field">
                     <span>@L["Sched_MultiStart"]</span>
-                    <input class="input num" type="number" min="1" max="200" @bind="_form.MultiStartRuns" />
+                    <input class="input num" type="number" min="1" max="200" @bind="_form.MultiStartRuns" @bind:event="oninput" />
                 </label>
                 <label class="field">
                     <span>@L["Sched_LocalSearch"]</span>
-                    <input class="input num" type="number" min="0" @bind="_form.LocalSearchMaxSteps" />
+                    <input class="input num" type="number" min="0" @bind="_form.LocalSearchMaxSteps" @bind:event="oninput" />
                 </label>
                 <label class="field">
                     <span>@L["Sched_Seed"]</span>
-                    <input class="input num" type="number" @bind="_form.Seed" />
+                    <input class="input num" type="number" @bind="_form.Seed" @bind:event="oninput" />
                 </label>
                 <label class="field">
                     <span>@L["Sched_MinutesPerDay"]</span>
-                    <input class="input num" type="number" min="1" @bind="_form.MinutesPerWorkingDay" />
+                    <input class="input num" type="number" min="1" @bind="_form.MinutesPerWorkingDay" @bind:event="oninput" />
                 </label>
             </div>
         </div>
@@ -266,15 +266,15 @@
             </label>
             <label class="field wide">
                 <span>@L["Sched_Ai_Endpoint"]</span>
-                <input class="input" @bind="_aiForm.Endpoint" />
+                <input class="input" @bind="_aiForm.Endpoint" @bind:event="oninput" />
             </label>
             <label class="field">
                 <span>@L["Sched_Ai_Model"]</span>
-                <input class="input" @bind="_aiForm.Model" />
+                <input class="input" @bind="_aiForm.Model" @bind:event="oninput" />
             </label>
             <label class="field">
                 <span>@L["Sched_Ai_ApiKey"]</span>
-                <input class="input" type="password" autocomplete="off" @bind="_aiForm.ApiKey" />
+                <input class="input" type="password" autocomplete="off" @bind="_aiForm.ApiKey" @bind:event="oninput" />
             </label>
             <p class="assistant-privacy wide">@L["Sched_Ai_Privacy"]</p>
         </div>
