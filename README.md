@@ -1,22 +1,17 @@
-[![WorkPlan Studio](docs/banner.svg)](https://aco993.github.io/WorkPlanStudio/)
+![WorkPlan Studio](docs/banner.svg)
 
 # WorkPlan Studio
 
 **English** · [Deutsch](README.de.md)
 
-[![.NET](https://img.shields.io/badge/.NET-10-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
-[![Blazor WebAssembly](https://img.shields.io/badge/Blazor-WebAssembly-512BD4?logo=blazor&logoColor=white)](https://learn.microsoft.com/aspnet/core/blazor/)
-[![EF Core + SQLite](https://img.shields.io/badge/EF%20Core-SQLite%20in%20browser-003B57?logo=sqlite&logoColor=white)](https://learn.microsoft.com/ef/core/)
-[![CI](https://github.com/aco993/WorkPlanStudio/actions/workflows/ci.yml/badge.svg)](https://github.com/aco993/WorkPlanStudio/actions/workflows/ci.yml)
-[![Tests](https://img.shields.io/badge/tests-91%20passing-brightgreen)](docs/TESTING.md)
-[![Coverage](https://img.shields.io/badge/engine%20coverage-98%25-brightgreen)](docs/TESTING.md)
+[![CI](https://github.com/aco993/WorkPlanStudio/actions/workflows/ci.yml/badge.svg)](.github/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 **WorkPlan Studio** is a small, self-contained portfolio application for managing **manufacturing routings** (work plans): the ordered list of operations needed to produce a part, the work centers those operations run on, and the resulting **time and cost** for a given lot size.
 
-The whole thing — including a **real relational database** — runs entirely in the browser as a static WebAssembly app. There is no backend, no API and no server-side storage: it can be hosted for free on GitHub Pages and still behaves like a proper data-driven application.
+The application, including its relational database, runs entirely in the browser as a static WebAssembly app. There is no backend, API or server-side storage.
 
-> 🌐 **Live demo:** [https://aco993.github.io/WorkPlanStudio/](https://aco993.github.io/WorkPlanStudio/)
+> **Live demo:** <https://aco993.github.io/WorkPlanStudio/>
 
 The interface is available in **English and German**, switchable at runtime.
 
@@ -29,6 +24,7 @@ The interface is available in **English and German**, switchable at runtime.
 - 🏭 **Work centers** — master data with hourly rates and cost centers, plus a guard that prevents deleting a work center still used by operations.
 - 📊 **Dashboard** — key figures, a status distribution bar and the most recently updated plans.
 - 🗓️ **Production scheduling** — a finite-capacity scheduler that assigns each released plan a target date and sequences its operations across the work centers, with six dispatch rules, configurable due-date assignment, multi-start + local-search optimisation, a Gantt chart and on-time / tardiness KPIs. Deterministic and covered by unit tests.
+- 🤖 **Schedule assistant** — explains each run in plain language (the bottleneck work center, why a job is late, a *computed* recommendation), derived **on-device** with no key needed. An optional **bring-your-own-key** AI narrator can rephrase it, with a graceful fallback to the built-in explanation. See [`docs/AI-ASSISTANT.md`](docs/AI-ASSISTANT.md).
 - 🌍 **Bilingual UI (EN / DE)** — full localization via `IStringLocalizer` and `.resx` resources, including culture-correct number, date and currency formatting.
 - 💾 **Real database in the browser** — EF Core talks to a SQLite database that is compiled to WebAssembly and persisted to `localStorage`, so your data survives page reloads.
 - 📱 **Responsive** — works from wide desktops down to a mobile drawer layout.
@@ -53,11 +49,11 @@ The **Scheduling** page turns the released work plans into a finite-capacity pro
 3. **Optimisation.** A seeded multi-start search plus a first-improvement local search refine the sequence; the result is never worse than the pure rule schedule.
 4. **Scoring.** Makespan, total / maximum tardiness, on-time rate and work-center utilisation are rolled up into a single penalty the search minimises.
 
-A few choices make it portfolio-grade rather than a toy:
+The scheduler is designed around three explicit constraints:
 
 - **Deterministic.** All time is integer seconds and randomness comes from a small fixed-algorithm PRNG, so the same seed yields a bit-for-bit identical schedule on the desktop, in CI and in the browser.
 - **Feasible by construction.** Local search perturbs the job *priority order* and re-dispatches, so every candidate it evaluates is a valid schedule.
-- **Tested at every level.** ~90 tests across four layers — engine unit tests, an architecture test that *enforces* the pure-library boundary, EF→domain mapping tests, bUnit component tests for the page, and Playwright end-to-end tests in a real browser.
+- **Tested at several levels.** Unit and **property-based invariant tests** cover the engine; an architecture test enforces its dependency boundary; mapper and bUnit tests cover the application boundary; Playwright scenarios exercise the running app.
 
 See [`docs/SCHEDULING.md`](docs/SCHEDULING.md) for the algorithm write-up and [`docs/TESTING.md`](docs/TESTING.md) for the test strategy.
 
@@ -82,7 +78,7 @@ The sample data ships **seven released plans** competing for the same machines, 
 | Localization | `Microsoft.Extensions.Localization`, `IStringLocalizer`, `.resx` |
 | Styling | Hand-written CSS design system (CSS custom properties) |
 | Scheduling | Pure C# domain library — finite-capacity dispatch + due-date assignment |
-| Testing | xUnit v3 (Microsoft Testing Platform), bUnit components, Playwright E2E |
+| Testing | xUnit v3 (Microsoft Testing Platform), CsCheck property tests, bUnit components, Playwright E2E |
 | CI / Hosting | GitHub Actions — layered test workflows + test-gated GitHub Pages deploy |
 
 ## Documentation
@@ -91,24 +87,47 @@ The sample data ships **seven released plans** competing for the same machines, 
 | --- | --- | --- |
 | Project overview | this README | [README.de.md](README.de.md) |
 | Scheduling algorithm | [docs/SCHEDULING.md](docs/SCHEDULING.md) | [docs/SCHEDULING.de.md](docs/SCHEDULING.de.md) |
+| Schedule assistant (AI) | [docs/AI-ASSISTANT.md](docs/AI-ASSISTANT.md) | — |
 | Testing strategy | [docs/TESTING.md](docs/TESTING.md) | [docs/TESTING.de.md](docs/TESTING.de.md) |
 | Decision records (ADR) | [docs/adr](docs/adr) | — |
 | Contributing | [CONTRIBUTING.md](CONTRIBUTING.md) | — |
 | AI-agent context | [AGENTS.md](AGENTS.md) | — |
-| Review it with an AI agent | [docs/CODEX.md](docs/CODEX.md) | — |
-| Publishing to GitHub | [docs/PUBLISHING.md](docs/PUBLISHING.md) | — |
 
 ## Engineering practices
 
-Beyond the feature itself, the repository is wired up the way a production codebase would be:
+The repository applies the following engineering practices:
 
 - **Strict builds** — nullable reference types, .NET analyzers and **warnings treated as errors** (`Directory.Build.props`).
 - **Central Package Management** — every NuGet version in one [`Directory.Packages.props`](Directory.Packages.props).
 - **Consistent style** — a comprehensive [`.editorconfig`](.editorconfig) and line-ending normalisation via [`.gitattributes`](.gitattributes).
-- **Layered tests + coverage** — 91 tests across four layers, ~98 % engine line coverage, all run in CI.
+- **Layered tests + coverage** — 115 tests across three test projects, including property-based invariants; the engine currently measures 97.9% line and 91.6% branch coverage.
 - **Architecture enforced by a test** — the engine cannot accrue a Blazor / EF / JS dependency.
 - **Decisions recorded** — see the [Architecture Decision Records](docs/adr).
-- **CI/CD** — per-layer test workflows on every PR plus a test-gated GitHub Pages deploy.
+- **Dependency hygiene** — [Dependabot](.github/dependabot.yml) keeps NuGet and GitHub Actions current.
+- **CI/CD** — test workflows run for pull requests and `main`; deployment is gated by engine tests.
+
+## What this project demonstrates
+
+This is a public **learning and portfolio** project — it deliberately uses a
+generic manufacturing domain and fictitious data, and shares no code with any
+proprietary system. The point is to show *how* I build, not just that a feature
+works:
+
+| Area | Where to look | What it shows |
+| --- | --- | --- |
+| **Clean architecture** | `src/WorkPlanStudio.Scheduling` vs the app | a pure domain core behind an *enforced* dependency boundary |
+| **Algorithms** | `SchedulingEngine`, `DispatchScheduler`, `LocalSearch` | finite-capacity scheduling, dispatch rules, local-search optimisation |
+| **Determinism & correctness** | `DeterministicRandom`, `DeterminismTests` | reproducible results pinned by golden-value tests |
+| **Testing strategy** | `tests/`, [`docs/TESTING.md`](docs/TESTING.md) | four layers from unit to end-to-end, plus an architecture test |
+| **Modern .NET** | `Directory.*.props`, `.editorconfig` | .NET 10, nullable, analyzers, warnings-as-errors, central packages |
+| **Front-end** | `Pages/Schedule.razor`, `wwwroot/css` | Blazor WebAssembly, a hand-written design system, a Gantt chart |
+| **Data engineering** | `Data/BrowserDatabase.cs` | a real relational DB (EF Core + SQLite) running client-side |
+| **Internationalisation** | `Resources/`, `CultureSelector` | full EN/DE localization with culture-correct formatting |
+| **Documentation** | `docs/`, ADRs, `AGENTS.md` | decisions recorded, not just code written |
+| **DevOps** | `.github/workflows` | per-layer CI and a test-gated deploy |
+
+Short on time? The fastest tour is `AGENTS.md` → `SchedulingEngine.cs` →
+`DeterminismTests.cs` → `ScheduleMapper.cs` → `Pages/Schedule.razor`.
 
 ## Project structure
 
@@ -184,8 +203,6 @@ dotnet publish src/WorkPlanStudio/WorkPlanStudio.csproj -c Release -o publish
 The deployable site is in `publish/wwwroot/` and can be served by any static file host.
 
 ## Deployment
-
-> 🚀 New to publishing a repo? [`docs/PUBLISHING.md`](docs/PUBLISHING.md) is a step-by-step guide (first commit → create repo → enable the live demo).
 
 The repository ships with a GitHub Actions workflow ([`.github/workflows/deploy.yml`](.github/workflows/deploy.yml)) that publishes the app to **GitHub Pages** on every push to `main`. It:
 

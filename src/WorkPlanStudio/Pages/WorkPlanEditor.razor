@@ -31,7 +31,7 @@ else
                 <div class="form-grid">
                     <label class="field">
                         <span>@L["Field_PlanNumber"]</span>
-                        <input class="input @(_errors.ContainsKey("PlanNumber") ? "error" : null)" @bind="_model.PlanNumber" />
+                        <input class="input @(_errors.ContainsKey("PlanNumber") ? "error" : null)" @bind="_model.PlanNumber" @bind:event="oninput" />
                         @if (_errors.TryGetValue("PlanNumber", out var pe))
                         {
                             <span class="field-error">@pe</span>
@@ -48,15 +48,15 @@ else
                     </label>
                     <label class="field">
                         <span>@L["Field_PartNumber"]</span>
-                        <input class="input" @bind="_model.PartNumber" />
+                        <input class="input" @bind="_model.PartNumber" @bind:event="oninput" />
                     </label>
                     <label class="field">
                         <span>@L["Field_Revision"]</span>
-                        <input class="input" @bind="_model.Revision" />
+                        <input class="input" @bind="_model.Revision" @bind:event="oninput" />
                     </label>
                     <label class="field wide">
                         <span>@L["Field_PartName"]</span>
-                        <input class="input @(_errors.ContainsKey("PartName") ? "error" : null)" @bind="_model.PartName" />
+                        <input class="input @(_errors.ContainsKey("PartName") ? "error" : null)" @bind="_model.PartName" @bind:event="oninput" />
                         @if (_errors.TryGetValue("PartName", out var ne))
                         {
                             <span class="field-error">@ne</span>
@@ -64,7 +64,7 @@ else
                     </label>
                     <label class="field">
                         <span>@L["Field_LotSize"]</span>
-                        <input class="input" type="number" min="1" @bind="_model.LotSize" />
+                        <input class="input" type="number" min="1" @bind="_model.LotSize" @bind:event="oninput" />
                     </label>
                 </div>
             </div>
@@ -120,7 +120,7 @@ else
                     @foreach (var op in _model.Operations)
                     {
                         <tr>
-                            <td class="num narrow"><input class="input mini num" type="number" min="0" step="10" @bind="op.OperationNumber" /></td>
+                            <td class="num narrow"><input class="input mini num" type="number" min="0" step="10" @bind="op.OperationNumber" @bind:event="oninput" /></td>
                             <td class="wc-col">
                                 <select class="input" @bind="op.WorkCenterId">
                                     <option value="0">—</option>
@@ -130,10 +130,10 @@ else
                                     }
                                 </select>
                             </td>
-                            <td><input class="input" @bind="op.Description" /></td>
-                            <td class="num"><input class="input mini num" type="number" min="0" step="0.1" @bind="op.SetupTimeMinutes" /></td>
-                            <td class="num"><input class="input mini num" type="number" min="0" step="0.1" @bind="op.TimePerPieceMinutes" /></td>
-                            <td><input class="input" @bind="op.Remarks" /></td>
+                            <td><input class="input" @bind="op.Description" @bind:event="oninput" /></td>
+                            <td class="num"><input class="input mini num" type="number" min="0" step="0.1" @bind="op.SetupTimeMinutes" @bind:event="oninput" /></td>
+                            <td class="num"><input class="input mini num" type="number" min="0" step="0.1" @bind="op.TimePerPieceMinutes" @bind:event="oninput" /></td>
+                            <td><input class="input" @bind="op.Remarks" @bind:event="oninput" /></td>
                             <td class="actions-col">
                                 <button class="icon-btn danger" title="@L["Common_Delete"]" @onclick="() => RemoveOperation(op)">
                                     <svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" /></svg>

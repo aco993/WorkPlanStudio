@@ -14,21 +14,25 @@ public static class SeedData
         if (db.WorkCenters.Any())
             return;
 
-        var saw   = new WorkCenter { Code = "SAW-10",  Name = "Cut-off Saw",          CostCenter = "CC-1000", HourlyRate = 42m };
-        var lathe = new WorkCenter { Code = "CNC-200", Name = "CNC Turning Center",    CostCenter = "CC-2000", HourlyRate = 78m };
-        var mill  = new WorkCenter { Code = "CNC-300", Name = "5-Axis Milling Center", CostCenter = "CC-2000", HourlyRate = 95m };
-        var drill = new WorkCenter { Code = "DRL-120", Name = "Column Drill",          CostCenter = "CC-1500", HourlyRate = 38m };
-        var grind = new WorkCenter { Code = "GRD-400", Name = "Surface Grinder",       CostCenter = "CC-3000", HourlyRate = 64m };
-        var insp  = new WorkCenter { Code = "QC-900",  Name = "Quality Inspection",    CostCenter = "CC-9000", HourlyRate = 55m };
-        var asm   = new WorkCenter { Code = "ASM-500", Name = "Manual Assembly",       CostCenter = "CC-5000", HourlyRate = 48m };
+        var saw = new WorkCenter { Code = "SAW-10", Name = "Cut-off Saw", CostCenter = "CC-1000", HourlyRate = 42m };
+        var lathe = new WorkCenter { Code = "CNC-200", Name = "CNC Turning Center", CostCenter = "CC-2000", HourlyRate = 78m };
+        var mill = new WorkCenter { Code = "CNC-300", Name = "5-Axis Milling Center", CostCenter = "CC-2000", HourlyRate = 95m };
+        var drill = new WorkCenter { Code = "DRL-120", Name = "Column Drill", CostCenter = "CC-1500", HourlyRate = 38m };
+        var grind = new WorkCenter { Code = "GRD-400", Name = "Surface Grinder", CostCenter = "CC-3000", HourlyRate = 64m };
+        var insp = new WorkCenter { Code = "QC-900", Name = "Quality Inspection", CostCenter = "CC-9000", HourlyRate = 55m };
+        var asm = new WorkCenter { Code = "ASM-500", Name = "Manual Assembly", CostCenter = "CC-5000", HourlyRate = 48m };
 
         db.WorkCenters.AddRange(saw, lathe, mill, drill, grind, insp, asm);
 
         db.WorkPlans.AddRange(
             new WorkPlan
             {
-                PlanNumber = "WP-1001", PartNumber = "SHAFT-08-114", PartName = "Drive shaft Ø20",
-                Revision = "B", Status = WorkPlanStatus.Released, LotSize = 100,
+                PlanNumber = "WP-1001",
+                PartNumber = "SHAFT-08-114",
+                PartName = "Drive shaft Ø20",
+                Revision = "B",
+                Status = WorkPlanStatus.Released,
+                LotSize = 100,
                 CreatedUtc = new DateTime(2026, 1, 14, 9, 30, 0, DateTimeKind.Utc),
                 ModifiedUtc = new DateTime(2026, 3, 2, 13, 5, 0, DateTimeKind.Utc),
                 Operations =
@@ -42,8 +46,12 @@ public static class SeedData
             },
             new WorkPlan
             {
-                PlanNumber = "WP-1002", PartNumber = "BRKT-22-070", PartName = "Mounting bracket",
-                Revision = "A", Status = WorkPlanStatus.Released, LotSize = 250,
+                PlanNumber = "WP-1002",
+                PartNumber = "BRKT-22-070",
+                PartName = "Mounting bracket",
+                Revision = "A",
+                Status = WorkPlanStatus.Released,
+                LotSize = 250,
                 CreatedUtc = new DateTime(2026, 2, 3, 8, 0, 0, DateTimeKind.Utc),
                 ModifiedUtc = new DateTime(2026, 4, 18, 10, 22, 0, DateTimeKind.Utc),
                 Operations =
@@ -56,8 +64,12 @@ public static class SeedData
             },
             new WorkPlan
             {
-                PlanNumber = "WP-1003", PartNumber = "HSG-31-205", PartName = "Gearbox housing",
-                Revision = "C", Status = WorkPlanStatus.Released, LotSize = 40,
+                PlanNumber = "WP-1003",
+                PartNumber = "HSG-31-205",
+                PartName = "Gearbox housing",
+                Revision = "C",
+                Status = WorkPlanStatus.Released,
+                LotSize = 40,
                 CreatedUtc = new DateTime(2026, 5, 6, 14, 45, 0, DateTimeKind.Utc),
                 ModifiedUtc = new DateTime(2026, 6, 1, 9, 15, 0, DateTimeKind.Utc),
                 Operations =
@@ -70,8 +82,12 @@ public static class SeedData
             },
             new WorkPlan
             {
-                PlanNumber = "WP-1004", PartNumber = "PIN-05-012", PartName = "Locating pin",
-                Revision = "A", Status = WorkPlanStatus.Archived, LotSize = 500,
+                PlanNumber = "WP-1004",
+                PartNumber = "PIN-05-012",
+                PartName = "Locating pin",
+                Revision = "A",
+                Status = WorkPlanStatus.Archived,
+                LotSize = 500,
                 CreatedUtc = new DateTime(2025, 11, 20, 7, 10, 0, DateTimeKind.Utc),
                 ModifiedUtc = new DateTime(2026, 1, 9, 16, 40, 0, DateTimeKind.Utc),
                 Operations =
@@ -84,8 +100,12 @@ public static class SeedData
             },
             new WorkPlan
             {
-                PlanNumber = "WP-1005", PartNumber = "FLG-44-330", PartName = "Flange ring",
-                Revision = "A", Status = WorkPlanStatus.Released, LotSize = 80,
+                PlanNumber = "WP-1005",
+                PartNumber = "FLG-44-330",
+                PartName = "Flange ring",
+                Revision = "A",
+                Status = WorkPlanStatus.Released,
+                LotSize = 80,
                 CreatedUtc = new DateTime(2026, 3, 11, 8, 20, 0, DateTimeKind.Utc),
                 ModifiedUtc = new DateTime(2026, 5, 19, 11, 5, 0, DateTimeKind.Utc),
                 Operations =
@@ -98,8 +118,12 @@ public static class SeedData
             },
             new WorkPlan
             {
-                PlanNumber = "WP-1006", PartNumber = "SPN-17-088", PartName = "Drive spindle",
-                Revision = "B", Status = WorkPlanStatus.Released, LotSize = 60,
+                PlanNumber = "WP-1006",
+                PartNumber = "SPN-17-088",
+                PartName = "Drive spindle",
+                Revision = "B",
+                Status = WorkPlanStatus.Released,
+                LotSize = 60,
                 CreatedUtc = new DateTime(2026, 4, 2, 7, 45, 0, DateTimeKind.Utc),
                 ModifiedUtc = new DateTime(2026, 5, 28, 9, 30, 0, DateTimeKind.Utc),
                 Operations =
@@ -112,8 +136,12 @@ public static class SeedData
             },
             new WorkPlan
             {
-                PlanNumber = "WP-1007", PartNumber = "CVR-09-201", PartName = "Cover plate",
-                Revision = "A", Status = WorkPlanStatus.Released, LotSize = 200,
+                PlanNumber = "WP-1007",
+                PartNumber = "CVR-09-201",
+                PartName = "Cover plate",
+                Revision = "A",
+                Status = WorkPlanStatus.Released,
+                LotSize = 200,
                 CreatedUtc = new DateTime(2026, 2, 24, 13, 10, 0, DateTimeKind.Utc),
                 ModifiedUtc = new DateTime(2026, 5, 30, 15, 40, 0, DateTimeKind.Utc),
                 Operations =
@@ -126,8 +154,12 @@ public static class SeedData
             },
             new WorkPlan
             {
-                PlanNumber = "WP-1008", PartNumber = "HUB-26-145", PartName = "Coupling hub",
-                Revision = "C", Status = WorkPlanStatus.Released, LotSize = 120,
+                PlanNumber = "WP-1008",
+                PartNumber = "HUB-26-145",
+                PartName = "Coupling hub",
+                Revision = "C",
+                Status = WorkPlanStatus.Released,
+                LotSize = 120,
                 CreatedUtc = new DateTime(2026, 3, 30, 10, 0, 0, DateTimeKind.Utc),
                 ModifiedUtc = new DateTime(2026, 6, 3, 8, 50, 0, DateTimeKind.Utc),
                 Operations =

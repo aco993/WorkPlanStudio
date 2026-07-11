@@ -105,4 +105,29 @@ public sealed class ScheduleE2ETests
 
         Assert.Contains("Produktionsplanung", await schedule.Heading.InnerTextAsync());
     }
+
+    [Fact]
+    public async Task A_work_plan_can_be_created_without_blurring_the_last_edited_field()
+    {
+        var context = await _fixture.Browser.NewContextAsync();
+        await using var _ = context;
+        var page = await context.NewPageAsync();
+        await page.GotoAsync($"{_fixture.BaseUrl}/work-plans/new");
+        await page.GetByRole(AriaRole.Heading, new() { Name = "New work plan" }).WaitForAsync();
+
+        await page.GetByLabel("Part name").FillAsync("E2E review part");
+        await page.GetByRole(AriaRole.Button, new() { Name = "Add operation" }).ClickAsync();
+
+        var row = page.Locator(".op-table tbody tr");
+        await row.Locator("select").SelectOptionAsync(new SelectOptionValue { Index = 1 });
+        await row.Locator("input").Nth(1).FillAsync("Assembly step");
+        await row.Locator("input").Nth(2).FillAsync("10");
+        await row.Locator("input").Nth(3).FillAsync("1");
+
+        await page.GetByRole(AriaRole.Button, new() { Name = "Save" }).ClickAsync();
+        await page.WaitForURLAsync("**/work-plans");
+        var createdPlan = page.GetByText("E2E review part");
+        await createdPlan.WaitForAsync();
+        Assert.Equal(1, await createdPlan.CountAsync());
+    }
 }

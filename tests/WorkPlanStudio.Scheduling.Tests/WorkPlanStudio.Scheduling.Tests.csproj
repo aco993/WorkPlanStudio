@@ -26,6 +26,7 @@
   <ItemGroup>
     <PackageReference Include="xunit.v3.mtp-v2" />
     <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" />
+    <PackageReference Include="CsCheck" />
   </ItemGroup>
 
   <ItemGroup>

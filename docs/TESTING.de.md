@@ -14,9 +14,9 @@ Browser und ohne die `wasm-tools`-Workload.
 ```mermaid
 graph TD
     E2E["🌐 <b>E2E</b> — Playwright · 5 Tests<br/>echtes Chromium steuert die laufende App"]
-    COMP["🧩 <b>Komponenten</b> — bUnit · 5 Tests<br/>Rendering &amp; Interaktion der Planungsseite"]
+    COMP["🧩 <b>Komponenten + Assistent</b> — bUnit/xUnit · 15 Tests<br/>Planungsseite &amp; die Assistent-Provider"]
     MAP["🔌 <b>Grenze</b> — xUnit · 10 Tests<br/>EF-Entitäten → Engine (Rundung, Filterung)"]
-    UNIT["⚙️ <b>Unit + Architektur</b> — xUnit · 71 Tests<br/>die Planungs-Engine &amp; ihre Designregeln"]
+    UNIT["⚙️ <b>Unit + Property + Architektur</b> — xUnit/CsCheck · 83 Tests<br/>die Engine, ihre Invarianten &amp; Designregeln"]
 
     E2E --> COMP --> MAP --> UNIT
 
@@ -30,9 +30,11 @@ graph TD
 
 | Schicht | Projekt | Tests | Sichert | WASM nötig? | Laufzeit |
 | --- | --- | --: | --- | :---: | --- |
-| Unit + Architektur | `tests/WorkPlanStudio.Scheduling.Tests` | 71 | die Engine: Determinismus, Zulässigkeit, jede Regel, Bewertung, Suche — und dass die Engine abhängigkeitsfrei bleibt | nein | ~1 s |
+| Unit + Architektur | `tests/WorkPlanStudio.Scheduling.Tests` | 78 | die Engine: Determinismus, Zulässigkeit, jede Regel, Bewertung, Suche, der Erklärer — und dass die Engine abhängigkeitsfrei bleibt | nein | ~1 s |
+| Eigenschaftsbasiert | `tests/WorkPlanStudio.Scheduling.Tests` | 5 | Invarianten über hunderte Zufallsprobleme: Reihenfolge, Kapazität, Determinismus, Makespan-Schranke, „nie schlechter als die Regel" | nein | ~1 s |
 | Grenze (Mapping) | `tests/WorkPlanStudio.Web.Tests` | 10 | das EF→Domain-Mapping: `decimal`→Sekunden-Rundung, Freigabe-Filter, Überspringen inaktiver Arbeitsplätze, Neuindizierung der Schritte | ja¹ | ~2 s |
-| Komponenten | `tests/WorkPlanStudio.Web.Tests` | 5 | die Planungsseite: KPI-/Gantt-/Tabellen-Rendering, Leerzustand, Verspätungs-Styling, der Parameter→Generieren-Fluss | ja¹ | ~2 s |
+| Assistent | `tests/WorkPlanStudio.Web.Tests` | 7 | regelbasierte Erzählung, der KI-Provider über einen **gestubbten HTTP-Transport**, die Fallbacks bei „nicht konfiguriert"/Fehler | ja¹ | ~1 s |
+| Komponenten | `tests/WorkPlanStudio.Web.Tests` | 8 | die Planungsseite: KPI-/Gantt-/Tabellen-Rendering, Leerzustand, Verspätungs-Styling, der Parameter→Generieren-Fluss, das Assistent-Panel | ja¹ | ~2 s |
 | End-to-End | `tests/WorkPlanStudio.E2E` | 5 | das Ganze durch einen Browser: eine Parameter-Änderung verändert den Plan sichtbar, Determinismus, EN/DE | Browser² | ~30 s |
 
 ¹ Diese referenzieren das Blazor-App-Assembly, daher kompiliert ihr Build die App (also `wasm-tools`). Die Tests selbst laufen auf einem normalen Host.
@@ -58,6 +60,17 @@ fehlschlagen**, falls jemand Blazor, EF Core, JS-Interop oder SQLite daraus
 referenziert. Die Pure-Library-Grenze ist die Designentscheidung, auf der die ganze
 Pyramide ruht — also wird sie per Test erzwungen, nicht der Disziplin überlassen.
 
+### 🎲 Eigenschaftsbasiert — Invarianten
+
+Beispieltests prüfen die Fälle, an die man gedacht hat; **Property-Tests prüfen die
+anderen.** Mit [CsCheck](https://github.com/AnthonyLloyd/CsCheck) erzeugt jeder Test
+hunderte zufällige, aber gültige Planungsprobleme und prüft eine *Invariante*, die
+für jeden erzeugbaren Plan gelten muss: Reihenfolge (kein Schritt startet vor Ende
+des vorigen), Kapazität (kein Arbeitsplatz überschreitet seine Slots), Determinismus,
+eine Makespan-Untergrenze und „nie schlechter als die reine Regel". Bei einem Fehler
+*schrumpft* CsCheck auf ein minimales Gegenbeispiel und nennt einen Seed zum
+Reproduzieren.
+
 ### 🔌 Grenze — das Mapping
 
 `ScheduleMapper` ist die einzige Stelle, an der `decimal`-Minuten zu ganzzahligen
@@ -77,6 +90,16 @@ verspätete Aufträge rote Pillen und Balken erhalten; und dass ein Klick auf
 **Generieren** den Service mit den im Formular gewählten Parametern aufruft. Genau
 deshalb hängt die Seite an der `IProductionScheduleService`-*Schnittstelle* — damit
 ein Test eine Fälschung einsetzen kann.
+
+### 🤖 Assistent — Erzählung & Fallback
+
+Der [Planungs-Assistent](AI-ASSISTANT.md) wird ohne Netzwerk getestet. Der
+regelbasierte Erzähler wird direkt geprüft (deterministische Zeilen und Tonalität).
+Der optionale KI-Erzähler läuft gegen einen **gestubbten `HttpMessageHandler`**: der
+Test prüft, dass die Anfrage den Schlüssel und die berechneten Fakten trug, und
+liefert eine vorgefertigte Antwort zurück — ein `500` prüft, dass eine Ausnahme
+fliegt. Die `ScheduleAssistant`-Fassade wird für alle drei Pfade getestet: nicht
+konfiguriert, KI gesund und KI fehlerhaft (Fallback auf den regelbasierten Text).
 
 ### 🌐 End-to-End — die echte Sache
 
@@ -106,7 +129,7 @@ Nützliche Umgebungsvariablen für E2E: `E2E_BASE_URL` (Standard `http://localho
 
 ## Abdeckung
 
-Der Engine-Job misst die Code-Abdeckung mit dem Collector der Microsoft Testing Platform; die Planungsbibliothek liegt bei etwa **98 % Zeilen / 90 % Zweige**. Lokal reproduzierbar mit:
+Der Engine-Job misst die Code-Abdeckung mit dem Collector der Microsoft Testing Platform; die Planungsbibliothek liegt bei etwa **98 % Zeilen / 92 % Zweige**. Lokal reproduzierbar mit:
 
 ```bash
 dotnet test tests/WorkPlanStudio.Scheduling.Tests/WorkPlanStudio.Scheduling.Tests.csproj \
