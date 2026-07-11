@@ -20,10 +20,10 @@
   <ItemGroup>
     <!-- Tests -->
     <PackageVersion Include="xunit.v3.mtp-v2" Version="3.2.2" />
-    <PackageVersion Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.8.0" />
+    <PackageVersion Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.9.0" />
     <PackageVersion Include="CsCheck" Version="4.7.0" />
     <PackageVersion Include="bunit.web" Version="1.40.0" />
-    <PackageVersion Include="Microsoft.Playwright" Version="1.49.0" />
+    <PackageVersion Include="Microsoft.Playwright" Version="1.61.0" />
   </ItemGroup>
 
 </Project>
