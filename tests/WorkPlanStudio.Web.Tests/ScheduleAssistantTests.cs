@@ -127,6 +127,20 @@ public class ScheduleAssistantTests
     }
 
     [Fact]
+    public async Task Facade_propagates_caller_cancellation()
+    {
+        var config = new FakeAssistantConfig { Settings = Configured() };
+        var assistant = new ScheduleAssistant(
+            new RuleBasedNarrator(Localizer()), config,
+            new HttpClient(new CancelingHttpMessageHandler()), Localizer());
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(
+            () => assistant.ExplainWithAiAsync(SampleExplanation(), cancellation.Token));
+    }
+
+    [Fact]
     public async Task Facade_uses_ai_when_configured_and_healthy()
     {
         var config = new FakeAssistantConfig { Settings = Configured() };
@@ -138,6 +152,14 @@ public class ScheduleAssistantTests
 
         Assert.Equal(NarrationSource.Ai, result.Source);
     }
+}
+
+/// <summary>A transport that observes and propagates caller cancellation.</summary>
+internal sealed class CancelingHttpMessageHandler : HttpMessageHandler
+{
+    protected override Task<HttpResponseMessage> SendAsync(
+        HttpRequestMessage request,
+        CancellationToken cancellationToken) => Task.FromCanceled<HttpResponseMessage>(cancellationToken);
 }
 
 /// <summary>A stub transport: returns a canned response and captures the last request.</summary>

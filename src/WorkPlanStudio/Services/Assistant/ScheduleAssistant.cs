@@ -40,8 +40,8 @@ public sealed class ScheduleAssistant
 
     /// <summary>
     /// AI narration when configured; otherwise — and on any AI error — the rule-based
-    /// narration, carrying a note that explains the fallback. This is where the
-    /// engineering maturity lives: the feature degrades gracefully instead of breaking.
+    /// narration, carrying a note that explains the fallback. Caller-requested
+    /// cancellation is propagated instead of being presented as a provider failure.
     /// </summary>
     public async Task<NarrationResult> ExplainWithAiAsync(ScheduleExplanation explanation, CancellationToken cancellationToken = default)
     {
@@ -55,6 +55,10 @@ public sealed class ScheduleAssistant
         {
             var ai = new OpenAiScheduleNarrator(_http, settings);
             return await ai.NarrateAsync(explanation, cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
         }
         catch (Exception ex) when (
             ex is HttpRequestException or OperationCanceledException or JsonException

@@ -81,7 +81,7 @@ else
     <div class="form-grid">
         <label class="field">
             <span>@L["Field_Code"]</span>
-            <input class="input @(_formErrors.ContainsKey("Code") ? "error" : null)" @bind="_editing.Code" />
+            <input class="input @(_formErrors.ContainsKey("Code") ? "error" : null)" @bind="_editing.Code" @bind:event="oninput" />
             @if (_formErrors.TryGetValue("Code", out var ce))
             {
                 <span class="field-error">@ce</span>
@@ -89,11 +89,11 @@ else
         </label>
         <label class="field">
             <span>@L["Field_CostCenter"]</span>
-            <input class="input" @bind="_editing.CostCenter" />
+            <input class="input" @bind="_editing.CostCenter" @bind:event="oninput" />
         </label>
         <label class="field wide">
             <span>@L["Field_Name"]</span>
-            <input class="input @(_formErrors.ContainsKey("Name") ? "error" : null)" @bind="_editing.Name" />
+            <input class="input @(_formErrors.ContainsKey("Name") ? "error" : null)" @bind="_editing.Name" @bind:event="oninput" />
             @if (_formErrors.TryGetValue("Name", out var ne))
             {
                 <span class="field-error">@ne</span>
@@ -101,7 +101,7 @@ else
         </label>
         <label class="field">
             <span>@L["Field_HourlyRate"]</span>
-            <input class="input" type="number" min="0" step="1" @bind="_editing.HourlyRate" />
+            <input class="input" type="number" min="0" step="1" @bind="_editing.HourlyRate" @bind:event="oninput" />
         </label>
         <label class="field check">
             <input type="checkbox" @bind="_editing.IsActive" />
