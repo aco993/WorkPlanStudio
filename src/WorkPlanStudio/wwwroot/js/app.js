@@ -1,10 +1,18 @@
 // Small JS interop surface used by the app.
-// 1) blazorCulture  – remembers the chosen UI language.
-// 2) workplanDb     – persists the in-browser SQLite database to localStorage.
+// 1) blazorCulture   – remembers the chosen UI language.
+// 2) workplanDb       – persists the in-browser SQLite database to localStorage.
+// 3) workplanSettings – small key/value store for app settings (e.g. the optional
+//                       AI assistant configuration). Values stay in this browser.
 
 window.blazorCulture = {
     get: () => window.localStorage['BlazorCulture'],
     set: (value) => window.localStorage['BlazorCulture'] = value
+};
+
+window.workplanSettings = {
+    keyFor: (name) => 'workplanstudio.settings.' + name,
+    get: function (name) { return window.localStorage.getItem(this.keyFor(name)); },
+    set: function (name, value) { window.localStorage.setItem(this.keyFor(name), value); }
 };
 
 window.workplanDb = {

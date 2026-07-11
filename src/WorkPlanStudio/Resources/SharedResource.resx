@@ -213,4 +213,26 @@
   <data name="Sched_OnTime" xml:space="preserve"><value>On time</value></data>
   <data name="Sched_DayShort" xml:space="preserve"><value>D</value></data>
   <data name="Sched_Empty" xml:space="preserve"><value>No released work plans to schedule. Set a plan's status to “Released” to include it.</value></data>
+
+  <data name="Sched_Ai_Title" xml:space="preserve"><value>Schedule assistant</value></data>
+  <data name="Sched_Ai_Subtitle" xml:space="preserve"><value>A plain-language read-out of the schedule above — computed on your device.</value></data>
+  <data name="Sched_Ai_SourceRuleBased" xml:space="preserve"><value>Rule-based</value></data>
+  <data name="Sched_Ai_AskAi" xml:space="preserve"><value>Enhance with AI</value></data>
+  <data name="Sched_Ai_Thinking" xml:space="preserve"><value>Asking the model…</value></data>
+  <data name="Sched_Ai_Configure" xml:space="preserve"><value>AI settings</value></data>
+  <data name="Sched_Ai_Summary" xml:space="preserve"><value>{0} of {1} jobs on time · makespan {2} · avg. utilisation {3}.</value></data>
+  <data name="Sched_Ai_Bottleneck" xml:space="preserve"><value>{0} is the busiest work center at {1} utilisation ({2} operations) — the likely constraint.</value></data>
+  <data name="Sched_Ai_LateBlocked" xml:space="preserve"><value>{0} is {1} late, mostly spent waiting for {2}.</value></data>
+  <data name="Sched_Ai_LateTight" xml:space="preserve"><value>{0} is {1} late — its target is tighter than its own processing time.</value></data>
+  <data name="Sched_Ai_MoreLate" xml:space="preserve"><value>…and {0} more late job(s).</value></data>
+  <data name="Sched_Ai_RecOnTime" xml:space="preserve"><value>Every job meets its target — no change needed.</value></data>
+  <data name="Sched_Ai_RecSwitch" xml:space="preserve"><value>Try the {0} dispatch rule: it should cut total tardiness from {1} to {2}.</value></data>
+  <data name="Sched_Ai_RecNone" xml:space="preserve"><value>No other dispatch rule did better here — the lateness looks structural (capacity or targets).</value></data>
+  <data name="Sched_Ai_Fallback" xml:space="preserve"><value>AI unavailable ({0}) — showing the rule-based explanation.</value></data>
+  <data name="Sched_Ai_SettingsTitle" xml:space="preserve"><value>AI assistant settings</value></data>
+  <data name="Sched_Ai_EnableLabel" xml:space="preserve"><value>Enable AI explanations (bring your own key)</value></data>
+  <data name="Sched_Ai_Endpoint" xml:space="preserve"><value>API endpoint (OpenAI-compatible)</value></data>
+  <data name="Sched_Ai_Model" xml:space="preserve"><value>Model</value></data>
+  <data name="Sched_Ai_ApiKey" xml:space="preserve"><value>API key</value></data>
+  <data name="Sched_Ai_Privacy" xml:space="preserve"><value>Your key is stored only in this browser and sent only to the endpoint above, which must allow browser (CORS) requests. Don't use this on a shared computer.</value></data>
 </root>

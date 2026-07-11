@@ -13,11 +13,20 @@ namespace WorkPlanStudio.Web.Tests;
 /// </summary>
 public class SchedulePageTests : Bunit.TestContext
 {
+    private readonly FakeAssistantConfig _assistantConfig = new();
+
     private FakeScheduleService Arrange(ScheduleResult result)
     {
         var fake = new FakeScheduleService { Result = result };
         Services.AddSingleton<IProductionScheduleService>(fake);
         Services.AddSingleton<IStringLocalizer<SharedResource>>(new PassThroughLocalizer<SharedResource>());
+
+        // Assistant dependencies: the real rule-based narrator (it is the offline
+        // default and the demo/test "mock"), a fake config and an unused HttpClient.
+        Services.AddSingleton<RuleBasedNarrator>();
+        Services.AddSingleton<IAssistantConfig>(_assistantConfig);
+        Services.AddSingleton(new HttpClient());
+        Services.AddSingleton<ScheduleAssistant>();
         return fake;
     }
 
@@ -89,5 +98,46 @@ public class SchedulePageTests : Bunit.TestContext
         // the pass-through localizer echoes keys, so the NOP field's label key is now present
         Assert.Contains("Sched_NopMinutes", cut.Markup);
         Assert.DoesNotContain("Sched_TwkFactor", cut.Markup);
+    }
+
+    [Fact]
+    public void Renders_the_assistant_panel_with_a_rule_based_explanation()
+    {
+        Arrange(Sample.WithLateJob());
+
+        var cut = RenderComponent<SchedulePage>();
+
+        cut.WaitForAssertion(() => Assert.Single(cut.FindAll(".assistant-card")));
+        Assert.NotEmpty(cut.FindAll(".assistant-line"));
+        Assert.Contains("Sched_Ai_SourceRuleBased", cut.Markup);   // the source badge
+        Assert.Contains("Sched_Ai_RecSwitch", cut.Markup);          // the recommendation line
+    }
+
+    [Fact]
+    public void The_enhance_with_ai_button_is_hidden_until_a_provider_is_configured()
+    {
+        Arrange(Sample.OnTime());
+
+        var cut = RenderComponent<SchedulePage>();
+
+        cut.WaitForAssertion(() => Assert.Single(cut.FindAll(".assistant-card")));
+        Assert.DoesNotContain("Sched_Ai_AskAi", cut.Markup);
+    }
+
+    [Fact]
+    public void The_enhance_with_ai_button_appears_once_a_provider_is_configured()
+    {
+        _assistantConfig.Settings = new AssistantSettings
+        {
+            Enabled = true,
+            Endpoint = "https://example/v1",
+            Model = "m",
+            ApiKey = "secret"
+        };
+        Arrange(Sample.OnTime());
+
+        var cut = RenderComponent<SchedulePage>();
+
+        cut.WaitForAssertion(() => Assert.Contains("Sched_Ai_AskAi", cut.Markup));
     }
 }

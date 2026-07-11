@@ -33,6 +33,7 @@ public sealed class ProductionScheduleService : IProductionScheduleService
             return ScheduleResult.Empty(parameters.MinutesPerWorkingDay);
 
         var result = new SchedulingEngine().Run(input.Context);
-        return ScheduleMapper.BuildView(result, input.Context, input.PlanById, parameters.MinutesPerWorkingDay);
+        var view = ScheduleMapper.BuildView(result, input.Context, input.PlanById, parameters.MinutesPerWorkingDay);
+        return view with { Explanation = ScheduleExplainer.Explain(input.Context, result) };
     }
 }
