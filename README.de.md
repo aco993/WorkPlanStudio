@@ -4,20 +4,14 @@
 
 [English](README.md) · **Deutsch**
 
-[![.NET](https://img.shields.io/badge/.NET-10-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
-[![Blazor WebAssembly](https://img.shields.io/badge/Blazor-WebAssembly-512BD4?logo=blazor&logoColor=white)](https://learn.microsoft.com/aspnet/core/blazor/)
-[![EF Core + SQLite](https://img.shields.io/badge/EF%20Core-SQLite%20im%20Browser-003B57?logo=sqlite&logoColor=white)](https://learn.microsoft.com/ef/core/)
-[![CI](https://github.com/your-username/WorkPlanStudio/actions/workflows/ci.yml/badge.svg)](.github/workflows/ci.yml)
-[![Tests](https://img.shields.io/badge/Tests-113%20bestanden-brightgreen)](docs/TESTING.de.md)
-[![Abdeckung](https://img.shields.io/badge/Engine--Abdeckung-98%25-brightgreen)](docs/TESTING.de.md)
+[![CI](https://github.com/aco993/WorkPlanStudio/actions/workflows/ci.yml/badge.svg)](.github/workflows/ci.yml)
 [![Lizenz: MIT](https://img.shields.io/badge/Lizenz-MIT-green.svg)](LICENSE)
 
 **WorkPlan Studio** ist eine kompakte, eigenständige Portfolio-Anwendung zur Verwaltung von **Fertigungs-Arbeitsplänen** (Routings): die geordnete Folge der Arbeitsgänge zur Herstellung eines Teils, die Arbeitsplätze, auf denen diese laufen, sowie die daraus resultierende **Zeit und Kosten** für eine gegebene Losgröße.
 
-Das Ganze — inklusive einer **echten relationalen Datenbank** — läuft vollständig im Browser als statische WebAssembly-App. Es gibt kein Backend, keine API und keine serverseitige Speicherung: die App lässt sich kostenlos über GitHub Pages hosten und verhält sich dennoch wie eine vollwertige datengetriebene Anwendung.
+Die Anwendung einschließlich ihrer relationalen Datenbank läuft vollständig im Browser als statische WebAssembly-App. Es gibt kein Backend, keine API und keine serverseitige Speicherung.
 
-> 🌐 **Live-Demo:** `https://<your-username>.github.io/WorkPlanStudio/`
-> _(verfügbar, sobald GitHub Pages aktiviert ist — siehe [Deployment](#deployment))_
+> **Live-Demo:** <https://aco993.github.io/WorkPlanStudio/>
 
 Die Oberfläche ist in **Englisch und Deutsch** verfügbar und zur Laufzeit umschaltbar.
 
@@ -55,11 +49,11 @@ Die Seite **Planung** verwandelt die freigegebenen Arbeitspläne in einen kapazi
 3. **Optimierung.** Eine seed-basierte Multi-Start-Suche plus eine First-Improvement-Lokalsuche verfeinern die Reihenfolge; das Ergebnis ist nie schlechter als der reine Regel-Plan.
 4. **Bewertung.** Durchlaufzeit (Makespan), Gesamt-/Maximalverspätung, Termintreue und Arbeitsplatz-Auslastung werden zu einem einzigen Strafwert zusammengefasst, den die Suche minimiert.
 
-Einige Entscheidungen heben es vom Spielzeug zur Referenz:
+Der Planer folgt drei expliziten Randbedingungen:
 
 - **Deterministisch.** Alle Zeiten sind ganzzahlige Sekunden und der Zufall stammt aus einem kleinen PRNG mit festem Algorithmus, sodass derselbe Seed auf dem Desktop, in der CI und im Browser einen bit-identischen Plan liefert.
 - **Per Konstruktion zulässig.** Die Lokalsuche permutiert die *Prioritätsreihenfolge* der Aufträge und plant neu ein, sodass jeder bewertete Kandidat ein gültiger Plan ist.
-- **Auf jeder Ebene getestet.** ~110 Tests — Engine-Unit-Tests, **eigenschaftsbasierte Invarianten-Tests** (CsCheck erzeugt hunderte zufällige Probleme und prüft, dass Machbarkeit, Determinismus und die „nie schlechter als die Regel"-Garantie gelten), ein Architektur-Test, der die Pure-Library-Grenze *erzwingt*, EF→Domain-Mapping-Tests, bUnit-Komponententests der Seite und Playwright-End-to-End-Tests in einem echten Browser.
+- **Auf mehreren Ebenen getestet.** Unit- und **eigenschaftsbasierte Invarianten-Tests** decken die Engine ab; ein Architektur-Test erzwingt ihre Abhängigkeitsgrenze; Mapper- und bUnit-Tests prüfen die Anwendungsgrenze; Playwright-Szenarien testen die laufende App.
 
 Siehe [`docs/SCHEDULING.de.md`](docs/SCHEDULING.de.md) für die Algorithmus-Beschreibung und [`docs/TESTING.de.md`](docs/TESTING.de.md) für die Teststrategie.
 
@@ -97,21 +91,19 @@ Die Beispieldaten liefern **sieben freigegebene Pläne**, die um dieselben Masch
 | Entscheidungsprotokolle (ADR) | [docs/adr](docs/adr) | — |
 | Mitwirken | [CONTRIBUTING.md](CONTRIBUTING.md) | — |
 | KI-Agent-Kontext | [AGENTS.md](AGENTS.md) | — |
-| Mit einem KI-Agenten prüfen | [docs/CODEX.md](docs/CODEX.md) | — |
-| Auf GitHub veröffentlichen | [docs/PUBLISHING.md](docs/PUBLISHING.md) | — |
 
 ## Entwicklungspraktiken
 
-Über die Funktion hinaus ist das Repository so aufgesetzt, wie es eine produktive Codebasis wäre:
+Das Repository setzt folgende Entwicklungspraktiken um:
 
 - **Strikte Builds** — Nullable Reference Types, .NET-Analyzer und **Warnungen als Fehler** (`Directory.Build.props`).
 - **Central Package Management** — jede NuGet-Version in einer [`Directory.Packages.props`](Directory.Packages.props).
 - **Einheitlicher Stil** — eine umfassende [`.editorconfig`](.editorconfig) und Zeilenende-Normalisierung über [`.gitattributes`](.gitattributes).
-- **Geschichtete Tests + Abdeckung** — 113 Tests über vier Schichten (plus eigenschaftsbasierte Invarianten-Tests), ~98 % Zeilenabdeckung der Engine, alle in der CI.
+- **Geschichtete Tests + Abdeckung** — 115 Tests in drei Testprojekten einschließlich eigenschaftsbasierter Invarianten; aktuell 97,9 % Zeilen- und 91,6 % Zweigabdeckung der Engine.
 - **Architektur per Test erzwungen** — die Engine kann keine Blazor-/EF-/JS-Abhängigkeit ansammeln.
 - **Entscheidungen dokumentiert** — siehe die [Architecture Decision Records](docs/adr).
 - **Abhängigkeits-Hygiene** — [Dependabot](.github/dependabot.yml) hält NuGet und GitHub Actions aktuell.
-- **CI/CD** — Test-Workflows je Schicht bei jedem PR plus ein test-gesichertes GitHub-Pages-Deploy.
+- **CI/CD** — Test-Workflows laufen für Pull Requests und `main`; das Deployment ist durch Engine-Tests abgesichert.
 
 ## Was dieses Projekt zeigt
 
@@ -131,7 +123,6 @@ funktioniert:
 | **Data Engineering** | `Data/BrowserDatabase.cs` | eine echte relationale DB (EF Core + SQLite) im Browser |
 | **Internationalisierung** | `Resources/`, `CultureSelector` | vollständige EN/DE-Lokalisierung mit kulturkorrekter Formatierung |
 | **Dokumentation** | `docs/`, ADRs, `AGENTS.md` | Entscheidungen dokumentiert, nicht nur Code geschrieben |
-| **KI-gestützte Entwicklung** | `AGENTS.md`, [`docs/CODEX.md`](docs/CODEX.md) | das Repo ist darauf ausgelegt, mit KI-Agenten gebaut *und geprüft* zu werden |
 | **DevOps** | `.github/workflows` | CI je Schicht und ein test-gesichertes Deploy |
 
 Wenig Zeit? Der schnellste Rundgang ist `AGENTS.md` → `SchedulingEngine.cs` →
@@ -211,8 +202,6 @@ dotnet publish src/WorkPlanStudio/WorkPlanStudio.csproj -c Release -o publish
 Die deploybare Seite liegt in `publish/wwwroot/` und kann von jedem statischen Datei-Host ausgeliefert werden.
 
 ## Deployment
-
-> 🚀 Neu beim Veröffentlichen? [`docs/PUBLISHING.md`](docs/PUBLISHING.md) führt Schritt für Schritt (erster Commit → Repo anlegen → Live-Demo aktivieren).
 
 Das Repository bringt einen GitHub-Actions-Workflow mit ([`.github/workflows/deploy.yml`](.github/workflows/deploy.yml)), der die App bei jedem Push auf `main` zu **GitHub Pages** veröffentlicht. Er:
 

@@ -49,5 +49,5 @@ Initial public release.
 - **CI/CD** — per-layer test workflows on pull requests and a test-gated
   GitHub Pages deployment.
 
-[Unreleased]: https://github.com/your-username/WorkPlanStudio/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/your-username/WorkPlanStudio/releases/tag/v0.1.0
+[Unreleased]: https://github.com/aco993/WorkPlanStudio/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/aco993/WorkPlanStudio/releases/tag/v0.1.0

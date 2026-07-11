@@ -7,8 +7,8 @@
 
 A schedule is only useful if a planner understands *why* it turned out the way it
 did — which resource is the constraint, why a job is late, what to try next. An
-"AI assistant" is an obvious way to surface that, and a portfolio project benefits
-from showing modern AI integration. But a naive LLM feature would be a liability:
+An AI narrator is one possible way to surface that. A direct LLM-only feature would
+be a poor fit for this application:
 it could hallucinate numbers, it would not work in the public GitHub Pages demo
 (no server, no key), and a browser app cannot hold a secret. The app is also a
 static WebAssembly site, so any live model call is a *client-side* request to a
@@ -37,9 +37,8 @@ Separate the **analysis** from its **narration**.
   there, computed on-device.
 - ✅ The AI cannot invent numbers: it is handed the facts and asked to rephrase
   them; the deterministic version is always available for comparison.
-- ✅ The design shows real engineering maturity — an abstraction, a mock/default
-  provider, graceful degradation, configuration and a clear security posture —
-  rather than a thin wrapper around an API.
+- ✅ Provider selection is isolated behind a small interface and failure does not
+  remove the deterministic explanation.
 - ✅ Everything is testable without a network: the rule-based narrator directly,
   the AI narrator over a stubbed HTTP transport, the fallback via the façade.
 - ➖ The BYOK endpoint must permit browser (CORS) requests, which not every
