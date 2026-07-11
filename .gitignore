@@ -12,6 +12,9 @@ x86/
 bld/
 [Ll]og/
 [Ll]ogs/
+*.log
+e2e-artifacts/
+TestResults/
 
 # Visual Studio / Rider / VS Code / Claude Code
 .vs/
