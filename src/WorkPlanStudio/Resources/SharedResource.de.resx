@@ -70,6 +70,7 @@
   <data name="Common_New" xml:space="preserve"><value>Neu</value></data>
   <data name="Common_Save" xml:space="preserve"><value>Speichern</value></data>
   <data name="Common_Cancel" xml:space="preserve"><value>Abbrechen</value></data>
+  <data name="Common_Close" xml:space="preserve"><value>Schließen</value></data>
   <data name="Common_Delete" xml:space="preserve"><value>Löschen</value></data>
   <data name="Common_Edit" xml:space="preserve"><value>Bearbeiten</value></data>
   <data name="Common_Back" xml:space="preserve"><value>Zurück</value></data>
@@ -102,6 +103,7 @@
   <data name="Field_Name" xml:space="preserve"><value>Name</value></data>
   <data name="Field_CostCenter" xml:space="preserve"><value>Kostenstelle</value></data>
   <data name="Field_HourlyRate" xml:space="preserve"><value>Satz (€/h)</value></data>
+  <data name="Field_Capacity" xml:space="preserve"><value>Parallelkapazität</value></data>
   <data name="Field_TotalTime" xml:space="preserve"><value>Gesamtzeit</value></data>
   <data name="Field_TotalCost" xml:space="preserve"><value>Kosten (gesch.)</value></data>
 
@@ -137,6 +139,43 @@
   <data name="Val_CodeTaken" xml:space="preserve"><value>Dieses Kürzel existiert bereits.</value></data>
   <data name="Val_NeedOperation" xml:space="preserve"><value>Fügen Sie mindestens einen Arbeitsgang hinzu.</value></data>
   <data name="Val_OperationIncomplete" xml:space="preserve"><value>Jeder Arbeitsgang braucht einen Arbeitsplatz und eine Beschreibung.</value></data>
+  <data name="Val_MaxLength" xml:space="preserve"><value>Die maximale Länge beträgt {0} Zeichen.</value></data>
+  <data name="Val_StatusInvalid" xml:space="preserve"><value>Wählen Sie einen gültigen Status.</value></data>
+  <data name="Val_StatusTransition" xml:space="preserve"><value>Ein archivierter Plan muss zuerst auf Entwurf gesetzt werden, bevor er freigegeben werden kann.</value></data>
+  <data name="Val_LotSizeRange" xml:space="preserve"><value>Die Losgröße muss zwischen {0} und {1} liegen.</value></data>
+  <data name="Val_OperationNumberRange" xml:space="preserve"><value>Die Arbeitsgangnummer muss zwischen {0} und {1} liegen.</value></data>
+  <data name="Val_OperationNumberDuplicate" xml:space="preserve"><value>Die Arbeitsgangnummer {0} wird mehrfach verwendet.</value></data>
+  <data name="Val_SetupTimeRange" xml:space="preserve"><value>Die Rüstzeit muss zwischen {0} und {1} Minuten liegen.</value></data>
+  <data name="Val_RunTimeRange" xml:space="preserve"><value>Die Laufzeit muss zwischen {0} und {1} Minuten liegen.</value></data>
+  <data name="Val_WorkCenterMissing" xml:space="preserve"><value>Der Arbeitsplatz {0} ist nicht vorhanden.</value></data>
+  <data name="Val_WorkCenterInactive" xml:space="preserve"><value>Der Arbeitsplatz {0} ist inaktiv. Ein freigegebener Plan darf nur aktive Arbeitsplätze verwenden.</value></data>
+  <data name="Val_OperationDurationOverflow" xml:space="preserve"><value>Die Arbeitsgangdauer ist zu groß für eine sichere Planung.</value></data>
+  <data name="Val_HourlyRateRange" xml:space="preserve"><value>Der Stundensatz muss zwischen {0} und {1} liegen.</value></data>
+  <data name="Val_CapacityRange" xml:space="preserve"><value>Die Kapazität muss zwischen {0} und {1} liegen.</value></data>
+  <data name="Val_WorkCenterReleasedUse" xml:space="preserve"><value>Dieser Arbeitsplatz wird von einem freigegebenen Plan verwendet und kann nicht deaktiviert werden.</value></data>
+  <data name="Val_WorkCenterInUse" xml:space="preserve"><value>Dieser Arbeitsplatz wird von mindestens einem Arbeitsgang referenziert.</value></data>
+  <data name="Error_SaveFailed" xml:space="preserve"><value>Die Änderung konnte nicht dauerhaft gespeichert werden. Die gespeicherten Daten wurden nicht als aktualisiert gemeldet.</value></data>
+  <data name="Error_NotFound" xml:space="preserve"><value>Der Eintrag ist nicht mehr vorhanden. Laden Sie die Seite neu und versuchen Sie es erneut.</value></data>
+  <data name="Error_Cancelled" xml:space="preserve"><value>Der Vorgang wurde abgebrochen.</value></data>
+  <data name="Error_ScheduleFailed" xml:space="preserve"><value>Der Produktionsplan konnte nicht erstellt werden. Prüfen Sie die Eingaben und versuchen Sie es erneut.</value></data>
+  <data name="Error_UnexpectedTitle" xml:space="preserve"><value>Ein Fehler ist aufgetreten</value></data>
+  <data name="Error_UnexpectedBody" xml:space="preserve"><value>Die Anwendung konnte diese Aktion nicht abschließen. Laden Sie neu, um zu einem sicheren Zustand zurückzukehren.</value></data>
+  <data name="Error_Reload" xml:space="preserve"><value>Anwendung neu laden</value></data>
+  <data name="Storage_RecoveryTitle" xml:space="preserve"><value>Browserdaten benötigen Aufmerksamkeit</value></data>
+  <data name="Storage_RecoveryPreserved" xml:space="preserve"><value>Die vorhandenen Daten wurden nicht überschrieben. Exportieren Sie sie vor dem Zurücksetzen der lokalen Demo-Datenbank.</value></data>
+  <data name="Storage_Failure_InvalidBase64" xml:space="preserve"><value>Die gespeicherten Daten sind kein gültiges Base64-Format.</value></data>
+  <data name="Storage_Failure_InvalidSqlite" xml:space="preserve"><value>Die gespeicherten Daten sind keine gültige SQLite-Datenbank.</value></data>
+  <data name="Storage_Failure_TruncatedPayload" xml:space="preserve"><value>Die gespeicherte Datenbank ist unvollständig.</value></data>
+  <data name="Storage_Failure_UnsupportedSchema" xml:space="preserve"><value>Die gespeicherte Schemaversion ({0}) wird von dieser Anwendungsversion nicht unterstützt.</value></data>
+  <data name="Storage_Failure_ReadFailed" xml:space="preserve"><value>Der Browser konnte den lokalen Speicher nicht lesen.</value></data>
+  <data name="Storage_Failure_WriteFailed" xml:space="preserve"><value>Der Browser konnte die lokale Datenbank nicht speichern; der Speicher ist möglicherweise nicht verfügbar oder voll.</value></data>
+  <data name="Storage_Failure_ExportFailed" xml:space="preserve"><value>Die gespeicherten Daten konnten nicht exportiert werden.</value></data>
+  <data name="Storage_Failure_ResetFailed" xml:space="preserve"><value>Die lokale Demo-Datenbank konnte nicht zurückgesetzt werden.</value></data>
+  <data name="Storage_Export" xml:space="preserve"><value>Gespeicherte Daten exportieren</value></data>
+  <data name="Storage_Reset" xml:space="preserve"><value>Lokale Demo-Datenbank zurücksetzen</value></data>
+  <data name="Storage_ResetConfirm" xml:space="preserve"><value>Zurücksetzen und Datenverlust bestätigen</value></data>
+  <data name="Storage_ExportFailed" xml:space="preserve"><value>Der Export ist fehlgeschlagen. Die ursprünglichen Browserdaten bleiben unverändert.</value></data>
+  <data name="Storage_ResetFailed" xml:space="preserve"><value>Das Zurücksetzen ist fehlgeschlagen. Prüfen Sie die Browserberechtigungen und versuchen Sie es erneut.</value></data>
 
   <data name="WorkCenters_Title" xml:space="preserve"><value>Arbeitsplätze</value></data>
   <data name="WorkCenters_New" xml:space="preserve"><value>Neuer Arbeitsplatz</value></data>
@@ -213,6 +252,17 @@
   <data name="Sched_OnTime" xml:space="preserve"><value>Termintreu</value></data>
   <data name="Sched_DayShort" xml:space="preserve"><value>T</value></data>
   <data name="Sched_Empty" xml:space="preserve"><value>Keine freigegebenen Arbeitspläne. Setzen Sie den Status eines Plans auf „Freigegeben“.</value></data>
+  <data name="Sched_RejectedTitle" xml:space="preserve"><value>Einige freigegebene Pläne wurden nicht eingeplant</value></data>
+  <data name="Sched_RejectedBody" xml:space="preserve"><value>Korrigieren Sie den vollständigen Arbeitsablauf, bevor Sie einen vollständigen Plan erzeugen.</value></data>
+  <data name="Sched_Error_InvalidPlan" xml:space="preserve"><value>erforderliche Plandaten sind ungültig</value></data>
+  <data name="Sched_Error_InvalidLotSize" xml:space="preserve"><value>die Losgröße ist ungültig</value></data>
+  <data name="Sched_Error_NoOperations" xml:space="preserve"><value>es sind keine Arbeitsgänge definiert</value></data>
+  <data name="Sched_Error_InvalidOperationNumber" xml:space="preserve"><value>die Arbeitsgangnummer ist ungültig</value></data>
+  <data name="Sched_Error_DuplicateOperationNumber" xml:space="preserve"><value>die Arbeitsgangnummer ist doppelt</value></data>
+  <data name="Sched_Error_InvalidOperationDuration" xml:space="preserve"><value>die Arbeitsgangdauer ist ungültig oder zu groß</value></data>
+  <data name="Sched_Error_MissingWorkCenter" xml:space="preserve"><value>der Arbeitsplatz fehlt</value></data>
+  <data name="Sched_Error_InactiveWorkCenter" xml:space="preserve"><value>der Arbeitsplatz ist inaktiv</value></data>
+  <data name="Sched_Error_InvalidWorkCenterCapacity" xml:space="preserve"><value>die Arbeitsplatzkapazität ist ungültig</value></data>
 
   <data name="Sched_Ai_Title" xml:space="preserve"><value>Planungs-Assistent</value></data>
   <data name="Sched_Ai_Subtitle" xml:space="preserve"><value>Eine Erklärung des obigen Plans in einfacher Sprache — auf Ihrem Gerät berechnet.</value></data>
@@ -234,5 +284,9 @@
   <data name="Sched_Ai_Endpoint" xml:space="preserve"><value>API-Endpunkt (OpenAI-kompatibel)</value></data>
   <data name="Sched_Ai_Model" xml:space="preserve"><value>Modell</value></data>
   <data name="Sched_Ai_ApiKey" xml:space="preserve"><value>API-Schlüssel</value></data>
-  <data name="Sched_Ai_Privacy" xml:space="preserve"><value>Ihr Schlüssel wird nur in diesem Browser gespeichert und nur an den obigen Endpunkt gesendet, der Browser-Anfragen (CORS) erlauben muss. Nicht auf einem gemeinsam genutzten Computer verwenden.</value></data>
+  <data name="Sched_Ai_Privacy" xml:space="preserve"><value>Ihr Schlüssel wird im localStorage des Browsers gespeichert, der kein sicherer Schlüsselspeicher ist, und an den geprüften Endpunkt gesendet. Nicht auf gemeinsam genutzten Computern verwenden. Eine Produktivversion sollte einen Backend-Proxy und serverseitige Geheimnisse nutzen.</value></data>
+  <data name="Sched_Ai_InvalidSettings" xml:space="preserve"><value>Geben Sie einen gültigen HTTPS-Endpunkt (HTTP nur für lokale Loopback-Entwicklung), ein Modell und einen API-Schlüssel ein.</value></data>
+  <data name="Sched_Ai_FailureTimeout" xml:space="preserve"><value>Zeitüberschreitung der Anfrage</value></data>
+  <data name="Sched_Ai_FailureResponse" xml:space="preserve"><value>ungültige Antwort des Anbieters</value></data>
+  <data name="Sched_Ai_FailureUnavailable" xml:space="preserve"><value>Anbieter nicht verfügbar</value></data>
 </root>

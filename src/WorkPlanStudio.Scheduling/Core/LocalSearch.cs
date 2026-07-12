@@ -41,7 +41,19 @@ public static class LocalSearch
         IReadOnlyList<int> startOrder,
         Schedule startSchedule,
         ScheduleEvaluation startEvaluation,
-        int maxSteps)
+        int maxSteps) =>
+        ImproveCancellable(scheduler, context, dueByJob, startOrder, startSchedule, startEvaluation, maxSteps, CancellationToken.None);
+
+    /// <summary>Polishes a priority order and observes cooperative cancellation.</summary>
+    public static LocalSearchResult ImproveCancellable(
+        IScheduler scheduler,
+        SchedulingContext context,
+        IReadOnlyDictionary<int, long> dueByJob,
+        IReadOnlyList<int> startOrder,
+        Schedule startSchedule,
+        ScheduleEvaluation startEvaluation,
+        int maxSteps,
+        CancellationToken cancellationToken)
     {
         var bestOrder = startOrder.ToArray();
         var bestSchedule = startSchedule;
@@ -52,17 +64,19 @@ public static class LocalSearch
 
         while (improved && steps < maxSteps)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             improved = false;
 
             for (int i = 0; i < bestOrder.Length - 1; i++)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 if (steps >= maxSteps) break;
 
                 var candidate = (int[])bestOrder.Clone();
                 (candidate[i], candidate[i + 1]) = (candidate[i + 1], candidate[i]);
                 steps++;
 
-                var schedule = scheduler.Run(context, candidate, dueByJob);
+                var schedule = scheduler.RunCancellable(context, candidate, dueByJob, cancellationToken);
                 var evaluation = ScheduleEvaluator.Evaluate(schedule, context);
 
                 if (evaluation.Penalty < bestEvaluation.Penalty - Epsilon)

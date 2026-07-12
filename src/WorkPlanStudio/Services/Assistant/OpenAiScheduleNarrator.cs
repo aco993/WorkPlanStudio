@@ -14,12 +14,18 @@ namespace WorkPlanStudio.Services;
 /// </summary>
 public sealed class OpenAiScheduleNarrator : IScheduleNarrator
 {
+    /// <summary>Finite provider budget; caller cancellation remains distinguishable.</summary>
+    public static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(15);
+
     private readonly HttpClient _http;
     private readonly AssistantSettings _settings;
     private readonly string _language;
 
     public OpenAiScheduleNarrator(HttpClient http, AssistantSettings settings, string? language = null)
     {
+        if (!settings.IsConfigured || !settings.TryGetEndpoint(out _))
+            throw new ArgumentException("AI narrator settings are not valid.", nameof(settings));
+
         _http = http;
         _settings = settings;
         _language = string.IsNullOrWhiteSpace(language)
@@ -51,7 +57,9 @@ public sealed class OpenAiScheduleNarrator : IScheduleNarrator
             Encoding.UTF8,
             "application/json");
 
-        using var response = await _http.SendAsync(request, cancellationToken);
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeout.CancelAfter(RequestTimeout);
+        using var response = await _http.SendAsync(request, timeout.Token);
         response.EnsureSuccessStatusCode();
 
         var body = await response.Content.ReadAsStringAsync(cancellationToken);

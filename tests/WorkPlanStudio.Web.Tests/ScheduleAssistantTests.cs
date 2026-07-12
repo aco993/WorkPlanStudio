@@ -35,6 +35,27 @@ public class ScheduleAssistantTests
         ApiKey = "sk-secret"
     };
 
+    [Theory]
+    [InlineData("http://example.com/v1")]
+    [InlineData("javascript:alert(1)")]
+    [InlineData("https://user:password@example.com/v1")]
+    [InlineData("https://example.com/v1?redirect=evil")]
+    public void Non_https_or_ambiguous_endpoints_are_rejected(string endpoint)
+    {
+        var settings = Configured() with { Endpoint = endpoint };
+
+        Assert.False(settings.IsConfigured);
+        Assert.False(settings.TryGetEndpoint(out _));
+    }
+
+    [Fact]
+    public void Http_loopback_is_allowed_for_local_development()
+    {
+        var settings = Configured() with { Endpoint = "http://localhost:1234/v1" };
+
+        Assert.True(settings.IsConfigured);
+    }
+
     // ----- rule-based narrator -----
 
     [Fact]

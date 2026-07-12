@@ -101,6 +101,54 @@ public class SchedulePageTests : Bunit.TestContext
     }
 
     [Fact]
+    public void Explicit_due_date_is_not_exposed_without_a_production_order_due_date()
+    {
+        Arrange(Sample.OnTime());
+
+        var cut = RenderComponent<SchedulePage>();
+
+        cut.WaitForAssertion(() => Assert.DoesNotContain("Sched_Due_Explicit", cut.Markup));
+    }
+
+    [Fact]
+    public void Rejected_plan_diagnostics_link_to_the_problematic_plan()
+    {
+        var result = Sample.OnTime() with
+        {
+            PreparationErrors =
+            [
+                new SchedulePreparationIssue(
+                    42,
+                    "WP-42",
+                    20,
+                    SchedulePreparationErrorCode.InactiveWorkCenter,
+                    "WC-2")
+            ]
+        };
+        Arrange(result);
+
+        var cut = RenderComponent<SchedulePage>();
+
+        cut.WaitForAssertion(() => Assert.Contains("Sched_RejectedTitle", cut.Markup));
+        Assert.Equal("work-plans/42", cut.Find(".form-banner a").GetAttribute("href"));
+        Assert.Contains("Sched_Error_InactiveWorkCenter", cut.Markup);
+    }
+
+    [Fact]
+    public void Unexpected_scheduler_failure_unlocks_the_generate_button_and_shows_safe_error()
+    {
+        var fake = Arrange(Sample.OnTime());
+        fake.ExceptionToThrow = new InvalidOperationException("internal details");
+
+        var cut = RenderComponent<SchedulePage>();
+
+        cut.WaitForAssertion(() => Assert.Contains("Error_ScheduleFailed", cut.Markup));
+        var generate = cut.Find(".page-head .btn-primary");
+        Assert.False(generate.HasAttribute("disabled"));
+        Assert.DoesNotContain("internal details", cut.Markup);
+    }
+
+    [Fact]
     public void Renders_the_assistant_panel_with_a_rule_based_explanation()
     {
         Arrange(Sample.WithLateJob());

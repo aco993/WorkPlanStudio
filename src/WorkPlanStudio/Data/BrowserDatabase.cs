@@ -1,80 +1,195 @@
+using System.Text;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.JSInterop;
 
 namespace WorkPlanStudio.Data;
 
 /// <summary>
-/// Bridges EF Core's SQLite file (which lives in the browser's in-memory file
-/// system) with persistent <c>localStorage</c>. The database is loaded once on
-/// startup, seeded on first run, and written back after every change — so data
-/// survives page reloads even though there is no server.
+/// Owns the explicit boundary between SQLite in the browser file system and the
+/// versioned Base64 payload in localStorage. Corrupt or incompatible payloads
+/// are preserved for export until the user explicitly resets them.
 /// </summary>
 public sealed class BrowserDatabase
 {
-    // Path inside the WebAssembly virtual file system.
-    private const string DbPath = "/data/workplan.db";
-
-    // Bump when the schema OR the seed content changes so a stale stored database
-    // is discarded and re-seeded instead of being reused.
-    // v2: enriched the sample data to seven released plans so the scheduler has a
-    //     non-trivial problem (dispatch rule and seed visibly change the result).
-    private const int SchemaVersion = 2;
+    private static readonly byte[] SqliteHeader = Encoding.ASCII.GetBytes("SQLite format 3\0");
 
     private readonly IDbContextFactory<AppDbContext> _factory;
-    private readonly IJSRuntime _js;
-    private Task? _ready;
+    private readonly IBrowserDatabaseStorage _storage;
+    private readonly BrowserDatabaseOptions _options;
+    private readonly ILogger<BrowserDatabase> _logger;
+    private Task<BrowserDatabaseReadiness>? _ready;
 
-    public BrowserDatabase(IDbContextFactory<AppDbContext> factory, IJSRuntime js)
+    public BrowserDatabase(
+        IDbContextFactory<AppDbContext> factory,
+        IBrowserDatabaseStorage storage,
+        BrowserDatabaseOptions options,
+        ILogger<BrowserDatabase> logger)
     {
         _factory = factory;
-        _js = js;
+        _storage = storage;
+        _options = options;
+        _logger = logger;
     }
 
-    /// <summary>Idempotent: runs initialization exactly once per app session.</summary>
-    public Task EnsureReadyAsync() => _ready ??= InitializeAsync();
+    public Task<BrowserDatabaseReadiness> EnsureReadyAsync() => _ready ??= InitializeAsync();
 
-    /// <summary>Creates a fresh, ready-to-use context (caller disposes it).</summary>
-    public async Task<AppDbContext> CreateContextAsync()
+    public async Task<AppDbContext> CreateContextAsync(CancellationToken cancellationToken = default)
     {
-        await EnsureReadyAsync();
-        return await _factory.CreateDbContextAsync();
+        var readiness = await EnsureReadyAsync();
+        if (!readiness.IsReady)
+            throw new BrowserDatabaseUnavailableException(readiness);
+
+        return await _factory.CreateDbContextAsync(cancellationToken);
     }
 
-    /// <summary>Writes the current SQLite file back to browser storage.</summary>
-    public async Task PersistAsync()
+    public async Task<BrowserStorageResult> PersistAsync(CancellationToken cancellationToken = default)
     {
-        var bytes = await File.ReadAllBytesAsync(DbPath);
-        await _js.InvokeVoidAsync("workplanDb.save", Convert.ToBase64String(bytes), SchemaVersion);
-    }
-
-    /// <summary>Deletes all stored data and re-creates the sample database.</summary>
-    public async Task ResetAsync()
-    {
-        await _js.InvokeVoidAsync("workplanDb.clear");
-        if (File.Exists(DbPath))
-            File.Delete(DbPath);
-        _ready = null;
-        await EnsureReadyAsync();
-    }
-
-    private async Task InitializeAsync()
-    {
-        Directory.CreateDirectory("/data");
-
-        var stored = await _js.InvokeAsync<StoredDatabase?>("workplanDb.load");
-        if (stored is { Version: SchemaVersion, Data.Length: > 0 })
-            await File.WriteAllBytesAsync(DbPath, Convert.FromBase64String(stored.Data));
-
-        await using var db = await _factory.CreateDbContextAsync();
-        var createdFresh = await db.Database.EnsureCreatedAsync();
-        if (createdFresh)
+        try
         {
-            SeedData.Apply(db);
-            await db.SaveChangesAsync();
-            await PersistAsync();
+            var bytes = await File.ReadAllBytesAsync(_options.DatabasePath, cancellationToken);
+            await _storage.SaveAsync(
+                new StoredDatabase(Convert.ToBase64String(bytes), _options.SchemaVersion),
+                cancellationToken);
+            return BrowserStorageResult.Success;
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            _logger.LogError(exception, "Persisting the browser database failed");
+            return new(false, BrowserDatabaseFailure.WriteFailed);
         }
     }
 
-    // Shape returned by workplanDb.load (camelCase from JS is matched case-insensitively).
-    private sealed record StoredDatabase(string Data, int Version);
+    public async Task<BrowserStorageResult> ExportStoredPayloadAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var stored = await _storage.LoadAsync(cancellationToken);
+            if (stored is null)
+                return new(false, BrowserDatabaseFailure.ExportFailed);
+
+            await _storage.ExportAsync(stored, cancellationToken);
+            return BrowserStorageResult.Success;
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            _logger.LogError(exception, "Exporting the browser database payload failed");
+            return new(false, BrowserDatabaseFailure.ExportFailed);
+        }
+    }
+
+    public async Task<BrowserDatabaseReadiness> ResetAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await _storage.ClearAsync(cancellationToken);
+            DeleteIfExists(_options.DatabasePath);
+            DeleteIfExists(ImportPath);
+            _ready = null;
+            return await EnsureReadyAsync();
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            _logger.LogError(exception, "Resetting the browser database failed");
+            return new(false, BrowserDatabaseFailure.ResetFailed);
+        }
+    }
+
+    private string ImportPath => _options.DatabasePath + ".import";
+
+    private async Task<BrowserDatabaseReadiness> InitializeAsync()
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(_options.DatabasePath)!);
+
+        StoredDatabase? stored;
+        try
+        {
+            stored = await _storage.LoadAsync();
+        }
+        catch (Exception exception)
+        {
+            _logger.LogError(exception, "Reading the browser database payload failed");
+            return new(false, BrowserDatabaseFailure.ReadFailed);
+        }
+
+        if (stored is null)
+            return await CreateFreshAsync();
+
+        if (stored.Version != _options.SchemaVersion)
+            return new(false, BrowserDatabaseFailure.UnsupportedSchema, stored.Version);
+
+        byte[] bytes;
+        try
+        {
+            bytes = Convert.FromBase64String(stored.Data);
+        }
+        catch (FormatException exception)
+        {
+            _logger.LogWarning(exception, "Stored browser database is not valid Base64");
+            return new(false, BrowserDatabaseFailure.InvalidBase64, stored.Version);
+        }
+
+        if (bytes.Length < 100)
+            return new(false, BrowserDatabaseFailure.TruncatedPayload, stored.Version);
+        if (!bytes.AsSpan(0, SqliteHeader.Length).SequenceEqual(SqliteHeader))
+            return new(false, BrowserDatabaseFailure.InvalidSqlite, stored.Version);
+
+        try
+        {
+            DeleteIfExists(ImportPath);
+            await File.WriteAllBytesAsync(ImportPath, bytes);
+            await VerifySqliteAsync(ImportPath);
+            File.Move(ImportPath, _options.DatabasePath, overwrite: true);
+
+            await using var db = await _factory.CreateDbContextAsync();
+            _ = await db.WorkCenters.AsNoTracking().CountAsync();
+            return BrowserDatabaseReadiness.Ready;
+        }
+        catch (Exception exception)
+        {
+            DeleteIfExists(ImportPath);
+            _logger.LogWarning(exception, "Stored browser database failed SQLite validation");
+            return new(false, BrowserDatabaseFailure.InvalidSqlite, stored.Version);
+        }
+    }
+
+    private async Task<BrowserDatabaseReadiness> CreateFreshAsync()
+    {
+        try
+        {
+            DeleteIfExists(_options.DatabasePath);
+            await using (var db = await _factory.CreateDbContextAsync())
+            {
+                await db.Database.EnsureCreatedAsync();
+                SeedData.Apply(db);
+                await db.SaveChangesAsync();
+            }
+
+            var persisted = await PersistAsync();
+            return persisted.IsSuccess
+                ? BrowserDatabaseReadiness.Ready
+                : new(false, persisted.Failure);
+        }
+        catch (Exception exception)
+        {
+            _logger.LogError(exception, "Creating the fresh browser database failed");
+            return new(false, BrowserDatabaseFailure.WriteFailed);
+        }
+    }
+
+    private static async Task VerifySqliteAsync(string path)
+    {
+        await using var connection = new SqliteConnection($"Data Source={path};Mode=ReadOnly;Pooling=False");
+        await connection.OpenAsync();
+        await using var command = connection.CreateCommand();
+        command.CommandText = "PRAGMA quick_check;";
+        var result = await command.ExecuteScalarAsync();
+        if (!string.Equals(result?.ToString(), "ok", StringComparison.OrdinalIgnoreCase))
+            throw new InvalidDataException("SQLite quick_check did not return ok.");
+    }
+
+    private static void DeleteIfExists(string path)
+    {
+        if (File.Exists(path))
+            File.Delete(path);
+    }
 }

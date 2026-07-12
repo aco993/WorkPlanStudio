@@ -1,6 +1,115 @@
-﻿<Router AppAssembly="@typeof(App).Assembly" NotFoundPage="typeof(Pages.NotFound)">
-    <Found Context="routeData">
-        <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)"/>
-        <FocusOnNavigate RouteData="@routeData" Selector="h1" />
-    </Found>
-</Router>
+@inject BrowserDatabase Database
+@inject IStringLocalizer<SharedResource> L
+@inject NavigationManager Navigation
+
+@if (_readiness is null)
+{
+    <div class="loading-row"><span class="spinner"></span></div>
+}
+else if (!_readiness.IsReady)
+{
+    <main class="recovery-shell">
+        <section class="card recovery-card" role="alert">
+            <div class="card-head"><h1>@L["Storage_RecoveryTitle"]</h1></div>
+            <div class="card-body">
+                <p>@RecoveryMessage(_readiness)</p>
+                <p>@L["Storage_RecoveryPreserved"]</p>
+
+                @if (_actionError is not null)
+                {
+                    <div class="form-banner error">@_actionError</div>
+                }
+
+                <div class="head-actions">
+                    <button class="btn btn-outline" @onclick="ExportAsync" disabled="@_busy">@L["Storage_Export"]</button>
+                    @if (!_confirmReset)
+                    {
+                        <button class="btn btn-danger" @onclick="() => _confirmReset = true" disabled="@_busy">@L["Storage_Reset"]</button>
+                    }
+                    else
+                    {
+                        <button class="btn btn-danger" @onclick="ResetAsync" disabled="@_busy">@L["Storage_ResetConfirm"]</button>
+                        <button class="btn btn-ghost" @onclick="() => _confirmReset = false" disabled="@_busy">@L["Common_Cancel"]</button>
+                    }
+                </div>
+            </div>
+        </section>
+    </main>
+}
+else
+{
+    <ErrorBoundary @ref="_errorBoundary">
+        <ChildContent>
+            <Router AppAssembly="@typeof(App).Assembly" NotFoundPage="typeof(Pages.NotFound)">
+                <Found Context="routeData">
+                    <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)"/>
+                    <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+                </Found>
+            </Router>
+        </ChildContent>
+        <ErrorContent Context="exception">
+            <main class="recovery-shell">
+                <section class="card recovery-card" role="alert">
+                    <div class="card-head"><h1>@L["Error_UnexpectedTitle"]</h1></div>
+                    <div class="card-body">
+                        <p>@L["Error_UnexpectedBody"]</p>
+                        <button class="btn btn-primary" @onclick="Recover">@L["Error_Reload"]</button>
+                    </div>
+                </section>
+            </main>
+        </ErrorContent>
+    </ErrorBoundary>
+}
+
+@code {
+    private BrowserDatabaseReadiness? _readiness;
+    private ErrorBoundary? _errorBoundary;
+    private bool _confirmReset;
+    private bool _busy;
+    private string? _actionError;
+
+    protected override async Task OnInitializedAsync() =>
+        _readiness = await Database.EnsureReadyAsync();
+
+    private string RecoveryMessage(BrowserDatabaseReadiness readiness) =>
+        L[$"Storage_Failure_{readiness.Failure}", readiness.StoredVersion ?? 0];
+
+    private async Task ExportAsync()
+    {
+        _busy = true;
+        _actionError = null;
+        try
+        {
+            var result = await Database.ExportStoredPayloadAsync();
+            if (!result.IsSuccess)
+                _actionError = L["Storage_ExportFailed"];
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task ResetAsync()
+    {
+        _busy = true;
+        _actionError = null;
+        try
+        {
+            _readiness = await Database.ResetAsync();
+            _confirmReset = false;
+            if (!_readiness.IsReady)
+                _actionError = L["Storage_ResetFailed"];
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private void Recover()
+    {
+        _errorBoundary?.Recover();
+        Navigation.NavigateTo(Navigation.Uri, forceLoad: true);
+    }
+}
