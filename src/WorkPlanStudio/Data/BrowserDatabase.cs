@@ -91,6 +91,8 @@ public sealed class BrowserDatabase
         try
         {
             await _storage.ClearAsync(cancellationToken);
+            await using (var db = await _factory.CreateDbContextAsync(cancellationToken))
+                await db.Database.EnsureDeletedAsync(cancellationToken);
             DeleteIfExists(_options.DatabasePath);
             DeleteIfExists(ImportPath);
             _ready = null;

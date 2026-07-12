@@ -51,6 +51,7 @@ public sealed class WorkPlanService
 
     public async Task<ApplicationResult<int>> CreateAsync(WorkPlan plan, CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(plan);
         Normalize(plan);
         await using (var db = await _db.CreateContextAsync())
         {
@@ -85,6 +86,7 @@ public sealed class WorkPlanService
 
     public async Task<ApplicationResult<int>> UpdateAsync(WorkPlan plan, CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(plan);
         Normalize(plan);
         await using (var db = await _db.CreateContextAsync())
         {
@@ -159,13 +161,14 @@ public sealed class WorkPlanService
 
     private static void Normalize(WorkPlan plan)
     {
-        plan.PlanNumber = plan.PlanNumber.Trim();
-        plan.PartNumber = plan.PartNumber.Trim();
-        plan.PartName = plan.PartName.Trim();
+        plan.PlanNumber = plan.PlanNumber?.Trim() ?? "";
+        plan.PartNumber = plan.PartNumber?.Trim() ?? "";
+        plan.PartName = plan.PartName?.Trim() ?? "";
         plan.Revision = string.IsNullOrWhiteSpace(plan.Revision) ? null : plan.Revision.Trim();
+        plan.Operations ??= [];
         foreach (var operation in plan.Operations)
         {
-            operation.Description = operation.Description.Trim();
+            operation.Description = operation.Description?.Trim() ?? "";
             operation.Remarks = string.IsNullOrWhiteSpace(operation.Remarks) ? null : operation.Remarks.Trim();
         }
     }

@@ -179,4 +179,49 @@ public sealed class ScheduleE2ETests
         await dialog.WaitForAsync(new() { State = WaitForSelectorState.Detached });
         Assert.True(await open.EvaluateAsync<bool>("element => element === document.activeElement"));
     }
+
+    [Fact]
+    public async Task Reset_reseeds_only_after_confirmation_and_removes_local_changes()
+    {
+        var context = await _fixture.Browser.NewContextAsync();
+        await using var _ = context;
+        var page = await context.NewPageAsync();
+        await page.GotoAsync($"{_fixture.BaseUrl}/work-centers");
+        await page.GetByRole(AriaRole.Button, new() { Name = "New work center" }).ClickAsync();
+        var editor = page.GetByRole(AriaRole.Dialog, new() { Name = "New work center" });
+        await editor.GetByLabel("Code").FillAsync("RESET-E2E");
+        await editor.GetByLabel("Name").FillAsync("Reset regression");
+        await editor.GetByRole(AriaRole.Button, new() { Name = "Save" }).ClickAsync();
+        await page.GetByText("RESET-E2E").WaitForAsync();
+
+        await page.GotoAsync($"{_fixture.BaseUrl}/about");
+        await page.GetByRole(AriaRole.Button, new() { Name = "Reset to sample data" }).ClickAsync();
+        var confirmation = page.GetByRole(AriaRole.Dialog, new() { Name = "Reset to sample data" });
+        Assert.Contains("Discard your changes", await confirmation.InnerTextAsync());
+        await confirmation.GetByRole(AriaRole.Button, new() { Name = "Reset to sample data" }).ClickAsync();
+        await page.GetByRole(AriaRole.Heading, new() { Name = "Dashboard" }).WaitForAsync(new() { Timeout = 60_000 });
+
+        await page.GotoAsync($"{_fixture.BaseUrl}/work-centers");
+        await page.GetByRole(AriaRole.Heading, new() { Name = "Work Centers" }).WaitForAsync();
+        Assert.Equal(0, await page.GetByText("RESET-E2E").CountAsync());
+    }
+
+    [Fact]
+    public async Task Mobile_drawer_navigation_keeps_the_core_flow_usable()
+    {
+        var context = await _fixture.Browser.NewContextAsync(new BrowserNewContextOptions
+        {
+            ViewportSize = new ViewportSize { Width = 390, Height = 844 }
+        });
+        await using var _ = context;
+        var page = await context.NewPageAsync();
+        await page.GotoAsync($"{_fixture.BaseUrl}/schedule");
+        await page.GetByRole(AriaRole.Heading, new() { Name = "Production Scheduling" }).WaitForAsync(new() { Timeout = 60_000 });
+
+        await page.GetByRole(AriaRole.Button, new() { Name = "Menu" }).ClickAsync();
+        await page.GetByRole(AriaRole.Link, new() { Name = "Work Centers" }).ClickAsync();
+
+        await page.GetByRole(AriaRole.Heading, new() { Name = "Work Centers" }).WaitForAsync();
+        Assert.True(await page.EvaluateAsync<bool>("() => document.documentElement.scrollWidth <= document.documentElement.clientWidth"));
+    }
 }

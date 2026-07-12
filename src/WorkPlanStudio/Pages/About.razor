@@ -2,6 +2,7 @@
 @inject IStringLocalizer<SharedResource> L
 @inject BrowserDatabase Db
 @inject NavigationManager Nav
+@inject ILogger<About> Logger
 
 <PageTitle>@L["Nav_About"] · WorkPlan Studio</PageTitle>
 
@@ -10,6 +11,10 @@
 </div>
 
 <div class="about-grid">
+    @if (_resetError is not null)
+    {
+        <div class="form-banner error" role="alert">@_resetError</div>
+    }
     <section class="card">
         <div class="card-body">
             <p class="lead">@L["About_Intro"]</p>
@@ -61,12 +66,14 @@
     </ChildContent>
     <Footer>
         <button class="btn btn-ghost" @onclick="() => _showReset = false">@L["Common_Cancel"]</button>
-        <button class="btn btn-danger" @onclick="ResetAsync">@L["About_Reset"]</button>
+        <button class="btn btn-danger" @onclick="ResetAsync" disabled="@_resetting">@L["About_Reset"]</button>
     </Footer>
 </Modal>
 
 @code {
     private bool _showReset;
+    private bool _resetting;
+    private string? _resetError;
 
     private readonly string[] _tech =
     {
@@ -75,8 +82,27 @@
 
     private async Task ResetAsync()
     {
-        await Db.ResetAsync();
-        // Reload from a clean slate so every page re-queries the fresh database.
-        Nav.NavigateTo("", forceLoad: true);
+        _resetting = true;
+        _resetError = null;
+        try
+        {
+            var readiness = await Db.ResetAsync();
+            if (!readiness.IsReady)
+            {
+                _resetError = L["Storage_ResetFailed"];
+                return;
+            }
+
+            Nav.NavigateTo("", forceLoad: true);
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(exception, "Resetting the demo database failed");
+            _resetError = L["Storage_ResetFailed"];
+        }
+        finally
+        {
+            _resetting = false;
+        }
     }
 }

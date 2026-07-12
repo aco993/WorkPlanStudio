@@ -96,4 +96,33 @@ public class BusinessValidationTests
         Assert.Throws<ArgumentOutOfRangeException>(() => ScheduleMapper.ToSeconds(0, 0, 0));
         Assert.Throws<OverflowException>(() => ScheduleMapper.ToSeconds(decimal.MaxValue, 0, 1));
     }
+
+    [Fact]
+    public void Mapper_ignores_an_unreferenced_invalid_machine_but_rejects_a_referenced_one()
+    {
+        var valid = Center();
+        var invalid = new WorkCenter
+        {
+            Id = 2,
+            Code = "BAD",
+            Name = "Bad capacity",
+            IsActive = true,
+            ParallelCapacity = 0
+        };
+
+        var validOnly = ScheduleMapper.BuildInput(
+            [ValidPlan()],
+            [valid, invalid],
+            new SchedulingParameters { MultiStartRuns = 1, LocalSearchMaxSteps = 0 });
+        Assert.NotNull(validOnly.Input);
+
+        var plan = ValidPlan();
+        plan.Operations[0].WorkCenterId = 2;
+        var rejected = ScheduleMapper.BuildInput(
+            [plan],
+            [valid, invalid],
+            new SchedulingParameters { MultiStartRuns = 1, LocalSearchMaxSteps = 0 });
+        Assert.Null(rejected.Input);
+        Assert.Contains(rejected.Errors, error => error.Code == SchedulePreparationErrorCode.InvalidWorkCenterCapacity);
+    }
 }
