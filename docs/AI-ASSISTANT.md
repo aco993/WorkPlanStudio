@@ -49,7 +49,7 @@ card and fill in:
 
 | Field | Example |
 | --- | --- |
-| Endpoint | `https://api.openai.com/v1` (any OpenAI-compatible base URL) |
+| Endpoint | `https://api.openai.com/v1` (validated HTTPS OpenAI-compatible base URL; HTTP only for loopback development) |
 | Model | `gpt-4o-mini` |
 | API key | your key |
 
@@ -63,10 +63,15 @@ Then use **Enhance with AI** on the assistant card.
 
 ## Security
 
-- The API key is stored **only** in this browser's `localStorage` and is sent
-  **only** to the endpoint you configure. It is never logged, and no key is ever
-  committed to the repository.
-- Because the key lives in the browser, don't enable AI on a shared computer.
+- The API key is stored in this browser's `localStorage`. That storage is **not a
+  secret vault** and can be read by script running on the same origin. It is never
+  logged or committed.
+- Endpoints must be absolute HTTPS URLs (HTTP is accepted only for loopback); URLs
+  with embedded credentials, query strings or fragments are rejected.
+- Provider calls have a 15-second timeout. Caller cancellation remains distinct;
+  provider timeout/failure returns a safe localized fallback without raw exception text.
+- Because the key lives in the browser, don't enable AI on a shared computer. A
+  production deployment should use a backend proxy and server-side secret store.
 - The data sent is the small set of schedule facts (KPIs, work-center names, plan
   numbers) — no personal data.
 
