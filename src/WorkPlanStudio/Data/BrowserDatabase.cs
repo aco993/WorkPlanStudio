@@ -1,5 +1,4 @@
 using System.Text;
-using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 
 namespace WorkPlanStudio.Data;
@@ -46,6 +45,16 @@ public sealed class BrowserDatabase
     {
         try
         {
+            // SQLite WASM uses WAL mode. Snapshotting only the main .db file before
+            // a checkpoint loses committed schema/data that still lives in -wal.
+            await using (var db = await _factory.CreateDbContextAsync(cancellationToken))
+            {
+                await db.Database.OpenConnectionAsync(cancellationToken);
+                await using var checkpoint = db.Database.GetDbConnection().CreateCommand();
+                checkpoint.CommandText = "PRAGMA wal_checkpoint(TRUNCATE);";
+                await checkpoint.ExecuteNonQueryAsync(cancellationToken);
+            }
+
             var bytes = await File.ReadAllBytesAsync(_options.DatabasePath, cancellationToken);
             await _storage.SaveAsync(
                 new StoredDatabase(Convert.ToBase64String(bytes), _options.SchemaVersion),
@@ -135,18 +144,22 @@ public sealed class BrowserDatabase
 
         try
         {
-            DeleteIfExists(ImportPath);
-            await File.WriteAllBytesAsync(ImportPath, bytes);
-            await VerifySqliteAsync(ImportPath);
-            File.Move(ImportPath, _options.DatabasePath, overwrite: true);
+            DeleteIfExists(_options.DatabasePath);
+            await File.WriteAllBytesAsync(_options.DatabasePath, bytes);
 
             await using var db = await _factory.CreateDbContextAsync();
+            await db.Database.OpenConnectionAsync();
+            await using var command = db.Database.GetDbConnection().CreateCommand();
+            command.CommandText = "PRAGMA quick_check;";
+            var check = await command.ExecuteScalarAsync();
+            if (!string.Equals(check?.ToString(), "ok", StringComparison.OrdinalIgnoreCase))
+                throw new InvalidDataException("SQLite quick_check did not return ok.");
             _ = await db.WorkCenters.AsNoTracking().CountAsync();
             return BrowserDatabaseReadiness.Ready;
         }
         catch (Exception exception)
         {
-            DeleteIfExists(ImportPath);
+            DeleteIfExists(_options.DatabasePath);
             _logger.LogWarning(exception, "Stored browser database failed SQLite validation");
             return new(false, BrowserDatabaseFailure.InvalidSqlite, stored.Version);
         }
@@ -174,17 +187,6 @@ public sealed class BrowserDatabase
             _logger.LogError(exception, "Creating the fresh browser database failed");
             return new(false, BrowserDatabaseFailure.WriteFailed);
         }
-    }
-
-    private static async Task VerifySqliteAsync(string path)
-    {
-        await using var connection = new SqliteConnection($"Data Source={path};Mode=ReadOnly;Pooling=False");
-        await connection.OpenAsync();
-        await using var command = connection.CreateCommand();
-        command.CommandText = "PRAGMA quick_check;";
-        var result = await command.ExecuteScalarAsync();
-        if (!string.Equals(result?.ToString(), "ok", StringComparison.OrdinalIgnoreCase))
-            throw new InvalidDataException("SQLite quick_check did not return ok.");
     }
 
     private static void DeleteIfExists(string path)

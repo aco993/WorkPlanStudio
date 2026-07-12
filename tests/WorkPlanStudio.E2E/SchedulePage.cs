@@ -57,6 +57,9 @@ public sealed class SchedulePage
 
     public Task<string> MakespanTextAsync() => _page.Locator(".stat-value").First.InnerTextAsync();
 
+    public async Task<string> DocumentLanguageAsync() =>
+        await _page.Locator("html").GetAttributeAsync("lang") ?? "";
+
     public async Task ScreenshotAsync(string fileName)
     {
         var dir = Environment.GetEnvironmentVariable("E2E_ARTIFACTS") ?? AppContext.BaseDirectory;

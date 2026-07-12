@@ -104,6 +104,7 @@ public sealed class ScheduleE2ETests
         await schedule.SwitchToGermanAsync();
 
         Assert.Contains("Produktionsplanung", await schedule.Heading.InnerTextAsync());
+        Assert.Equal("de", await schedule.DocumentLanguageAsync());
     }
 
     [Fact]
@@ -129,5 +130,53 @@ public sealed class ScheduleE2ETests
         var createdPlan = page.GetByText("E2E review part");
         await createdPlan.WaitForAsync();
         Assert.Equal(1, await createdPlan.CountAsync());
+
+        await page.ReloadAsync();
+        var headingAfterReload = page.GetByRole(AriaRole.Heading).First;
+        await headingAfterReload.WaitForAsync(new() { Timeout = 60_000 });
+        Assert.Equal("Work Plans", await headingAfterReload.InnerTextAsync());
+        Assert.Equal(1, await page.GetByText("E2E review part").CountAsync());
+    }
+
+    [Fact]
+    public async Task Invalid_work_plan_is_not_saved_and_does_not_crash_the_app()
+    {
+        var context = await _fixture.Browser.NewContextAsync();
+        await using var _ = context;
+        var page = await context.NewPageAsync();
+        await page.GotoAsync($"{_fixture.BaseUrl}/work-plans/new");
+        await page.GetByRole(AriaRole.Heading, new() { Name = "New work plan" }).WaitForAsync();
+
+        await page.GetByLabel("Part name").FillAsync("Invalid E2E part");
+        await page.GetByLabel("Lot size").FillAsync("-1");
+        await page.GetByRole(AriaRole.Button, new() { Name = "Add operation" }).ClickAsync();
+        var row = page.Locator(".op-table tbody tr");
+        await row.Locator("select").SelectOptionAsync(new SelectOptionValue { Index = 1 });
+        await row.Locator("input").Nth(1).FillAsync("Invalid step");
+
+        await page.GetByRole(AriaRole.Button, new() { Name = "Save" }).ClickAsync();
+
+        Assert.EndsWith("/work-plans/new", page.Url, StringComparison.Ordinal);
+        await page.GetByText("Lot size must be between 1 and 1000000.").WaitForAsync();
+        Assert.Equal(0, await page.Locator("#blazor-error-ui.show").CountAsync());
+    }
+
+    [Fact]
+    public async Task Work_center_modal_supports_dialog_semantics_escape_and_focus_return()
+    {
+        var context = await _fixture.Browser.NewContextAsync();
+        await using var _ = context;
+        var page = await context.NewPageAsync();
+        await page.GotoAsync($"{_fixture.BaseUrl}/work-centers");
+        var open = page.GetByRole(AriaRole.Button, new() { Name = "New work center" });
+        await open.ClickAsync();
+
+        var dialog = page.GetByRole(AriaRole.Dialog, new() { Name = "New work center" });
+        await dialog.WaitForAsync();
+        Assert.Equal("true", await dialog.GetAttributeAsync("aria-modal"));
+        await page.Keyboard.PressAsync("Escape");
+
+        await dialog.WaitForAsync(new() { State = WaitForSelectorState.Detached });
+        Assert.True(await open.EvaluateAsync<bool>("element => element === document.activeElement"));
     }
 }
