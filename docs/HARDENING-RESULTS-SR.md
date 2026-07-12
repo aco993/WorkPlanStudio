@@ -56,6 +56,7 @@ Kompletan audit trag i threat model su u [HARDENING-BASELINE.md](HARDENING-BASEL
 | secret pattern scan | nema match-eva |
 | Release publish | passed nakon čistog build-server/dev-server stanja; `index.html` postoji, 73 `.wasm` fajla |
 | performance runner | small 2.0 ms/0.32 MB; medium 85.1 ms/11.17 MB; large 394.6 ms/243.43 MB; svi repeated signatures jednaki |
+| GitHub PR CI | engine/coverage passed (28 s); web/component passed (59 s); Playwright passed (1m59s) |
 
 Dijagnostički failure-i nisu sakriveni: prvi full E2E je timeoutovao zbog reload recovery-ja; izolacija je pokazala `no such table: WorkCenters` i WAL root cause, nakon čega finalnih 10 prolazi. Jedan paralelni Release build i prvi publish su timeoutovali u lokalnom WASM toolchainu; single-node build i clean-state publish prolaze. To je environment/tooling contention, ali komande za stabilan run su dokumentovane.
 
@@ -110,7 +111,7 @@ Dijagnostički failure-i nisu sakriveni: prvi full E2E je timeoutovao zbog reloa
 - Tri sumnje: AI-heavy autorstvo zahtijeva live objašnjenje; browser persistence je neobičan demo kompromis; nema stvarnog production-order/calendar modela.
 - Kandidata može oboriti: tvrdnja da je scheduler optimalan/production-ready, nemogućnost objašnjenja WAL/checkpointa ili prihvatanje AI koda bez razumijevanja.
 - Objektivna procjena: projekat sada prolazi kao clean mid-level portfolio signal. Ne prolazi kao production-ready proizvod ili samostalan senior signal.
-- Sigurnost procjene: 0.88, jer su build/test/runtime/publish izvršeni; stvarni CI na PR grani i reviewer feedback još nisu završeni u trenutku pisanja.
+- Sigurnost procjene: 0.90, jer su build/test/runtime/publish i sva tri PR CI checka izvršeni; nezavisni reviewer feedback još nije dostupan.
 
 Predlog GitHub descriptiona: `Bilingual Blazor WASM portfolio app for manufacturing routings with EF Core/SQLite in-browser persistence and a deterministic finite-capacity scheduler.`
 
