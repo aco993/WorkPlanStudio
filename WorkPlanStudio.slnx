@@ -8,4 +8,7 @@
     <Project Path="tests/WorkPlanStudio.Web.Tests/WorkPlanStudio.Web.Tests.csproj" />
     <Project Path="tests/WorkPlanStudio.E2E/WorkPlanStudio.E2E.csproj" />
   </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/WorkPlanStudio.Scheduling.Scenarios/WorkPlanStudio.Scheduling.Scenarios.csproj" />
+  </Folder>
 </Solution>

@@ -45,7 +45,7 @@ public static class ScheduleMapper
         var centerById = centerList.ToDictionary(center => center.Id);
 
         var machines = centerList
-            .Where(c => c.IsActive)
+            .Where(c => c.IsActive && c.ParallelCapacity is >= 1 and <= Validation.WorkCenterValidator.MaxCapacity)
             .Select(c => new MachineCapacity(c.Id, $"{c.Code} — {c.Name}", c.ParallelCapacity))
             .ToList();
 

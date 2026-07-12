@@ -46,6 +46,7 @@ public sealed class WorkCenterService
 
     public async Task<ApplicationResult<int>> SaveAsync(WorkCenter center, CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(center);
         Normalize(center);
         var issues = WorkCenterValidator.Validate(center);
         if (issues.Count > 0)
@@ -140,8 +141,8 @@ public sealed class WorkCenterService
 
     private static void Normalize(WorkCenter center)
     {
-        center.Code = center.Code.Trim();
-        center.Name = center.Name.Trim();
-        center.CostCenter = center.CostCenter.Trim();
+        center.Code = center.Code?.Trim() ?? "";
+        center.Name = center.Name?.Trim() ?? "";
+        center.CostCenter = center.CostCenter?.Trim() ?? "";
     }
 }
