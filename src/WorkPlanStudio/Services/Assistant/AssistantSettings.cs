@@ -27,8 +27,28 @@ public sealed record AssistantSettings
     public bool IsConfigured =>
         Enabled
         && !string.IsNullOrWhiteSpace(ApiKey)
-        && !string.IsNullOrWhiteSpace(Endpoint)
-        && !string.IsNullOrWhiteSpace(Model);
+        && ApiKey.Length <= 4096
+        && !string.IsNullOrWhiteSpace(Model)
+        && Model.Trim().Length <= 100
+        && TryGetEndpoint(out _);
+
+    /// <summary>Accepts HTTPS endpoints, plus HTTP loopback for local development.</summary>
+    public bool TryGetEndpoint(out Uri? endpoint)
+    {
+        endpoint = null;
+        if (!Uri.TryCreate(Endpoint?.Trim(), UriKind.Absolute, out var candidate) ||
+            !string.IsNullOrEmpty(candidate.UserInfo) ||
+            !string.IsNullOrEmpty(candidate.Query) ||
+            !string.IsNullOrEmpty(candidate.Fragment))
+            return false;
+
+        if (!string.Equals(candidate.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase) &&
+            !(string.Equals(candidate.Scheme, Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase) && candidate.IsLoopback))
+            return false;
+
+        endpoint = candidate;
+        return true;
+    }
 
     /// <summary>The default (disabled) settings.</summary>
     public static AssistantSettings Default => new();

@@ -8,11 +8,14 @@ internal sealed class FakeScheduleService : IProductionScheduleService
     public ScheduleResult Result { get; set; } = ScheduleResult.Empty(480);
     public SchedulingParameters? LastParameters { get; private set; }
     public int Calls { get; private set; }
+    public Exception? ExceptionToThrow { get; set; }
 
-    public Task<ScheduleResult> GenerateAsync(SchedulingParameters parameters)
+    public Task<ScheduleResult> GenerateAsync(SchedulingParameters parameters, CancellationToken cancellationToken = default)
     {
         LastParameters = parameters;
         Calls++;
+        if (ExceptionToThrow is not null)
+            return Task.FromException<ScheduleResult>(ExceptionToThrow);
         return Task.FromResult(Result);
     }
 }

@@ -70,6 +70,7 @@
   <data name="Common_New" xml:space="preserve"><value>New</value></data>
   <data name="Common_Save" xml:space="preserve"><value>Save</value></data>
   <data name="Common_Cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="Common_Close" xml:space="preserve"><value>Close</value></data>
   <data name="Common_Delete" xml:space="preserve"><value>Delete</value></data>
   <data name="Common_Edit" xml:space="preserve"><value>Edit</value></data>
   <data name="Common_Back" xml:space="preserve"><value>Back</value></data>
@@ -102,6 +103,7 @@
   <data name="Field_Name" xml:space="preserve"><value>Name</value></data>
   <data name="Field_CostCenter" xml:space="preserve"><value>Cost center</value></data>
   <data name="Field_HourlyRate" xml:space="preserve"><value>Rate (€/h)</value></data>
+  <data name="Field_Capacity" xml:space="preserve"><value>Parallel capacity</value></data>
   <data name="Field_TotalTime" xml:space="preserve"><value>Total time</value></data>
   <data name="Field_TotalCost" xml:space="preserve"><value>Est. cost</value></data>
 
@@ -137,6 +139,43 @@
   <data name="Val_CodeTaken" xml:space="preserve"><value>This code already exists.</value></data>
   <data name="Val_NeedOperation" xml:space="preserve"><value>Add at least one operation.</value></data>
   <data name="Val_OperationIncomplete" xml:space="preserve"><value>Each operation needs a work center and a description.</value></data>
+  <data name="Val_MaxLength" xml:space="preserve"><value>Maximum length is {0} characters.</value></data>
+  <data name="Val_StatusInvalid" xml:space="preserve"><value>Select a valid status.</value></data>
+  <data name="Val_StatusTransition" xml:space="preserve"><value>An archived plan must return to Draft before it can be released.</value></data>
+  <data name="Val_LotSizeRange" xml:space="preserve"><value>Lot size must be between {0} and {1}.</value></data>
+  <data name="Val_OperationNumberRange" xml:space="preserve"><value>Operation number must be between {0} and {1}.</value></data>
+  <data name="Val_OperationNumberDuplicate" xml:space="preserve"><value>Operation number {0} is used more than once.</value></data>
+  <data name="Val_SetupTimeRange" xml:space="preserve"><value>Setup time must be between {0} and {1} minutes.</value></data>
+  <data name="Val_RunTimeRange" xml:space="preserve"><value>Run time must be between {0} and {1} minutes.</value></data>
+  <data name="Val_WorkCenterMissing" xml:space="preserve"><value>Work center {0} does not exist.</value></data>
+  <data name="Val_WorkCenterInactive" xml:space="preserve"><value>Work center {0} is inactive. A released plan may use active centers only.</value></data>
+  <data name="Val_OperationDurationOverflow" xml:space="preserve"><value>The operation duration is too large to schedule safely.</value></data>
+  <data name="Val_HourlyRateRange" xml:space="preserve"><value>Hourly rate must be between {0} and {1}.</value></data>
+  <data name="Val_CapacityRange" xml:space="preserve"><value>Capacity must be between {0} and {1}.</value></data>
+  <data name="Val_WorkCenterReleasedUse" xml:space="preserve"><value>This center is used by a released plan and cannot be deactivated.</value></data>
+  <data name="Val_WorkCenterInUse" xml:space="preserve"><value>This center is referenced by one or more operations.</value></data>
+  <data name="Error_SaveFailed" xml:space="preserve"><value>The change could not be saved durably. Your stored data was not reported as updated.</value></data>
+  <data name="Error_NotFound" xml:space="preserve"><value>The item no longer exists. Reload the page and try again.</value></data>
+  <data name="Error_Cancelled" xml:space="preserve"><value>The operation was cancelled.</value></data>
+  <data name="Error_ScheduleFailed" xml:space="preserve"><value>The schedule could not be generated. Review the inputs and try again.</value></data>
+  <data name="Error_UnexpectedTitle" xml:space="preserve"><value>Something went wrong</value></data>
+  <data name="Error_UnexpectedBody" xml:space="preserve"><value>The application could not complete this action. Reload to return to a safe state.</value></data>
+  <data name="Error_Reload" xml:space="preserve"><value>Reload application</value></data>
+  <data name="Storage_RecoveryTitle" xml:space="preserve"><value>Browser data needs attention</value></data>
+  <data name="Storage_RecoveryPreserved" xml:space="preserve"><value>The existing payload has not been overwritten. Export it before resetting the local demo database.</value></data>
+  <data name="Storage_Failure_InvalidBase64" xml:space="preserve"><value>The stored payload is not valid Base64 data.</value></data>
+  <data name="Storage_Failure_InvalidSqlite" xml:space="preserve"><value>The stored payload is not a valid SQLite database.</value></data>
+  <data name="Storage_Failure_TruncatedPayload" xml:space="preserve"><value>The stored database payload is incomplete.</value></data>
+  <data name="Storage_Failure_UnsupportedSchema" xml:space="preserve"><value>The stored schema version ({0}) is not supported by this application version.</value></data>
+  <data name="Storage_Failure_ReadFailed" xml:space="preserve"><value>The browser refused or failed to read local storage.</value></data>
+  <data name="Storage_Failure_WriteFailed" xml:space="preserve"><value>The browser could not persist the local database, possibly because storage is unavailable or full.</value></data>
+  <data name="Storage_Failure_ExportFailed" xml:space="preserve"><value>The stored payload could not be exported.</value></data>
+  <data name="Storage_Failure_ResetFailed" xml:space="preserve"><value>The local demo database could not be reset.</value></data>
+  <data name="Storage_Export" xml:space="preserve"><value>Export stored payload</value></data>
+  <data name="Storage_Reset" xml:space="preserve"><value>Reset local demo database</value></data>
+  <data name="Storage_ResetConfirm" xml:space="preserve"><value>Confirm reset and discard data</value></data>
+  <data name="Storage_ExportFailed" xml:space="preserve"><value>Export failed. The original browser payload is still unchanged.</value></data>
+  <data name="Storage_ResetFailed" xml:space="preserve"><value>Reset failed. Check browser storage permissions and try again.</value></data>
 
   <data name="WorkCenters_Title" xml:space="preserve"><value>Work Centers</value></data>
   <data name="WorkCenters_New" xml:space="preserve"><value>New work center</value></data>
@@ -213,6 +252,17 @@
   <data name="Sched_OnTime" xml:space="preserve"><value>On time</value></data>
   <data name="Sched_DayShort" xml:space="preserve"><value>D</value></data>
   <data name="Sched_Empty" xml:space="preserve"><value>No released work plans to schedule. Set a plan's status to “Released” to include it.</value></data>
+  <data name="Sched_RejectedTitle" xml:space="preserve"><value>Some released plans were not scheduled</value></data>
+  <data name="Sched_RejectedBody" xml:space="preserve"><value>Fix the complete routing before generating a complete schedule.</value></data>
+  <data name="Sched_Error_InvalidPlan" xml:space="preserve"><value>required plan data is invalid</value></data>
+  <data name="Sched_Error_InvalidLotSize" xml:space="preserve"><value>lot size is invalid</value></data>
+  <data name="Sched_Error_NoOperations" xml:space="preserve"><value>no operations are defined</value></data>
+  <data name="Sched_Error_InvalidOperationNumber" xml:space="preserve"><value>operation number is invalid</value></data>
+  <data name="Sched_Error_DuplicateOperationNumber" xml:space="preserve"><value>operation number is duplicated</value></data>
+  <data name="Sched_Error_InvalidOperationDuration" xml:space="preserve"><value>operation duration is invalid or too large</value></data>
+  <data name="Sched_Error_MissingWorkCenter" xml:space="preserve"><value>work center is missing</value></data>
+  <data name="Sched_Error_InactiveWorkCenter" xml:space="preserve"><value>work center is inactive</value></data>
+  <data name="Sched_Error_InvalidWorkCenterCapacity" xml:space="preserve"><value>work-center capacity is invalid</value></data>
 
   <data name="Sched_Ai_Title" xml:space="preserve"><value>Schedule assistant</value></data>
   <data name="Sched_Ai_Subtitle" xml:space="preserve"><value>A plain-language read-out of the schedule above — computed on your device.</value></data>
@@ -234,5 +284,9 @@
   <data name="Sched_Ai_Endpoint" xml:space="preserve"><value>API endpoint (OpenAI-compatible)</value></data>
   <data name="Sched_Ai_Model" xml:space="preserve"><value>Model</value></data>
   <data name="Sched_Ai_ApiKey" xml:space="preserve"><value>API key</value></data>
-  <data name="Sched_Ai_Privacy" xml:space="preserve"><value>Your key is stored only in this browser and sent only to the endpoint above, which must allow browser (CORS) requests. Don't use this on a shared computer.</value></data>
+  <data name="Sched_Ai_Privacy" xml:space="preserve"><value>Your key is stored in browser localStorage, which is not a secret vault, and is sent to the validated endpoint above. Do not use this on a shared computer. A production deployment should use a backend proxy and server-side secret storage.</value></data>
+  <data name="Sched_Ai_InvalidSettings" xml:space="preserve"><value>Enter a valid HTTPS endpoint (HTTP is allowed only for loopback development), model, and API key.</value></data>
+  <data name="Sched_Ai_FailureTimeout" xml:space="preserve"><value>request timed out</value></data>
+  <data name="Sched_Ai_FailureResponse" xml:space="preserve"><value>invalid provider response</value></data>
+  <data name="Sched_Ai_FailureUnavailable" xml:space="preserve"><value>provider unavailable</value></data>
 </root>

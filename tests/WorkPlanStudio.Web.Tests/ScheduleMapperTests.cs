@@ -44,8 +44,9 @@ public class ScheduleMapperTests
             new[] { Plan(1, 100, Op(10, 1, 10m, 0.8m), Op(20, 2, 35m, 4.2m)) },
             new[] { Center(1), Center(2) }, RuleOnly);
 
-        Assert.NotNull(input);
-        var job = Assert.Single(input!.Context.Jobs);
+        Assert.NotNull(input.Input);
+        Assert.Empty(input.Errors);
+        var job = Assert.Single(input.Input!.Context.Jobs);
         Assert.Equal("WP-1", job.Reference);
         Assert.Equal(100, job.Weight);
         Assert.Equal(ScheduleMapper.ToSeconds(10m, 0.8m, 100), job.Steps[0].DurationSeconds);
@@ -59,36 +60,77 @@ public class ScheduleMapperTests
             new[] { Center(1) }, RuleOnly);
 
         // operations sorted 10,20,30 then re-indexed to strictly increasing 1,2,3
-        Assert.Equal(new[] { 1, 2, 3 }, input!.Context.Jobs[0].Steps.Select(s => s.StepNumber).ToArray());
+        Assert.Equal(new[] { 1, 2, 3 }, input.Input!.Context.Jobs[0].Steps.Select(s => s.StepNumber).ToArray());
     }
 
     [Fact]
-    public void BuildInput_drops_operations_on_inactive_work_centers()
+    public void BuildInput_rejects_the_entire_plan_with_an_inactive_work_center()
     {
         var input = ScheduleMapper.BuildInput(
             new[] { Plan(1, 1, Op(10, 1, 1m, 1m), Op(20, 2, 1m, 1m)) },
             new[] { Center(1, active: true), Center(2, active: false) }, RuleOnly);
 
-        var job = Assert.Single(input!.Context.Jobs);
-        Assert.Single(job.Steps);                               // the op on the inactive WC is gone
-        Assert.Equal(1, job.Steps[0].WorkCenterId);
-        Assert.DoesNotContain(2, input.Context.Machines.Keys);  // inactive WC is not a machine
+        Assert.Null(input.Input);
+        var error = Assert.Single(input.Errors);
+        Assert.Equal(SchedulePreparationErrorCode.InactiveWorkCenter, error.Code);
+        Assert.Equal(20, error.OperationNumber);
+        Assert.Equal("WC-2", error.WorkCenterReference);
     }
 
     [Fact]
-    public void BuildInput_skips_plans_left_without_schedulable_steps()
+    public void BuildInput_rejects_a_plan_with_a_missing_work_center()
     {
         var input = ScheduleMapper.BuildInput(
             new[] { Plan(1, 1, Op(10, 99, 1m, 1m)) },   // only operation is on an unknown work center
             new[] { Center(1) }, RuleOnly);
 
-        Assert.Null(input);
+        Assert.Null(input.Input);
+        var error = Assert.Single(input.Errors);
+        Assert.Equal(SchedulePreparationErrorCode.MissingWorkCenter, error.Code);
+        Assert.Equal(10, error.OperationNumber);
     }
 
     [Fact]
     public void BuildInput_returns_null_when_there_is_nothing_to_schedule()
     {
-        Assert.Null(ScheduleMapper.BuildInput(Array.Empty<WorkPlan>(), new[] { Center(1) }, RuleOnly));
+        var preparation = ScheduleMapper.BuildInput(Array.Empty<WorkPlan>(), new[] { Center(1) }, RuleOnly);
+
+        Assert.Null(preparation.Input);
+        Assert.Empty(preparation.Errors);
+    }
+
+    [Fact]
+    public void BuildInput_reports_multiple_invalid_plans_and_keeps_valid_plans_complete()
+    {
+        var preparation = ScheduleMapper.BuildInput(
+            new[]
+            {
+                Plan(1, 1, Op(10, 1, 1m, 1m), Op(20, 2, 1m, 1m)),
+                Plan(2, 1, Op(10, 99, 1m, 1m)),
+                Plan(3, 1, Op(10, 1, 1m, 1m), Op(20, 1, 1m, 1m))
+            },
+            new[] { Center(1), Center(2, active: false) },
+            RuleOnly);
+
+        Assert.Equal(new[] { 1, 2 }, preparation.RejectedPlanIds.Order().ToArray());
+        var validJob = Assert.Single(preparation.Input!.Context.Jobs);
+        Assert.Equal(3, validJob.Id);
+        Assert.Equal(2, validJob.Steps.Count);
+    }
+
+    [Fact]
+    public void BuildInput_uses_supported_parallel_capacity()
+    {
+        var center = Center(1);
+        center.ParallelCapacity = 4;
+
+        var preparation = ScheduleMapper.BuildInput(
+            new[] { Plan(1, 1, Op(10, 1, 1m, 1m)) },
+            new[] { center },
+            RuleOnly);
+
+        Assert.Equal(4, preparation.Input!.Context.Machines[1].ParallelCapacity);
+        Assert.Empty(preparation.Errors);
     }
 
     // ----- full pipeline: map → schedule → view -----
@@ -104,8 +146,8 @@ public class ScheduleMapperTests
             },
             new[] { Center(1), Center(2) }, RuleOnly);
 
-        var result = new SchedulingEngine().Run(input!.Context);
-        var view = ScheduleMapper.BuildView(result, input.Context, input.PlanById, 480);
+        var result = new SchedulingEngine().Run(input.Input!.Context);
+        var view = ScheduleMapper.BuildView(result, input.Input.Context, input.Input.PlanById, 480);
 
         Assert.True(view.HasData);
         Assert.Equal(2, view.Jobs.Count);
@@ -130,8 +172,8 @@ public class ScheduleMapperTests
             new[] { Plan(1, 100, Op(10, 1, 10m, 1m)) },
             new[] { Center(1) }, tight);
 
-        var result = new SchedulingEngine().Run(input!.Context);
-        var view = ScheduleMapper.BuildView(result, input.Context, input.PlanById, 480);
+        var result = new SchedulingEngine().Run(input.Input!.Context);
+        var view = ScheduleMapper.BuildView(result, input.Input.Context, input.Input.PlanById, 480);
 
         Assert.True(view.Jobs.Single().IsLate);
         Assert.All(view.Rows.SelectMany(r => r.Bars), b => Assert.True(b.IsLate));

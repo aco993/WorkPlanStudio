@@ -20,6 +20,9 @@ public class WorkCenter
     /// <summary>Machine-hour rate used to estimate operation cost.</summary>
     public decimal HourlyRate { get; set; }
 
+    /// <summary>Number of jobs this center can process concurrently.</summary>
+    public int ParallelCapacity { get; set; } = 1;
+
     public bool IsActive { get; set; } = true;
 
     public ICollection<Operation> Operations { get; set; } = new List<Operation>();

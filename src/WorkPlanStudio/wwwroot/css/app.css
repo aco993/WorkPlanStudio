@@ -38,6 +38,18 @@
     --sidebar-w: 256px;
 }
 
+.recovery-shell {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 2rem;
+    background: var(--bg);
+}
+
+.recovery-card {
+    width: min(42rem, 100%);
+}
+
 * { box-sizing: border-box; }
 
 html, body {

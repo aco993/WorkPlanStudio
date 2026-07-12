@@ -32,6 +32,7 @@
         // Persist the choice, then reload so the whole app re-renders in the new
         // culture (Program.cs reads this value on startup).
         await JS.InvokeVoidAsync("blazorCulture.set", code);
+        await JS.InvokeVoidAsync("documentLanguage.set", CultureInfo.GetCultureInfo(code).TwoLetterISOLanguageName);
         Nav.NavigateTo(Nav.Uri, forceLoad: true);
     }
 }
