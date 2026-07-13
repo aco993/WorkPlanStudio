@@ -22,14 +22,22 @@ public static class DueDateAssigner
     {
         long release = job.ReleaseSeconds;
         long total = job.TotalProcessingSeconds;
-        return p.DueDateRule switch
+        return checked(p.DueDateRule switch
         {
             DueDateRule.Explicit => job.ExplicitDueSeconds ?? release + p.ConstantAllowanceSeconds,
-            DueDateRule.TotalWorkContent => release + (long)Math.Round(p.TwkFlowFactor * total, MidpointRounding.ToEven),
+            DueDateRule.TotalWorkContent => release + CheckedScaledTotal(p.TwkFlowFactor, total),
             DueDateRule.NumberOfOperations => release + p.NopSecondsPerOp * job.StepCount,
             DueDateRule.EqualSlack => release + total + p.SlackSeconds,
             DueDateRule.ConstantAllowance => release + p.ConstantAllowanceSeconds,
             _ => release + total
-        };
+        });
+    }
+
+    private static long CheckedScaledTotal(double factor, long total)
+    {
+        var scaled = factor * total;
+        if (!double.IsFinite(scaled) || scaled > long.MaxValue || scaled < long.MinValue)
+            throw new OverflowException("Due-date calculation exceeds the supported integer-second range.");
+        return checked((long)Math.Round(scaled, MidpointRounding.ToEven));
     }
 }

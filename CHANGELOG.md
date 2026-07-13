@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Central business validation, SQLite constraints, typed mutation results and
+  localized recovery/error states.
+- Explicit browser-storage recovery with corrupt-payload export, confirmed reset,
+  schema-mismatch protection and WAL-safe snapshots.
+- Structured all-or-nothing schedule preparation diagnostics and work-center
+  parallel capacity.
+- Deterministic scheduling budgets, checked time arithmetic, cooperative
+  cancellation and a reproducible performance scenario runner.
+- ErrorBoundary recovery, modal dialog/focus/Escape semantics and dynamic document
+  language.
+
 - **Schedule assistant** — a deterministic, on-device explanation of each
   scheduling run (the bottleneck work center, why each job is late, and one
   *computed* recommendation), rendered as localized EN/DE narration. Plus an
@@ -21,6 +32,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   determinism, a makespan lower bound and "never worse than the pure rule".
 
 ### Changed
+
+- Removed the misleading application-level Explicit due-date choice until a real
+  `ProductionOrder` model supplies order due dates.
+- Hardened BYOK endpoints and added a 15-second provider timeout; raw provider
+  failures are no longer shown to users.
 
 - Suppressed one transitive NuGet advisory (GHSA-2m69-gcr7-jv3q — native SQLite
   pulled in by EF Core) with a documented justification in `Directory.Build.props`;

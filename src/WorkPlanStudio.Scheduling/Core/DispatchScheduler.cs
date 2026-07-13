@@ -24,7 +24,15 @@ public sealed class DispatchScheduler : IScheduler
     public Schedule Run(
         SchedulingContext context,
         IReadOnlyList<int> jobPriorityOrder,
-        IReadOnlyDictionary<int, long> dueByJob)
+        IReadOnlyDictionary<int, long> dueByJob) =>
+        RunCancellable(context, jobPriorityOrder, dueByJob, CancellationToken.None);
+
+    /// <inheritdoc />
+    public Schedule RunCancellable(
+        SchedulingContext context,
+        IReadOnlyList<int> jobPriorityOrder,
+        IReadOnlyDictionary<int, long> dueByJob,
+        CancellationToken cancellationToken)
     {
         // Each work center keeps one "free at" clock per parallel slot.
         var slotFreeAt = new Dictionary<int, long[]>(context.Machines.Count);
@@ -36,16 +44,18 @@ public sealed class DispatchScheduler : IScheduler
 
         foreach (var jobIndex in jobPriorityOrder)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             var job = context.Jobs[jobIndex];
             long jobReadyAt = job.ReleaseSeconds;
 
             foreach (var step in job.Steps)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 var slots = slotFreeAt[step.WorkCenterId];
                 int slot = EarliestSlot(slots);
 
                 long start = Math.Max(jobReadyAt, slots[slot]);
-                long end = start + step.DurationSeconds;
+                long end = checked(start + step.DurationSeconds);
 
                 slots[slot] = end;
                 jobReadyAt = end;

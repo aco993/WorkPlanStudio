@@ -38,6 +38,18 @@
     --sidebar-w: 256px;
 }
 
+.recovery-shell {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 2rem;
+    background: var(--bg);
+}
+
+.recovery-card {
+    width: min(42rem, 100%);
+}
+
 * { box-sizing: border-box; }
 
 html, body {
@@ -51,6 +63,11 @@ html, body {
 
 h1, h2, h3 { margin: 0; font-weight: 600; letter-spacing: -.01em; }
 h1:focus, h2:focus, h3:focus { outline: none; }
+
+:where(a, button, select, input, textarea, [tabindex]):focus-visible {
+    outline: 3px solid var(--primary);
+    outline-offset: 2px;
+}
 h1 { font-size: 1.6rem; }
 h2 { font-size: 1.05rem; }
 h3 { font-size: .95rem; }

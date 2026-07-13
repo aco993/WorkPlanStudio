@@ -9,6 +9,26 @@ window.blazorCulture = {
     set: (value) => window.localStorage['BlazorCulture'] = value
 };
 
+window.documentLanguage = {
+    set: (value) => document.documentElement.lang = value
+};
+
+window.workplanModal = {
+    previousFocus: new WeakMap(),
+    open: function (dialog) {
+        this.previousFocus.set(dialog, document.activeElement);
+        const target = dialog.querySelector('input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), a[href]');
+        (target || dialog).focus();
+    },
+    close: function (dialog) {
+        const previous = this.previousFocus.get(dialog);
+        if (previous && document.contains(previous)) {
+            previous.focus();
+        }
+        this.previousFocus.delete(dialog);
+    }
+};
+
 window.workplanSettings = {
     keyFor: (name) => 'workplanstudio.settings.' + name,
     get: function (name) { return window.localStorage.getItem(this.keyFor(name)); },
@@ -37,5 +57,16 @@ window.workplanDb = {
     clear: function () {
         window.localStorage.removeItem(this.storageKey);
         window.localStorage.removeItem(this.versionKey);
+    },
+
+    export: function (base64, version) {
+        const payload = JSON.stringify({ version: version, data: base64 }, null, 2);
+        const blob = new Blob([payload], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'workplanstudio-browser-database-v' + version + '.json';
+        link.click();
+        URL.revokeObjectURL(url);
     }
 };

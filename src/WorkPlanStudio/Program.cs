@@ -20,8 +20,11 @@ builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.
 builder.Services.AddLocalization();
 
 // EF Core + SQLite, running entirely in the browser.
+var databaseOptions = new BrowserDatabaseOptions("/data/workplan.db", SchemaVersion: 3);
+builder.Services.AddSingleton(databaseOptions);
 builder.Services.AddDbContextFactory<AppDbContext>(options =>
-    options.UseSqlite("Data Source=/data/workplan.db"));
+    options.UseSqlite($"Data Source={databaseOptions.DatabasePath}"));
+builder.Services.AddSingleton<IBrowserDatabaseStorage, JsBrowserDatabaseStorage>();
 builder.Services.AddSingleton<BrowserDatabase>();
 builder.Services.AddScoped<WorkPlanService>();
 builder.Services.AddScoped<WorkCenterService>();
@@ -41,5 +44,6 @@ var stored = await js.InvokeAsync<string?>("blazorCulture.get");
 var culture = CultureInfo.GetCultureInfo(string.IsNullOrWhiteSpace(stored) ? "en-US" : stored);
 CultureInfo.DefaultThreadCurrentCulture = culture;
 CultureInfo.DefaultThreadCurrentUICulture = culture;
+await js.InvokeVoidAsync("documentLanguage.set", culture.TwoLetterISOLanguageName);
 
 await host.RunAsync();
