@@ -21,12 +21,12 @@ The interface is available in **English and German**, switchable at runtime.
 
 - 📋 **Work plans / routings** — create, edit, search and filter work plans by status (Draft / Released / Archived).
 - 🔧 **Operations editor** — an editable grid of operations (setup time, run time per piece, work center, remarks) with a **live summary** of total time and estimated cost that recalculates as you type.
-- 🏭 **Work centers** — master data with hourly rates and cost centers, plus a guard that prevents deleting a work center still used by operations.
+- 🏭 **Work centers** — master data with hourly rates, cost centers and validated parallel capacity, plus guards against deleting referenced centers or deactivating centers used by released plans.
 - 📊 **Dashboard** — key figures, a status distribution bar and the most recently updated plans.
 - 🗓️ **Production scheduling** — a finite-capacity scheduler that assigns each released plan a target date and sequences its operations across the work centers, with six dispatch rules, configurable due-date assignment, multi-start + local-search optimisation, a Gantt chart and on-time / tardiness KPIs. Deterministic and covered by unit tests.
 - 🤖 **Schedule assistant** — explains each run in plain language (the bottleneck work center, why a job is late, a *computed* recommendation), derived **on-device** with no key needed. An optional **bring-your-own-key** AI narrator can rephrase it, with a graceful fallback to the built-in explanation. See [`docs/AI-ASSISTANT.md`](docs/AI-ASSISTANT.md).
 - 🌍 **Bilingual UI (EN / DE)** — full localization via `IStringLocalizer` and `.resx` resources, including culture-correct number, date and currency formatting.
-- 💾 **Real database in the browser** — EF Core talks to a SQLite database that is compiled to WebAssembly and persisted to `localStorage`, so your data survives page reloads.
+- 💾 **Real database in the browser** — EF Core talks to SQLite compiled to WebAssembly; WAL-safe snapshots survive reloads, while corrupt/incompatible payloads enter an explicit export/reset recovery flow.
 - 📱 **Responsive** — works from wide desktops down to a mobile drawer layout.
 
 ## What makes it technically interesting
@@ -36,7 +36,7 @@ The headline feature is that **EF Core + SQLite run client-side in WebAssembly**
 - The native SQLite engine is relinked into the app's `dotnet.native.wasm` at build time (via the `wasm-tools` workload).
 - On startup the app reads a base64-encoded SQLite file from `localStorage` into the browser's in-memory file system; on first run it creates the schema and seeds sample data.
 - After every change the SQLite file is written back to `localStorage`.
-- A schema-version key guards against loading an incompatible database after a model change.
+- A schema-version key guards against loading an incompatible database after a model change. Incompatible data is preserved for export and requires an explicit reset; this demo does not pretend that reseeding is a migration.
 
 This means the app demonstrates a full data layer — `DbContext`, relationships, LINQ queries, an `IDbContextFactory`, a service layer — **without any server**.
 
@@ -44,7 +44,7 @@ This means the app demonstrates a full data layer — `DbContext`, relationships
 
 The **Scheduling** page turns the released work plans into a finite-capacity production schedule — the most algorithm-heavy part of the project. It lives in its own dependency-free library (`src/WorkPlanStudio.Scheduling`) so the whole engine can be unit-tested on a plain .NET runner, without Blazor or the WebAssembly toolchain.
 
-1. **Target dates ("meta").** Each job is assigned a due date by a configurable rule — Total Work Content (TWK), Number of Operations (NOP), Equal Slack (SLK), Constant Allowance (CON) or an explicit value.
+1. **Target dates ("meta").** Each demonstration job is assigned a target by Total Work Content (TWK), Number of Operations (NOP), Equal Slack (SLK) or Constant Allowance (CON). Customer-order due dates are intentionally out of scope until the app has a real `ProductionOrder` model.
 2. **Dispatch scheduling.** A finite-capacity list scheduler places each job's operations on the earliest free slot of their work center, respecting operation precedence and machine capacity. Six dispatch rules decide who goes first on a contended machine: FIFO, SPT, LPT, EDD, Critical Ratio and WSPT.
 3. **Optimisation.** A seeded multi-start search plus a first-improvement local search refine the sequence; the result is never worse than the pure rule schedule.
 4. **Scoring.** Makespan, total / maximum tardiness, on-time rate and work-center utilisation are rolled up into a single penalty the search minimises.
@@ -81,6 +81,20 @@ The sample data ships **seven released plans** competing for the same machines, 
 | Testing | xUnit v3 (Microsoft Testing Platform), CsCheck property tests, bUnit components, Playwright E2E |
 | CI / Hosting | GitHub Actions — layered test workflows + test-gated GitHub Pages deploy |
 
+## Architecture at a glance
+
+```mermaid
+flowchart LR
+    UI["Blazor UI"] --> SVC["Validated application services"]
+    SVC --> DB["EF Core + SQLite WASM"]
+    DB --> LS["Versioned localStorage snapshot"]
+    UI --> PREP["ScheduleMapper diagnostics"]
+    PREP --> CORE["Pure deterministic scheduler"]
+    CORE --> UI
+```
+
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for invariants, failure boundaries and the persistence lifecycle.
+
 ## Documentation
 
 | Topic | English | Deutsch |
@@ -89,6 +103,9 @@ The sample data ships **seven released plans** competing for the same machines, 
 | Scheduling algorithm | [docs/SCHEDULING.md](docs/SCHEDULING.md) | [docs/SCHEDULING.de.md](docs/SCHEDULING.de.md) |
 | Schedule assistant (AI) | [docs/AI-ASSISTANT.md](docs/AI-ASSISTANT.md) | — |
 | Testing strategy | [docs/TESTING.md](docs/TESTING.md) | [docs/TESTING.de.md](docs/TESTING.de.md) |
+| Architecture | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | — |
+| Security posture | [docs/SECURITY.md](docs/SECURITY.md) | — |
+| Performance scenarios | [docs/PERFORMANCE.md](docs/PERFORMANCE.md) | — |
 | Decision records (ADR) | [docs/adr](docs/adr) | — |
 | Contributing | [CONTRIBUTING.md](CONTRIBUTING.md) | — |
 | AI-agent context | [AGENTS.md](AGENTS.md) | — |
@@ -100,7 +117,7 @@ The repository applies the following engineering practices:
 - **Strict builds** — nullable reference types, .NET analyzers and **warnings treated as errors** (`Directory.Build.props`).
 - **Central Package Management** — every NuGet version in one [`Directory.Packages.props`](Directory.Packages.props).
 - **Consistent style** — a comprehensive [`.editorconfig`](.editorconfig) and line-ending normalisation via [`.gitattributes`](.gitattributes).
-- **Layered tests + coverage** — 115 tests across three test projects, including property-based invariants; the engine currently measures 97.9% line and 91.6% branch coverage.
+- **Layered tests + coverage** — 154 tests across three test projects, including real-SQLite persistence, property-based invariants, components, browser reload/reset and mobile flows; the hardened engine currently measures 96.93% line and 87.43% branch coverage.
 - **Architecture enforced by a test** — the engine cannot accrue a Blazor / EF / JS dependency.
 - **Decisions recorded** — see the [Architecture Decision Records](docs/adr).
 - **Dependency hygiene** — [Dependabot](.github/dependabot.yml) keeps NuGet and GitHub Actions current.
@@ -115,7 +132,7 @@ works:
 
 | Area | Where to look | What it shows |
 | --- | --- | --- |
-| **Clean architecture** | `src/WorkPlanStudio.Scheduling` vs the app | a pure domain core behind an *enforced* dependency boundary |
+| **Architecture boundary** | `src/WorkPlanStudio.Scheduling` vs the app | a pure domain core behind an *enforced* dependency boundary |
 | **Algorithms** | `SchedulingEngine`, `DispatchScheduler`, `LocalSearch` | finite-capacity scheduling, dispatch rules, local-search optimisation |
 | **Determinism & correctness** | `DeterministicRandom`, `DeterminismTests` | reproducible results pinned by golden-value tests |
 | **Testing strategy** | `tests/`, [`docs/TESTING.md`](docs/TESTING.md) | four layers from unit to end-to-end, plus an architecture test |
@@ -215,8 +232,21 @@ To enable it: push this repo to GitHub, then in **Settings → Pages** set **Sou
 
 ## Notes
 
-- All data is stored locally in your browser and never leaves your device. Use **About → Reset to sample data** to restore the original demo content.
+- Routing data is stored locally in your browser. The optional BYOK narrator sends structured schedule facts to the endpoint you configure; the base application works without it.
+- Browser storage is local demo persistence, not a backup/migration system or secret vault. Schema mismatch preserves the payload for export and requires confirmed reset.
 - Sample part numbers, machines and times are fictitious and for illustration only.
+
+## Limitations and roadmap
+
+- The scheduler is a deterministic heuristic and does not prove a globally optimal schedule.
+- A released work plan currently acts as one demonstration job. Customer orders, calendars, routing-revision snapshots and order-specific due dates require a future `ProductionOrder` model.
+- Scheduling runs on the browser UI thread. The reproducible 250-job scenario completed in about 395 ms on the documented review machine but allocated roughly 243 MB; a Worker or backend is justified only after representative browser profiling.
+- The versioned SQLite payload supports safe recovery/reset, not cross-version migration or cloud synchronization.
+- One high transitive SQLite advisory is explicitly tracked and risk-assessed in [docs/SECURITY.md](docs/SECURITY.md); the repository does not claim zero vulnerabilities.
+
+## AI-assisted development disclosure
+
+AI tools were used intensively to help generate and review the initial code and later hardening changes. The project is not represented as entirely hand-written. The candidate remains responsible for the specification, verification, debugging, tests, integration and final engineering decisions, and should be able to explain every accepted part. No percentage of “AI-written lines” is claimed because that number is neither known nor meaningful; AI output is accepted only after review and executable evidence.
 
 ## License
 

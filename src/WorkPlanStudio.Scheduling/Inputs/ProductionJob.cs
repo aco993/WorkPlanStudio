@@ -33,7 +33,16 @@ public sealed class ProductionJob
     public required IReadOnlyList<JobStep> Steps { get; init; }
 
     /// <summary>Sum of every step's processing time, in seconds.</summary>
-    public long TotalProcessingSeconds => Steps.Sum(s => s.DurationSeconds);
+    public long TotalProcessingSeconds
+    {
+        get
+        {
+            long total = 0;
+            foreach (var step in Steps)
+                total = checked(total + step.DurationSeconds);
+            return total;
+        }
+    }
 
     /// <summary>Number of operations in the routing.</summary>
     public int StepCount => Steps.Count;

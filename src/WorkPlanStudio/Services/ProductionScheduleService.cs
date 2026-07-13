@@ -21,19 +21,30 @@ public sealed class ProductionScheduleService : IProductionScheduleService
     }
 
     /// <inheritdoc />
-    public async Task<ScheduleResult> GenerateAsync(SchedulingParameters parameters)
+    public async Task<ScheduleResult> GenerateAsync(
+        SchedulingParameters parameters,
+        CancellationToken cancellationToken = default)
     {
-        var releasedPlans = (await _plans.GetAllAsync())
+        SchedulingParameterLimits.Validate(parameters);
+        var releasedPlans = (await _plans.GetAllAsync(cancellationToken))
             .Where(p => p.Status == WorkPlanStatus.Released)
             .ToList();
-        var centers = await _centers.GetAllAsync();
+        var centers = await _centers.GetAllAsync(cancellationToken);
 
-        var input = ScheduleMapper.BuildInput(releasedPlans, centers, parameters);
-        if (input is null)
-            return ScheduleResult.Empty(parameters.MinutesPerWorkingDay);
+        var preparation = ScheduleMapper.BuildInput(releasedPlans, centers, parameters);
+        if (preparation.Input is null)
+            return ScheduleResult.Empty(parameters.MinutesPerWorkingDay) with
+            {
+                PreparationErrors = preparation.Errors
+            };
 
-        var result = new SchedulingEngine().Run(input.Context);
+        var input = preparation.Input;
+        var result = new SchedulingEngine().RunCancellable(input.Context, cancellationToken);
         var view = ScheduleMapper.BuildView(result, input.Context, input.PlanById, parameters.MinutesPerWorkingDay);
-        return view with { Explanation = ScheduleExplainer.Explain(input.Context, result) };
+        return view with
+        {
+            Explanation = ScheduleExplainer.Explain(input.Context, result),
+            PreparationErrors = preparation.Errors
+        };
     }
 }

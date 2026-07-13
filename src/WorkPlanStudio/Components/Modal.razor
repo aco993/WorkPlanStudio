@@ -1,12 +1,21 @@
+@inject IStringLocalizer<SharedResource> L
+@inject IJSRuntime JS
+
 @if (Visible)
 {
-    <div class="modal-backdrop-custom" @onclick="OnBackdropAsync">
-        <div class="modal-card" @onclick:stopPropagation="true">
+    <div class="modal-backdrop-custom" @onclick="OnBackdropAsync" @onkeydown="OnKeyDownAsync">
+        <div @ref="_dialog"
+             class="modal-card"
+             role="dialog"
+             aria-modal="true"
+             aria-labelledby="@_titleId"
+             tabindex="-1"
+             @onclick:stopPropagation="true">
             @if (!string.IsNullOrEmpty(Title))
             {
                 <div class="modal-head">
-                    <h3>@Title</h3>
-                    <button type="button" class="icon-btn" aria-label="Close" @onclick="CloseAsync">✕</button>
+                    <h3 id="@_titleId">@Title</h3>
+                    <button type="button" class="icon-btn" aria-label="@L["Common_Close"]" @onclick="CloseAsync">✕</button>
                 </div>
             }
             <div class="modal-body">
@@ -30,11 +39,33 @@
     [Parameter] public RenderFragment? Footer { get; set; }
     [Parameter] public bool CloseOnBackdrop { get; set; } = true;
 
+    private readonly string _titleId = $"modal-title-{Guid.NewGuid():N}";
+    private ElementReference _dialog;
+    private bool _focusInitialized;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (Visible && !_focusInitialized)
+        {
+            _focusInitialized = true;
+            await JS.InvokeVoidAsync("workplanModal.open", _dialog);
+        }
+        else if (!Visible)
+        {
+            _focusInitialized = false;
+        }
+    }
+
     private async Task CloseAsync()
     {
+        await JS.InvokeVoidAsync("workplanModal.close", _dialog);
         Visible = false;
+        _focusInitialized = false;
         await VisibleChanged.InvokeAsync(false);
     }
 
     private Task OnBackdropAsync() => CloseOnBackdrop ? CloseAsync() : Task.CompletedTask;
+
+    private Task OnKeyDownAsync(KeyboardEventArgs args) =>
+        args.Key == "Escape" ? CloseAsync() : Task.CompletedTask;
 }

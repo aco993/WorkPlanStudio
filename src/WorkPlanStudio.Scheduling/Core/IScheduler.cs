@@ -21,4 +21,11 @@ public interface IScheduler
         SchedulingContext context,
         IReadOnlyList<int> jobPriorityOrder,
         IReadOnlyDictionary<int, long> dueByJob);
+
+    /// <summary>Builds a schedule and observes cooperative cancellation.</summary>
+    Schedule RunCancellable(
+        SchedulingContext context,
+        IReadOnlyList<int> jobPriorityOrder,
+        IReadOnlyDictionary<int, long> dueByJob,
+        CancellationToken cancellationToken);
 }

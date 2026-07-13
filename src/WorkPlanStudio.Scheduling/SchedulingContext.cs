@@ -27,12 +27,13 @@ public sealed class SchedulingContext
         ArgumentNullException.ThrowIfNull(jobs);
         ArgumentNullException.ThrowIfNull(machines);
         ArgumentNullException.ThrowIfNull(parameters);
+        SchedulingParameterLimits.Validate(parameters);
 
         var byId = new Dictionary<int, MachineCapacity>(machines.Count);
         foreach (var m in machines)
         {
-            if (m.ParallelCapacity < 1)
-                throw new ArgumentException($"Work center {m.WorkCenterId} has invalid capacity {m.ParallelCapacity} (must be ≥ 1).");
+            if (m.ParallelCapacity is < 1 or > 64)
+                throw new ArgumentException($"Work center {m.WorkCenterId} has invalid capacity {m.ParallelCapacity} (must be 1..64).");
             byId[m.WorkCenterId] = m;
         }
 
@@ -54,6 +55,8 @@ public sealed class SchedulingContext
                 if (!byId.ContainsKey(step.WorkCenterId))
                     throw new ArgumentException($"Job {job.Id} step {step.StepNumber} references unknown work center {step.WorkCenterId}.");
             }
+
+            _ = job.TotalProcessingSeconds;
         }
 
         Jobs = jobs;

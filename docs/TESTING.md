@@ -13,29 +13,25 @@ browser and no `wasm-tools` workload.
 
 ```mermaid
 graph TD
-    E2E["🌐 <b>E2E</b> — Playwright · 5 tests<br/>real Chromium drives the running app"]
-    COMP["🧩 <b>Component + Assistant</b> — bUnit/xUnit · 15 tests<br/>Schedule page &amp; the assistant providers"]
-    MAP["🔌 <b>Boundary</b> — xUnit · 10 tests<br/>EF entities → engine (rounding, filtering)"]
-    UNIT["⚙️ <b>Unit + Property + Architecture</b> — xUnit/CsCheck · 83 tests<br/>the engine, its invariants &amp; design rules"]
+    E2E["🌐 <b>E2E</b> — Playwright · 10 tests<br/>real Chromium, persistence reload/reset, keyboard, mobile and localization"]
+    WEB["🧩 <b>Data + Boundary + Component</b> — xUnit/bUnit · 54 tests<br/>real SQLite, validation, mapper, pages &amp; assistant"]
+    UNIT["⚙️ <b>Unit + Property + Architecture</b> — xUnit/CsCheck · 90 tests<br/>the engine, limits, invariants &amp; design rules"]
 
-    E2E --> COMP --> MAP --> UNIT
+    E2E --> WEB --> UNIT
 
     classDef fast fill:#dcfce7,stroke:#16a34a,color:#14532d;
     classDef slow fill:#fef3c7,stroke:#b45309,color:#7c2d12;
-    class UNIT,MAP fast;
-    class COMP,E2E slow;
+    class UNIT fast;
+    class WEB,E2E slow;
 ```
 
 ## The layers
 
 | Layer | Project | Tests | Guards | Needs WASM? | Runtime |
 | --- | --- | --: | --- | :---: | --- |
-| Unit + Architecture | `tests/WorkPlanStudio.Scheduling.Tests` | 78 | the engine: determinism, feasibility, every rule, scoring, search, the explainer — and that the engine stays dependency-free | no | ~1 s |
-| Property-based | `tests/WorkPlanStudio.Scheduling.Tests` | 5 | invariants over hundreds of random problems: precedence, capacity, determinism, makespan bound, "never worse than the rule" | no | ~1 s |
-| Boundary (mapping) | `tests/WorkPlanStudio.Web.Tests` | 10 | the EF→domain mapping: `decimal`→seconds rounding, Released filter, inactive-WC skip, step re-indexing | yes¹ | ~2 s |
-| Assistant | `tests/WorkPlanStudio.Web.Tests` | 7 | rule-based narration, the AI provider over a **stubbed HTTP transport**, the not-configured/failure fallbacks | yes¹ | ~1 s |
-| Component | `tests/WorkPlanStudio.Web.Tests` | 8 | the Schedule page: KPI/Gantt/table render, empty state, late styling, the parameter→Generate flow, the assistant panel | yes¹ | ~2 s |
-| End-to-end | `tests/WorkPlanStudio.E2E` | 5 | the whole thing through a browser: a parameter change visibly changes the schedule, determinism, EN/DE | browser² | ~30 s |
+| Engine + property + architecture | `tests/WorkPlanStudio.Scheduling.Tests` | 90 | determinism, feasibility, rules, scoring, bounded search, overflow, cancellation, explanations and a dependency-free core | no | ~3 s |
+| Data + mapper + component + assistant | `tests/WorkPlanStudio.Web.Tests` | 54 | real SQLite constraints/CRUD/reload/recovery failures, all-or-nothing mapper, localized component states, modal semantics and stubbed AI transport | yes¹ | ~12 s |
+| End-to-end | `tests/WorkPlanStudio.E2E` | 10 | real Chromium: schedule changes, determinism, language + `html lang`, invalid input, save→hard reload, confirmed reset, modal Escape/focus return and mobile drawer | browser² | ~2 min |
 
 ¹ These reference the Blazor app assembly, so building them compiles the app (hence `wasm-tools`). The tests themselves run on a normal host.
 ² Needs a Chromium download (`playwright install`) and the app running; no `wasm-tools` if you serve a pre-published build.
@@ -82,9 +78,14 @@ exposes the bug, not the random monster that happened to trip it.
 
 `ScheduleMapper` is the one place `decimal` minutes become integer seconds. These
 tests use hand-built `WorkPlan`/`Operation`/`WorkCenter` entities (no database) to
-check banker's rounding, that operations on inactive work centers are dropped,
-that plans left without steps are skipped, and that step numbers are re-indexed so
-malformed data can't break the engine's contract.
+check banker's rounding, checked overflow, work-center capacity, and the
+all-or-nothing rule: an inactive or missing center rejects the complete plan with
+a stable diagnostic instead of silently dropping an operation.
+
+`BrowserDatabaseTests` use real file-backed SQLite. They cover constraints,
+aggregate update, conflicts, not-found updates, deactivation/delete guards,
+save→new-database reload, invalid Base64, non-SQLite Base64, truncated data,
+schema mismatch, export/reset and simulated read/write/quota failures.
 
 ### 🧩 Component — the page
 
@@ -116,7 +117,10 @@ the brief asked for: **tighten the targets and the schedule visibly turns late**
 red-ringed bars and red status pills (`schedule-ontime.png` → `schedule-late.png`,
 captured by the run itself). It also checks that changing the dispatch rule keeps
 a feasible schedule, that the same seed reproduces the same makespan, and that the
-UI switches to German.
+UI switches to German and updates `html lang`. The suite also proves invalid form
+input stays recoverable, a saved plan survives a hard reload (including the WASM
+WAL checkpoint path), and the work-center modal supports dialog semantics, Escape
+and focus return.
 
 ## Running the tests
 
@@ -136,7 +140,7 @@ Useful environment variables for E2E: `E2E_BASE_URL` (default `http://localhost:
 
 ## Coverage
 
-The engine job measures code coverage with the Microsoft Testing Platform collector; the scheduling library sits at roughly **98 % line / 92 % branch**. Reproduce it locally with:
+The engine job measures code coverage with the Microsoft Testing Platform collector. The hardened branch on 2026-07-12 measured **411/424 lines (96.93 %) and 160/183 branches (87.43 %)**. The pre-hardening baseline was 97.90/91.61%; the added validation/cancellation branches explain the lower percentage. Run the command below rather than treating a badge as evidence:
 
 ```bash
 dotnet test tests/WorkPlanStudio.Scheduling.Tests/WorkPlanStudio.Scheduling.Tests.csproj \

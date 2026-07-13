@@ -26,7 +26,7 @@ Die Oberfläche ist in **Englisch und Deutsch** verfügbar und zur Laufzeit umsc
 - 🗓️ **Produktionsplanung** — ein kapazitätsbeschränkter Planer, der jedem freigegebenen Plan einen Zieltermin zuweist und seine Arbeitsgänge über die Arbeitsplätze einplant: sechs Prioritätsregeln, konfigurierbare Zieltermin-Vergabe, Multi-Start- und Lokalsuche-Optimierung, ein Gantt-Diagramm und Termintreue-/Verspätungs-Kennzahlen. Deterministisch und durch Tests abgedeckt.
 - 🤖 **Planungs-Assistent** — erklärt jeden Lauf in einfacher Sprache (der Engpass-Arbeitsplatz, warum ein Auftrag zu spät ist, eine *berechnete* Empfehlung), **auf dem Gerät** und ohne Schlüssel. Ein optionaler AI-Erzähler mit eigenem API-Schlüssel kann sie umformulieren, mit sauberem Fallback auf die eingebaute Erklärung. Siehe [`docs/AI-ASSISTANT.md`](docs/AI-ASSISTANT.md).
 - 🌍 **Zweisprachige Oberfläche (EN / DE)** — vollständige Lokalisierung über `IStringLocalizer` und `.resx`-Ressourcen, inklusive kulturkorrekter Zahlen-, Datums- und Währungsformatierung.
-- 💾 **Echte Datenbank im Browser** — EF Core spricht mit einer SQLite-Datenbank, die nach WebAssembly kompiliert und im `localStorage` persistiert wird, sodass die Daten Seiten-Neuladungen überstehen.
+- 💾 **Echte Datenbank im Browser** — EF Core spricht mit SQLite in WebAssembly; WAL-sichere Snapshots überstehen Reloads, beschädigte oder inkompatible Daten führen zu einem expliziten Export/Reset-Dialog.
 - 📱 **Responsiv** — funktioniert vom breiten Desktop bis zum mobilen Drawer-Layout.
 
 ## Was technisch interessant ist
@@ -36,7 +36,7 @@ Das Kernstück: **EF Core + SQLite laufen clientseitig in WebAssembly**:
 - Die native SQLite-Engine wird zur Buildzeit in die `dotnet.native.wasm` der App relinkt (über die `wasm-tools`-Workload).
 - Beim Start liest die App eine Base64-kodierte SQLite-Datei aus dem `localStorage` in das In-Memory-Dateisystem des Browsers; beim ersten Lauf wird das Schema angelegt und mit Beispieldaten befüllt.
 - Nach jeder Änderung wird die SQLite-Datei zurück in den `localStorage` geschrieben.
-- Ein Schema-Versionsschlüssel verhindert das Laden einer inkompatiblen Datenbank nach einer Modelländerung.
+- Ein Schema-Versionsschlüssel verhindert das Laden einer inkompatiblen Datenbank. Die vorhandenen Daten werden zum Export erhalten und erst nach ausdrücklicher Bestätigung zurückgesetzt; dies ist keine Migration.
 
 Damit demonstriert die App eine vollständige Datenschicht — `DbContext`, Beziehungen, LINQ-Abfragen, eine `IDbContextFactory`, eine Service-Schicht — **ganz ohne Server**.
 
@@ -44,7 +44,7 @@ Damit demonstriert die App eine vollständige Datenschicht — `DbContext`, Bezi
 
 Die Seite **Planung** verwandelt die freigegebenen Arbeitspläne in einen kapazitätsbeschränkten Produktionsplan — der algorithmisch anspruchsvollste Teil des Projekts. Er liegt in einer eigenen, abhängigkeitsfreien Bibliothek (`src/WorkPlanStudio.Scheduling`), sodass die gesamte Engine auf einem normalen .NET-Runner unit-getestet werden kann — ohne Blazor oder die WebAssembly-Toolchain.
 
-1. **Zieltermine („Meta").** Jeder Auftrag erhält einen Termin nach einer konfigurierbaren Regel — Total Work Content (TWK), Number of Operations (NOP), Equal Slack (SLK), Constant Allowance (CON) oder einen expliziten Wert.
+1. **Zieltermine („Meta").** Jeder Demo-Auftrag erhält einen Termin nach TWK, NOP, SLK oder CON. Kundenspezifische Auftragstermine bleiben bis zu einem echten `ProductionOrder`-Modell bewusst außerhalb des Scopes.
 2. **Dispatch-Planung.** Ein kapazitätsbeschränkter List-Scheduler platziert die Arbeitsgänge jedes Auftrags auf dem frühesten freien Slot ihres Arbeitsplatzes, unter Beachtung von Arbeitsgang-Reihenfolge und Maschinenkapazität. Sechs Prioritätsregeln entscheiden, wer auf einer umkämpften Maschine zuerst drankommt: FIFO, SPT, LPT, EDD, Critical Ratio und WSPT.
 3. **Optimierung.** Eine seed-basierte Multi-Start-Suche plus eine First-Improvement-Lokalsuche verfeinern die Reihenfolge; das Ergebnis ist nie schlechter als der reine Regel-Plan.
 4. **Bewertung.** Durchlaufzeit (Makespan), Gesamt-/Maximalverspätung, Termintreue und Arbeitsplatz-Auslastung werden zu einem einzigen Strafwert zusammengefasst, den die Suche minimiert.
@@ -99,7 +99,7 @@ Das Repository setzt folgende Entwicklungspraktiken um:
 - **Strikte Builds** — Nullable Reference Types, .NET-Analyzer und **Warnungen als Fehler** (`Directory.Build.props`).
 - **Central Package Management** — jede NuGet-Version in einer [`Directory.Packages.props`](Directory.Packages.props).
 - **Einheitlicher Stil** — eine umfassende [`.editorconfig`](.editorconfig) und Zeilenende-Normalisierung über [`.gitattributes`](.gitattributes).
-- **Geschichtete Tests + Abdeckung** — 115 Tests in drei Testprojekten einschließlich eigenschaftsbasierter Invarianten; aktuell 97,9 % Zeilen- und 91,6 % Zweigabdeckung der Engine.
+- **Geschichtete Tests + Abdeckung** — 154 Tests in drei Testprojekten, einschließlich echtem SQLite, Browser-Reload/Reset, Mobile-Flow und eigenschaftsbasierten Invarianten; die gehärtete Engine liegt aktuell bei 96,93 % Zeilen- und 87,43 % Zweigabdeckung.
 - **Architektur per Test erzwungen** — die Engine kann keine Blazor-/EF-/JS-Abhängigkeit ansammeln.
 - **Entscheidungen dokumentiert** — siehe die [Architecture Decision Records](docs/adr).
 - **Abhängigkeits-Hygiene** — [Dependabot](.github/dependabot.yml) hält NuGet und GitHub Actions aktuell.
@@ -214,7 +214,11 @@ Zum Aktivieren: dieses Repo zu GitHub pushen, dann unter **Settings → Pages** 
 
 ## Hinweise
 
-- Alle Daten werden lokal in Ihrem Browser gespeichert und verlassen Ihr Gerät nie. Über **Über → Auf Beispieldaten zurücksetzen** stellen Sie den ursprünglichen Demo-Inhalt wieder her.
+- Dies ist lokale Demo-Persistenz, kein Cloud-Backup, Migrationssystem oder Secret Vault.
+- Der Scheduler ist eine deterministische Heuristik und beweist kein globales Optimum.
+- KI-Werkzeuge wurden intensiv zur Code-Erzeugung und zum Review eingesetzt. Das Projekt wird nicht als vollständig handgeschrieben dargestellt; verantwortlich bleiben Spezifikation, Prüfung, Debugging, Tests, Integration und die finalen Entscheidungen.
+
+- Routing-Daten bleiben lokal. Nur wenn der optionale BYOK-Assistent aktiviert wird, werden strukturierte Planungsfakten an den konfigurierten Endpunkt gesendet. Über **Über → Auf Beispieldaten zurücksetzen** stellen Sie die Demo-Inhalte wieder her.
 - Beispiel-Teilenummern, -Maschinen und -Zeiten sind fiktiv und dienen nur der Illustration.
 
 ## Lizenz

@@ -20,15 +20,19 @@ public sealed class SchedulingEngine
         _scheduler = scheduler ?? new DispatchScheduler();
 
     /// <summary>Runs the full pipeline (due dates → multi-start → local search) and returns the best schedule.</summary>
-    public SchedulingResult Run(SchedulingContext context)
+    public SchedulingResult Run(SchedulingContext context) => RunCancellable(context, CancellationToken.None);
+
+    /// <summary>Runs the full pipeline and observes cooperative cancellation.</summary>
+    public SchedulingResult RunCancellable(SchedulingContext context, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(context);
+        cancellationToken.ThrowIfCancellationRequested();
 
         var dueByJob = DueDateAssigner.Assign(context);
 
         if (context.Jobs.Count == 0)
         {
-            var emptySchedule = _scheduler.Run(context, [], dueByJob);
+            var emptySchedule = _scheduler.RunCancellable(context, [], dueByJob, cancellationToken);
             return new SchedulingResult(emptySchedule, ScheduleEvaluator.Evaluate(emptySchedule, context), dueByJob, 0);
         }
 
@@ -36,7 +40,7 @@ public sealed class SchedulingEngine
         // can never be worse than what the dispatch rule alone produces.
         var baseOrder = PriorityOrdering.For(context, dueByJob);
         int[] bestOrder = baseOrder;
-        var bestSchedule = _scheduler.Run(context, baseOrder, dueByJob);
+        var bestSchedule = _scheduler.RunCancellable(context, baseOrder, dueByJob, cancellationToken);
         var bestEvaluation = ScheduleEvaluator.Evaluate(bestSchedule, context);
 
         // Runs 1..N-1: seeded shuffles for diversity. Strict-improvement keeps the
@@ -44,10 +48,11 @@ public sealed class SchedulingEngine
         int runs = Math.Max(1, context.Parameters.MultiStartRuns);
         for (int i = 1; i < runs; i++)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             var order = (int[])baseOrder.Clone();
             DeterministicRandom.ForRun(context.Parameters.Seed, i).Shuffle(order);
 
-            var schedule = _scheduler.Run(context, order, dueByJob);
+            var schedule = _scheduler.RunCancellable(context, order, dueByJob, cancellationToken);
             var evaluation = ScheduleEvaluator.Evaluate(schedule, context);
             if (evaluation.Penalty < bestEvaluation.Penalty)
             {
@@ -57,10 +62,11 @@ public sealed class SchedulingEngine
             }
         }
 
-        var polished = LocalSearch.Improve(
+        var polished = LocalSearch.ImproveCancellable(
             _scheduler, context, dueByJob,
             bestOrder, bestSchedule, bestEvaluation,
-            context.Parameters.LocalSearchMaxSteps);
+            context.Parameters.LocalSearchMaxSteps,
+            cancellationToken);
 
         return new SchedulingResult(polished.Schedule, polished.Evaluation, dueByJob, polished.StepsUsed);
     }

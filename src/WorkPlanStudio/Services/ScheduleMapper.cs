@@ -15,41 +15,53 @@ public static class ScheduleMapper
     public const int PaletteSize = 8;
 
     /// <summary>Whole-lot processing time of an operation, rounded to whole seconds (banker's rounding).</summary>
-    public static long ToSeconds(decimal setupMinutes, decimal perPieceMinutes, int lotSize) =>
-        (long)decimal.Round((setupMinutes + perPieceMinutes * lotSize) * 60m, MidpointRounding.ToEven);
+    public static long ToSeconds(decimal setupMinutes, decimal perPieceMinutes, int lotSize)
+    {
+        if (setupMinutes < 0)
+            throw new ArgumentOutOfRangeException(nameof(setupMinutes));
+        if (perPieceMinutes < 0)
+            throw new ArgumentOutOfRangeException(nameof(perPieceMinutes));
+        if (lotSize <= 0)
+            throw new ArgumentOutOfRangeException(nameof(lotSize));
+
+        return checked((long)decimal.Round(
+            checked((setupMinutes + checked(perPieceMinutes * lotSize)) * 60m),
+            MidpointRounding.ToEven));
+    }
 
     /// <summary>The mapped scheduling input plus a lookup back to the originating plans.</summary>
     public sealed record Input(SchedulingContext Context, IReadOnlyDictionary<int, WorkPlan> PlanById);
 
     /// <summary>
-    /// Maps released plans + active work centers into a scheduling context, or
-    /// returns <c>null</c> when nothing is schedulable. Operations on inactive or
-    /// unknown work centers are dropped; plans left without steps are skipped;
-    /// step numbers are re-indexed so malformed data cannot break the engine.
+    /// Maps released plans + active work centers into a scheduling context. A plan
+    /// is either mapped completely or rejected completely with structured errors.
     /// </summary>
-    public static Input? BuildInput(
+    public static SchedulePreparationResult BuildInput(
         IEnumerable<WorkPlan> releasedPlans,
         IEnumerable<WorkCenter> centers,
         SchedulingParameters parameters)
     {
         var centerList = centers as IReadOnlyList<WorkCenter> ?? centers.ToList();
-        var activeIds = centerList.Where(c => c.IsActive).Select(c => c.Id).ToHashSet();
+        var centerById = centerList.ToDictionary(center => center.Id);
 
         var machines = centerList
-            .Where(c => c.IsActive)
-            .Select(c => new MachineCapacity(c.Id, $"{c.Code} — {c.Name}", ParallelCapacity: 1))
+            .Where(c => c.IsActive && c.ParallelCapacity is >= 1 and <= Validation.WorkCenterValidator.MaxCapacity)
+            .Select(c => new MachineCapacity(c.Id, $"{c.Code} — {c.Name}", c.ParallelCapacity))
             .ToList();
 
         var jobs = new List<ProductionJob>();
         var planById = new Dictionary<int, WorkPlan>();
+        var errors = new List<SchedulePreparationIssue>();
         foreach (var plan in releasedPlans)
         {
-            var ordered = plan.Operations
-                .Where(o => activeIds.Contains(o.WorkCenterId))
-                .OrderBy(o => o.OperationNumber)
-                .ToList();
-            if (ordered.Count == 0)
+            var planErrors = ValidateForScheduling(plan, centerById);
+            if (planErrors.Count > 0)
+            {
+                errors.AddRange(planErrors);
                 continue;
+            }
+
+            var ordered = plan.Operations.OrderBy(o => o.OperationNumber).ToList();
 
             var steps = ordered
                 .Select((o, i) => new JobStep(i + 1, o.WorkCenterId, ToSeconds(o.SetupTimeMinutes, o.TimePerPieceMinutes, plan.LotSize)))
@@ -66,10 +78,70 @@ public static class ScheduleMapper
             planById[plan.Id] = plan;
         }
 
-        if (jobs.Count == 0)
-            return null;
+        var input = jobs.Count == 0
+            ? null
+            : new Input(new SchedulingContext(jobs, machines, parameters), planById);
 
-        return new Input(new SchedulingContext(jobs, machines, parameters), planById);
+        return new SchedulePreparationResult(input, errors);
+    }
+
+    private static List<SchedulePreparationIssue> ValidateForScheduling(
+        WorkPlan plan,
+        IReadOnlyDictionary<int, WorkCenter> centerById)
+    {
+        var errors = new List<SchedulePreparationIssue>();
+        void Add(int? operationNumber, SchedulePreparationErrorCode code, string? center = null) =>
+            errors.Add(new(plan.Id, plan.PlanNumber, operationNumber, code, center));
+
+        if (string.IsNullOrWhiteSpace(plan.PlanNumber) || string.IsNullOrWhiteSpace(plan.PartName))
+            Add(null, SchedulePreparationErrorCode.InvalidPlan);
+        if (plan.LotSize <= 0)
+            Add(null, SchedulePreparationErrorCode.InvalidLotSize);
+        if (plan.Operations.Count == 0)
+            Add(null, SchedulePreparationErrorCode.NoOperations);
+
+        var duplicateNumbers = plan.Operations
+            .GroupBy(operation => operation.OperationNumber)
+            .Where(group => group.Count() > 1)
+            .Select(group => group.Key)
+            .ToHashSet();
+
+        foreach (var operation in plan.Operations)
+        {
+            if (operation.OperationNumber <= 0)
+                Add(operation.OperationNumber, SchedulePreparationErrorCode.InvalidOperationNumber);
+            if (duplicateNumbers.Contains(operation.OperationNumber))
+                Add(operation.OperationNumber, SchedulePreparationErrorCode.DuplicateOperationNumber);
+            if (operation.SetupTimeMinutes < 0 || operation.TimePerPieceMinutes < 0)
+                Add(operation.OperationNumber, SchedulePreparationErrorCode.InvalidOperationDuration);
+
+            if (!centerById.TryGetValue(operation.WorkCenterId, out var center))
+            {
+                Add(operation.OperationNumber, SchedulePreparationErrorCode.MissingWorkCenter, operation.WorkCenterId.ToString());
+            }
+            else if (!center.IsActive)
+            {
+                Add(operation.OperationNumber, SchedulePreparationErrorCode.InactiveWorkCenter, center.Code);
+            }
+            else if (center.ParallelCapacity is < 1 or > Validation.WorkCenterValidator.MaxCapacity)
+            {
+                Add(operation.OperationNumber, SchedulePreparationErrorCode.InvalidWorkCenterCapacity, center.Code);
+            }
+
+            if (plan.LotSize > 0 && operation.SetupTimeMinutes >= 0 && operation.TimePerPieceMinutes >= 0)
+            {
+                try
+                {
+                    _ = ToSeconds(operation.SetupTimeMinutes, operation.TimePerPieceMinutes, plan.LotSize);
+                }
+                catch (OverflowException)
+                {
+                    Add(operation.OperationNumber, SchedulePreparationErrorCode.InvalidOperationDuration);
+                }
+            }
+        }
+
+        return errors.Distinct().ToList();
     }
 
     /// <summary>Projects an engine result into the page's Gantt rows, job table and KPI cards.</summary>

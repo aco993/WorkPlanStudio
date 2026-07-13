@@ -10,5 +10,5 @@ namespace WorkPlanStudio.Services;
 public interface IProductionScheduleService
 {
     /// <summary>Builds a schedule for the released plans using the given parameters.</summary>
-    Task<ScheduleResult> GenerateAsync(SchedulingParameters parameters);
+    Task<ScheduleResult> GenerateAsync(SchedulingParameters parameters, CancellationToken cancellationToken = default);
 }

@@ -65,7 +65,14 @@ public sealed class ScheduleAssistant
                or InvalidOperationException or NotSupportedException or UriFormatException)
         {
             var fallback = await _ruleBased.NarrateAsync(explanation, cancellationToken);
-            return fallback with { Note = _l["Sched_Ai_Fallback", ex.Message] };
+            return fallback with { Note = _l["Sched_Ai_Fallback", FailureLabel(ex)] };
         }
     }
+
+    private string FailureLabel(Exception exception) => exception switch
+    {
+        OperationCanceledException => _l["Sched_Ai_FailureTimeout"],
+        JsonException or InvalidOperationException or NotSupportedException => _l["Sched_Ai_FailureResponse"],
+        _ => _l["Sched_Ai_FailureUnavailable"]
+    };
 }

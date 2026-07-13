@@ -13,29 +13,25 @@ Browser und ohne die `wasm-tools`-Workload.
 
 ```mermaid
 graph TD
-    E2E["🌐 <b>E2E</b> — Playwright · 5 Tests<br/>echtes Chromium steuert die laufende App"]
-    COMP["🧩 <b>Komponenten + Assistent</b> — bUnit/xUnit · 15 Tests<br/>Planungsseite &amp; die Assistent-Provider"]
-    MAP["🔌 <b>Grenze</b> — xUnit · 10 Tests<br/>EF-Entitäten → Engine (Rundung, Filterung)"]
-    UNIT["⚙️ <b>Unit + Property + Architektur</b> — xUnit/CsCheck · 83 Tests<br/>die Engine, ihre Invarianten &amp; Designregeln"]
+    E2E["🌐 <b>E2E</b> — Playwright · 10 Tests<br/>Chromium, Reload/Reset, Tastatur, Mobile und Sprache"]
+    WEB["🧩 <b>Daten + Grenze + Komponenten</b> — xUnit/bUnit · 54 Tests<br/>echtes SQLite, Validierung, Mapping, UI &amp; Assistent"]
+    UNIT["⚙️ <b>Unit + Property + Architektur</b> — xUnit/CsCheck · 90 Tests<br/>Engine, Limits, Invarianten &amp; Designregeln"]
 
-    E2E --> COMP --> MAP --> UNIT
+    E2E --> WEB --> UNIT
 
     classDef fast fill:#dcfce7,stroke:#16a34a,color:#14532d;
     classDef slow fill:#fef3c7,stroke:#b45309,color:#7c2d12;
-    class UNIT,MAP fast;
-    class COMP,E2E slow;
+    class UNIT fast;
+    class WEB,E2E slow;
 ```
 
 ## Die Schichten
 
 | Schicht | Projekt | Tests | Sichert | WASM nötig? | Laufzeit |
 | --- | --- | --: | --- | :---: | --- |
-| Unit + Architektur | `tests/WorkPlanStudio.Scheduling.Tests` | 78 | die Engine: Determinismus, Zulässigkeit, jede Regel, Bewertung, Suche, der Erklärer — und dass die Engine abhängigkeitsfrei bleibt | nein | ~1 s |
-| Eigenschaftsbasiert | `tests/WorkPlanStudio.Scheduling.Tests` | 5 | Invarianten über hunderte Zufallsprobleme: Reihenfolge, Kapazität, Determinismus, Makespan-Schranke, „nie schlechter als die Regel" | nein | ~1 s |
-| Grenze (Mapping) | `tests/WorkPlanStudio.Web.Tests` | 10 | das EF→Domain-Mapping: `decimal`→Sekunden-Rundung, Freigabe-Filter, Überspringen inaktiver Arbeitsplätze, Neuindizierung der Schritte | ja¹ | ~2 s |
-| Assistent | `tests/WorkPlanStudio.Web.Tests` | 7 | regelbasierte Erzählung, der KI-Provider über einen **gestubbten HTTP-Transport**, die Fallbacks bei „nicht konfiguriert"/Fehler | ja¹ | ~1 s |
-| Komponenten | `tests/WorkPlanStudio.Web.Tests` | 8 | die Planungsseite: KPI-/Gantt-/Tabellen-Rendering, Leerzustand, Verspätungs-Styling, der Parameter→Generieren-Fluss, das Assistent-Panel | ja¹ | ~2 s |
-| End-to-End | `tests/WorkPlanStudio.E2E` | 5 | das Ganze durch einen Browser: eine Parameter-Änderung verändert den Plan sichtbar, Determinismus, EN/DE | Browser² | ~30 s |
+| Engine + Property + Architektur | `tests/WorkPlanStudio.Scheduling.Tests` | 90 | Determinismus, Zulässigkeit, Regeln, Limits, Overflow, Cancellation, Erklärungen und die reine Architekturgrenze | nein | ~3 s |
+| Daten + Mapping + Komponenten + Assistent | `tests/WorkPlanStudio.Web.Tests` | 54 | echtes SQLite, CRUD/Constraints/Recovery, vollständiges Routing-Mapping, UI-Zustände, Accessibility und gestubbter KI-Transport | ja¹ | ~12 s |
+| End-to-End | `tests/WorkPlanStudio.E2E` | 10 | Chromium: Planung, Determinismus, Sprache/`html lang`, ungültige Eingaben, Save→Reload, Reset, Modal-Tastatur/Fokus und Mobile Drawer | Browser² | ~2 min |
 
 ¹ Diese referenzieren das Blazor-App-Assembly, daher kompiliert ihr Build die App (also `wasm-tools`). Die Tests selbst laufen auf einem normalen Host.
 ² Braucht einen Chromium-Download (`playwright install`) und die laufende App; kein `wasm-tools`, wenn ein vorab veröffentlichter Build ausgeliefert wird.
@@ -75,10 +71,13 @@ Reproduzieren.
 
 `ScheduleMapper` ist die einzige Stelle, an der `decimal`-Minuten zu ganzzahligen
 Sekunden werden. Diese Tests nutzen handgebaute `WorkPlan`-/`Operation`-/`WorkCenter`-Entitäten
-(keine Datenbank), um kaufmännische Rundung zu prüfen, dass Arbeitsgänge auf
-inaktiven Arbeitsplätzen entfernt werden, dass Pläne ohne Schritte übersprungen
-werden und dass Schrittnummern neu indiziert werden, sodass fehlerhafte Daten den
-Vertrag der Engine nicht brechen können.
+(keine Datenbank), um Rundung, Overflow, Kapazität und das All-or-nothing-Prinzip
+zu prüfen: Ein inaktiver oder fehlender Arbeitsplatz lehnt den vollständigen Plan
+mit einem stabilen Diagnosecode ab, statt einen Arbeitsgang still zu entfernen.
+
+`BrowserDatabaseTests` verwenden echtes dateibasiertes SQLite für Constraints,
+CRUD, Save→Reload, Schema-Mismatch, beschädigte Payloads, Export/Reset sowie
+simulierte Lese-, Schreib- und Quota-Fehler.
 
 ### 🧩 Komponenten — die Seite
 

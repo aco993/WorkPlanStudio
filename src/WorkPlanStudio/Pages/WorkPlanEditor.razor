@@ -4,6 +4,7 @@
 @inject WorkPlanService Plans
 @inject WorkCenterService Centers
 @inject NavigationManager Nav
+@inject ILogger<WorkPlanEditor> Logger
 
 <PageTitle>@Title · WorkPlan Studio</PageTitle>
 
@@ -14,7 +15,7 @@
     </div>
     <div class="head-actions">
         <button class="btn btn-ghost" @onclick="Cancel">@L["Common_Cancel"]</button>
-        <button class="btn btn-primary" @onclick="SaveAsync">@L["Common_Save"]</button>
+        <button class="btn btn-primary" @onclick="SaveAsync" disabled="@_saving">@L["Common_Save"]</button>
     </div>
 </div>
 
@@ -24,6 +25,10 @@
 }
 else
 {
+    @if (_saveError is not null)
+    {
+        <div class="form-banner error" role="alert">@_saveError</div>
+    }
     <div class="editor-grid">
         <section class="card">
             <div class="card-head"><h2>@L["Editor_HeaderSection"]</h2></div>
@@ -39,12 +44,16 @@ else
                     </label>
                     <label class="field">
                         <span>@L["Field_Status"]</span>
-                        <select class="input" @bind="_model.Status">
+                        <select class="input @(_errors.ContainsKey("Status") ? "error" : null)" @bind="_model.Status">
                             @foreach (var s in Enum.GetValues<WorkPlanStatus>())
                             {
                                 <option value="@s">@StatusLabel(s)</option>
                             }
                         </select>
+                        @if (_errors.TryGetValue("Status", out var se))
+                        {
+                            <span class="field-error">@se</span>
+                        }
                     </label>
                     <label class="field">
                         <span>@L["Field_PartNumber"]</span>
@@ -64,7 +73,11 @@ else
                     </label>
                     <label class="field">
                         <span>@L["Field_LotSize"]</span>
-                        <input class="input" type="number" min="1" @bind="_model.LotSize" @bind:event="oninput" />
+                        <input class="input @(_errors.ContainsKey("LotSize") ? "error" : null)" type="number" min="1" max="1000000" @bind="_model.LotSize" @bind:event="oninput" />
+                        @if (_errors.TryGetValue("LotSize", out var le))
+                        {
+                            <span class="field-error">@le</span>
+                        }
                     </label>
                 </div>
             </div>
@@ -154,6 +167,8 @@ else
     private WorkPlan _model = new() { Status = WorkPlanStatus.Draft, LotSize = 1 };
     private List<WorkCenter> _workCenters = new();
     private readonly Dictionary<string, string> _errors = new();
+    private bool _saving;
+    private string? _saveError;
 
     private bool IsNew => Id is null;
     private string Title => IsNew ? L["Editor_NewTitle"] : L["Editor_EditTitle"];
@@ -208,30 +223,55 @@ else
     private async Task SaveAsync()
     {
         _errors.Clear();
+        _saveError = null;
+        _saving = true;
 
-        if (string.IsNullOrWhiteSpace(_model.PlanNumber))
-            _errors["PlanNumber"] = L["Val_Required"];
-        else if (await Plans.PlanNumberExistsAsync(_model.PlanNumber.Trim(), _model.Id))
-            _errors["PlanNumber"] = L["Val_PlanNumberTaken"];
+        try
+        {
+            var result = IsNew
+                ? await Plans.CreateAsync(_model)
+                : await Plans.UpdateAsync(_model);
 
-        if (string.IsNullOrWhiteSpace(_model.PartName))
-            _errors["PartName"] = L["Val_Required"];
+            if (result.IsSuccess)
+            {
+                Nav.NavigateTo("work-plans");
+                return;
+            }
 
-        if (_model.Operations.Count == 0)
-            _errors["Operations"] = L["Val_NeedOperation"];
-        else if (_model.Operations.Any(o => o.WorkCenterId == 0 || string.IsNullOrWhiteSpace(o.Description)))
-            _errors["Operations"] = L["Val_OperationIncomplete"];
+            ApplyResult(result);
+        }
+        catch (OperationCanceledException)
+        {
+            _saveError = L["Error_Cancelled"];
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(exception, "Saving work plan {WorkPlanId} failed", _model.Id);
+            _saveError = L["Error_SaveFailed"];
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
 
-        if (_errors.Count > 0)
-            return;
+    private void ApplyResult(ApplicationResult<int> result)
+    {
+        if (result.ValidationIssues is { Count: > 0 })
+        {
+            foreach (var issue in result.ValidationIssues)
+            {
+                var field = issue.Field.StartsWith("Operations", StringComparison.Ordinal)
+                    ? "Operations"
+                    : issue.Field;
+                _errors.TryAdd(field, L[issue.MessageKey, issue.Arguments]);
+            }
+        }
 
-        _model.PlanNumber = _model.PlanNumber.Trim();
-        if (IsNew)
-            await Plans.CreateAsync(_model);
-        else
-            await Plans.UpdateAsync(_model);
-
-        Nav.NavigateTo("work-plans");
+        if (result.Status == ApplicationResultStatus.NotFound)
+            _saveError = L["Error_NotFound"];
+        else if (result.Status == ApplicationResultStatus.PersistenceFailed)
+            _saveError = L["Error_SaveFailed"];
     }
 
     private void Cancel() => Nav.NavigateTo("work-plans");

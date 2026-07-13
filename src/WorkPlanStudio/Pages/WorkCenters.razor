@@ -1,6 +1,7 @@
 @page "/work-centers"
 @inject IStringLocalizer<SharedResource> L
 @inject WorkCenterService Centers
+@inject ILogger<WorkCenters> Logger
 
 <PageTitle>@L["WorkCenters_Title"] · WorkPlan Studio</PageTitle>
 
@@ -24,6 +25,10 @@ else if (_centers.Count == 0)
 }
 else
 {
+    @if (_saveError is not null)
+    {
+        <div class="form-banner error" role="alert">@_saveError</div>
+    }
     <div class="card no-pad">
         <table class="data-table hover">
             <thead>
@@ -32,6 +37,7 @@ else
                     <th>@L["Field_Name"]</th>
                     <th>@L["Field_CostCenter"]</th>
                     <th class="num">@L["Field_HourlyRate"]</th>
+                    <th class="num">@L["Field_Capacity"]</th>
                     <th>@L["Field_Status"]</th>
                     <th class="num">@L["Field_Operations"]</th>
                     <th class="actions-col">@L["Common_Actions"]</th>
@@ -46,6 +52,7 @@ else
                         <td>@wc.Name</td>
                         <td><span class="muted">@wc.CostCenter</span></td>
                         <td class="num">@Format.Number(wc.HourlyRate)</td>
+                        <td class="num">@wc.ParallelCapacity</td>
                         <td>
                             <span class="pill @(wc.IsActive ? "ok" : "off")">
                                 @(wc.IsActive ? L["Common_Active"] : L["Common_Inactive"])
@@ -101,7 +108,19 @@ else
         </label>
         <label class="field">
             <span>@L["Field_HourlyRate"]</span>
-            <input class="input" type="number" min="0" step="1" @bind="_editing.HourlyRate" @bind:event="oninput" />
+            <input class="input @(_formErrors.ContainsKey("HourlyRate") ? "error" : null)" type="number" min="0" max="1000000" step="1" @bind="_editing.HourlyRate" @bind:event="oninput" />
+            @if (_formErrors.TryGetValue("HourlyRate", out var he))
+            {
+                <span class="field-error">@he</span>
+            }
+        </label>
+        <label class="field">
+            <span>@L["Field_Capacity"]</span>
+            <input class="input @(_formErrors.ContainsKey("ParallelCapacity") ? "error" : null)" type="number" min="1" max="64" @bind="_editing.ParallelCapacity" @bind:event="oninput" />
+            @if (_formErrors.TryGetValue("ParallelCapacity", out var capacityError))
+            {
+                <span class="field-error">@capacityError</span>
+            }
         </label>
         <label class="field check">
             <input type="checkbox" @bind="_editing.IsActive" />
@@ -111,7 +130,7 @@ else
     </ChildContent>
     <Footer>
         <button class="btn btn-ghost" @onclick="() => _showEditor = false">@L["Common_Cancel"]</button>
-        <button class="btn btn-primary" @onclick="SaveAsync">@L["Common_Save"]</button>
+        <button class="btn btn-primary" @onclick="SaveAsync" disabled="@_saving">@L["Common_Save"]</button>
     </Footer>
 </Modal>
 
@@ -133,6 +152,8 @@ else
     private bool _showEditor;
     private WorkCenter _editing = new() { IsActive = true };
     private readonly Dictionary<string, string> _formErrors = new();
+    private bool _saving;
+    private string? _saveError;
 
     private bool _showDelete;
     private WorkCenter? _pendingDelete;
@@ -143,15 +164,13 @@ else
     {
         _loading = true;
         _centers = await Centers.GetAllAsync();
-        _usage = new Dictionary<int, int>();
-        foreach (var wc in _centers)
-            _usage[wc.Id] = await Centers.UsageCountAsync(wc.Id);
+        _usage = await Centers.GetUsageCountsAsync();
         _loading = false;
     }
 
     private void New()
     {
-        _editing = new WorkCenter { IsActive = true };
+        _editing = new WorkCenter { IsActive = true, ParallelCapacity = 1 };
         _formErrors.Clear();
         _showEditor = true;
     }
@@ -165,6 +184,7 @@ else
             Name = wc.Name,
             CostCenter = wc.CostCenter,
             HourlyRate = wc.HourlyRate,
+            ParallelCapacity = wc.ParallelCapacity,
             IsActive = wc.IsActive
         };
         _formErrors.Clear();
@@ -174,22 +194,37 @@ else
     private async Task SaveAsync()
     {
         _formErrors.Clear();
+        _saveError = null;
+        _saving = true;
 
-        if (string.IsNullOrWhiteSpace(_editing.Code))
-            _formErrors["Code"] = L["Val_Required"];
-        else if (await Centers.CodeExistsAsync(_editing.Code.Trim(), _editing.Id))
-            _formErrors["Code"] = L["Val_CodeTaken"];
+        try
+        {
+            var result = await Centers.SaveAsync(_editing);
+            if (result.IsSuccess)
+            {
+                _showEditor = false;
+                await ReloadAsync();
+                return;
+            }
 
-        if (string.IsNullOrWhiteSpace(_editing.Name))
-            _formErrors["Name"] = L["Val_Required"];
+            if (result.ValidationIssues is { Count: > 0 })
+                foreach (var issue in result.ValidationIssues)
+                    _formErrors.TryAdd(issue.Field, L[issue.MessageKey, issue.Arguments]);
 
-        if (_formErrors.Count > 0)
-            return;
-
-        _editing.Code = _editing.Code.Trim();
-        await Centers.SaveAsync(_editing);
-        _showEditor = false;
-        await ReloadAsync();
+            if (result.Status == ApplicationResultStatus.NotFound)
+                _saveError = L["Error_NotFound"];
+            else if (result.Status == ApplicationResultStatus.PersistenceFailed)
+                _saveError = L["Error_SaveFailed"];
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(exception, "Saving work center {WorkCenterId} failed", _editing.Id);
+            _saveError = L["Error_SaveFailed"];
+        }
+        finally
+        {
+            _saving = false;
+        }
     }
 
     private void AskDelete(WorkCenter wc)
