@@ -68,10 +68,16 @@ public sealed class ApiSecurityTests : IAsyncLifetime
         Assert.Contains("default-src 'self'",
             Assert.Single(root.Headers.GetValues("Content-Security-Policy")),
             StringComparison.Ordinal);
+        Assert.DoesNotContain("unsafe-inline",
+            Assert.Single(root.Headers.GetValues("Content-Security-Policy")),
+            StringComparison.Ordinal);
         Assert.Equal("nosniff", Assert.Single(root.Headers.GetValues("X-Content-Type-Options")));
         Assert.True(root.Headers.Contains("Referrer-Policy"));
         Assert.Equal("camera=(), microphone=(), geolocation=(), payment=()",
             Assert.Single(root.Headers.GetValues("Permissions-Policy")));
+        Assert.Equal("require-corp", Assert.Single(root.Headers.GetValues("Cross-Origin-Embedder-Policy")));
+        Assert.Equal("same-origin", Assert.Single(root.Headers.GetValues("Cross-Origin-Opener-Policy")));
+        Assert.Equal("same-origin", Assert.Single(root.Headers.GetValues("Cross-Origin-Resource-Policy")));
 
         var requests = Enumerable.Range(0, 100)
             .Select(_ => client.GetAsync("/health/live", cancellationToken));
