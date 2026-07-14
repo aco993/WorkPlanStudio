@@ -65,10 +65,13 @@ public sealed class ApiSecurityTests : IAsyncLifetime
         using var client = _factory.CreateClient();
         var cancellationToken = TestContext.Current.CancellationToken;
         using var root = await client.GetAsync("/", cancellationToken);
-        Assert.True(root.Headers.Contains("Content-Security-Policy"));
+        Assert.Contains("default-src 'self'",
+            Assert.Single(root.Headers.GetValues("Content-Security-Policy")),
+            StringComparison.Ordinal);
         Assert.Equal("nosniff", Assert.Single(root.Headers.GetValues("X-Content-Type-Options")));
         Assert.True(root.Headers.Contains("Referrer-Policy"));
-        Assert.True(root.Headers.Contains("Permissions-Policy"));
+        Assert.Equal("camera=(), microphone=(), geolocation=(), payment=()",
+            Assert.Single(root.Headers.GetValues("Permissions-Policy")));
 
         var requests = Enumerable.Range(0, 100)
             .Select(_ => client.GetAsync("/health/live", cancellationToken));
