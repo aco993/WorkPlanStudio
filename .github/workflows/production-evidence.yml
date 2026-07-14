@@ -1,6 +1,7 @@
 name: Production evidence
 
 on:
+  pull_request:
   workflow_dispatch:
     inputs:
       duration_minutes:
@@ -24,7 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 90
     env:
-      SOAK_MINUTES: ${{ github.event_name == 'schedule' && '60' || inputs.duration_minutes || '15' }}
+      SOAK_MINUTES: ${{ github.event_name == 'schedule' && '60' || github.event_name == 'pull_request' && '5' || inputs.duration_minutes || '15' }}
     steps:
       - uses: actions/checkout@v7
       - name: Build production image
