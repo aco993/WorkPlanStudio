@@ -34,7 +34,7 @@ jobs:
         run: |
           docker network create workplan-evidence
           docker run --detach --name workplan-evidence --network workplan-evidence --publish 8080:8080 \
-            --env AllowedHosts=localhost \
+            --env 'AllowedHosts=localhost;workplan-evidence' \
             --env Database__Provider=Sqlite \
             --env 'ConnectionStrings__Production=Data Source=/tmp/workplan.db' \
             --env Database__ApplyMigrationsOnStartup=true \
@@ -105,6 +105,8 @@ jobs:
         run: |
           mkdir -p zap-results
           chmod 777 zap-results
+          docker exec workplan-evidence curl --fail --silent --show-error --dump-header - \
+            http://workplan-evidence:8080/ --output /dev/null | grep --ignore-case '^content-security-policy:'
           set +e
           docker run --rm --network workplan-evidence \
             --volume "$PWD/zap-results:/zap/wrk:rw" \
@@ -125,7 +127,7 @@ jobs:
             zap-results/
       - name: Diagnostics
         if: failure()
-        run: docker logs workplan-evidence || true
+        run: docker logs --tail 200 workplan-evidence || true
       - name: Stop containers
         if: always()
         run: |
