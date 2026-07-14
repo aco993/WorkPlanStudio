@@ -3,7 +3,11 @@ using System.Net.Http.Json;
 using System.Security.Cryptography;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.TestHost;
+using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using WorkPlanStudio.Api.Security;
 using WorkPlanStudio.Contracts;
 using WorkPlanStudio.Models;
 
@@ -12,6 +16,7 @@ namespace WorkPlanStudio.Api.Tests;
 public sealed class ApiSecurityTests : IAsyncLifetime
 {
     private readonly string _database = Path.Combine(Path.GetTempPath(), $"workplan-api-{Guid.NewGuid():N}.db");
+    private readonly RecordingEmailDelivery _emailDelivery = new();
     private WebApplicationFactory<Program> _factory = null!;
 
     public ValueTask InitializeAsync()
@@ -30,6 +35,7 @@ public sealed class ApiSecurityTests : IAsyncLifetime
                 ["Database:ApplyMigrationsOnStartup"] = "true",
                 ["Identity:AllowRegistration"] = "true"
             }));
+            builder.ConfigureTestServices(services => services.AddSingleton<IEmailDelivery>(_emailDelivery));
         });
         return ValueTask.CompletedTask;
     }
@@ -134,7 +140,7 @@ public sealed class ApiSecurityTests : IAsyncLifetime
         Assert.Equal(HttpStatusCode.Created, order.StatusCode);
 
         var queued = await PostAsync(client, "/api/schedule-runs",
-            new CreateScheduleRunRequest([createdOrder!.Id], 2, 50, 20260713), cancellationToken);
+            new CreateScheduleRunRequest([createdOrder!.Id], 2, 50, 20260713, true), cancellationToken);
         var run = await queued.Content.ReadFromJsonAsync<ScheduleRunDto>(cancellationToken);
         Assert.Equal(HttpStatusCode.Accepted, queued.StatusCode);
 
@@ -150,6 +156,7 @@ public sealed class ApiSecurityTests : IAsyncLifetime
         Assert.Equal(ScheduleRunStatus.Completed, current!.Status);
         Assert.Equal(100, current.ProgressPercent);
         Assert.False(string.IsNullOrWhiteSpace(current.ResultJson));
+        Assert.Contains("dispatch-order-model", current.ResultJson, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -204,6 +211,38 @@ public sealed class ApiSecurityTests : IAsyncLifetime
         Assert.Equal(HttpStatusCode.OK, (await client.SendAsync(recoveryLogin, cancellationToken)).StatusCode);
     }
 
+    [Fact]
+    public async Task Password_reset_is_delivered_and_the_one_time_link_changes_the_password()
+    {
+        const string oldPassword = "Valid!Password123456";
+        const string newPassword = "Changed!Password123456";
+        var email = $"reset-{Guid.NewGuid():N}@example.com";
+        using var client = _factory.CreateClient();
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await RegisterAndLoginAsync(client, email, cancellationToken);
+
+        Assert.Equal(HttpStatusCode.NoContent,
+            (await PostAsync<object?>(client, "/api/auth/logout", null, cancellationToken)).StatusCode);
+        Assert.Equal(HttpStatusCode.Accepted,
+            (await PostAsync(client, "/api/auth/password-reset/request", new PasswordResetRequest(email), cancellationToken)).StatusCode);
+        var resetUrl = Assert.Single(_emailDelivery.Deliveries).ResetUrl;
+        var query = QueryHelpers.ParseQuery(new Uri(resetUrl).Query);
+        Assert.Equal(email, query["resetEmail"].ToString());
+        var token = query["resetToken"].ToString();
+
+        Assert.Equal(HttpStatusCode.NoContent,
+            (await PostAsync(client, "/api/auth/password-reset/confirm",
+                new PasswordResetConfirmRequest(email, token, newPassword), cancellationToken)).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest,
+            (await PostAsync(client, "/api/auth/password-reset/confirm",
+                new PasswordResetConfirmRequest(email, token, "Another!Password123456"), cancellationToken)).StatusCode);
+
+        Assert.Equal(HttpStatusCode.Unauthorized,
+            (await LoginAsync(client, email, oldPassword, cancellationToken)).StatusCode);
+        Assert.Equal(HttpStatusCode.OK,
+            (await LoginAsync(client, email, newPassword, cancellationToken)).StatusCode);
+    }
+
     private static async Task RegisterAndLoginAsync(HttpClient client, string email, CancellationToken cancellationToken)
     {
         const string password = "Valid!Password123456";
@@ -224,6 +263,18 @@ public sealed class ApiSecurityTests : IAsyncLifetime
     {
         var token = await TokenAsync(client, cancellationToken);
         using var request = new HttpRequestMessage(HttpMethod.Post, uri) { Content = JsonContent.Create(body) };
+        request.Headers.Add("X-CSRF-TOKEN", token);
+        return await client.SendAsync(request, cancellationToken);
+    }
+
+    private static async Task<HttpResponseMessage> LoginAsync(
+        HttpClient client, string email, string password, CancellationToken cancellationToken)
+    {
+        var token = await TokenAsync(client, cancellationToken);
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/api/auth/login")
+        {
+            Content = JsonContent.Create(new AuthRequest(email, password))
+        };
         request.Headers.Add("X-CSRF-TOKEN", token);
         return await client.SendAsync(request, cancellationToken);
     }
@@ -265,6 +316,18 @@ public sealed class ApiSecurityTests : IAsyncLifetime
         {
             try { if (File.Exists(path)) File.Delete(path); }
             catch (IOException) { /* Windows may keep a test-server handle briefly; the OS temp directory owns cleanup. */ }
+        }
+    }
+
+    private sealed class RecordingEmailDelivery : IEmailDelivery
+    {
+        public bool IsConfigured => true;
+        public List<(string Recipient, string ResetUrl)> Deliveries { get; } = [];
+
+        public Task SendPasswordResetAsync(string recipient, string resetUrl, CancellationToken cancellationToken)
+        {
+            Deliveries.Add((recipient, resetUrl));
+            return Task.CompletedTask;
         }
     }
 }

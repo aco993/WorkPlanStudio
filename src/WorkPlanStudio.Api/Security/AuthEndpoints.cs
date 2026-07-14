@@ -1,7 +1,10 @@
 using System.Security.Claims;
+using System.Text;
 using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Extensions.Options;
 using WorkPlanStudio.Contracts;
 using WorkPlanStudio.Persistence;
 
@@ -80,6 +83,72 @@ public static class AuthEndpoints
             await signIn.SignInAsync(user, false);
             var roles = await users.GetRolesAsync(user);
             return Results.Ok(new UserInfo(user.Id, user.Email!, roles.ToArray()));
+        }).AllowAnonymous().RequireRateLimiting("auth");
+
+        group.MapPost("/password-reset/request", async (
+            PasswordResetRequest request,
+            UserManager<ApplicationUser> users,
+            IEmailDelivery emailDelivery,
+            IOptions<EmailDeliveryOptions> emailOptions,
+            ILoggerFactory loggerFactory,
+            IAntiforgery antiforgery,
+            HttpContext context) =>
+        {
+            await antiforgery.ValidateRequestAsync(context);
+            var logger = loggerFactory.CreateLogger("PasswordReset");
+            var email = request.Email?.Trim() ?? "";
+            var user = string.IsNullOrWhiteSpace(email) ? null : await users.FindByEmailAsync(email);
+            if (user is not null && user.IsActive && emailDelivery.IsConfigured)
+            {
+                var token = await users.GeneratePasswordResetTokenAsync(user);
+                var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
+                var baseUrl = emailOptions.Value.PublicBaseUrl.TrimEnd('/');
+                var resetUrl = $"{baseUrl}/?resetEmail={Uri.EscapeDataString(email)}&resetToken={Uri.EscapeDataString(encodedToken)}";
+                try
+                {
+                    await emailDelivery.SendPasswordResetAsync(email, resetUrl, context.RequestAborted);
+                }
+                catch (Exception exception)
+                {
+                    logger.LogError(exception, "Password reset email delivery failed");
+                }
+            }
+            else if (user is not null && user.IsActive)
+            {
+                logger.LogError("Password reset email was requested, but SMTP delivery is not configured");
+            }
+
+            // Always return the same response to prevent account enumeration.
+            return Results.Accepted();
+        }).AllowAnonymous().RequireRateLimiting("auth");
+
+        group.MapPost("/password-reset/confirm", async (
+            PasswordResetConfirmRequest request,
+            UserManager<ApplicationUser> users,
+            IAntiforgery antiforgery,
+            HttpContext context) =>
+        {
+            await antiforgery.ValidateRequestAsync(context);
+            var user = await users.FindByEmailAsync(request.Email.Trim());
+            if (user is null || !user.IsActive)
+                return Results.BadRequest(new ApiError("password_reset_failed", "The password reset link is invalid or expired."));
+            string token;
+            try
+            {
+                token = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(request.Token));
+            }
+            catch (FormatException)
+            {
+                return Results.BadRequest(new ApiError("password_reset_failed", "The password reset link is invalid or expired."));
+            }
+            var result = await users.ResetPasswordAsync(user, token, request.NewPassword);
+            return result.Succeeded
+                ? Results.NoContent()
+                : Results.BadRequest(new ApiError(
+                    "password_reset_failed",
+                    "The password reset link is invalid, expired, or the new password does not meet policy.",
+                    result.Errors.GroupBy(error => error.Code)
+                        .ToDictionary(group => group.Key, group => group.Select(error => error.Description).ToArray())));
         }).AllowAnonymous().RequireRateLimiting("auth");
 
         group.MapPost("/logout", async (SignInManager<ApplicationUser> signIn, IAntiforgery antiforgery, HttpContext context) =>

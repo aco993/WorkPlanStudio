@@ -110,7 +110,7 @@ Never commit `.env`. Put TLS at the ingress and remove bootstrap-admin variables
 
 ## Verify it
 
-Verified locally on 2026-07-14: **99 scheduling + 54 web/data/component + 11 API + 10 Chromium E2E = 174 passed, 0 failed, 0 skipped**. Engine coverage is **99.57% lines / 96.17% branches**. Release build completed with 0 errors and the two documented `WASM0001` warning groups; package vulnerability and outdated audits were clean.
+Verified locally on 2026-07-14: **102 scheduling + 55 web/data/component + 12 API + 10 Chromium E2E = 179 passed, 0 failed, 0 skipped**. Engine coverage is **100% lines / 100% branches (508/508 lines, 245/245 branches)**. Release build completed with 0 errors and the two documented `WASM0001` warning groups; package vulnerability and outdated audits were clean.
 
 ```bash
 dotnet build WorkPlanStudio.slnx -c Release --no-restore
@@ -125,7 +125,7 @@ Playwright setup and full test-layer details are in [docs/TESTING.md](docs/TESTI
 
 ## Engineering decisions and limitations
 
-- The scheduler is a deterministic heuristic; it does **not** prove global optimality.
+- The default scheduler is a deterministic heuristic. `ExactDispatchOrderOptimizer` exhaustively proves the best result within the dispatch-order model for at most nine jobs; it does **not** claim unrestricted job-shop global optimality.
 - Each worker is single-consumer, while atomic database leases, heartbeats and persisted cancellation make schedule claiming safe across multiple API replicas. Tenant fairness and autoscaling policy remain deployment concerns.
 - The browser database is explicit demo persistence, not confidential multi-user storage or a cross-version migration service.
 - GitHub Pages demonstrates the offline feature set; it cannot demonstrate server identity or PostgreSQL.
@@ -143,6 +143,8 @@ AI tools were used intensively for initial implementation and hardening. This re
 - [Testing strategy](docs/TESTING.md)
 - [Security posture](docs/SECURITY.md)
 - [Production runbook](docs/PRODUCTION.md)
+- [Operations and failover runbook](docs/OPERATIONS-RUNBOOK.md)
+- [External assurance sign-off](docs/EXTERNAL-ASSURANCE-CHECKLIST.md)
 - [Production hardening report and verdict (SR)](docs/PRODUCTION-HARDENING-REPORT-SR.md)
 - [Performance scenarios](docs/PERFORMANCE.md)
 - [Interview defense (SR)](docs/INTERVIEW-DEFENSE-SR.md)

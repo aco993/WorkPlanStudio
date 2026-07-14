@@ -1,0 +1,85 @@
+name: Production evidence
+
+on:
+  workflow_dispatch:
+    inputs:
+      duration_minutes:
+        description: Soak duration in minutes
+        required: true
+        default: '15'
+        type: string
+  schedule:
+    - cron: '17 2 * * 0'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-evidence-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  soak-and-dast:
+    name: HTTP soak + OWASP ZAP baseline
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      SOAK_MINUTES: ${{ github.event_name == 'schedule' && '60' || inputs.duration_minutes || '15' }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Build production image
+        run: docker build --tag workplanstudio:evidence .
+      - name: Start isolated production container
+        run: |
+          docker network create workplan-evidence
+          docker run --detach --name workplan-evidence --network workplan-evidence --publish 8080:8080 \
+            --env AllowedHosts=localhost \
+            --env Database__Provider=Sqlite \
+            --env 'ConnectionStrings__Production=Data Source=/tmp/workplan.db' \
+            --env Database__ApplyMigrationsOnStartup=true \
+            workplanstudio:evidence
+          for attempt in {1..60}; do
+            curl --fail --silent --header 'Host: localhost' http://localhost:8080/health/live && break
+            sleep 1
+          done
+      - name: Sustained concurrent HTTP soak
+        run: |
+          deadline=$((SECONDS + SOAK_MINUTES * 60))
+          requests=0
+          while (( SECONDS < deadline )); do
+            seq 1 200 | xargs -P 25 -I '{}' curl --fail --silent \
+              --header 'Host: localhost' http://localhost:8080/health/live --output /dev/null
+            requests=$((requests + 200))
+          done
+          curl --fail --silent --header 'Host: localhost' http://localhost:8080/api/health/ready | jq -e '.status == "ready"'
+          echo "Completed $requests requests over ${SOAK_MINUTES} minutes" | tee soak-summary.txt
+      - name: OWASP ZAP passive baseline
+        run: |
+          mkdir -p zap-results
+          chmod 777 zap-results
+          set +e
+          docker run --rm --network workplan-evidence \
+            --volume "$PWD/zap-results:/zap/wrk:rw" \
+            ghcr.io/zaproxy/zaproxy:stable zap-baseline.py \
+            -t http://workplan-evidence:8080 -I -J zap-report.json -r zap-report.html
+          zap_status=$?
+          set -e
+          test "$zap_status" -le 2
+          high_or_medium=$(jq '[.site[].alerts[]? | select((.riskcode | tonumber) >= 2)] | length' zap-results/zap-report.json)
+          test "$high_or_medium" = 0
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: production-evidence-${{ github.run_id }}
+          path: |
+            soak-summary.txt
+            zap-results/
+      - name: Diagnostics
+        if: failure()
+        run: docker logs workplan-evidence || true
+      - name: Stop containers
+        if: always()
+        run: |
+          docker rm --force workplan-evidence || true
+          docker network rm workplan-evidence || true

@@ -37,4 +37,4 @@ Auto mode probes readiness and falls back to local browser storage only when the
 
 ## Scheduling limits
 
-The scheduler is a deterministic heuristic, not a proof of global optimality. It enforces precedence, finite parallel capacity, availability windows and setup transitions. An exhaustive permutation oracle proves equality with the optimum for a small reference instance, but this is a regression oracle, not a general proof or lower bound. For larger optimality requirements, evaluate CP-SAT/MILP against measured business SLAs.
+The default scheduler is a deterministic heuristic. It enforces precedence, finite parallel capacity, availability windows and setup transitions. `ExactDispatchOrderOptimizer` exhaustively evaluates every job order for up to nine jobs and returns an explicit proof that the result is optimal within this dispatch-order model. That bounded proof is not unrestricted job-shop global optimality or a lower bound for larger instances; use a CP-SAT/MILP model when the business SLA requires those guarantees.

@@ -100,8 +100,8 @@ AI alati su intenzivno korišćeni za početnu generaciju i kasniji review/harde
 
 ### 12. Da li je rezultat optimalan?
 
-- Kratko: ne; deterministička je heuristika.
-- Detaljno: čuva feasible schedule i nikad ne vraća gori penalty od pure dispatch kandidata, ali nema optimality proof ili lower-bound gap.
+- Kratko: default režim je heuristika; exact režim dokazuje optimum samo u jasno ograničenom dispatch-order prostoru do devet poslova.
+- Detaljno: `ExactDispatchOrderOptimizer` proverava svih `n!` redosleda i vraća proof metadata. To nije neograničeni job-shop dokaz ili lower-bound gap za veće instance.
 - Follow-up: Kada OR-Tools? Za calendars, alternatives, setup matrices, global bounds i hard delivery constraints.
 
 ### 13. Kako dokazuješ determinism?
@@ -203,7 +203,7 @@ AI alati su intenzivno korišćeni za početnu generaciju i kasniji review/harde
 ### 29. Da li je aplikacija production-ready?
 
 - Kratko: hosted režim je deployable single-host production baseline, ali nije HA/regulated production dokaz.
-- Detaljno: postoje Identity, CSRF, owner scoping, PostgreSQL migracije, backup/restore, Data Protection key ring, health probes i telemetry export. Nedostaju distributed queue lease, MFA/account-recovery operativa, load/soak i penetration test.
+- Detaljno: postoje Identity, CSRF, owner scoping, MFA/recovery/password-reset SMTP tok, PostgreSQL migracije, DB leases, backup/restore, Data Protection key ring, health probes, telemetry i soak/ZAP workflow. Nedostaju target-environment failover potpis, ljudski screen-reader audit i nezavisni penetration test.
 - Follow-up: Zašto ne kažeš samo production-ready? Zato što spremnost zavisi od threat modela, SLO-a, operativnog tima i deployment topologije, ne samo od feature liste.
 
 ### 30. Kako CI štiti kvalitet?
@@ -220,8 +220,8 @@ AI alati su intenzivno korišćeni za početnu generaciju i kasniji review/harde
 
 ### 32. Šta bi sljedeće uradio?
 
-- Kratko: distributed run claim i kompletan identity recovery tok, tek zatim skaliranje optimizacije.
-- Detaljno: trenutna granica je single API replica. DB lease/idempotency rešavaju correctness pri scale-out-u; OIDC ili confirmed account/MFA rešavaju operativni identity gap. Solver menjam tek uz merljiv SLA i realne podatke.
+- Kratko: target-environment failover/restore vežbe i spoljni assurance potpisi, tek zatim skaliranje optimizacije.
+- Detaljno: DB lease i SMTP/MFA recovery tokovi su implementirani. Sledeća granica nije još jedan code feature već dokaz na stvarnoj multi-zone infrastrukturi, reprezentativni workload i nezavisni security/accessibility review.
 - Follow-up: Zašto ne CP-SAT odmah? Zato što sadašnja heuristika ispunjava demonstracioni scenario uz nižu složenost i determinističko objašnjenje.
 
 ### 33. Kako server sprečava tenant data leak?
@@ -238,9 +238,9 @@ AI alati su intenzivno korišćeni za početnu generaciju i kasniji review/harde
 
 ### 35. Kako background run preživljava restart?
 
-- Kratko: stanje i input su u bazi; startup vraća `Queued` i prethodno `Running` runove u bounded queue.
-- Detaljno: progress/result/failure su persisted, a worker poštuje cancellation. To je at-least-once recovery u jednom procesu, ne distributed exactly-once.
-- Follow-up: Kako scale-out? Atomic DB claim sa lease/heartbeat ili durable broker, plus idempotent result write.
+- Kratko: stanje i input su u bazi; svaki worker atomski preuzima run vremenski ograničenim lease-om.
+- Detaljno: lease/heartbeat, expiry takeover, fencing završetka i persisted cancellation sprečavaju dva validna completion-a; test simulira stale i recovery owner-a nad istom bazom.
+- Follow-up: Da li je to distributed exactly-once? Ne kao univerzalna garancija side-effecta; rezultat je fenced, a budući spoljašnji side-effecti zahtevaju outbox/idempotency.
 
 ### 36. Zašto odvojene SQLite i PostgreSQL migrations assemblies?
 

@@ -9,7 +9,7 @@ WorkPlan Studio sada ima dva namerno odvojena režima. GitHub Pages ostaje samos
 
 Najvažnija promena nije broj projekata već pomeranje granice poverenja: browser više nije authority za production podatke ili AI credential. Scheduler ostaje čista deterministička biblioteka; API validira identitet i ownership, persistence sloj čuva routing snapshot naloga, a worker izvršava ograničene schedule runove. Statički demo nije uklonjen jer je koristan kao javni, zero-infrastructure prikaz.
 
-Finalna klasifikacija mora ostati konzervativna: ovo je jak portfolio dokaz za mid-level razgovor, ali nije dokaz kompletnog MES/APS ili regulisanog HA proizvoda. Worker sada ima multi-replica-safe DB lease, TOTP MFA/recovery i runtime/load smoke; nema confirmed-email/password-reset delivery, reprezentativni soak/penetration test ni operativni HA dokaz.
+Finalna klasifikacija mora ostati konzervativna: ovo je jak portfolio dokaz za mid-level razgovor, ali nije dokaz kompletnog MES/APS ili regulisanog HA proizvoda. Worker ima multi-replica-safe DB lease, TOTP MFA/recovery, SMTP password reset i runtime/soak/ZAP automatizaciju; ljudski screen-reader potpis, nezavisni penetration test i target-environment HA vežba ostaju spoljne assurance aktivnosti.
 
 ## Tehnologije i struktura
 
@@ -57,7 +57,7 @@ Offline demo tok ostaje `Razor → application services → BrowserDatabase → 
 
 1. `ProductionOrder` čuva quantity, release/due, priority/status i immutable routing snapshot. Scheduler ne čita promenljiv master routing tokom izvršenja naloga.
 2. Availability windows, downtime i sequence-dependent setup ulaze u feasibility, a nedovoljan horizon daje eksplicitnu grešku umesto neograničene pretrage.
-3. Background run je prvo zapisan u bazu, zatim stavljen u bounded channel. Startup ponovo queue-uje `Queued`/`Running` zapise. Ovo pruža crash recovery za jedan proces, ne distributed exactly-once semantiku.
+3. Background run je prvo zapisan u bazu; lokalni channel je samo wake-up hint. Svaka replika atomski claim-uje DB lease, obnavlja heartbeat i može preuzeti istekao run, dok owner-fenced completion i persisted cancellation sprečavaju stale rezultat.
 4. Production auth koristi HttpOnly, Secure, SameSite=Strict Identity cookie, antiforgery header i owner filter na svakom business query-ju.
 5. Data Protection key ring je na posebnom Compose volume-u, pa auth cookie ne postaje nečitljiv posle zamene kontejnera.
 6. `/health/live` proverava proces bez baze; `/api/health/ready` proverava konekciju i pending migrations. Orchestrator zato ne restartuje zdrav proces samo zbog privremenog DB prekida.
@@ -79,40 +79,40 @@ Konačne brojke se održavaju u [TESTING.md](TESTING.md). Obavezni gate uključu
 ### Important
 
 - DB-backed atomski claim, lease/heartbeat i persisted cancellation sada sprečavaju duplu obradu između API replika; tenant fairness i poseban worker autoscaling model nisu implementirani.
-- TOTP MFA i jednokratni recovery kodovi su završeni; confirmed-email/password-reset delivery i help-desk recovery ostaju operativni identity gap.
+- TOTP MFA, jednokratni recovery kodovi i jednosatni single-use password-reset tok preko konfigurisanog SMTP-a su završeni; help-desk identity proofing ostaje organizaciona procedura.
 - Data Protection volume mora biti backupovan i za višestruke hostove zaštićen certificate/KMS mehanizmom.
-- CI sada ima 100-request/20-concurrency HTTP load smoke, security-header probe i realan container/WASM runtime smoke, ali nema reprezentativni soak/load, nezavisni penetration test ni ljudski NVDA/VoiceOver audit.
+- CI ima realan container/WASM smoke, SMTP/Mailpit reset dokaz i 100-request load smoke; zaseban workflow daje podesivi/weekly 60-minute soak i OWASP ZAP baseline. To i dalje nije nezavisni penetration test ni ljudski NVDA/VoiceOver audit.
 
 ### Accepted portfolio limitations
 
 - GitHub Pages demonstrira offline storage i nije multi-user production deployment.
-- Heuristika nema optimality proof; performance scenario nije production capacity SLA.
+- Heuristika nema neograničeni job-shop optimality proof; bounded exact optimizer dokazuje optimum unutar dispatch-order modela do devet poslova.
 - AI provider je opcioni narrator i nikada scheduling authority.
 - Compose runbook je single-host referentni deployment, ne HA platforma.
 
 ### Production roadmap
 
 - Tenant queue quotas, idempotency key i outbox za side effects.
-- OIDC/enterprise identity ili kompletan confirmed-account/password-reset delivery tok.
+- OIDC/enterprise identity i formalni help-desk identity-proofing tok.
 - Managed PostgreSQL, managed secrets/KMS, central logs/traces i alert rules.
-- Load/soak test sa realnim routing distributions; OR-Tools/CP-SAT evaluacija tek kada heuristika ne zadovolji merljivi SLA.
+- Reprezentativni routing workload i target-environment capacity test; OR-Tools/CP-SAT evaluacija kada bounded dispatch-order dokaz ne zadovolji merljivi SLA.
 
 ## Procena posle izmena
 
 | Kategorija | Ocena | Dokaz / ograničenje |
 | --- | ---: | --- |
-| Correctness | 9/10 | Domain/boundary/property/API/E2E i mali exhaustive oracle; nema opšti optimality dokaz |
+| Correctness | 9/10 | 100/100 engine coverage, property/API/E2E i bounded exhaustive dispatch-order dokaz; nema opšti job-shop dokaz |
 | Reliability | 9/10 | DB lease/heartbeat/recovery, cross-replica cancellation, readiness i backup |
 | Architecture | 9/10 | čist scheduler, shared contracts/domain, provider migrations; svesno bez pattern inflation-a |
 | Maintainability | 8/10 | jasne granice i ADR; API endpoint fajlovi ostaju ručno mapirani |
-| Testability | 9/10 | 99 engine + 54 web + 11 API + 10 browser testova, real SQLite i Chromium |
-| Security | 8.5/10 | Identity/CSRF/ownership/rate limits/TOTP/recovery codes; bez nezavisnog pen testa |
+| Testability | 9.5/10 | 102 engine + 55 web + 12 API + 10 browser testova, real SQLite, SMTP adapter i Chromium |
+| Security | 8.5/10 | Identity/CSRF/ownership/rate limits/TOTP/recovery/password reset + ZAP workflow; bez nezavisnog pen testa |
 | Accessibility | 8.5/10 | keyboard/modal/lang/mobile + Chrome AX-tree/label/contrast audit; bez ljudskog NVDA/VoiceOver testa |
-| UX | 8.5/10 | status tiles, empty/live states, localized statuses, accessible progress/cancel i account-security UI |
+| UX | 9/10 | status tiles, empty/live states, localized statuses, progress/cancel, account security i password-reset UI |
 | Dokumentacija | 9/10 | architecture/security/production/AI/ADR/intervju dokumenti |
 | GitHub prezentacija | 9/10 | problem, dijagram, live demo, evidence i limitations odmah vidljivi |
 | Interview readiness | 9/10 | dokazive tehničke priče i iskren AI disclosure |
-| Production readiness | 8.5/10 | multi-replica-safe worker i runtime/load/security smoke; nije HA/regulated/soak dokaz |
+| Production readiness | 8.5/10 | multi-replica-safe worker, SMTP, runtime/load i scheduled soak/ZAP; nije target-environment HA/regulated potpis |
 
 ## Hiring-manager procena
 

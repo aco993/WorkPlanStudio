@@ -377,4 +377,14 @@
   <data name="Status_Queued" xml:space="preserve"><value>Eingereiht</value></data>
   <data name="Status_Running" xml:space="preserve"><value>Läuft</value></data>
   <data name="Status_Failed" xml:space="preserve"><value>Fehlgeschlagen</value></data>
+  <data name="Auth_ForgotPassword" xml:space="preserve"><value>Passwort vergessen?</value></data>
+  <data name="Auth_ResetRequestTitle" xml:space="preserve"><value>Passwort zurücksetzen</value></data>
+  <data name="Auth_ResetConfirmTitle" xml:space="preserve"><value>Neues Passwort wählen</value></data>
+  <data name="Auth_SendResetLink" xml:space="preserve"><value>Link zum Zurücksetzen senden</value></data>
+  <data name="Auth_ResetPassword" xml:space="preserve"><value>Passwort zurücksetzen</value></data>
+  <data name="Auth_ResetLinkSent" xml:space="preserve"><value>Falls das Konto existiert, wurde ein einmaliger Link zum Zurücksetzen gesendet.</value></data>
+  <data name="Auth_ResetComplete" xml:space="preserve"><value>Das Passwort wurde zurückgesetzt. Sie können sich jetzt anmelden.</value></data>
+  <data name="Auth_BackToLogin" xml:space="preserve"><value>Zurück zur Anmeldung</value></data>
+  <data name="ProductionSchedule_ExactMode" xml:space="preserve"><value>Beste Auftragsreihenfolge beweisen (maximal 9 ausgewählte Aufträge)</value></data>
+  <data name="ProductionSchedule_ExactModeHint" xml:space="preserve"><value>Prüft jede Auftragsreihenfolge vollständig. Der Beweis gilt für dieses Dispatch-Modell, nicht für uneingeschränkte Job-Shop-Planung.</value></data>
 </root>

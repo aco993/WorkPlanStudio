@@ -30,7 +30,7 @@ public static class PriorityOrdering
         return order;
     }
 
-    private static double KeyFor(DispatchRule rule, ProductionJob job, IReadOnlyDictionary<int, long> dueByJob)
+    internal static double KeyFor(DispatchRule rule, ProductionJob job, IReadOnlyDictionary<int, long> dueByJob)
     {
         long total = job.TotalProcessingSeconds;
         long due = dueByJob.TryGetValue(job.Id, out var d) ? d : job.ReleaseSeconds + total;

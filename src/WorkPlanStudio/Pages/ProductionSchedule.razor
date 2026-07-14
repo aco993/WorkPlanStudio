@@ -18,6 +18,12 @@
     @if (_message is not null || _error is not null) { <div class="form-banner @(_error is not null ? "error" : null)" role="@(_error is not null ? "alert" : "status")">@(_error ?? _message)</div> }
 </div>
 
+<label class="check-row">
+    <input type="checkbox" @bind="_exactDispatchOrder" disabled="@(_creating || _selected.Count > 9)" />
+    <span>@L["ProductionSchedule_ExactMode"]</span>
+</label>
+<p class="muted">@L["ProductionSchedule_ExactModeHint"]</p>
+
 @if (Backend.Mode != BackendMode.Server)
 {
     <div class="form-banner">@L["Common_ServerOnly"]</div>
@@ -72,6 +78,7 @@ else
     private List<ProductionOrderDto> _orders = [];
     private List<ScheduleRunDto> _runs = [];
     private bool _loading = true, _creating;
+    private bool _exactDispatchOrder;
     private string? _error, _message;
 
     protected override async Task OnInitializedAsync()
@@ -83,7 +90,7 @@ else
     private async Task CreateAsync()
     {
         _creating = true; _error = null; _message = null;
-        try { var result = await Runs.CreateAsync(new(_selected.ToArray())); _error = result.Error?.Message; if (result.IsSuccess) { _selected.Clear(); _message = L["ProductionSchedule_Queued"]; await ReloadAsync(); } }
+        try { var result = await Runs.CreateAsync(new(_selected.ToArray(), ExactDispatchOrder: _exactDispatchOrder)); _error = result.Error?.Message; if (result.IsSuccess) { _selected.Clear(); _message = L["ProductionSchedule_Queued"]; await ReloadAsync(); } }
         catch (HttpRequestException) { _error = L["Auth_ServerUnavailable"]; }
         finally { _creating = false; }
     }

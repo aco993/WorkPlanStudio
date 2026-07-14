@@ -41,13 +41,21 @@ public sealed class ScheduleRunLeaseTests
         }
 
         await using (var recoveryDb = new ProductionDbContext(options))
+        await using (var staleOwnerDb = new ProductionDbContext(options))
         {
             var recovery = new ScheduleRunLeaseManager(recoveryDb);
             Assert.True(await recovery.TryClaimAsync(
                 id, "worker-b", now.AddMinutes(4), TimeSpan.FromMinutes(2), TestContext.Current.CancellationToken));
+            var staleOwner = new ScheduleRunLeaseManager(staleOwnerDb);
+            Assert.Equal(0, await staleOwner.TryCompleteAsync(
+                id, "worker-a", "{\"stale\":true}", now.AddMinutes(4), TestContext.Current.CancellationToken));
+            Assert.Equal(1, await recovery.TryCompleteAsync(
+                id, "worker-b", "{\"recovered\":true}", now.AddMinutes(5), TestContext.Current.CancellationToken));
             var run = await recoveryDb.ScheduleRuns.AsNoTracking().SingleAsync(TestContext.Current.CancellationToken);
-            Assert.Equal("worker-b", run.LeaseOwner);
+            Assert.Null(run.LeaseOwner);
             Assert.Equal(2, run.AttemptCount);
+            Assert.Equal(ScheduleRunStatus.Completed, run.Status);
+            Assert.Equal("{\"recovered\":true}", run.ResultJson);
         }
     }
 

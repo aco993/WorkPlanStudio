@@ -16,6 +16,8 @@ public sealed record MfaPasswordRequest(string CurrentPassword);
 public sealed record MfaEnableRequest(string CurrentPassword, string Code);
 public sealed record MfaSetupDto(string SharedKey, string AuthenticatorUri);
 public sealed record MfaRecoveryCodesDto(IReadOnlyList<string> RecoveryCodes);
+public sealed record PasswordResetRequest(string Email);
+public sealed record PasswordResetConfirmRequest(string Email, string Token, string NewPassword);
 
 public sealed record WorkCenterDto(
     int Id,
@@ -78,7 +80,8 @@ public sealed record CreateScheduleRunRequest(
     IReadOnlyList<int> ProductionOrderIds,
     int MultiStartRuns = 8,
     int LocalSearchMaxSteps = 2_000,
-    int Seed = 20260713);
+    int Seed = 20260713,
+    bool ExactDispatchOrder = false);
 
 public sealed record ScheduleRunDto(
     Guid Id,

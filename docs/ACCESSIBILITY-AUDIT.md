@@ -21,3 +21,5 @@ Run this before claiming WCAG conformance or a regulated deployment:
 5. Record version, browser, route, result and issue link for every checkpoint.
 
 The repository contains accessibility-tree and keyboard evidence, but it does **not** claim that a human NVDA/VoiceOver audit has been completed.
+
+The sign-off record is maintained in [EXTERNAL-ASSURANCE-CHECKLIST.md](EXTERNAL-ASSURANCE-CHECKLIST.md). A named tester must record assistive-technology/browser versions, findings and retest evidence there. This boundary prevents an automated DOM inspection from being misrepresented as human screen-reader experience.

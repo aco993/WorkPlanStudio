@@ -1,9 +1,10 @@
 @inject IStringLocalizer<SharedResource> L
 @inject ServerSession Session
+@inject NavigationManager Navigation
 
 <main class="recovery-shell">
     <section class="card recovery-card" aria-labelledby="auth-title">
-        <div class="card-head"><h1 id="auth-title">@L[_register ? "Auth_RegisterTitle" : "Auth_LoginTitle"]</h1></div>
+        <div class="card-head"><h1 id="auth-title">@L[TitleKey]</h1></div>
         <div class="card-body">
             <p>@L["Auth_ServerMode"]</p>
             @if (_error is not null)
@@ -15,7 +16,7 @@
                     <span>@L["Auth_Email"]</span>
                     <input class="input" type="email" autocomplete="username" @bind="_email" disabled="@_busy" />
                 </label>
-                @if (_mfaRequired)
+                @if (_mfaRequired && _mode == AuthMode.Login)
                 {
                     <label class="field wide">
                         <span>@L[_useRecoveryCode ? "Auth_RecoveryCode" : "Auth_AuthenticatorCode"]</span>
@@ -26,18 +27,30 @@
                         <span>@L["Auth_UseRecoveryCode"]</span>
                     </label>
                 }
+                @if (_mode is not AuthMode.RequestReset)
+                {
                 <label class="field wide">
                     <span>@L["Auth_Password"]</span>
-                    <input class="input" type="password" autocomplete="@(_register ? "new-password" : "current-password")" @bind="_password" disabled="@_busy" />
+                    <input class="input" type="password" autocomplete="@(_mode is AuthMode.Register or AuthMode.ConfirmReset ? "new-password" : "current-password")" @bind="_password" disabled="@_busy" />
                 </label>
+                }
             </div>
+            @if (_message is not null)
+            {
+                <div class="form-banner success" role="status">@_message</div>
+            }
             <div class="head-actions">
                 <button class="btn btn-primary" @onclick="SubmitAsync" disabled="@_busy">
-                    @L[_register ? "Auth_Register" : "Auth_Login"]
+                    @L[SubmitKey]
                 </button>
-                <button class="btn btn-ghost" @onclick="Toggle" disabled="@_busy">
-                    @L[_register ? "Auth_HaveAccount" : "Auth_NeedAccount"]
+                <button class="btn btn-ghost" @onclick="SecondaryAction" disabled="@_busy">
+                    @L[_mode is AuthMode.RequestReset or AuthMode.ConfirmReset ? "Auth_BackToLogin" :
+                        _mode == AuthMode.Register ? "Auth_HaveAccount" : "Auth_NeedAccount"]
                 </button>
+                @if (_mode == AuthMode.Login)
+                {
+                    <button class="btn btn-ghost" @onclick="ShowPasswordReset" disabled="@_busy">@L["Auth_ForgotPassword"]</button>
+                }
             </div>
         </div>
     </section>
@@ -48,19 +61,83 @@
     private string _email = "";
     private string _password = "";
     private string? _error;
-    private bool _register;
+    private AuthMode _mode;
     private bool _busy;
     private bool _mfaRequired;
     private bool _useRecoveryCode;
     private string _secondFactor = "";
+    private string _resetToken = "";
+    private string? _message;
+
+    private string TitleKey => _mode switch
+    {
+        AuthMode.Register => "Auth_RegisterTitle",
+        AuthMode.RequestReset => "Auth_ResetRequestTitle",
+        AuthMode.ConfirmReset => "Auth_ResetConfirmTitle",
+        _ => "Auth_LoginTitle"
+    };
+
+    private string SubmitKey => _mode switch
+    {
+        AuthMode.Register => "Auth_Register",
+        AuthMode.RequestReset => "Auth_SendResetLink",
+        AuthMode.ConfirmReset => "Auth_ResetPassword",
+        _ => "Auth_Login"
+    };
+
+    protected override void OnInitialized()
+    {
+        var uri = Navigation.ToAbsoluteUri(Navigation.Uri);
+        var email = QueryValue(uri, "resetEmail");
+        var token = QueryValue(uri, "resetToken");
+        if (!string.IsNullOrWhiteSpace(email) && !string.IsNullOrWhiteSpace(token))
+        {
+            _email = email;
+            _resetToken = token;
+            _mode = AuthMode.ConfirmReset;
+        }
+    }
+
+    private static string? QueryValue(Uri uri, string name)
+    {
+        foreach (var pair in uri.Query.TrimStart('?').Split('&', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var parts = pair.Split('=', 2);
+            if (Uri.UnescapeDataString(parts[0].Replace('+', ' ')) == name)
+                return parts.Length == 2 ? Uri.UnescapeDataString(parts[1].Replace('+', ' ')) : "";
+        }
+        return null;
+    }
 
     private async Task SubmitAsync()
     {
         _busy = true;
         _error = null;
+        _message = null;
         try
         {
-            if (_register)
+            if (_mode == AuthMode.RequestReset)
+            {
+                var requestError = await Session.RequestPasswordResetAsync(_email);
+                _error = requestError?.Message;
+                if (requestError is null)
+                    _message = L["Auth_ResetLinkSent"];
+                return;
+            }
+            if (_mode == AuthMode.ConfirmReset)
+            {
+                var resetError = await Session.ConfirmPasswordResetAsync(_email, _resetToken, _password);
+                _error = resetError?.Message;
+                if (resetError is null)
+                {
+                    _message = L["Auth_ResetComplete"];
+                    _password = "";
+                    _mode = AuthMode.Login;
+                    Navigation.NavigateTo("/", replace: true);
+                }
+                return;
+            }
+            if (_mode == AuthMode.Register)
             {
                 var registration = await Session.RegisterAsync(_email, _password);
                 if (registration is not null)
@@ -94,13 +171,31 @@
         }
     }
 
-    private void Toggle()
+    private void SecondaryAction()
     {
-        _register = !_register;
+        _mode = _mode switch
+        {
+            AuthMode.Register or AuthMode.RequestReset or AuthMode.ConfirmReset => AuthMode.Login,
+            _ => AuthMode.Register
+        };
+        ResetTransientState();
+    }
+
+    private void ShowPasswordReset()
+    {
+        _mode = AuthMode.RequestReset;
+        ResetTransientState();
+    }
+
+    private void ResetTransientState()
+    {
         _error = null;
+        _message = null;
         _password = "";
         _secondFactor = "";
         _mfaRequired = false;
         _useRecoveryCode = false;
     }
+
+    private enum AuthMode { Login, Register, RequestReset, ConfirmReset }
 }

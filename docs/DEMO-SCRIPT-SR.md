@@ -20,7 +20,7 @@ Za javni demo koristi čist browser context za očekivani seed. Za hosted demo p
 
 1:30–1:50 — Promijeni DE i pokaži `html lang` kroz DevTools samo ako je brzo.
 
-1:50–2:00 — Zaključi: “Najjači dokaz nije screenshot nego četiri nivoa testova: 99 engine, 54 web/data, 11 API i 10 real-browser scenarija.”
+1:50–2:00 — Zaključi: “Najjači dokaz nije screenshot nego četiri nivoa testova: 102 engine, 55 web/data, 12 API i 10 real-browser scenarija.”
 
 ## Demo od 5 minuta
 
@@ -32,7 +32,7 @@ Dodaj na 2-minutni flow:
 - 2:10–3:20: schedule factor/rule/seed, Gantt i explanation;
 - 3:20–4:00: Work Center modal; Escape i focus return; capacity polje;
 - 4:00–4:35: otvori `ScheduleMapper` diagnostic result i `BrowserDatabase` WAL checkpoint;
-- 4:35–5:00: pokaži DB lease/MFA dokaz i priznaj preostalo: nema opšteg optimality dokaza, email password-reset deliveryja, soak/pen/NVDA audita ni HA runbooka.
+- 4:35–5:00: pokaži DB lease/MFA/SMTP-reset dokaz i priznaj preostalo: nema neograničenog job-shop optimality dokaza, nezavisnog pen testa, ljudskog NVDA/VoiceOver potpisa ni target-environment HA vežbe.
 
 ## Demo od 10 minuta
 

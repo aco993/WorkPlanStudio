@@ -30,9 +30,9 @@ graph TD
 
 | Layer | Project | Tests | Guards | Needs WASM? | Runtime |
 | --- | --- | --: | --- | :---: | --- |
-| Engine + property + architecture | `tests/WorkPlanStudio.Scheduling.Tests` | 93 | determinism, feasibility, rules, calendars/setup, scoring, bounded search, overflow, cancellation and dependency boundaries | no | ~4 s |
-| Data + mapper + component + assistant | `tests/WorkPlanStudio.Web.Tests` | 54 | real SQLite CRUD/recovery, all-or-nothing mapper, localized components, modal semantics and stubbed AI transport | yes¹ | ~12 s |
-| Production API | `tests/WorkPlanStudio.Api.Tests` | 11 | migrated SQLite, liveness/readiness, anonymous rejection, Identity/MFA/antiforgery/owner isolation, durable leases and full order→worker→result flow | yes¹ | ~35 s |
+| Engine + property + architecture | `tests/WorkPlanStudio.Scheduling.Tests` | 102 | determinism, feasibility, rules, calendars/setup, scoring, bounded search, exact dispatch-order proof, overflow, cancellation and dependency boundaries | no | ~8 s |
+| Data + mapper + component + assistant | `tests/WorkPlanStudio.Web.Tests` | 55 | real SQLite CRUD/recovery, all-or-nothing mapper, localized components, modal/reset semantics and stubbed AI transport | yes¹ | ~12 s |
+| Production API | `tests/WorkPlanStudio.Api.Tests` | 12 | migrated SQLite, liveness/readiness, Identity/MFA/password reset/antiforgery/owner isolation, durable fenced leases and full order→worker→result flow | yes¹ | ~35 s |
 | End-to-end | `tests/WorkPlanStudio.E2E` | 10 | Chromium scheduling, determinism, localization, invalid input, reload persistence, reset, keyboard and mobile | browser² | ~3 min |
 
 ¹ These reference the Blazor app assembly, so building them compiles the app (hence `wasm-tools`). The tests themselves run on a normal host.
@@ -146,7 +146,7 @@ Useful environment variables for E2E: `E2E_BASE_URL` (default `http://localhost:
 
 ## Coverage
 
-The engine job measures code coverage with the Microsoft Testing Platform collector. The production-platform branch on 2026-07-14 measured **467/469 lines (99.57 %) and 226/235 branches (96.17 %)** across 99 engine tests. Remaining branches are defensive/unreachable fallbacks behind validated enum and capacity invariants; run the command below rather than treating a badge as evidence:
+The engine job measures code coverage with the Microsoft Testing Platform collector. The production-platform branch on 2026-07-14 measured **508/508 lines and 245/245 branches (100% / 100%)** across 102 engine tests. The result was achieved with executable edge-case tests and removal of one redundant unreachable fallback behind the validated capacity invariant—not coverage exclusions; run the command below rather than treating a badge as evidence:
 
 ```bash
 dotnet test tests/WorkPlanStudio.Scheduling.Tests/WorkPlanStudio.Scheduling.Tests.csproj \
