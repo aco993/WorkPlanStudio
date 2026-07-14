@@ -1,43 +1,37 @@
 # Security posture
 
-WorkPlan Studio is a public static demo, not a multi-user production system. It has no server identity, authorization boundary or trusted server-side storage.
+WorkPlan Studio has two explicit trust modes:
 
-## Data and trust boundaries
+- **Production server mode** uses ASP.NET Core Identity, owner-scoped PostgreSQL/SQLite persistence and an authenticated API.
+- **Offline demo mode** keeps a disposable SQLite snapshot in browser storage. It is for demonstrations, not confidential or shared-machine data.
 
-- Work plans and settings stay in the current browser origin's `localStorage`.
-- `localStorage` is readable by JavaScript running on that origin. It is not a secret vault and is inappropriate for shared machines or valuable credentials.
-- Database payloads are untrusted on startup. Version, Base64 shape, SQLite header, minimum size, `PRAGMA quick_check` and expected schema access are verified before the UI is enabled.
-- Application code issues fixed EF-generated queries; it does not accept SQL from the user.
-- Storage incompatibility or corruption never silently reseeds over the old payload. The recovery screen supports export and an explicit two-step reset.
+## Production controls
 
-## Optional BYOK narrator
+- Identity cookies are `HttpOnly`, `SameSite=Strict`, secure outside Development and use the `__Host-` prefix.
+- Every state-changing API request validates an antiforgery token. Authorization and owner predicates are applied at the API boundary.
+- Login attempts lock after five failures; auth, general API and AI routes have separate rate limits.
+- Optimistic concurrency versions prevent silent lost updates. Released production orders retain an immutable routing snapshot.
+- Audit entries record actor, action, entity and request correlation without recording passwords or provider keys.
+- CSP, HSTS, MIME sniffing protection, referrer policy and restrictive permissions policy are emitted by the server.
+- Production startup fails if PostgreSQL mode receives a non-PostgreSQL connection string. Registration is disabled by default.
+- The container runs as a non-root user, drops Linux capabilities, uses a read-only filesystem and exposes liveness/readiness endpoints.
 
-The core application and deterministic explanation work without AI. If enabled:
+## Secrets and AI
 
-- the key is stored in browser `localStorage` and is never logged;
-- only an absolute HTTPS endpoint is accepted; HTTP is allowed only for loopback development;
-- user-info, query and fragment components are rejected to reduce accidental credential routing;
-- requests have a 15-second timeout and caller cancellation is propagated distinctly;
-- provider failures fall back to rule-based text without exposing raw exception messages;
-- only structured schedule facts are sent, not the SQLite database.
+Production AI calls go through `/api/assistant/narrate`. The provider endpoint, model and key come only from server configuration or secret storage. The endpoint is fixed by the operator, must be HTTPS, has a 20-second timeout and a dedicated per-user rate limit. Only a bounded factual schedule summary is sent.
 
-A production design should put the provider behind a backend proxy, keep the key in server-side secret storage, enforce tenant authorization and add audit/rate controls.
+The legacy BYOK option remains available only in offline demo mode. Browser storage is not a secret vault; do not use valuable credentials there.
 
-## Tracked SQLite advisory
+## Dependencies
 
-`Microsoft.EntityFrameworkCore.Sqlite` 10.0.9 currently brings `SQLitePCLRaw.lib.e_sqlite3` 2.1.11. NuGet audit reports [GHSA-2m69-gcr7-jv3q / CVE-2025-6965](https://github.com/advisories/GHSA-2m69-gcr7-jv3q) as high severity. The advisory affects SQLite before 3.50.2 and describes memory corruption involving excessive aggregate terms. GitHub currently lists affected package versions through 2.1.11 and no patched version on that package line. The [NuGet package page](https://www.nuget.org/packages/SQLitePCLRaw.lib.e_sqlite3/2.1.11) also marks 2.1.11 vulnerable and deprecated.
+The browser explicitly uses `SQLitePCLRaw.bundle_e_sqlite3` 3.0.3, which supplies SQLite 3.50.4.5 for WebAssembly. The previous `SQLitePCLRaw.lib.e_sqlite3` 2.1.11 advisory suppression has been removed. CI runs NuGet vulnerability audit and fails on reported vulnerable packages.
 
-Risk acceptance for this portfolio build:
+## Operations
 
-- exposure is reduced because the app executes fixed EF queries and accepts no arbitrary SQL;
-- an attacker would already need control of same-origin storage/script execution to supply a database payload;
-- a valid database file alone does not add attacker-controlled aggregate SQL to the application's fixed query set;
-- impact is still not claimed to be zero, and imported browser state is treated as untrusted.
+- Terminate TLS at the ingress/reverse proxy and set `ALLOWED_HOSTS` to the public hostname.
+- Keep PostgreSQL and OTLP endpoints on private networks.
+- Remove bootstrap administrator variables after the first successful start.
+- Run and verify encrypted backups regularly; test restore in an isolated environment.
+- Rotate database, administrator and AI credentials after suspected exposure.
 
-The single advisory remains explicitly suppressed in `Directory.Build.props` so all other NuGet advisories still fail audit. Do not force a transitive 3.x override under EF Core 10 without an officially supported and tested dependency combination. Recheck on every EF/SQLite update and remove the suppression as soon as a supported patched chain exists.
-
-Tracking item `SEC-001`: owner is the repository maintainer; review on every Dependabot EF/SQLite update and at least before each tagged release. Exit criterion: `dotnet list WorkPlanStudio.slnx package --vulnerable --include-transitive` no longer reports the advisory with a supported package graph, all SQLite/WASM/E2E tests pass, and the suppression is removed in the same change.
-
-## Reporting
-
-Do not put secrets or exploit payloads in a public issue. Use GitHub's private vulnerability reporting if enabled for the repository; otherwise contact the repository owner privately.
+Report security issues through GitHub private vulnerability reporting. Never put secrets or exploit payloads in a public issue.

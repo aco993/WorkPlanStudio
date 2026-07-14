@@ -1,5 +1,7 @@
 # WorkPlan Studio — production hardening rezultati
 
+> Istorijski izveštaj za offline hardening granu od 2026-07-12. Aktuelno production stanje, uključujući rešeni SQLite advisory i hosted platformu, nalazi se u [PRODUCTION-HARDENING-REPORT-SR.md](PRODUCTION-HARDENING-REPORT-SR.md).
+
 Datum: 2026-07-12
 
 Polazni commit: `0e1e3c514f35d8479dfe1bdc51905d31de8729b3`

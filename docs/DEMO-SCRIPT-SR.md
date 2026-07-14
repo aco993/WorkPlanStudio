@@ -8,11 +8,11 @@ dotnet build WorkPlanStudio.slnx -c Release --no-restore
 dotnet run --project src/WorkPlanStudio/WorkPlanStudio.csproj -c Release --no-build
 ```
 
-Koristi čist browser context za očekivani seed. Drži otvorene `BrowserDatabase.cs`, `ScheduleMapper.cs` i E2E test za rezervni walkthrough. Ne unosi pravi API ključ.
+Za javni demo koristi čist browser context za očekivani seed. Za hosted demo pokreni `docker compose` sa lokalnim `.env`, pripremi test korisnika i test podatke; nikada ne koristi pravi production credential. Drži otvorene `ProductionOrderEndpoints.cs`, `ScheduleWorker.cs`, `BrowserDatabase.cs` i po jedan API/E2E test.
 
 ## Demo od 2 minuta
 
-0:00–0:20 — Otvori dashboard: “Ovo je statička Blazor WASM aplikacija za proizvodne routinge; baza i scheduler rade lokalno.”
+0:00–0:20 — Otvori dashboard: “Ovo je .NET 10 aplikacija za routinge, production orders i finite-capacity scheduling; javni demo radi offline, a isti klijent ima authenticated hosted režim.”
 
 0:20–0:50 — Work Plans: otvori plan, pokaži operacije, lot summary i released status. “Validacija nije samo HTML; servis i SQLite ponavljaju invarijante.”
 
@@ -20,27 +20,27 @@ Koristi čist browser context za očekivani seed. Drži otvorene `BrowserDatabas
 
 1:30–1:50 — Promijeni DE i pokaži `html lang` kroz DevTools samo ako je brzo.
 
-1:50–2:00 — Zaključi: “Najjači dokaz nije screenshot nego 90 + 54 + 10 testova, uključujući hard reload, reset i mobile flow.”
+1:50–2:00 — Zaključi: “Najjači dokaz nije screenshot nego četiri nivoa testova: 93 engine, 54 web/data, 5 API i 10 real-browser scenarija.”
 
 ## Demo od 5 minuta
 
 Dodaj na 2-minutni flow:
 
-- 0:00–0:40: problem, tehnologije i ograničenje static/local demo storagea;
-- 0:40–1:40: kreiraj Draft plan sa validnom operacijom, sačuvaj i uradi hard reload; pokaži da ostaje;
+- 0:00–0:40: problem, tehnologije i dual-mode granica;
+- 0:40–1:40: u hosted režimu prijava → work center → routing → production order sa due date; u offline rezervi pokaži Draft plan i hard reload;
 - 1:40–2:10: pokušaj LotSize `-1`; pokaži lokalizovanu poruku i da UI nije crashovao;
 - 2:10–3:20: schedule factor/rule/seed, Gantt i explanation;
 - 3:20–4:00: Work Center modal; Escape i focus return; capacity polje;
 - 4:00–4:35: otvori `ScheduleMapper` diagnostic result i `BrowserDatabase` WAL checkpoint;
-- 4:35–5:00: priznaj ProductionOrder/UI-thread/advisory ograničenja.
+- 4:35–5:00: priznaj single-replica queue, heuristic/no-optimality i nepotpun MFA/identity recovery.
 
 ## Demo od 10 minuta
 
-1. Minut 0–1: poslovni problem, architecture diagram i static hosting trade-off.
-2. Minut 1–3: CRUD, invalid input, released/inactive center pravilo i real relational constraints.
+1. Minut 0–1: poslovni problem, architecture diagram i hosted/offline trade-off.
+2. Minut 1–3: login, owner-scoped CRUD, invalid input, released/inactive center pravilo i real relational constraints.
 3. Minut 3–4: hard reload; objasni WAL bug i zašto desktop test nije bio dovoljan.
 4. Minut 4–6: scheduler: target assignment, dispatch slots, multi-start, local search, penalty, determinism.
-5. Minut 6–7: partial routing rejection i link do problematičnog plana.
+5. Minut 6–7: `ProductionOrder` routing snapshot, calendar/setup i persisted schedule run progress/cancel.
 6. Minut 7–8: storage recovery koncept: corrupt/schema payload ostaje za export; reset nije migracija.
 7. Minut 8–9: test pyramid i performance rezultat; pokaži komande, ne samo brojeve u README-u.
 8. Minut 9–10: AI disclosure, sigurnost i tri roadmap odluke.
@@ -49,16 +49,21 @@ Dodaj na 2-minutni flow:
 
 ```text
 Pages/*.razor
-→ WorkPlanService / WorkCenterService
-→ AppDbContext + BrowserDatabase
-→ SQLite WASM + versioned localStorage snapshot
+→ ServerSession + typed client services
+→ Identity/CSRF/owner-scoped API endpoints
+→ ProductionDbContext
+→ PostgreSQL
 
-Schedule.razor
-→ ProductionScheduleService
-→ ScheduleMapper / SchedulePreparationResult
+Offline fallback:
+Pages/*.razor → local services → BrowserDatabase → SQLite WASM/localStorage
+
+ProductionSchedule.razor
+→ ScheduleRunService
+→ persisted ScheduleRunQueue / ScheduleWorker
+→ ProductionOrder snapshot + calendars/setup
 → WorkPlanStudio.Scheduling
 → ScheduleResult + ScheduleExplainer
-→ optional narrator
+→ optional authenticated server narrator
 ```
 
 Na svakoj strelici reci šta ulazi kao untrusted i koji test provjerava granicu.

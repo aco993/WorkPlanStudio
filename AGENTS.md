@@ -6,11 +6,11 @@ breaking anything. Humans: this is also a good 2-minute orientation.
 
 ## What this project is
 
-**WorkPlan Studio** is a .NET 10 **Blazor WebAssembly** portfolio app for
-manufacturing routings (work plans). Its headline feature is a finite-capacity
-**production scheduler**. The scheduler is a *pure, dependency-free* library; the
-Blazor UI, EF Core + SQLite (compiled to WebAssembly, running in the browser) and
-localisation sit around it. Full picture: [README.md](README.md).
+**WorkPlan Studio** is a .NET 10 hosted **Blazor WebAssembly + ASP.NET Core**
+portfolio app for manufacturing routings, orders and finite-capacity scheduling.
+The public offline demo uses SQLite in the browser; production mode uses Identity,
+an owner-scoped API and PostgreSQL. The scheduler remains a *pure,
+dependency-free* library. Full picture: [README.md](README.md).
 
 ## Golden rules — do not break these
 
@@ -33,7 +33,12 @@ localisation sit around it. Full picture: [README.md](README.md).
 | --- | --- |
 | `src/WorkPlanStudio.Scheduling/` | the pure engine (Inputs, Parameters, Core, Evaluation, Outputs, `SchedulingEngine.cs`) |
 | `src/WorkPlanStudio.Scheduling/Explain/` | the deterministic `ScheduleExplainer` (structured, language-neutral) |
-| `src/WorkPlanStudio/` | the Blazor app (Models, Data, Services, Pages, Layout, Resources, wwwroot) |
+| `src/WorkPlanStudio/` | Blazor client plus isolated offline demo persistence |
+| `src/WorkPlanStudio.Api/` | hosted API, Identity/CSRF, health, AI proxy and scheduling worker |
+| `src/WorkPlanStudio.Domain/` | production entities and invariants |
+| `src/WorkPlanStudio.Contracts/` | shared HTTP request/response contracts |
+| `src/WorkPlanStudio.Persistence/` | production DbContext and SQLite migrations |
+| `src/WorkPlanStudio.PostgresMigrations/` | PostgreSQL-specific migrations |
 | `src/WorkPlanStudio/Services/ScheduleMapper.cs` | the EF→engine boundary (the one `decimal`→seconds spot) |
 | `src/WorkPlanStudio/Services/Assistant/` | the schedule assistant: rule-based (default) + optional BYOK AI narrator ([docs](docs/AI-ASSISTANT.md)) |
 | `src/WorkPlanStudio/Pages/Schedule.razor` | the scheduling UI (parameters, Gantt, KPIs, assistant) |
@@ -81,6 +86,6 @@ E2E (Playwright) needs the app running + a browser — see [docs/TESTING.md](doc
 
 ## Out of scope on purpose
 
-Backward scheduling, a working-day calendar and per-work-center machine counts are
-documented as future extensions (see `docs/SCHEDULING.md` §10 and the ADRs). Don't
-add them unless asked.
+Backward scheduling, distributed run claiming, alternative-machine optimization,
+optimality proofs and HA deployment remain roadmap items. Do not add them without
+a measured requirement and an explicit architecture decision.

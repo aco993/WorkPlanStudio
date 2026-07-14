@@ -1,10 +1,12 @@
 # WorkPlan Studio — intervju odbrana
 
+> Aktuelni hosted/offline arhitektonski pregled, ocene i production rizici nalaze se u [PRODUCTION-HARDENING-REPORT-SR.md](PRODUCTION-HARDENING-REPORT-SR.md). Pitanja 1–32 ispod detaljno brane originalni offline demo i scheduler; pitanja 33–40 pokrivaju novu production platformu.
+
 Ovaj dokument nije skripta za preuveličavanje projekta. Kandidat treba da pokaže kod i test koji podržavaju odgovor, a ograničenje da prizna prije nego što ga intervjuista pronađe.
 
 ## Predstavljanje od 30 sekundi
 
-WorkPlan Studio je statička Blazor WebAssembly portfolio aplikacija za proizvodne radne planove: operacije, radna mjesta, vrijeme, trošak i demonstraciono konačno-kapacitivno raspoređivanje. Tehnički najzanimljiviji dio je što EF Core i SQLite rade u browseru, dok je scheduler čista, deterministička C# biblioteka. Hardening je fokusiran na ono što se može dokazati: višeslojnu validaciju, WAL-safe persistence, recovery bez tihog gubitka podataka, all-or-nothing routing, real-SQLite i Playwright regresije. Scheduler je heuristika, AI je opcioni narrator, a projekat nije predstavljen kao production-ready sistem.
+WorkPlan Studio je .NET 10 aplikacija za proizvodne routinge, naloge i konačno-kapacitivno raspoređivanje. Javni Blazor WASM demo radi offline sa SQLite bazom u browseru, dok hosted režim koristi ASP.NET Core, Identity, owner-scoped API i PostgreSQL. Scheduler je čista deterministička heuristika, a AI je samo opcioni narrator. Najjači engineering dokaz su eksplicitne trust boundaries i regresije za data integrity, autentifikaciju, tenant izolaciju, kalendare i setup vremena.
 
 ## Architecture walkthrough
 
@@ -152,8 +154,8 @@ AI alati su intenzivno korišćeni za početnu generaciju i kasniji review/harde
 
 ### 21. Kako štitiš BYOK ključ?
 
-- Kratko: ne tvrdim da je localStorage bezbjedan; ključ se ne loguje i šalje se samo validiranom endpointu.
-- Detaljno: HTTPS, localhost HTTP izuzetak, bez user-info/query/fragment, 15 s timeout i production proxy roadmap.
+- Kratko: hosted režim uopšte ne daje ključ browseru; localStorage BYOK postoji samo u eksplicitnom offline demo režimu.
+- Detaljno: production proxy koristi operator-configured HTTPS endpoint, server-side secret, 20 s timeout i rate limit. Demo upozorenje jasno kaže da localStorage nije vault.
 - Follow-up: Da li XSS može pročitati ključ? Da; zato localStorage nije secret vault i produkcija mora koristiti backend.
 
 ### 22. Zašto AI nije scheduler?
@@ -162,17 +164,17 @@ AI alati su intenzivno korišćeni za početnu generaciju i kasniji review/harde
 - Detaljno: AI samo preformuliše structured facts; rule-based explanation je uvijek dostupna i provider kvar ne utiče na schedule.
 - Follow-up: Šta se šalje provideru? Sažetak, bottleneck, late-job facts i preporuka, ne baza.
 
-### 23. Šta znači SQLite advisory suppression?
+### 23. Kako je rešen SQLite advisory?
 
-- Kratko: poznat high transitive rizik je dokumentovano prihvaćen, ne ignorisan.
-- Detaljno: audit ostaje aktivan za sve drugo; fixed EF queries smanjuju reachable surface, ali rizik nije nula. Ne forsira se nepodržan major override.
-- Follow-up: Kada ukloniti suppression? Čim EF podrži testiran patched dependency chain.
+- Kratko: uveden je direktan patched `SQLitePCLRaw.bundle_e_sqlite3` graph i suppression je uklonjen.
+- Detaljno: Release WASM link i real Chromium CRUD/reload regresije proveravaju kompatibilnost; CI pokreće transitive vulnerability audit.
+- Follow-up: Preostali rizik? `WASM0001` upozorava na varargs configuration exporte koje aplikacija ne poziva; svaka buduća SQLite promena mora ponoviti browser gate.
 
-### 24. Zašto nema ProductionOrder?
+### 24. Zašto je uveden ProductionOrder?
 
-- Kratko: bolje je pošteno ograničiti scope nego napraviti pola enterprise featurea.
-- Detaljno: UI više ne izlaže Explicit due date; ADR definiše quantity/release/due/priority/revision/status koje buduća cjelina mora imati.
-- Follow-up: Kako bi migrirao scheduler? Mapper bi koristio orders i routing snapshot, ne master `WorkPlan` direktno.
+- Kratko: `WorkPlan` je master routing, a izvršni nalog mora imati quantity, release/due, priority, status i stabilnu routing reviziju.
+- Detaljno: nalog čuva immutable routing snapshot, pa kasnija promena master plana ne menja već release-ovan posao niti auditabilnost schedule rezultata.
+- Follow-up: Zašto snapshot umesto samo FK-a? FK čuva referencu, ali ne istorijski sadržaj koji je zaista planiran.
 
 ### 25. Kako testiraš corrupt storage?
 
@@ -189,7 +191,7 @@ AI alati su intenzivno korišćeni za početnu generaciju i kasniji review/harde
 ### 27. Šta performance brojevi stvarno znače?
 
 - Kratko: reproducibilan relative signal, ne production SLA.
-- Detaljno: 250 jobs/2.000 ops/5.000 local steps je bilo ~395 ms i ~243 MB allocations na jednom desktopu; determinism je potvrđen.
+- Detaljno: finalni 250 jobs/2.000 ops/5.000 local steps run je bio 601.0 ms i 436.57 MB allocations na četiri-logical-CPU Windows hostu; determinism je potvrđen. To je ceiling regression, ne SLA.
 - Follow-up: Zašto allocations tako rastu? Svaki neighbor klonira order i ponovo materializuje schedule/evaluation; pooling/incremental evaluation je optimization roadmap.
 
 ### 28. Koji refactoring nisi uradio?
@@ -200,9 +202,9 @@ AI alati su intenzivno korišćeni za početnu generaciju i kasniji review/harde
 
 ### 29. Da li je aplikacija production-ready?
 
-- Kratko: ne.
-- Detaljno: nema backend auth, multi-user concurrency, server backup, prave migracije, secret vault, calendar model ni operational telemetry/SLA.
-- Follow-up: Zašto onda “production-grade hardening”? Primijenjeni su production principi na failure handling i evidence, ali hosting scope ostaje portfolio demo.
+- Kratko: hosted režim je deployable single-host production baseline, ali nije HA/regulated production dokaz.
+- Detaljno: postoje Identity, CSRF, owner scoping, PostgreSQL migracije, backup/restore, Data Protection key ring, health probes i telemetry export. Nedostaju distributed queue lease, MFA/account-recovery operativa, load/soak i penetration test.
+- Follow-up: Zašto ne kažeš samo production-ready? Zato što spremnost zavisi od threat modela, SLO-a, operativnog tima i deployment topologije, ne samo od feature liste.
 
 ### 30. Kako CI štiti kvalitet?
 
@@ -218,17 +220,65 @@ AI alati su intenzivno korišćeni za početnu generaciju i kasniji review/harde
 
 ### 32. Šta bi sljedeće uradio?
 
-- Kratko: ProductionOrder ili server persistence, zavisno od cilja proizvoda.
-- Detaljno: za portfolio prvo CI required-check potvrda i advisory upgrade praćenje; za proizvod backend auth/storage/migrations, pa order/calendar model i solver izbor na osnovu podataka.
-- Follow-up: Koji je najrizičniji roadmap? ProductionOrder jer mijenja semantiku, storage schema, UI i scheduler input zajedno.
+- Kratko: distributed run claim i kompletan identity recovery tok, tek zatim skaliranje optimizacije.
+- Detaljno: trenutna granica je single API replica. DB lease/idempotency rešavaju correctness pri scale-out-u; OIDC ili confirmed account/MFA rešavaju operativni identity gap. Solver menjam tek uz merljiv SLA i realne podatke.
+- Follow-up: Zašto ne CP-SAT odmah? Zato što sadašnja heuristika ispunjava demonstracioni scenario uz nižu složenost i determinističko objašnjenje.
+
+### 33. Kako server sprečava tenant data leak?
+
+- Kratko: svaki business query filtrira po authenticated owner id-u; klijentski id nije authority.
+- Detaljno: Identity cookie formira principal, endpoint zahteva policy, a EF query kombinuje resource id i owner id. Integration test registruje dva korisnika i dokazuje da drugi ne vidi prvi work center.
+- Follow-up: Da li je to dovoljno za multi-tenant SaaS? Za jači model dodao bih global query filter, tenant-aware DbContext i DB-level RLS kao defense in depth.
+
+### 34. Zašto cookie auth i CSRF, a ne JWT u localStorage-u?
+
+- Kratko: browser aplikaciji ne treba JS-readable bearer token; HttpOnly cookie smanjuje posledice XSS-a, a CSRF token štiti mutacije.
+- Detaljno: cookie je `Secure`, `SameSite=Strict`, `HttpOnly`; API redirect pretvara u 401/403, a mutating endpoint traži `X-CSRF-TOKEN`.
+- Follow-up: Kada JWT ima smisla? Za non-browser clients ili odvojeni authorization server, uz bezbedan token lifecycle.
+
+### 35. Kako background run preživljava restart?
+
+- Kratko: stanje i input su u bazi; startup vraća `Queued` i prethodno `Running` runove u bounded queue.
+- Detaljno: progress/result/failure su persisted, a worker poštuje cancellation. To je at-least-once recovery u jednom procesu, ne distributed exactly-once.
+- Follow-up: Kako scale-out? Atomic DB claim sa lease/heartbeat ili durable broker, plus idempotent result write.
+
+### 36. Zašto odvojene SQLite i PostgreSQL migrations assemblies?
+
+- Kratko: provider DDL i annotation nisu potpuno prenosivi.
+- Detaljno: isti model koristi dve migrations istorije; CI generiše oba SQL script-a. Time se ne pretvaramo da SQLite migration automatski dokazuje PostgreSQL deployment.
+- Follow-up: Rizik? Model drift; zato obe skripte moraju biti deo gate-a.
+
+### 37. Šta tačno proveravaju health probe-ovi?
+
+- Kratko: liveness samo potvrđuje da proces odgovara; readiness proverava DB konekciju i da nema pending migration-a.
+- Detaljno: DB outage ne sme izazvati restart loop procesa, ali instanca bez baze ne sme primati saobraćaj.
+- Follow-up: Da li readiness treba autentifikaciju? Tipično ne unutar zaštićene orchestration mreže; odgovor ne sme izlagati secrets.
+
+### 38. Kako su Data Protection ključevi rešeni?
+
+- Kratko: Compose montira persistent key-ring volume i aplikacija koristi stabilan application name.
+- Detaljno: bez toga novi container ne može dekriptovati stare auth cookies. Za više hostova key ring mora biti shared i zaštićen certificate/KMS mehanizmom.
+- Follow-up: Da li volume sam šifruje ključeve? Ne; to je eksplicitni preostali operativni zadatak.
+
+### 39. Kako production AI razlikuje od demo BYOK-a?
+
+- Kratko: production secret nikada ne ide u browser; authenticated server proxy prima samo bounded computed facts.
+- Detaljno: endpoint/model su operator konfiguracija, HTTPS je obavezan, poziv ima 20 s timeout i poseban rate limit, a rule-based narrator je fallback.
+- Follow-up: Može li prompt injection promeniti schedule? Ne, model nema scheduling authority niti write alat; ipak output ostaje untrusted presentation text.
+
+### 40. Koji bug je browser dijagnostika našla u ovom hardeningu?
+
+- Kratko: aplikacija je ostala na loaderu zbog singleton `BackendState` koji je zavisio od scoped `HttpClient`-a.
+- Detaljno: browser console je pokazao `ScopedInSingletonException`; lifetime je promenjen u scoped. Zatim je dodat `JsonException` fallback jer static host za API putanju može vratiti HTML SPA fallback.
+- Follow-up: Kako je sprečena regresija? Release build i real Chromium E2E; offline startup više ne zavisi od validnog API JSON-a.
 
 ## Slabosti koje kandidat treba sam da prizna
 
 - Browser storage nije migracija, backup ni multi-device sync.
 - Scheduler radi na UI threadu i heuristički je; nema optimality gap.
-- WorkPlan trenutno glumi demonstration job; nije customer production order.
-- AI ključ u localStorageu je kompromis samo za BYOK demo.
-- SQLite advisory je prihvaćen i praćen, ne riješen.
+- Hosted queue je single-replica; nema distributed claim/lease.
+- AI ključ u localStorageu je kompromis isključivo za eksplicitni offline BYOK demo.
+- Hosted identity nema završen MFA/email-confirmation/password-delivery operativni tok.
 - Nema screen-reader audit-a, samo automatizovane semantic/keyboard provjere.
 - Performance rezultat je sa jedne mašine i generated data seta.
 
