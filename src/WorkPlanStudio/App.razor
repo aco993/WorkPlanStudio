@@ -1,12 +1,27 @@
 @inject BrowserDatabase Database
 @inject IStringLocalizer<SharedResource> L
 @inject NavigationManager Navigation
+@inject BackendState Backend
+@inject ServerSession Session
 
-@if (_readiness is null)
+@if (!_initialized)
 {
     <div class="loading-row"><span class="spinner"></span></div>
 }
-else if (!_readiness.IsReady)
+else if (Backend.Mode == BackendMode.Unavailable)
+{
+    <main class="recovery-shell">
+        <section class="card recovery-card" role="alert">
+            <div class="card-head"><h1>@L["Auth_ServerUnavailableTitle"]</h1></div>
+            <div class="card-body"><p>@L["Auth_ServerUnavailable"]</p></div>
+        </section>
+    </main>
+}
+else if (Backend.Mode == BackendMode.Server && !Session.IsAuthenticated)
+{
+    <LoginPanel OnAuthenticated="Authenticated" />
+}
+else if (Backend.Mode == BackendMode.Local && _readiness is { IsReady: false })
 {
     <main class="recovery-shell">
         <section class="card recovery-card" role="alert">
@@ -63,13 +78,23 @@ else
 
 @code {
     private BrowserDatabaseReadiness? _readiness;
+    private bool _initialized;
     private ErrorBoundary? _errorBoundary;
     private bool _confirmReset;
     private bool _busy;
     private string? _actionError;
 
-    protected override async Task OnInitializedAsync() =>
-        _readiness = await Database.EnsureReadyAsync();
+    protected override async Task OnInitializedAsync()
+    {
+        var mode = await Backend.InitializeAsync();
+        if (mode == BackendMode.Local)
+            _readiness = await Database.EnsureReadyAsync();
+        else if (mode == BackendMode.Server)
+            await Session.InitializeAsync();
+        _initialized = true;
+    }
+
+    private void Authenticated() => StateHasChanged();
 
     private string RecoveryMessage(BrowserDatabaseReadiness readiness) =>
         L[$"Storage_Failure_{readiness.Failure}", readiness.StoredVersion ?? 0];

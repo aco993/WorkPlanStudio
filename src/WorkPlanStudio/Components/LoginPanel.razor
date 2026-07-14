@@ -1,0 +1,83 @@
+@inject IStringLocalizer<SharedResource> L
+@inject ServerSession Session
+
+<main class="recovery-shell">
+    <section class="card recovery-card" aria-labelledby="auth-title">
+        <div class="card-head"><h1 id="auth-title">@L[_register ? "Auth_RegisterTitle" : "Auth_LoginTitle"]</h1></div>
+        <div class="card-body">
+            <p>@L["Auth_ServerMode"]</p>
+            @if (_error is not null)
+            {
+                <div class="form-banner error" role="alert">@_error</div>
+            }
+            <div class="form-grid">
+                <label class="field wide">
+                    <span>@L["Auth_Email"]</span>
+                    <input class="input" type="email" autocomplete="username" @bind="_email" disabled="@_busy" />
+                </label>
+                <label class="field wide">
+                    <span>@L["Auth_Password"]</span>
+                    <input class="input" type="password" autocomplete="@(_register ? "new-password" : "current-password")" @bind="_password" disabled="@_busy" />
+                </label>
+            </div>
+            <div class="head-actions">
+                <button class="btn btn-primary" @onclick="SubmitAsync" disabled="@_busy">
+                    @L[_register ? "Auth_Register" : "Auth_Login"]
+                </button>
+                <button class="btn btn-ghost" @onclick="Toggle" disabled="@_busy">
+                    @L[_register ? "Auth_HaveAccount" : "Auth_NeedAccount"]
+                </button>
+            </div>
+        </div>
+    </section>
+</main>
+
+@code {
+    [Parameter] public EventCallback OnAuthenticated { get; set; }
+    private string _email = "";
+    private string _password = "";
+    private string? _error;
+    private bool _register;
+    private bool _busy;
+
+    private async Task SubmitAsync()
+    {
+        _busy = true;
+        _error = null;
+        try
+        {
+            if (_register)
+            {
+                var registration = await Session.RegisterAsync(_email, _password);
+                if (registration is not null)
+                {
+                    _error = registration.Message;
+                    return;
+                }
+            }
+            var login = await Session.LoginAsync(_email, _password);
+            if (login is not null)
+            {
+                _error = login.Message;
+                return;
+            }
+            _password = "";
+            await OnAuthenticated.InvokeAsync();
+        }
+        catch (HttpRequestException)
+        {
+            _error = L["Auth_ServerUnavailable"];
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private void Toggle()
+    {
+        _register = !_register;
+        _error = null;
+        _password = "";
+    }
+}

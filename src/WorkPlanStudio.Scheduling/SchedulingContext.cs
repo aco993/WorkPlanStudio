@@ -34,6 +34,16 @@ public sealed class SchedulingContext
         {
             if (m.ParallelCapacity is < 1 or > 64)
                 throw new ArgumentException($"Work center {m.WorkCenterId} has invalid capacity {m.ParallelCapacity} (must be 1..64).");
+            long previousWindowEnd = -1;
+            foreach (var window in m.AvailabilityWindows)
+            {
+                window.Validate();
+                if (window.StartSeconds < previousWindowEnd)
+                    throw new ArgumentException($"Work center {m.WorkCenterId} availability windows overlap or are unsorted.");
+                previousWindowEnd = window.EndSeconds;
+            }
+            foreach (var setup in m.SetupDurations)
+                setup.Validate();
             byId[m.WorkCenterId] = m;
         }
 
@@ -51,6 +61,8 @@ public sealed class SchedulingContext
 
                 if (step.DurationSeconds < 0)
                     throw new ArgumentException($"Job {job.Id} step {step.StepNumber} has negative duration.");
+                if (string.IsNullOrWhiteSpace(step.SetupFamily) || step.SetupFamily.Length > 40)
+                    throw new ArgumentException($"Job {job.Id} step {step.StepNumber} has an invalid setup family.");
 
                 if (!byId.ContainsKey(step.WorkCenterId))
                     throw new ArgumentException($"Job {job.Id} step {step.StepNumber} references unknown work center {step.WorkCenterId}.");

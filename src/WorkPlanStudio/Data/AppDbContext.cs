@@ -19,6 +19,14 @@ public class AppDbContext : DbContext
     {
         model.Entity<WorkCenter>(e =>
         {
+            // Server ownership/concurrency and production-capacity entities are
+            // intentionally outside the schema of the offline browser demo.
+            e.Ignore(x => x.OwnerId);
+            e.Ignore(x => x.Version);
+            e.Ignore(x => x.TimeZoneId);
+            e.Ignore(x => x.CalendarShifts);
+            e.Ignore(x => x.Downtimes);
+            e.Ignore(x => x.SetupTransitions);
             e.Property(x => x.Code).HasMaxLength(20).IsRequired().UseCollation("NOCASE");
             e.Property(x => x.Name).HasMaxLength(100).IsRequired();
             e.Property(x => x.CostCenter).HasMaxLength(20);
@@ -36,6 +44,8 @@ public class AppDbContext : DbContext
 
         model.Entity<WorkPlan>(e =>
         {
+            e.Ignore(x => x.OwnerId);
+            e.Ignore(x => x.Version);
             e.Property(x => x.PlanNumber).HasMaxLength(20).IsRequired().UseCollation("NOCASE");
             e.Property(x => x.PartNumber).HasMaxLength(40);
             e.Property(x => x.PartName).HasMaxLength(120).IsRequired();
@@ -59,6 +69,7 @@ public class AppDbContext : DbContext
 
         model.Entity<Operation>(e =>
         {
+            e.Ignore(x => x.SetupFamily);
             e.Property(x => x.Description).HasMaxLength(120).IsRequired();
             e.Property(x => x.SetupTimeMinutes).HasColumnType("decimal(10,2)");
             e.Property(x => x.TimePerPieceMinutes).HasColumnType("decimal(10,2)");

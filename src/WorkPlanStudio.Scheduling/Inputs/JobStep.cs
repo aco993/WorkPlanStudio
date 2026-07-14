@@ -14,4 +14,5 @@ namespace WorkPlanStudio.Scheduling;
 /// <param name="StepNumber">Execution sequence within the job (e.g. 10, 20, 30).</param>
 /// <param name="WorkCenterId">The work center this step runs on.</param>
 /// <param name="DurationSeconds">Whole-lot processing time in seconds (must be ≥ 0).</param>
-public sealed record JobStep(int StepNumber, int WorkCenterId, long DurationSeconds);
+/// <param name="SetupFamily">Family used to look up a sequence-dependent setup transition.</param>
+public sealed record JobStep(int StepNumber, int WorkCenterId, long DurationSeconds, string SetupFamily = "DEFAULT");

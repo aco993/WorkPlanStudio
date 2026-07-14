@@ -1,0 +1,134 @@
+@page "/production-orders"
+@inject IStringLocalizer<SharedResource> L
+@inject BackendState Backend
+@inject ProductionOrderService Orders
+@inject WorkPlanService Plans
+
+<PageTitle>@L["Orders_Title"] · WorkPlan Studio</PageTitle>
+
+<div class="page-head">
+    <div><h1>@L["Orders_Title"]</h1><p class="muted">@L["Orders_Subtitle"]</p></div>
+    @if (Backend.Mode == BackendMode.Server)
+    {
+        <button class="btn btn-primary" @onclick="NewOrder">+ @L["Orders_New"]</button>
+    }
+</div>
+
+@if (Backend.Mode != BackendMode.Server)
+{
+    <div class="form-banner">@L["Orders_ServerOnly"]</div>
+}
+else if (_loading)
+{
+    <div class="loading-row"><span class="spinner"></span></div>
+}
+else
+{
+    @if (_error is not null) { <div class="form-banner error" role="alert">@_error</div> }
+    <div class="card no-pad">
+        <table class="data-table hover">
+            <thead><tr><th>@L["Orders_Number"]</th><th>@L["Orders_Routing"]</th><th class="num">@L["Orders_Quantity"]</th><th>@L["Orders_Release"]</th><th>@L["Orders_Due"]</th><th class="num">@L["Orders_Priority"]</th><th>@L["Field_Status"]</th><th></th></tr></thead>
+            <tbody>
+            @foreach (var order in _orders)
+            {
+                <tr>
+                    <td class="mono">@order.OrderNumber</td><td>@order.WorkPlanNumber <span class="muted">rev @order.RoutingRevision</span></td>
+                    <td class="num">@order.Quantity</td><td>@order.ReleaseUtc.ToLocalTime().ToString("g")</td><td>@order.DueUtc.ToLocalTime().ToString("g")</td>
+                    <td class="num">@order.Priority</td><td><span class="pill">@order.Status</span></td>
+                    <td class="actions-col"><button class="icon-btn" title="@L["Common_Edit"]" @onclick="() => Edit(order)">✎</button></td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+}
+
+<Modal @bind-Visible="_editing" Title="@(_model.Id == 0 ? L["Orders_New"] : L["Orders_Edit"])">
+    <ChildContent>
+        <div class="form-grid">
+            <label class="field"><span>@L["Orders_Number"]</span><input class="input" @bind="_model.OrderNumber" /></label>
+            <label class="field"><span>@L["Orders_Routing"]</span><select class="input" @bind="_model.WorkPlanId">@foreach (var plan in _releasedPlans) { <option value="@plan.Id">@plan.PlanNumber — @plan.PartName</option> }</select></label>
+            <label class="field"><span>@L["Orders_Quantity"]</span><input class="input" type="number" min="1" max="1000000" @bind="_model.Quantity" /></label>
+            <label class="field"><span>@L["Orders_Priority"]</span><input class="input" type="number" min="1" max="10" @bind="_model.Priority" /></label>
+            <label class="field"><span>@L["Orders_Release"]</span><input class="input" type="datetime-local" @bind="_model.ReleaseLocal" /></label>
+            <label class="field"><span>@L["Orders_Due"]</span><input class="input" type="datetime-local" @bind="_model.DueLocal" /></label>
+            <label class="field"><span>@L["Field_Status"]</span><select class="input" @bind="_model.Status">@foreach (var status in Enum.GetValues<ProductionOrderStatus>()) { <option value="@status">@status</option> }</select></label>
+        </div>
+    </ChildContent>
+    <Footer>
+        <button class="btn btn-ghost" @onclick="Close" disabled="@_saving">@L["Common_Cancel"]</button>
+        <button class="btn btn-primary" @onclick="SaveAsync" disabled="@_saving">@L["Common_Save"]</button>
+    </Footer>
+</Modal>
+
+@code {
+    private List<ProductionOrderDto> _orders = [];
+    private List<WorkPlan> _releasedPlans = [];
+    private OrderModel _model = new();
+    private bool _loading = true;
+    private bool _editing;
+    private bool _saving;
+    private string? _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Backend.Mode == BackendMode.Server)
+        {
+            _orders = await Orders.GetAllAsync() ?? [];
+            _releasedPlans = (await Plans.GetAllAsync()).Where(plan => plan.Status == WorkPlanStatus.Released).ToList();
+        }
+        _loading = false;
+    }
+
+    private void NewOrder()
+    {
+        var now = DateTime.Now;
+        _model = new OrderModel { WorkPlanId = _releasedPlans.FirstOrDefault()?.Id ?? 0, ReleaseLocal = now, DueLocal = now.AddDays(1) };
+        _editing = true;
+    }
+
+    private void Edit(ProductionOrderDto order)
+    {
+        _model = new OrderModel
+        {
+            Id = order.Id, OrderNumber = order.OrderNumber, WorkPlanId = order.WorkPlanId, Quantity = order.Quantity,
+            ReleaseLocal = order.ReleaseUtc.ToLocalTime(), DueLocal = order.DueUtc.ToLocalTime(), Priority = order.Priority,
+            Status = order.Status, Version = order.Version
+        };
+        _editing = true;
+    }
+
+    private async Task SaveAsync()
+    {
+        _saving = true;
+        _error = null;
+        var request = new ProductionOrderDto(
+            _model.Id, _model.OrderNumber, _model.WorkPlanId, "", _model.Quantity,
+            _model.ReleaseLocal.ToUniversalTime(), _model.DueLocal.ToUniversalTime(), _model.Priority,
+            _model.Status, "", default, default, _model.Version);
+        var result = await Orders.SaveAsync(request);
+        if (!result.IsSuccess)
+            _error = result.Error!.Message;
+        else
+        {
+            _orders = await Orders.GetAllAsync() ?? [];
+            _editing = false;
+        }
+        _saving = false;
+    }
+
+    private void Close() => _editing = false;
+
+    private sealed class OrderModel
+    {
+        public int Id { get; set; }
+        public string OrderNumber { get; set; } = "";
+        public int WorkPlanId { get; set; }
+        public int Quantity { get; set; } = 1;
+        public DateTime ReleaseLocal { get; set; }
+        public DateTime DueLocal { get; set; }
+        public int Priority { get; set; } = 5;
+        public ProductionOrderStatus Status { get; set; }
+        public long Version { get; set; }
+    }
+}

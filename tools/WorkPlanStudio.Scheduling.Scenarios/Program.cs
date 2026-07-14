@@ -35,6 +35,16 @@ foreach (var definition in scenarios)
         $"{stopwatch.Elapsed.TotalMilliseconds:F1} | {allocated / 1024d / 1024d:F2} | " +
         $"{Process.GetCurrentProcess().PeakWorkingSet64 / 1024d / 1024d:F1} | {first.Evaluation.Penalty:F4} | " +
         $"{Signature(first) == Signature(second)} |");
+
+    if (args.Contains("--verify", StringComparer.OrdinalIgnoreCase))
+    {
+        if (stopwatch.Elapsed > TimeSpan.FromSeconds(10))
+            throw new InvalidOperationException($"{definition.Name} exceeded the 10 second CI budget.");
+        if (allocated > 512L * 1024 * 1024)
+            throw new InvalidOperationException($"{definition.Name} exceeded the 512 MB allocation budget.");
+        if (Signature(first) != Signature(second))
+            throw new InvalidOperationException($"{definition.Name} was not deterministic.");
+    }
 }
 
 static SchedulingContext Build(ScenarioDefinition definition)

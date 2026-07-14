@@ -10,6 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" PrivateAssets="all" />
 
@@ -26,6 +27,8 @@
        dispatch + due-date assignment). Kept in its own library so it can be
        unit tested without the WebAssembly toolchain. -->
   <ItemGroup>
+    <ProjectReference Include="..\WorkPlanStudio.Contracts\WorkPlanStudio.Contracts.csproj" />
+    <ProjectReference Include="..\WorkPlanStudio.Domain\WorkPlanStudio.Domain.csproj" />
     <ProjectReference Include="..\WorkPlanStudio.Scheduling\WorkPlanStudio.Scheduling.csproj" />
   </ItemGroup>
 

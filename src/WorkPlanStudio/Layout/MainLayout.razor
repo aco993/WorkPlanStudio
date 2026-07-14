@@ -2,6 +2,8 @@
 @implements IDisposable
 @inject IStringLocalizer<SharedResource> L
 @inject NavigationManager Nav
+@inject BackendState Backend
+@inject ServerSession Session
 
 <div class="app-shell @(_navOpen ? "nav-open" : null)">
     <aside class="sidebar">
@@ -24,6 +26,14 @@
                 <svg viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18" /></svg>
             </button>
             <div class="topbar-spacer"></div>
+            <span class="pill @(Backend.Mode == BackendMode.Server ? "ok" : "off")">
+                @L[Backend.Mode == BackendMode.Server ? "Mode_Server" : "Mode_Offline"]
+            </span>
+            @if (Backend.Mode == BackendMode.Server)
+            {
+                <span class="muted">@Session.User?.Email</span>
+                <button class="btn btn-ghost" @onclick="LogoutAsync">@L["Auth_Logout"]</button>
+            }
             <CultureSelector />
         </header>
 
@@ -39,6 +49,12 @@
     protected override void OnInitialized() => Nav.LocationChanged += OnLocationChanged;
 
     private void ToggleNav() => _navOpen = !_navOpen;
+
+    private async Task LogoutAsync()
+    {
+        await Session.LogoutAsync();
+        Nav.NavigateTo("", forceLoad: true);
+    }
 
     private void CloseNav()
     {
