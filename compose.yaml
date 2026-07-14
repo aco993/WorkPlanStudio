@@ -1,0 +1,51 @@
+services:
+  database:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-workplanstudio}
+      POSTGRES_USER: ${POSTGRES_USER:-workplanstudio}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      database:
+        condition: service_healthy
+    ports:
+      - "${HTTP_PORT:-8080}:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      AllowedHosts: ${ALLOWED_HOSTS:?set ALLOWED_HOSTS}
+      Database__Provider: Postgres
+      Database__ApplyMigrationsOnStartup: "true"
+      DataProtection__KeysPath: /keys
+      ConnectionStrings__Production: Host=database;Port=5432;Database=${POSTGRES_DB:-workplanstudio};Username=${POSTGRES_USER:-workplanstudio};Password=${POSTGRES_PASSWORD}
+      Identity__AllowRegistration: "false"
+      Identity__BootstrapAdminEmail: ${BOOTSTRAP_ADMIN_EMAIL:-}
+      Identity__BootstrapAdminPassword: ${BOOTSTRAP_ADMIN_PASSWORD:-}
+      Assistant__ApiKey: ${ASSISTANT_API_KEY:-}
+      Assistant__Endpoint: ${ASSISTANT_ENDPOINT:-https://api.openai.com/v1/}
+      Assistant__Model: ${ASSISTANT_MODEL:-gpt-4.1-mini}
+      OpenTelemetry__OtlpEndpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    volumes:
+      - data-protection-keys:/keys
+    tmpfs:
+      - /tmp
+
+volumes:
+  postgres-data:
+  data-protection-keys:
