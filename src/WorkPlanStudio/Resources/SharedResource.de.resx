@@ -335,4 +335,46 @@
   <data name="ProductionSchedule_Subtitle" xml:space="preserve"><value>Planungsläufe starten, überwachen und abbrechen.</value></data>
   <data name="ProductionSchedule_Create" xml:space="preserve"><value>Planung erstellen</value></data>
   <data name="ProductionSchedule_Runs" xml:space="preserve"><value>Planungsläufe</value></data>
+  <data name="Auth_AuthenticatorCode" xml:space="preserve"><value>Authenticator-Code</value></data>
+  <data name="Auth_RecoveryCode" xml:space="preserve"><value>Wiederherstellungscode</value></data>
+  <data name="Auth_UseRecoveryCode" xml:space="preserve"><value>Stattdessen Wiederherstellungscode verwenden</value></data>
+  <data name="Auth_TwoFactorRequired" xml:space="preserve"><value>Geben Sie den Code aus Ihrer Authenticator-App ein oder verwenden Sie einen Wiederherstellungscode.</value></data>
+  <data name="Accessibility_SkipToContent" xml:space="preserve"><value>Zum Hauptinhalt springen</value></data>
+  <data name="Accessibility_PrimaryNavigation" xml:space="preserve"><value>Hauptnavigation</value></data>
+  <data name="Common_Loading" xml:space="preserve"><value>Wird geladen</value></data>
+  <data name="Nav_AccountSecurity" xml:space="preserve"><value>Kontosicherheit</value></data>
+  <data name="Security_Title" xml:space="preserve"><value>Kontosicherheit</value></data>
+  <data name="Security_Subtitle" xml:space="preserve"><value>Schützen Sie Ihr Produktionskonto mit einer Authenticator-App und einmaligen Wiederherstellungscodes.</value></data>
+  <data name="Security_MfaTitle" xml:space="preserve"><value>Mehrfaktor-Authentifizierung</value></data>
+  <data name="Security_MfaEnabled" xml:space="preserve"><value>Authenticator-MFA ist aktiviert.</value></data>
+  <data name="Security_MfaDisabled" xml:space="preserve"><value>Authenticator-MFA ist nicht aktiviert.</value></data>
+  <data name="Security_CodesLeft" xml:space="preserve"><value>Verbleibende Wiederherstellungscodes:</value></data>
+  <data name="Security_Setup" xml:space="preserve"><value>Authenticator einrichten</value></data>
+  <data name="Security_Enable" xml:space="preserve"><value>Prüfen und aktivieren</value></data>
+  <data name="Security_Disable" xml:space="preserve"><value>MFA deaktivieren</value></data>
+  <data name="Security_Regenerate" xml:space="preserve"><value>Neue Wiederherstellungscodes erzeugen</value></data>
+  <data name="Security_AddKey" xml:space="preserve"><value>Fügen Sie diesen Schlüssel Ihrer Authenticator-App hinzu und geben Sie danach den sechsstelligen Code ein.</value></data>
+  <data name="Security_OpenAuthenticator" xml:space="preserve"><value>In Authenticator-App öffnen</value></data>
+  <data name="Security_RecoveryTitle" xml:space="preserve"><value>Neue Wiederherstellungscodes</value></data>
+  <data name="Security_RecoveryWarning" xml:space="preserve"><value>Speichern Sie diese Codes jetzt in einem sicheren Passwortmanager. Jeder Code funktioniert einmal und wird nicht erneut angezeigt.</value></data>
+  <data name="Security_EnabledSuccess" xml:space="preserve"><value>Mehrfaktor-Authentifizierung wurde aktiviert.</value></data>
+  <data name="Security_RegeneratedSuccess" xml:space="preserve"><value>Neue Wiederherstellungscodes wurden erzeugt. Die vorherigen Codes funktionieren nicht mehr.</value></data>
+  <data name="Security_DisabledSuccess" xml:space="preserve"><value>Mehrfaktor-Authentifizierung wurde deaktiviert.</value></data>
+  <data name="ProductionSchedule_Creating" xml:space="preserve"><value>Wird erstellt…</value></data>
+  <data name="ProductionSchedule_Summary" xml:space="preserve"><value>Planungsübersicht</value></data>
+  <data name="ProductionSchedule_AvailableOrders" xml:space="preserve"><value>Verfügbare freigegebene Aufträge</value></data>
+  <data name="ProductionSchedule_Selected" xml:space="preserve"><value>Ausgewählte Aufträge</value></data>
+  <data name="ProductionSchedule_ActiveRuns" xml:space="preserve"><value>Aktive Läufe</value></data>
+  <data name="ProductionSchedule_NoOrders" xml:space="preserve"><value>Keine freigegebenen Aufträge verfügbar</value></data>
+  <data name="ProductionSchedule_NoOrdersHint" xml:space="preserve"><value>Erstellen oder geben Sie einen Fertigungsauftrag frei, bevor Sie eine Planung starten.</value></data>
+  <data name="ProductionSchedule_NoRuns" xml:space="preserve"><value>Noch keine Planung gestartet.</value></data>
+  <data name="ProductionSchedule_Progress" xml:space="preserve"><value>Planungsfortschritt</value></data>
+  <data name="ProductionSchedule_Queued" xml:space="preserve"><value>Der Planungslauf wurde eingereiht.</value></data>
+  <data name="ProductionSchedule_CancelRequested" xml:space="preserve"><value>Der Abbruch wurde angefordert.</value></data>
+  <data name="Status_Scheduled" xml:space="preserve"><value>Geplant</value></data>
+  <data name="Status_Completed" xml:space="preserve"><value>Abgeschlossen</value></data>
+  <data name="Status_Cancelled" xml:space="preserve"><value>Abgebrochen</value></data>
+  <data name="Status_Queued" xml:space="preserve"><value>Eingereiht</value></data>
+  <data name="Status_Running" xml:space="preserve"><value>Läuft</value></data>
+  <data name="Status_Failed" xml:space="preserve"><value>Fehlgeschlagen</value></data>
 </root>

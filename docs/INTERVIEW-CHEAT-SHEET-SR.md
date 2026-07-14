@@ -8,14 +8,14 @@
 - Released routing je potpuno scheduleovan ili potpuno odbijen sa structured reason codeom.
 - AI je intenzivno korišćen; odgovornost je u provjeri, debugovanju, testovima, integraciji i odlukama, ne u tvrdnji da je sve ručno napisano.
 
-## Brojevi za 2026-07-13
+## Brojevi za 2026-07-14
 
 - Baseline commit: `0e1e3c514f35d8479dfe1bdc51905d31de8729b3`.
-- Scheduling tests: 93 passed.
+- Scheduling tests: 99 passed.
 - Web/data/component tests: 54 passed.
-- Production API integration tests: 5 passed.
+- Production API integration tests: 11 passed.
 - Playwright E2E: 10 passed, uključujući save→hard reload, confirmed reset i mobile drawer.
-- Current engine coverage: 452/469 linija (96.38%) i 201/235 grana (85.53%); nove calendar/setup/horizon grane povećale su denominator.
+- Current engine coverage: 467/469 linija (99.57%) i 226/235 grana (96.17%).
 - Scenario runner: 25/100/250 jobs; 32.9/275.2/601.0 ms i 0.57/42.73/436.57 MB allocations na finalnom runu.
 - Central budget: 1–64 starts, 0–20.000 local steps.
 - Work-center capacity: 1–64.

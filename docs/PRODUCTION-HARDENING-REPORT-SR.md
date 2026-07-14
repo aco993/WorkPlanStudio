@@ -9,7 +9,7 @@ WorkPlan Studio sada ima dva namerno odvojena režima. GitHub Pages ostaje samos
 
 Najvažnija promena nije broj projekata već pomeranje granice poverenja: browser više nije authority za production podatke ili AI credential. Scheduler ostaje čista deterministička biblioteka; API validira identitet i ownership, persistence sloj čuva routing snapshot naloga, a worker izvršava ograničene schedule runove. Statički demo nije uklonjen jer je koristan kao javni, zero-infrastructure prikaz.
 
-Finalna klasifikacija mora ostati konzervativna: ovo je jak portfolio dokaz za mid-level razgovor, ali nije dokaz horizontalno skalabilnog MES/APS proizvoda. Hosted queue je namenjen jednom API replica procesu, nema MFA/email-confirmation operativni tok, nema distributed lease i nema realni production load test.
+Finalna klasifikacija mora ostati konzervativna: ovo je jak portfolio dokaz za mid-level razgovor, ali nije dokaz kompletnog MES/APS ili regulisanog HA proizvoda. Worker sada ima multi-replica-safe DB lease, TOTP MFA/recovery i runtime/load smoke; nema confirmed-email/password-reset delivery, reprezentativni soak/penetration test ni operativni HA dokaz.
 
 ## Tehnologije i struktura
 
@@ -74,14 +74,14 @@ Konačne brojke se održavaju u [TESTING.md](TESTING.md). Obavezni gate uključu
 
 ### Critical
 
-- Nema poznatog otvorenog critical blockera u deklarisanom single-replica portfolio scope-u.
+- Nema poznatog otvorenog critical blockera u deklarisanom portfolio scope-u.
 
 ### Important
 
-- In-process queue nema distributed lease; više API replika može duplirati run. Pre scale-out-a potreban je DB claim/lease ili eksterni durable queue.
-- Account confirmation, password reset delivery i MFA nisu završeni operativni identity tokovi.
+- DB-backed atomski claim, lease/heartbeat i persisted cancellation sada sprečavaju duplu obradu između API replika; tenant fairness i poseban worker autoscaling model nisu implementirani.
+- TOTP MFA i jednokratni recovery kodovi su završeni; confirmed-email/password-reset delivery i help-desk recovery ostaju operativni identity gap.
 - Data Protection volume mora biti backupovan i za višestruke hostove zaštićen certificate/KMS mehanizmom.
-- Nisu izvršeni realni soak/load, penetration ni screen-reader audit.
+- CI sada ima 100-request/20-concurrency HTTP load smoke, security-header probe i realan container/WASM runtime smoke, ali nema reprezentativni soak/load, nezavisni penetration test ni ljudski NVDA/VoiceOver audit.
 
 ### Accepted portfolio limitations
 
@@ -92,8 +92,8 @@ Konačne brojke se održavaju u [TESTING.md](TESTING.md). Obavezni gate uključu
 
 ### Production roadmap
 
-- Distributed job claim/lease, idempotency key i outbox za side effects.
-- OIDC/enterprise identity ili kompletan confirmed-account/MFA recovery tok.
+- Tenant queue quotas, idempotency key i outbox za side effects.
+- OIDC/enterprise identity ili kompletan confirmed-account/password-reset delivery tok.
 - Managed PostgreSQL, managed secrets/KMS, central logs/traces i alert rules.
 - Load/soak test sa realnim routing distributions; OR-Tools/CP-SAT evaluacija tek kada heuristika ne zadovolji merljivi SLA.
 
@@ -101,25 +101,25 @@ Konačne brojke se održavaju u [TESTING.md](TESTING.md). Obavezni gate uključu
 
 | Kategorija | Ocena | Dokaz / ograničenje |
 | --- | ---: | --- |
-| Correctness | 9/10 | Domain/boundary/property/API/E2E testovi; nema optimality dokaza |
-| Reliability | 8/10 | persisted recovery, cancellation, readiness, backup; single-process worker |
+| Correctness | 9/10 | Domain/boundary/property/API/E2E i mali exhaustive oracle; nema opšti optimality dokaz |
+| Reliability | 9/10 | DB lease/heartbeat/recovery, cross-replica cancellation, readiness i backup |
 | Architecture | 9/10 | čist scheduler, shared contracts/domain, provider migrations; svesno bez pattern inflation-a |
 | Maintainability | 8/10 | jasne granice i ADR; API endpoint fajlovi ostaju ručno mapirani |
-| Testability | 9/10 | pure domain, real SQLite, WebApplicationFactory, Chromium |
-| Security | 8/10 | Identity/CSRF/ownership/rate limits/secrets; bez MFA i pen testa |
-| Accessibility | 7/10 | keyboard/modal/lang/mobile automatizacija; bez screen-reader audita |
-| UX | 8/10 | server/offline status, localized errors, progress/cancel; production UI je funkcionalan više nego dizajnerski poliran |
+| Testability | 9/10 | 99 engine + 54 web + 11 API + 10 browser testova, real SQLite i Chromium |
+| Security | 8.5/10 | Identity/CSRF/ownership/rate limits/TOTP/recovery codes; bez nezavisnog pen testa |
+| Accessibility | 8.5/10 | keyboard/modal/lang/mobile + Chrome AX-tree/label/contrast audit; bez ljudskog NVDA/VoiceOver testa |
+| UX | 8.5/10 | status tiles, empty/live states, localized statuses, accessible progress/cancel i account-security UI |
 | Dokumentacija | 9/10 | architecture/security/production/AI/ADR/intervju dokumenti |
 | GitHub prezentacija | 9/10 | problem, dijagram, live demo, evidence i limitations odmah vidljivi |
 | Interview readiness | 9/10 | dokazive tehničke priče i iskren AI disclosure |
-| Production readiness | 7/10 | deployable single-host baseline, ali ne HA/regulated production dokaz |
+| Production readiness | 8.5/10 | multi-replica-safe worker i runtime/load/security smoke; nije HA/regulated/soak dokaz |
 
 ## Hiring-manager procena
 
 - Posle 30 sekundi: otvorio bih README i zatim CV, jer repository pokazuje poslovni problem, live demo, test evidence i ograničenja bez buzzworda.
 - Poziv: da, za mid-level .NET/full-stack intervju; za senior bih tražio iskustvo sa stvarnim operacijama, incidentima i skaliranjem izvan ovog projekta.
 - Najbolji utisak: pure/deterministic scheduler sa property testovima; data-integrity priče (WAL i routing snapshot); production trust boundary sa auth/CSRF/ownership.
-- Sumnje: veliki AI doprinos zahteva live objašnjenje; single-process queue se ne sme prodavati kao distributed system; širok scope može sakriti plitko razumevanje ako kandidat ne može pratiti jedan request end-to-end.
+- Sumnje: veliki AI doprinos zahteva live objašnjenje; DB lease se ne sme prodavati kao kompletna HA platforma; širok scope može sakriti plitko razumevanje ako kandidat ne može pratiti jedan request end-to-end.
 - Kandidata može oboriti tvrdnja da je scheduler optimalan, da je projekat enterprise-ready ili da je sav kod ručno napisan.
 - Procena: projekat objektivno daje `clean mid-level` portfolio signal ako kandidat može objasniti accepted code i ograničenja. Sigurnost procene: 85%; production operativno iskustvo se ne može dokazati samim repository-jem.
 

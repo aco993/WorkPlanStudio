@@ -21,5 +21,9 @@ public sealed class ScheduleRun
     public DateTime CreatedUtc { get; set; }
     public DateTime? StartedUtc { get; set; }
     public DateTime? CompletedUtc { get; set; }
+    public string? LeaseOwner { get; set; }
+    public DateTime? LeaseExpiresUtc { get; set; }
+    public DateTime? CancellationRequestedUtc { get; set; }
+    public int AttemptCount { get; set; }
     public long Version { get; set; }
 }

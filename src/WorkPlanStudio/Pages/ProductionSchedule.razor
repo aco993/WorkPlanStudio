@@ -9,7 +9,13 @@
 
 <div class="page-head">
     <div><h1>@L["ProductionSchedule_Title"]</h1><p class="muted">@L["ProductionSchedule_Subtitle"]</p></div>
-    <button class="btn btn-primary" disabled="@(!_selected.Any() || _creating)" @onclick="CreateAsync">@L["ProductionSchedule_Create"]</button>
+    <button class="btn btn-primary" disabled="@(!_selected.Any() || _creating)" @onclick="CreateAsync">
+        @(_creating ? L["ProductionSchedule_Creating"] : L["ProductionSchedule_Create"])
+    </button>
+</div>
+
+<div aria-live="polite" aria-atomic="true">
+    @if (_message is not null || _error is not null) { <div class="form-banner @(_error is not null ? "error" : null)" role="@(_error is not null ? "alert" : "status")">@(_error ?? _message)</div> }
 </div>
 
 @if (Backend.Mode != BackendMode.Server)
@@ -22,22 +28,39 @@ else if (_loading)
 }
 else
 {
-    @if (_error is not null) { <div class="form-banner error" role="alert">@_error</div> }
-    <div class="card no-pad table-scroll" tabindex="0">
-        <table class="data-table hover">
-            <thead><tr><th><span class="sr-only">@L["Common_Select"]</span></th><th>@L["Orders_Number"]</th><th>@L["Orders_Routing"]</th><th>@L["Orders_Due"]</th><th>@L["Field_Status"]</th></tr></thead>
-            <tbody>@foreach (var order in _orders) { <tr><td><input type="checkbox" aria-label="@order.OrderNumber" checked="@_selected.Contains(order.Id)" @onchange="e => Toggle(order.Id, e.Value as bool? == true)" /></td><td class="mono">@order.OrderNumber</td><td>@order.WorkPlanNumber</td><td>@order.DueUtc.ToLocalTime().ToString("g")</td><td><span class="pill">@order.Status</span></td></tr> }</tbody>
-        </table>
+    <div class="schedule-summary" aria-label="@L["ProductionSchedule_Summary"]">
+        <div class="summary-tile"><strong>@_orders.Count</strong><span>@L["ProductionSchedule_AvailableOrders"]</span></div>
+        <div class="summary-tile"><strong>@_selected.Count</strong><span>@L["ProductionSchedule_Selected"]</span></div>
+        <div class="summary-tile"><strong>@_runs.Count(x => x.Status is ScheduleRunStatus.Queued or ScheduleRunStatus.Running)</strong><span>@L["ProductionSchedule_ActiveRuns"]</span></div>
     </div>
+    @if (_orders.Count == 0)
+    {
+        <div class="empty-state" role="status"><h2>@L["ProductionSchedule_NoOrders"]</h2><p>@L["ProductionSchedule_NoOrdersHint"]</p></div>
+    }
+    else
+    {
+      <div class="card no-pad table-scroll" tabindex="0">
+        <table class="data-table hover">
+            <caption class="sr-only">@L["ProductionSchedule_AvailableOrders"]</caption>
+            <thead><tr><th><span class="sr-only">@L["Common_Select"]</span></th><th>@L["Orders_Number"]</th><th>@L["Orders_Routing"]</th><th>@L["Orders_Due"]</th><th>@L["Field_Status"]</th></tr></thead>
+            <tbody>@foreach (var order in _orders) { <tr><td><input type="checkbox" aria-label="@($"{L["Common_Select"]}: {order.OrderNumber}")" checked="@_selected.Contains(order.Id)" @onchange="e => Toggle(order.Id, e.Value as bool? == true)" /></td><td class="mono">@order.OrderNumber</td><td>@order.WorkPlanNumber</td><td>@order.DueUtc.ToLocalTime().ToString("g")</td><td><span class="pill">@L[$"Status_{order.Status}"]</span></td></tr> }</tbody>
+        </table>
+      </div>
+    }
     <section class="card">
         <h2>@L["ProductionSchedule_Runs"]</h2>
+        @if (_runs.Count == 0)
+        {
+            <p class="muted">@L["ProductionSchedule_NoRuns"]</p>
+        }
         @foreach (var run in _runs)
         {
             <div class="run-row">
                 <div><strong>@run.CreatedUtc.ToLocalTime().ToString("g")</strong><div class="muted mono">@run.Id</div></div>
-                <div class="progress-wrap"><progress max="100" value="@run.ProgressPercent">@run.ProgressPercent%</progress><span>@run.ProgressPercent%</span></div>
-                <span class="pill">@run.Status</span>
-                @if (run.Status is ScheduleRunStatus.Queued or ScheduleRunStatus.Running) { <button class="btn btn-ghost btn-sm" @onclick="() => CancelAsync(run.Id)">@L["Common_Cancel"]</button> }
+                <div class="progress-wrap"><progress max="100" value="@run.ProgressPercent" aria-label="@($"{L["ProductionSchedule_Progress"]}: {run.ProgressPercent}%")">@run.ProgressPercent%</progress><span>@run.ProgressPercent%</span></div>
+                <span class="pill">@L[$"Status_{run.Status}"]</span>
+                @if (run.Status is ScheduleRunStatus.Queued or ScheduleRunStatus.Running) { <button class="btn btn-ghost btn-sm" aria-label="@($"{L["Common_Cancel"]}: {run.Id}")" @onclick="() => CancelAsync(run.Id)">@L["Common_Cancel"]</button> }
+                else if (run.ErrorCode is not null) { <span class="error-text">@run.ErrorCode</span> }
             </div>
         }
     </section>
@@ -49,7 +72,7 @@ else
     private List<ProductionOrderDto> _orders = [];
     private List<ScheduleRunDto> _runs = [];
     private bool _loading = true, _creating;
-    private string? _error;
+    private string? _error, _message;
 
     protected override async Task OnInitializedAsync()
     {
@@ -57,8 +80,19 @@ else
         _loading = false;
     }
     private void Toggle(int id, bool selected) { if (selected) _selected.Add(id); else _selected.Remove(id); }
-    private async Task CreateAsync() { _creating = true; var result = await Runs.CreateAsync(new(_selected.ToArray())); _error = result.Error?.Message; if (result.IsSuccess) { _selected.Clear(); await ReloadAsync(); } _creating = false; }
-    private async Task CancelAsync(Guid id) { var result = await Runs.CancelAsync(id); _error = result.Error?.Message; await ReloadAsync(); }
+    private async Task CreateAsync()
+    {
+        _creating = true; _error = null; _message = null;
+        try { var result = await Runs.CreateAsync(new(_selected.ToArray())); _error = result.Error?.Message; if (result.IsSuccess) { _selected.Clear(); _message = L["ProductionSchedule_Queued"]; await ReloadAsync(); } }
+        catch (HttpRequestException) { _error = L["Auth_ServerUnavailable"]; }
+        finally { _creating = false; }
+    }
+    private async Task CancelAsync(Guid id)
+    {
+        _error = null; _message = null;
+        try { var result = await Runs.CancelAsync(id); _error = result.Error?.Message; _message = result.IsSuccess ? L["ProductionSchedule_CancelRequested"].Value : null; await ReloadAsync(); }
+        catch (HttpRequestException) { _error = L["Auth_ServerUnavailable"]; }
+    }
     private async Task ReloadAsync() { _orders = (await Orders.GetAllAsync() ?? []).Where(x => x.Status == ProductionOrderStatus.Released).ToList(); _runs = await Runs.GetAllAsync() ?? []; await InvokeAsync(StateHasChanged); }
     private async Task PollAsync(CancellationToken token) { using var timer = new PeriodicTimer(TimeSpan.FromSeconds(2)); try { while (await timer.WaitForNextTickAsync(token)) if (_runs.Any(x => x.Status is ScheduleRunStatus.Queued or ScheduleRunStatus.Running)) await ReloadAsync(); } catch (OperationCanceledException) { } }
     public ValueTask DisposeAsync() { _dispose.Cancel(); _dispose.Dispose(); return ValueTask.CompletedTask; }

@@ -110,7 +110,7 @@ Never commit `.env`. Put TLS at the ingress and remove bootstrap-admin variables
 
 ## Verify it
 
-Verified locally on 2026-07-13: **93 scheduling + 54 web/data/component + 5 API + 10 Chromium E2E = 162 passed, 0 failed, 0 skipped**. Release build completed with 0 errors and the two documented `WASM0001` warning groups; package vulnerability and outdated audits were clean.
+Verified locally on 2026-07-14: **99 scheduling + 54 web/data/component + 11 API + 10 Chromium E2E = 174 passed, 0 failed, 0 skipped**. Engine coverage is **99.57% lines / 96.17% branches**. Release build completed with 0 errors and the two documented `WASM0001` warning groups; package vulnerability and outdated audits were clean.
 
 ```bash
 dotnet build WorkPlanStudio.slnx -c Release --no-restore
@@ -126,7 +126,7 @@ Playwright setup and full test-layer details are in [docs/TESTING.md](docs/TESTI
 ## Engineering decisions and limitations
 
 - The scheduler is a deterministic heuristic; it does **not** prove global optimality.
-- The in-process worker is a durable single-consumer design. Run one API replica until job claiming is moved to a distributed lease/queue.
+- Each worker is single-consumer, while atomic database leases, heartbeats and persisted cancellation make schedule claiming safe across multiple API replicas. Tenant fairness and autoscaling policy remain deployment concerns.
 - The browser database is explicit demo persistence, not confidential multi-user storage or a cross-version migration service.
 - GitHub Pages demonstrates the offline feature set; it cannot demonstrate server identity or PostgreSQL.
 - AI is optional narration over computed facts. It is not required and cannot change a schedule.

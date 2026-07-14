@@ -2,7 +2,9 @@
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
-    <OverrideHtmlAssetPlaceholders>true</OverrideHtmlAssetPlaceholders>
+    <!-- Hosted and standalone output share this client. Keeping the framework entrypoints
+         unfingerprinted avoids soft-fingerprint 404s when ASP.NET Core hosts the WASM assets. -->
+    <OverrideHtmlAssetPlaceholders>false</OverrideHtmlAssetPlaceholders>
 
     <!-- Load full ICU data so German (de-DE) number, date and currency
          formatting is correct in the browser, not just the invariant culture. -->

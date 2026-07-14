@@ -115,8 +115,10 @@ public sealed class ProductionDbContext(DbContextOptions<ProductionDbContext> op
             entity.Property(x => x.ParametersJson).HasColumnType("text").IsRequired();
             entity.Property(x => x.ResultJson).HasColumnType("text");
             entity.Property(x => x.ErrorCode).HasMaxLength(100);
+            entity.Property(x => x.LeaseOwner).HasMaxLength(200);
             entity.Property(x => x.Version).IsConcurrencyToken();
             entity.HasIndex(x => new { x.OwnerId, x.CreatedUtc });
+            entity.HasIndex(x => new { x.Status, x.LeaseExpiresUtc });
         });
 
         model.Entity<AuditEntry>(entity =>

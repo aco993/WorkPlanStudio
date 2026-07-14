@@ -15,6 +15,17 @@
                     <span>@L["Auth_Email"]</span>
                     <input class="input" type="email" autocomplete="username" @bind="_email" disabled="@_busy" />
                 </label>
+                @if (_mfaRequired)
+                {
+                    <label class="field wide">
+                        <span>@L[_useRecoveryCode ? "Auth_RecoveryCode" : "Auth_AuthenticatorCode"]</span>
+                        <input class="input" inputmode="numeric" autocomplete="one-time-code" @bind="_secondFactor" disabled="@_busy" autofocus />
+                    </label>
+                    <label class="check-row wide">
+                        <input type="checkbox" @bind="_useRecoveryCode" disabled="@_busy" />
+                        <span>@L["Auth_UseRecoveryCode"]</span>
+                    </label>
+                }
                 <label class="field wide">
                     <span>@L["Auth_Password"]</span>
                     <input class="input" type="password" autocomplete="@(_register ? "new-password" : "current-password")" @bind="_password" disabled="@_busy" />
@@ -39,6 +50,9 @@
     private string? _error;
     private bool _register;
     private bool _busy;
+    private bool _mfaRequired;
+    private bool _useRecoveryCode;
+    private string _secondFactor = "";
 
     private async Task SubmitAsync()
     {
@@ -55,13 +69,19 @@
                     return;
                 }
             }
-            var login = await Session.LoginAsync(_email, _password);
+            var login = await Session.LoginAsync(
+                _email,
+                _password,
+                _useRecoveryCode ? null : _secondFactor,
+                _useRecoveryCode ? _secondFactor : null);
             if (login is not null)
             {
-                _error = login.Message;
+                _mfaRequired = login.Code == "two_factor_required" || _mfaRequired;
+                _error = login.Code == "two_factor_required" ? L["Auth_TwoFactorRequired"] : login.Message;
                 return;
             }
             _password = "";
+            _secondFactor = "";
             await OnAuthenticated.InvokeAsync();
         }
         catch (HttpRequestException)
@@ -79,5 +99,8 @@
         _register = !_register;
         _error = null;
         _password = "";
+        _secondFactor = "";
+        _mfaRequired = false;
+        _useRecoveryCode = false;
     }
 }

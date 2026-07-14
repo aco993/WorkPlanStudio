@@ -14,7 +14,7 @@ public sealed class ScheduleRunQueue
     private readonly ConcurrentDictionary<Guid, CancellationTokenSource> _cancellations = new();
 
     public bool TryQueue(Guid id) => _queue.Writer.TryWrite(id);
-    public IAsyncEnumerable<Guid> ReadAllAsync(CancellationToken cancellationToken) => _queue.Reader.ReadAllAsync(cancellationToken);
+    public bool TryRead(out Guid id) => _queue.Reader.TryRead(out id);
 
     public CancellationToken Register(Guid id, CancellationToken stoppingToken)
     {
