@@ -4,8 +4,11 @@
 .vscode
 **/bin
 **/obj
-**/Data
 **/TestResults
 **/playwright-report
 e2e-artifacts
 release
+backups
+.env
+.env.*
+!.env.example
