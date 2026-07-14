@@ -1,0 +1,65 @@
+@page "/production-schedule"
+@implements IAsyncDisposable
+@inject IStringLocalizer<SharedResource> L
+@inject BackendState Backend
+@inject ProductionOrderService Orders
+@inject ScheduleRunService Runs
+
+<PageTitle>@L["ProductionSchedule_Title"] · WorkPlan Studio</PageTitle>
+
+<div class="page-head">
+    <div><h1>@L["ProductionSchedule_Title"]</h1><p class="muted">@L["ProductionSchedule_Subtitle"]</p></div>
+    <button class="btn btn-primary" disabled="@(!_selected.Any() || _creating)" @onclick="CreateAsync">@L["ProductionSchedule_Create"]</button>
+</div>
+
+@if (Backend.Mode != BackendMode.Server)
+{
+    <div class="form-banner">@L["Common_ServerOnly"]</div>
+}
+else if (_loading)
+{
+    <div class="loading-row"><span class="spinner"></span></div>
+}
+else
+{
+    @if (_error is not null) { <div class="form-banner error" role="alert">@_error</div> }
+    <div class="card no-pad table-scroll" tabindex="0">
+        <table class="data-table hover">
+            <thead><tr><th><span class="sr-only">@L["Common_Select"]</span></th><th>@L["Orders_Number"]</th><th>@L["Orders_Routing"]</th><th>@L["Orders_Due"]</th><th>@L["Field_Status"]</th></tr></thead>
+            <tbody>@foreach (var order in _orders) { <tr><td><input type="checkbox" aria-label="@order.OrderNumber" checked="@_selected.Contains(order.Id)" @onchange="e => Toggle(order.Id, e.Value as bool? == true)" /></td><td class="mono">@order.OrderNumber</td><td>@order.WorkPlanNumber</td><td>@order.DueUtc.ToLocalTime().ToString("g")</td><td><span class="pill">@order.Status</span></td></tr> }</tbody>
+        </table>
+    </div>
+    <section class="card">
+        <h2>@L["ProductionSchedule_Runs"]</h2>
+        @foreach (var run in _runs)
+        {
+            <div class="run-row">
+                <div><strong>@run.CreatedUtc.ToLocalTime().ToString("g")</strong><div class="muted mono">@run.Id</div></div>
+                <div class="progress-wrap"><progress max="100" value="@run.ProgressPercent">@run.ProgressPercent%</progress><span>@run.ProgressPercent%</span></div>
+                <span class="pill">@run.Status</span>
+                @if (run.Status is ScheduleRunStatus.Queued or ScheduleRunStatus.Running) { <button class="btn btn-ghost btn-sm" @onclick="() => CancelAsync(run.Id)">@L["Common_Cancel"]</button> }
+            </div>
+        }
+    </section>
+}
+
+@code {
+    private readonly HashSet<int> _selected = [];
+    private readonly CancellationTokenSource _dispose = new();
+    private List<ProductionOrderDto> _orders = [];
+    private List<ScheduleRunDto> _runs = [];
+    private bool _loading = true, _creating;
+    private string? _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Backend.Mode == BackendMode.Server) { await ReloadAsync(); _ = PollAsync(_dispose.Token); }
+        _loading = false;
+    }
+    private void Toggle(int id, bool selected) { if (selected) _selected.Add(id); else _selected.Remove(id); }
+    private async Task CreateAsync() { _creating = true; var result = await Runs.CreateAsync(new(_selected.ToArray())); _error = result.Error?.Message; if (result.IsSuccess) { _selected.Clear(); await ReloadAsync(); } _creating = false; }
+    private async Task CancelAsync(Guid id) { var result = await Runs.CancelAsync(id); _error = result.Error?.Message; await ReloadAsync(); }
+    private async Task ReloadAsync() { _orders = (await Orders.GetAllAsync() ?? []).Where(x => x.Status == ProductionOrderStatus.Released).ToList(); _runs = await Runs.GetAllAsync() ?? []; await InvokeAsync(StateHasChanged); }
+    private async Task PollAsync(CancellationToken token) { using var timer = new PeriodicTimer(TimeSpan.FromSeconds(2)); try { while (await timer.WaitForNextTickAsync(token)) if (_runs.Any(x => x.Status is ScheduleRunStatus.Queued or ScheduleRunStatus.Running)) await ReloadAsync(); } catch (OperationCanceledException) { } }
+    public ValueTask DisposeAsync() { _dispose.Cancel(); _dispose.Dispose(); return ValueTask.CompletedTask; }
+}

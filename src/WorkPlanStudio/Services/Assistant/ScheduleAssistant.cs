@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.Extensions.Localization;
 using WorkPlanStudio.Resources;
@@ -18,6 +20,8 @@ public sealed class ScheduleAssistant
     private readonly IAssistantConfig _config;
     private readonly HttpClient _http;
     private readonly IStringLocalizer<SharedResource> _l;
+    private readonly BackendState? _backend;
+    private readonly ServerSession? _server;
 
     public ScheduleAssistant(
         RuleBasedNarrator ruleBased,
@@ -31,12 +35,36 @@ public sealed class ScheduleAssistant
         _l = l;
     }
 
+    public ScheduleAssistant(
+        RuleBasedNarrator ruleBased,
+        IAssistantConfig config,
+        HttpClient http,
+        IStringLocalizer<SharedResource> l,
+        BackendState backend,
+        ServerSession server)
+    {
+        _ruleBased = ruleBased;
+        _config = config;
+        _http = http;
+        _l = l;
+        _backend = backend;
+        _server = server;
+    }
+
     /// <summary>The instant, offline, deterministic explanation. Always available.</summary>
     public Task<NarrationResult> ExplainAsync(ScheduleExplanation explanation, CancellationToken cancellationToken = default) =>
         _ruleBased.NarrateAsync(explanation, cancellationToken);
 
+    public bool UsesServerProvider => _backend?.Mode == BackendMode.Server;
+
     /// <summary>True when a usable BYOK AI provider is configured and enabled.</summary>
-    public async ValueTask<bool> IsAiEnabledAsync() => (await _config.LoadAsync()).IsConfigured;
+    public async ValueTask<bool> IsAiEnabledAsync()
+    {
+        if (_backend?.Mode != BackendMode.Server)
+            return (await _config.LoadAsync()).IsConfigured;
+        try { return (await _server!.GetFromJsonAsync<WorkPlanStudio.Contracts.AssistantStatusDto>("api/assistant/status"))?.Enabled == true; }
+        catch (HttpRequestException) { return false; }
+    }
 
     /// <summary>
     /// AI narration when configured; otherwise — and on any AI error — the rule-based
@@ -46,6 +74,9 @@ public sealed class ScheduleAssistant
     public async Task<NarrationResult> ExplainWithAiAsync(ScheduleExplanation explanation, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(explanation);
+
+        if (_backend?.Mode == BackendMode.Server)
+            return await ExplainWithServerAiAsync(explanation, cancellationToken);
 
         var settings = await _config.LoadAsync();
         if (!settings.IsConfigured)
@@ -63,6 +94,27 @@ public sealed class ScheduleAssistant
         catch (Exception ex) when (
             ex is HttpRequestException or OperationCanceledException or JsonException
                or InvalidOperationException or NotSupportedException or UriFormatException)
+        {
+            var fallback = await _ruleBased.NarrateAsync(explanation, cancellationToken);
+            return fallback with { Note = _l["Sched_Ai_Fallback", FailureLabel(ex)] };
+        }
+    }
+
+    private async Task<NarrationResult> ExplainWithServerAiAsync(ScheduleExplanation explanation, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var request = new WorkPlanStudio.Contracts.AssistantNarrationRequest(
+                AssistantPrompt.BuildFacts(explanation), CultureInfo.CurrentUICulture.Name);
+            using var response = await _server!.SendAsync(HttpMethod.Post, "api/assistant/narrate", request, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+                throw new HttpRequestException($"Assistant server returned {(int)response.StatusCode}.");
+            var result = await response.Content.ReadFromJsonAsync<WorkPlanStudio.Contracts.AssistantNarrationDto>(cancellationToken)
+                ?? throw new InvalidOperationException("Assistant server returned no narration.");
+            return new NarrationResult(result.Lines.Select(line => new NarrationLine(line, FindingTone.Info)).ToArray(), NarrationSource.Ai, result.SourceLabel);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
+        catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException or JsonException or InvalidOperationException)
         {
             var fallback = await _ruleBased.NarrateAsync(explanation, cancellationToken);
             return fallback with { Note = _l["Sched_Ai_Fallback", FailureLabel(ex)] };

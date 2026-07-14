@@ -1,0 +1,86 @@
+@page "/work-centers/{WorkCenterId:int}/capacity"
+@inject IStringLocalizer<SharedResource> L
+@inject BackendState Backend
+@inject CapacityService CapacityApi
+
+<PageTitle>@L["Capacity_Title"] · WorkPlan Studio</PageTitle>
+
+<div class="page-head">
+    <div><h1>@L["Capacity_Title"]</h1><p class="muted">@L["Capacity_Subtitle"]</p></div>
+    <a class="btn btn-ghost" href="work-centers">@L["Common_Back"]</a>
+</div>
+
+@if (Backend.Mode != BackendMode.Server)
+{
+    <div class="form-banner">@L["Common_ServerOnly"]</div>
+}
+else if (_loading)
+{
+    <div class="loading-row"><span class="spinner"></span></div>
+}
+else
+{
+    @if (_error is not null) { <div class="form-banner error" role="alert">@_error</div> }
+    <section class="card">
+        <h2>@L["Capacity_Shifts"]</h2>
+        <div class="form-grid inline-editor">
+            <label class="field"><span>@L["Capacity_Day"]</span><select class="input" @bind="_shiftDay">@foreach (var day in Enum.GetValues<DayOfWeek>()) { <option value="@day">@day</option> }</select></label>
+            <label class="field"><span>@L["Capacity_Start"]</span><input class="input" type="time" @bind="_shiftStart" /></label>
+            <label class="field"><span>@L["Capacity_End"]</span><input class="input" type="time" @bind="_shiftEnd" /></label>
+            <button class="btn btn-primary" @onclick="AddShiftAsync">@L["Common_Add"]</button>
+        </div>
+        <ul class="compact-list">
+            @foreach (var item in _profile.Shifts) { <li><span>@item.DayOfWeek — @Time(item.StartMinute)–@Time(item.EndMinute)</span><button class="icon-btn danger" aria-label="@L["Common_Delete"]" @onclick="() => DeleteShiftAsync(item.Id)">✕</button></li> }
+        </ul>
+    </section>
+    <section class="card">
+        <h2>@L["Capacity_Downtime"]</h2>
+        <div class="form-grid inline-editor">
+            <label class="field"><span>@L["Capacity_Start"]</span><input class="input" type="datetime-local" @bind="_downStart" /></label>
+            <label class="field"><span>@L["Capacity_End"]</span><input class="input" type="datetime-local" @bind="_downEnd" /></label>
+            <label class="field"><span>@L["Capacity_Reason"]</span><input class="input" @bind="_downReason" /></label>
+            <button class="btn btn-primary" @onclick="AddDowntimeAsync">@L["Common_Add"]</button>
+        </div>
+        <ul class="compact-list">
+            @foreach (var item in _profile.Downtimes) { <li><span>@item.StartUtc.ToLocalTime().ToString("g") – @item.EndUtc.ToLocalTime().ToString("g") · @item.Reason</span><button class="icon-btn danger" aria-label="@L["Common_Delete"]" @onclick="() => DeleteDowntimeAsync(item.Id)">✕</button></li> }
+        </ul>
+    </section>
+    <section class="card">
+        <h2>@L["Capacity_Setups"]</h2>
+        <div class="form-grid inline-editor">
+            <label class="field"><span>@L["Capacity_From"]</span><input class="input" @bind="_setupFrom" /></label>
+            <label class="field"><span>@L["Capacity_To"]</span><input class="input" @bind="_setupTo" /></label>
+            <label class="field"><span>@L["Capacity_Minutes"]</span><input class="input" type="number" min="0" max="1440" @bind="_setupMinutes" /></label>
+            <button class="btn btn-primary" @onclick="AddSetupAsync">@L["Common_Add"]</button>
+        </div>
+        <ul class="compact-list">
+            @foreach (var item in _profile.SetupTransitions) { <li><span>@item.FromFamily → @item.ToFamily: @item.DurationMinutes min</span><button class="icon-btn danger" aria-label="@L["Common_Delete"]" @onclick="() => DeleteSetupAsync(item.Id)">✕</button></li> }
+        </ul>
+    </section>
+}
+
+@code {
+    [Parameter] public int WorkCenterId { get; set; }
+    private CapacityProfileDto _profile = new([], [], []);
+    private DayOfWeek _shiftDay = DayOfWeek.Monday;
+    private TimeOnly _shiftStart = new(6, 0), _shiftEnd = new(14, 0);
+    private DateTime _downStart = DateTime.Now, _downEnd = DateTime.Now.AddHours(1);
+    private string _downReason = "";
+    private string _setupFrom = "DEFAULT", _setupTo = "DEFAULT";
+    private int _setupMinutes;
+    private bool _loading = true;
+    private string? _error;
+
+    protected override async Task OnParametersSetAsync() => await ReloadAsync();
+    private async Task ReloadAsync() { if (Backend.Mode == BackendMode.Server) _profile = await CapacityApi.GetAsync(WorkCenterId) ?? new([], [], []); _loading = false; }
+    private async Task AddShiftAsync() => await SaveAsync(await CapacityApi.SaveShiftAsync(new(0, WorkCenterId, _shiftDay, Minute(_shiftStart), Minute(_shiftEnd))));
+    private async Task AddDowntimeAsync() => await SaveAsync(await CapacityApi.SaveDowntimeAsync(new(0, WorkCenterId, _downStart.ToUniversalTime(), _downEnd.ToUniversalTime(), _downReason)));
+    private async Task AddSetupAsync() => await SaveAsync(await CapacityApi.SaveSetupAsync(new(0, WorkCenterId, _setupFrom, _setupTo, _setupMinutes)));
+    private async Task SaveAsync<T>(ServerResult<T> result) { _error = result.Error?.Message; if (result.IsSuccess) await ReloadAsync(); }
+    private async Task DeleteAsync(string resource, int id) { _error = (await CapacityApi.DeleteAsync(resource, id))?.Message; if (_error is null) await ReloadAsync(); }
+    private Task DeleteShiftAsync(int id) => DeleteAsync("shifts", id);
+    private Task DeleteDowntimeAsync(int id) => DeleteAsync("downtimes", id);
+    private Task DeleteSetupAsync(int id) => DeleteAsync("setup-transitions", id);
+    private static int Minute(TimeOnly value) => value.Hour * 60 + value.Minute;
+    private static string Time(int minute) => $"{minute / 60:00}:{minute % 60:00}";
+}

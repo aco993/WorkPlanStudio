@@ -21,4 +21,7 @@ public sealed record ScheduledOperation(
 {
     /// <summary>Processing time of this placement, in seconds.</summary>
     public long DurationSeconds => EndSeconds - StartSeconds;
+
+    /// <summary>Sequence-dependent setup included at the beginning of this placement.</summary>
+    public long SetupSeconds { get; init; }
 }

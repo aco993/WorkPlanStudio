@@ -18,6 +18,11 @@ builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.
 // as the .resx files (WorkPlanStudio.Resources), so the resource base name
 // matches the embedded resource name exactly.
 builder.Services.AddLocalization();
+builder.Services.AddScoped<BackendState>();
+builder.Services.AddScoped<ServerSession>();
+builder.Services.AddScoped<ProductionOrderService>();
+builder.Services.AddScoped<CapacityService>();
+builder.Services.AddScoped<ScheduleRunService>();
 
 // EF Core + SQLite, running entirely in the browser.
 var databaseOptions = new BrowserDatabaseOptions("/data/workplan.db", SchemaVersion: 3);

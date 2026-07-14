@@ -20,22 +20,4 @@
     <WarningsNotAsErrors>$(WarningsNotAsErrors);WASM0001</WarningsNotAsErrors>
   </PropertyGroup>
 
-  <!--
-    Security advisory triage (NuGet audit stays ON and strict for everything else).
-
-    GHSA-2m69-gcr7-jv3q affects the native SQLite bundled by SQLitePCLRaw.lib.e_sqlite3
-    2.1.11, which EF Core 10 pulls in transitively. It is a SQLite-engine CVE that
-    requires processing crafted SQL / database content — not reachable here: the app
-    owns a single, self-created, local SQLite file and runs no untrusted SQL.
-
-    The only non-vulnerable line is SQLitePCLRaw 3.x, a major restructure that EF Core
-    10.0.9 was not built or tested against and that would risk the app's headline
-    feature (SQLite relinked to WebAssembly). We therefore suppress this one advisory,
-    with justification, rather than take a destabilising bump or weaken the audit.
-    Revisit when Microsoft.Data.Sqlite adopts SQLitePCLRaw 3.x. See CHANGELOG.
-  -->
-  <ItemGroup>
-    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-2m69-gcr7-jv3q" />
-  </ItemGroup>
-
 </Project>

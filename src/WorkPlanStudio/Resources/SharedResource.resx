@@ -289,4 +289,50 @@
   <data name="Sched_Ai_FailureTimeout" xml:space="preserve"><value>request timed out</value></data>
   <data name="Sched_Ai_FailureResponse" xml:space="preserve"><value>invalid provider response</value></data>
   <data name="Sched_Ai_FailureUnavailable" xml:space="preserve"><value>provider unavailable</value></data>
+  <data name="Auth_LoginTitle" xml:space="preserve"><value>Sign in</value></data>
+  <data name="Auth_RegisterTitle" xml:space="preserve"><value>Create account</value></data>
+  <data name="Auth_ServerMode" xml:space="preserve"><value>Server mode protects data with an authenticated, HttpOnly session.</value></data>
+  <data name="Auth_Email" xml:space="preserve"><value>Email</value></data>
+  <data name="Auth_Password" xml:space="preserve"><value>Password</value></data>
+  <data name="Auth_Login" xml:space="preserve"><value>Sign in</value></data>
+  <data name="Auth_Register" xml:space="preserve"><value>Create account</value></data>
+  <data name="Auth_HaveAccount" xml:space="preserve"><value>I already have an account</value></data>
+  <data name="Auth_NeedAccount" xml:space="preserve"><value>Create an account</value></data>
+  <data name="Auth_Logout" xml:space="preserve"><value>Sign out</value></data>
+  <data name="Auth_ServerUnavailableTitle" xml:space="preserve"><value>Server unavailable</value></data>
+  <data name="Auth_ServerUnavailable" xml:space="preserve"><value>The production API could not be reached. Retry when the service is healthy.</value></data>
+  <data name="Mode_Server" xml:space="preserve"><value>Server</value></data>
+  <data name="Mode_Offline" xml:space="preserve"><value>Offline demo</value></data>
+  <data name="Common_Add" xml:space="preserve"><value>Add</value></data>
+  <data name="Common_Select" xml:space="preserve"><value>Select</value></data>
+  <data name="Common_ServerOnly" xml:space="preserve"><value>This production function requires a server connection.</value></data>
+  <data name="Nav_ProductionOrders" xml:space="preserve"><value>Production orders</value></data>
+  <data name="Nav_ProductionSchedule" xml:space="preserve"><value>Production schedule</value></data>
+  <data name="Orders_Title" xml:space="preserve"><value>Production orders</value></data>
+  <data name="Orders_Subtitle" xml:space="preserve"><value>Release immutable routing snapshots for production.</value></data>
+  <data name="Orders_New" xml:space="preserve"><value>New order</value></data>
+  <data name="Orders_Edit" xml:space="preserve"><value>Edit order</value></data>
+  <data name="Orders_ServerOnly" xml:space="preserve"><value>Production orders require a server connection.</value></data>
+  <data name="Orders_Number" xml:space="preserve"><value>Order</value></data>
+  <data name="Orders_Routing" xml:space="preserve"><value>Routing</value></data>
+  <data name="Orders_Quantity" xml:space="preserve"><value>Quantity</value></data>
+  <data name="Orders_Release" xml:space="preserve"><value>Release</value></data>
+  <data name="Orders_Due" xml:space="preserve"><value>Due</value></data>
+  <data name="Orders_Priority" xml:space="preserve"><value>Priority</value></data>
+  <data name="Capacity_Title" xml:space="preserve"><value>Capacity profile</value></data>
+  <data name="Capacity_Subtitle" xml:space="preserve"><value>Configure weekly shifts, downtime and sequence-dependent setup times.</value></data>
+  <data name="Capacity_Shifts" xml:space="preserve"><value>Weekly shifts</value></data>
+  <data name="Capacity_Day" xml:space="preserve"><value>Day</value></data>
+  <data name="Capacity_Start" xml:space="preserve"><value>Start</value></data>
+  <data name="Capacity_End" xml:space="preserve"><value>End</value></data>
+  <data name="Capacity_Downtime" xml:space="preserve"><value>Downtime</value></data>
+  <data name="Capacity_Reason" xml:space="preserve"><value>Reason</value></data>
+  <data name="Capacity_Setups" xml:space="preserve"><value>Setup transitions</value></data>
+  <data name="Capacity_From" xml:space="preserve"><value>From family</value></data>
+  <data name="Capacity_To" xml:space="preserve"><value>To family</value></data>
+  <data name="Capacity_Minutes" xml:space="preserve"><value>Minutes</value></data>
+  <data name="ProductionSchedule_Title" xml:space="preserve"><value>Production scheduling</value></data>
+  <data name="ProductionSchedule_Subtitle" xml:space="preserve"><value>Run, monitor and cancel durable scheduling jobs.</value></data>
+  <data name="ProductionSchedule_Create" xml:space="preserve"><value>Create schedule</value></data>
+  <data name="ProductionSchedule_Runs" xml:space="preserve"><value>Schedule runs</value></data>
 </root>

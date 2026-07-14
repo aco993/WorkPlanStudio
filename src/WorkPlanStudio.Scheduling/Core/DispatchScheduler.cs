@@ -34,10 +34,11 @@ public sealed class DispatchScheduler : IScheduler
         IReadOnlyDictionary<int, long> dueByJob,
         CancellationToken cancellationToken)
     {
-        // Each work center keeps one "free at" clock per parallel slot.
-        var slotFreeAt = new Dictionary<int, long[]>(context.Machines.Count);
+        // Each work center keeps one state per parallel slot.
+        var slotStates = new Dictionary<int, SlotState[]>(context.Machines.Count);
         foreach (var machine in context.Machines.Values)
-            slotFreeAt[machine.WorkCenterId] = new long[machine.ParallelCapacity];
+            slotStates[machine.WorkCenterId] = Enumerable.Range(0, machine.ParallelCapacity)
+                .Select(_ => new SlotState()).ToArray();
 
         var operations = new List<ScheduledOperation>();
         var jobOutcomes = new List<JobSchedule>(jobPriorityOrder.Count);
@@ -51,17 +52,19 @@ public sealed class DispatchScheduler : IScheduler
             foreach (var step in job.Steps)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                var slots = slotFreeAt[step.WorkCenterId];
-                int slot = EarliestSlot(slots);
+                var machine = context.Machines[step.WorkCenterId];
+                var slots = slotStates[step.WorkCenterId];
+                var candidate = EarliestPlacement(machine, slots, step, jobReadyAt);
 
-                long start = Math.Max(jobReadyAt, slots[slot]);
-                long end = checked(start + step.DurationSeconds);
-
-                slots[slot] = end;
-                jobReadyAt = end;
+                slots[candidate.Slot].FreeAt = candidate.End;
+                slots[candidate.Slot].SetupFamily = step.SetupFamily;
+                jobReadyAt = candidate.End;
 
                 operations.Add(new ScheduledOperation(
-                    job.Id, step.StepNumber, step.WorkCenterId, slot, start, end));
+                    job.Id, step.StepNumber, step.WorkCenterId, candidate.Slot, candidate.Start, candidate.End)
+                {
+                    SetupSeconds = candidate.SetupSeconds
+                });
             }
 
             long due = dueByJob.TryGetValue(job.Id, out var d) ? d : jobReadyAt;
@@ -71,13 +74,55 @@ public sealed class DispatchScheduler : IScheduler
         return new Schedule(operations, jobOutcomes);
     }
 
-    /// <summary>Index of the slot that frees up first (lowest index wins ties — deterministic).</summary>
-    private static int EarliestSlot(long[] slots)
+    private static Placement EarliestPlacement(
+        MachineCapacity machine,
+        IReadOnlyList<SlotState> slots,
+        JobStep step,
+        long jobReadyAt)
     {
-        int best = 0;
-        for (int i = 1; i < slots.Length; i++)
-            if (slots[i] < slots[best])
-                best = i;
-        return best;
+        Placement? best = null;
+        for (var slot = 0; slot < slots.Count; slot++)
+        {
+            var setup = SetupSeconds(machine, slots[slot].SetupFamily, step.SetupFamily);
+            var duration = checked(setup + step.DurationSeconds);
+            var earliest = Math.Max(jobReadyAt, slots[slot].FreeAt);
+            var start = NextAvailableStart(machine.AvailabilityWindows, earliest, duration);
+            var candidate = new Placement(slot, start, checked(start + duration), setup);
+            if (best is null || candidate.End < best.End ||
+                candidate.End == best.End && candidate.Start < best.Start ||
+                candidate.End == best.End && candidate.Start == best.Start && candidate.Slot < best.Slot)
+                best = candidate;
+        }
+        return best ?? throw new InvalidOperationException($"Work center {machine.WorkCenterId} has no capacity slots.");
     }
+
+    private static long SetupSeconds(MachineCapacity machine, string? from, string to)
+    {
+        if (from is null || string.Equals(from, to, StringComparison.Ordinal))
+            return 0;
+        return machine.SetupDurations.FirstOrDefault(item =>
+            string.Equals(item.FromFamily, from, StringComparison.Ordinal) &&
+            string.Equals(item.ToFamily, to, StringComparison.Ordinal))?.DurationSeconds ?? 0;
+    }
+
+    private static long NextAvailableStart(IReadOnlyList<CapacityWindow> windows, long earliest, long duration)
+    {
+        if (windows.Count == 0)
+            return earliest;
+        foreach (var window in windows)
+        {
+            var candidate = Math.Max(earliest, window.StartSeconds);
+            if (candidate <= window.EndSeconds && duration <= window.EndSeconds - candidate)
+                return candidate;
+        }
+        throw new InvalidOperationException("The planning horizon has insufficient calendar capacity.");
+    }
+
+    private sealed class SlotState
+    {
+        public long FreeAt { get; set; }
+        public string? SetupFamily { get; set; }
+    }
+
+    private sealed record Placement(int Slot, long Start, long End, long SetupSeconds);
 }

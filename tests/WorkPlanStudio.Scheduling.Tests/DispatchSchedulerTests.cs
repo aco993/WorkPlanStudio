@@ -71,4 +71,50 @@ public class DispatchSchedulerTests
         Assert.Equal(500, op.StartSeconds);
         Assert.Equal(600, op.EndSeconds);
     }
+
+    [Fact]
+    public void Availability_windows_move_work_to_the_next_feasible_shift()
+    {
+        var machine = Machine(1) with
+        {
+            AvailabilityWindows = [new CapacityWindow(100, 200), new CapacityWindow(300, 500)]
+        };
+        var ctx = Context(new SchedulingParameters(), [machine], Job(1, Step(10, 1, 150)));
+
+        var operation = new DispatchScheduler().Run(ctx, [0], FarDue(ctx)).Operations.Single();
+
+        Assert.Equal(300, operation.StartSeconds);
+        Assert.Equal(450, operation.EndSeconds);
+    }
+
+    [Fact]
+    public void Sequence_dependent_setup_is_applied_between_families()
+    {
+        var machine = Machine(1) with
+        {
+            SetupDurations = [new SetupDuration("A", "B", 30)]
+        };
+        var first = new JobStep(10, 1, 100, "A");
+        var second = new JobStep(10, 1, 100, "B");
+        var ctx = Context(new SchedulingParameters(), [machine], Job(1, first), Job(2, second));
+
+        var schedule = new DispatchScheduler().Run(ctx, [0, 1], FarDue(ctx));
+        var operation = schedule.Operations.Single(item => item.JobId == 2);
+
+        Assert.Equal(30, operation.SetupSeconds);
+        Assert.Equal(100, operation.StartSeconds);
+        Assert.Equal(230, operation.EndSeconds);
+    }
+
+    [Fact]
+    public void Insufficient_calendar_capacity_fails_explicitly()
+    {
+        var machine = Machine(1) with { AvailabilityWindows = [new CapacityWindow(0, 50)] };
+        var ctx = Context(new SchedulingParameters(), [machine], Job(1, Step(10, 1, 100)));
+
+        var error = Assert.Throws<InvalidOperationException>(() =>
+            new DispatchScheduler().Run(ctx, [0], FarDue(ctx)));
+
+        Assert.Contains("insufficient calendar capacity", error.Message, StringComparison.OrdinalIgnoreCase);
+    }
 }

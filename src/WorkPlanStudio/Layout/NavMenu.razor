@@ -1,4 +1,5 @@
 @inject IStringLocalizer<SharedResource> L
+@inject BackendState Backend
 
 <nav class="nav-menu">
     <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
@@ -36,6 +37,12 @@
         </svg>
         <span>@L["Nav_Scheduling"]</span>
     </NavLink>
+
+    @if (Backend.Mode == BackendMode.Server)
+    {
+        <NavLink class="nav-link" href="production-orders"><span class="nav-icon">PO</span><span>@L["Nav_ProductionOrders"]</span></NavLink>
+        <NavLink class="nav-link" href="production-schedule"><span class="nav-icon">BG</span><span>@L["Nav_ProductionSchedule"]</span></NavLink>
+    }
 
     <NavLink class="nav-link" href="about">
         <svg class="nav-icon" viewBox="0 0 24 24">

@@ -2,6 +2,7 @@
 @inject IStringLocalizer<SharedResource> L
 @inject WorkCenterService Centers
 @inject ILogger<WorkCenters> Logger
+@inject BackendState Backend
 
 <PageTitle>@L["WorkCenters_Title"] · WorkPlan Studio</PageTitle>
 
@@ -60,6 +61,10 @@ else
                         </td>
                         <td class="num muted">@usage</td>
                         <td class="actions-col">
+                            @if (Backend.Mode == BackendMode.Server)
+                            {
+                                <a class="icon-btn" href="work-centers/@wc.Id/capacity" title="@L["Capacity_Title"]">⚙</a>
+                            }
                             <button class="icon-btn" title="@L["Common_Edit"]" @onclick="() => Edit(wc)">
                                 <svg viewBox="0 0 24 24"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
                             </button>

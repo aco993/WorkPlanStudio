@@ -250,9 +250,12 @@
                                 @(_aiBusy ? L["Sched_Ai_Thinking"] : L["Sched_Ai_AskAi"])
                             </button>
                         }
+                        @if (!Assistant.UsesServerProvider)
+                        {
                         <button class="icon-btn" aria-label="@L["Sched_Ai_Configure"]" title="@L["Sched_Ai_Configure"]" @onclick="OpenAiSettingsAsync">
                             <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3m-4.9-7.1-2.1 2.1m-8 8-2.1 2.1m0-12.2 2.1 2.1m8 8 2.1 2.1"/></svg>
                         </button>
+                        }
                     </div>
                 </div>
                 <div class="card-body">
