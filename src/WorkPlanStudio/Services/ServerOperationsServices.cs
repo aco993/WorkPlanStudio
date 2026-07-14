@@ -86,3 +86,36 @@ public sealed class ScheduleRunService(ServerSession session)
         return await ProductionOrderService.ResultAsync<ScheduleRunDto>(response, cancellationToken);
     }
 }
+
+public sealed class AccountSecurityService(ServerSession session)
+{
+    public Task<MfaStatusDto?> GetStatusAsync(CancellationToken cancellationToken = default) =>
+        session.GetFromJsonAsync<MfaStatusDto>("api/auth/mfa/status", cancellationToken);
+
+    public async Task<ServerResult<MfaSetupDto>> SetupAsync(string password, CancellationToken cancellationToken = default)
+    {
+        using var response = await session.SendAsync(HttpMethod.Post, "api/auth/mfa/setup", new MfaPasswordRequest(password), cancellationToken);
+        return await ProductionOrderService.ResultAsync<MfaSetupDto>(response, cancellationToken);
+    }
+
+    public async Task<ServerResult<MfaRecoveryCodesDto>> EnableAsync(
+        string password, string code, CancellationToken cancellationToken = default)
+    {
+        using var response = await session.SendAsync(HttpMethod.Post, "api/auth/mfa/enable", new MfaEnableRequest(password, code), cancellationToken);
+        return await ProductionOrderService.ResultAsync<MfaRecoveryCodesDto>(response, cancellationToken);
+    }
+
+    public async Task<ServerResult<MfaRecoveryCodesDto>> RegenerateAsync(
+        string password, CancellationToken cancellationToken = default)
+    {
+        using var response = await session.SendAsync(
+            HttpMethod.Post, "api/auth/mfa/recovery-codes", new MfaPasswordRequest(password), cancellationToken);
+        return await ProductionOrderService.ResultAsync<MfaRecoveryCodesDto>(response, cancellationToken);
+    }
+
+    public async Task<ApiError?> DisableAsync(string password, string code, CancellationToken cancellationToken = default)
+    {
+        using var response = await session.SendAsync(HttpMethod.Post, "api/auth/mfa/disable", new MfaEnableRequest(password, code), cancellationToken);
+        return response.IsSuccessStatusCode ? null : await ProductionOrderService.ErrorAsync(response, cancellationToken);
+    }
+}

@@ -1,7 +1,7 @@
 @inject IStringLocalizer<SharedResource> L
 @inject BackendState Backend
 
-<nav class="nav-menu">
+<nav class="nav-menu" aria-label="@L["Accessibility_PrimaryNavigation"]">
     <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
         <svg class="nav-icon" viewBox="0 0 24 24">
             <rect x="3" y="3" width="7" height="7" rx="1" />
@@ -42,6 +42,7 @@
     {
         <NavLink class="nav-link" href="production-orders"><span class="nav-icon">PO</span><span>@L["Nav_ProductionOrders"]</span></NavLink>
         <NavLink class="nav-link" href="production-schedule"><span class="nav-icon">BG</span><span>@L["Nav_ProductionSchedule"]</span></NavLink>
+        <NavLink class="nav-link" href="account-security"><span class="nav-icon" aria-hidden="true">2F</span><span>@L["Nav_AccountSecurity"]</span></NavLink>
     }
 
     <NavLink class="nav-link" href="about">

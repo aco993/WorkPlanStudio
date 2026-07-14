@@ -374,6 +374,12 @@ namespace WorkPlanStudio.Persistence.Migrations.Sqlite
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("AttemptCount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("CancellationRequestedUtc")
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTime?>("CompletedUtc")
                         .HasColumnType("TEXT");
 
@@ -382,6 +388,13 @@ namespace WorkPlanStudio.Persistence.Migrations.Sqlite
 
                     b.Property<string>("ErrorCode")
                         .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("LeaseExpiresUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LeaseOwner")
+                        .HasMaxLength(200)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("OwnerId")
@@ -412,6 +425,8 @@ namespace WorkPlanStudio.Persistence.Migrations.Sqlite
                     b.HasKey("Id");
 
                     b.HasIndex("OwnerId", "CreatedUtc");
+
+                    b.HasIndex("Status", "LeaseExpiresUtc");
 
                     b.ToTable("ScheduleRuns");
                 });

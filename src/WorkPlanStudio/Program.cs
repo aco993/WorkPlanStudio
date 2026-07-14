@@ -23,6 +23,7 @@ builder.Services.AddScoped<ServerSession>();
 builder.Services.AddScoped<ProductionOrderService>();
 builder.Services.AddScoped<CapacityService>();
 builder.Services.AddScoped<ScheduleRunService>();
+builder.Services.AddScoped<AccountSecurityService>();
 
 // EF Core + SQLite, running entirely in the browser.
 var databaseOptions = new BrowserDatabaseOptions("/data/workplan.db", SchemaVersion: 3);

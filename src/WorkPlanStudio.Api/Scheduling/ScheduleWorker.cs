@@ -12,56 +12,106 @@ public sealed class ScheduleWorker(
     IServiceScopeFactory scopeFactory,
     ILogger<ScheduleWorker> logger) : BackgroundService
 {
+    private static readonly TimeSpan PollInterval = TimeSpan.FromSeconds(2);
+    private static readonly TimeSpan LeaseDuration = TimeSpan.FromMinutes(2);
+    private static readonly TimeSpan LeaseHeartbeat = TimeSpan.FromSeconds(10);
+    private readonly string _workerId = $"{Environment.MachineName}:{Environment.ProcessId}:{Guid.NewGuid():N}";
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        await RecoverInterruptedRunsAsync(stoppingToken);
-        await foreach (var id in queue.ReadAllAsync(stoppingToken))
+        logger.LogInformation("Schedule worker {WorkerId} started with durable database leases", _workerId);
+        while (!stoppingToken.IsCancellationRequested)
         {
-            var cancellationToken = queue.Register(id, stoppingToken);
-            try
-            {
-                await RunAsync(id, cancellationToken);
-            }
-            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-            {
-                await FinishAsync(id, ScheduleRunStatus.Cancelled, "cancelled", null, stoppingToken);
-            }
-            catch (Exception exception)
-            {
-                logger.LogError(exception, "Schedule run {ScheduleRunId} failed", id);
-                await FinishAsync(id, ScheduleRunStatus.Failed, "scheduling_failed", null, stoppingToken);
-            }
-            finally
-            {
-                queue.Complete(id);
-            }
+            await QueueEligibleRunsAsync(stoppingToken);
+            while (queue.TryRead(out var id))
+                await ProcessAsync(id, stoppingToken);
+            await Task.Delay(PollInterval, stoppingToken);
         }
     }
 
-    private async Task RecoverInterruptedRunsAsync(CancellationToken cancellationToken)
+    private async Task QueueEligibleRunsAsync(CancellationToken cancellationToken)
     {
         await using var scope = scopeFactory.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<ProductionDbContext>();
-        var pending = await db.ScheduleRuns
-            .Where(run => run.Status == ScheduleRunStatus.Queued || run.Status == ScheduleRunStatus.Running)
+        var now = DateTime.UtcNow;
+        var ids = await db.ScheduleRuns.AsNoTracking()
+            .Where(run => run.CancellationRequestedUtc == null &&
+                          (run.Status == ScheduleRunStatus.Queued ||
+                           (run.Status == ScheduleRunStatus.Running &&
+                            (run.LeaseExpiresUtc == null || run.LeaseExpiresUtc < now))))
             .OrderBy(run => run.CreatedUtc)
+            .Select(run => run.Id)
+            .Take(100)
             .ToListAsync(cancellationToken);
-        foreach (var run in pending)
+        foreach (var id in ids)
+            _ = queue.TryQueue(id);
+    }
+
+    private async Task ProcessAsync(Guid id, CancellationToken stoppingToken)
+    {
+        if (!await TryClaimAsync(id, stoppingToken))
+            return;
+
+        var cancellationToken = queue.Register(id, stoppingToken);
+        using var monitorStop = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
+        var monitor = MonitorLeaseAsync(id, monitorStop.Token);
+        try
         {
-            run.Status = ScheduleRunStatus.Queued;
-            run.ProgressPercent = 0;
-            run.StartedUtc = null;
-            if (!queue.TryQueue(run.Id))
-            {
-                run.Status = ScheduleRunStatus.Failed;
-                run.ErrorCode = "queue_capacity_exceeded";
-                run.CompletedUtc = DateTime.UtcNow;
-            }
+            await RunAsync(id, cancellationToken);
         }
-        if (pending.Count > 0)
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            await db.SaveChangesAsync(cancellationToken);
-            logger.LogInformation("Recovered {Count} persisted schedule runs after startup", pending.Count);
+            await FinishAsync(id, ScheduleRunStatus.Cancelled, "cancelled", null, CancellationToken.None);
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(exception, "Schedule run {ScheduleRunId} failed on worker {WorkerId}", id, _workerId);
+            await FinishAsync(id, ScheduleRunStatus.Failed, "scheduling_failed", null, CancellationToken.None);
+        }
+        finally
+        {
+            monitorStop.Cancel();
+            try
+            {
+                await monitor;
+            }
+            catch (OperationCanceledException) when (monitorStop.IsCancellationRequested)
+            {
+            }
+            queue.Complete(id);
+        }
+    }
+
+    private async Task<bool> TryClaimAsync(Guid id, CancellationToken cancellationToken)
+    {
+        await using var scope = scopeFactory.CreateAsyncScope();
+        var leases = scope.ServiceProvider.GetRequiredService<ScheduleRunLeaseManager>();
+        var now = DateTime.UtcNow;
+        return await leases.TryClaimAsync(id, _workerId, now, LeaseDuration, cancellationToken);
+    }
+
+    private async Task MonitorLeaseAsync(Guid id, CancellationToken cancellationToken)
+    {
+        using var timer = new PeriodicTimer(LeaseHeartbeat);
+        while (await timer.WaitForNextTickAsync(cancellationToken))
+        {
+            await using var scope = scopeFactory.CreateAsyncScope();
+            var db = scope.ServiceProvider.GetRequiredService<ProductionDbContext>();
+            var state = await db.ScheduleRuns.AsNoTracking()
+                .Where(run => run.Id == id)
+                .Select(run => new { run.LeaseOwner, run.CancellationRequestedUtc })
+                .FirstOrDefaultAsync(cancellationToken);
+            if (state is null || state.LeaseOwner != _workerId || state.CancellationRequestedUtc is not null)
+            {
+                queue.Cancel(id);
+                return;
+            }
+            var leases = scope.ServiceProvider.GetRequiredService<ScheduleRunLeaseManager>();
+            if (await leases.RenewAsync(id, _workerId, DateTime.UtcNow.Add(LeaseDuration), cancellationToken) != 1)
+            {
+                queue.Cancel(id);
+                return;
+            }
         }
     }
 
@@ -69,13 +119,16 @@ public sealed class ScheduleWorker(
     {
         await using var scope = scopeFactory.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<ProductionDbContext>();
-        var run = await db.ScheduleRuns.FirstOrDefaultAsync(item => item.Id == id, cancellationToken);
-        if (run is null || run.Status == ScheduleRunStatus.Cancelled)
+        var run = await db.ScheduleRuns.FirstOrDefaultAsync(
+            item => item.Id == id && item.LeaseOwner == _workerId &&
+                    item.Status == ScheduleRunStatus.Running && item.CancellationRequestedUtc == null,
+            cancellationToken);
+        if (run is null)
+        {
+            queue.Cancel(id);
+            cancellationToken.ThrowIfCancellationRequested();
             return;
-        run.Status = ScheduleRunStatus.Running;
-        run.ProgressPercent = 5;
-        run.StartedUtc = DateTime.UtcNow;
-        await db.SaveChangesAsync(cancellationToken);
+        }
 
         var request = JsonSerializer.Deserialize<CreateScheduleRunRequest>(run.ParametersJson)
             ?? throw new InvalidOperationException("Schedule parameters are invalid.");
@@ -112,10 +165,7 @@ public sealed class ScheduleWorker(
             Weight = order.Priority,
             Steps = snapshots[order.Id].Operations.OrderBy(operation => operation.OperationNumber)
                 .Select((operation, index) => new JobStep(
-                    index + 1,
-                    operation.WorkCenterId,
-                    ProcessingSeconds(operation, order.Quantity),
-                    operation.SetupFamily))
+                    index + 1, operation.WorkCenterId, ProcessingSeconds(operation, order.Quantity), operation.SetupFamily))
                 .ToList()
         }).ToList();
         var parameters = new SchedulingParameters
@@ -128,10 +178,21 @@ public sealed class ScheduleWorker(
         };
         var result = new SchedulingEngine().RunCancellable(new SchedulingContext(jobs, machines, parameters), cancellationToken);
 
-        run.Status = ScheduleRunStatus.Completed;
-        run.ProgressPercent = 100;
-        run.ResultJson = JsonSerializer.Serialize(new { HorizonStartUtc = horizonStart, Result = result });
-        run.CompletedUtc = DateTime.UtcNow;
+        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+        var leases = scope.ServiceProvider.GetRequiredService<ScheduleRunLeaseManager>();
+        var completed = await leases.TryCompleteAsync(
+            id,
+            _workerId,
+            JsonSerializer.Serialize(new { HorizonStartUtc = horizonStart, Result = result }),
+            DateTime.UtcNow,
+            cancellationToken);
+        if (completed != 1)
+        {
+            await transaction.RollbackAsync(CancellationToken.None);
+            queue.Cancel(id);
+            cancellationToken.ThrowIfCancellationRequested();
+            throw new InvalidOperationException("The schedule run lease was lost before completion.");
+        }
         var trackedOrders = await db.ProductionOrders.Where(order => order.OwnerId == run.OwnerId && request.ProductionOrderIds.Contains(order.Id))
             .ToListAsync(cancellationToken);
         foreach (var order in trackedOrders.Where(order => order.Status == ProductionOrderStatus.Released))
@@ -140,25 +201,33 @@ public sealed class ScheduleWorker(
             order.ModifiedUtc = DateTime.UtcNow;
         }
         await db.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
     }
 
-    private async Task FinishAsync(Guid id, ScheduleRunStatus status, string error, string? result, CancellationToken cancellationToken)
+    private async Task FinishAsync(
+        Guid id,
+        ScheduleRunStatus status,
+        string error,
+        string? result,
+        CancellationToken cancellationToken)
     {
         await using var scope = scopeFactory.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<ProductionDbContext>();
-        var run = await db.ScheduleRuns.FirstOrDefaultAsync(item => item.Id == id, cancellationToken);
-        if (run is null)
-            return;
-        run.Status = status;
-        run.ErrorCode = error;
-        run.ResultJson = result;
-        run.CompletedUtc = DateTime.UtcNow;
-        await db.SaveChangesAsync(cancellationToken);
+        await db.ScheduleRuns.Where(run => run.Id == id && run.LeaseOwner == _workerId)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(run => run.Status, status)
+                .SetProperty(run => run.ErrorCode, error)
+                .SetProperty(run => run.ResultJson, result)
+                .SetProperty(run => run.CompletedUtc, DateTime.UtcNow)
+                .SetProperty(run => run.LeaseOwner, (string?)null)
+                .SetProperty(run => run.LeaseExpiresUtc, (DateTime?)null)
+                .SetProperty(run => run.Version, run => run.Version + 1), cancellationToken);
     }
 
     private static long ProcessingSeconds(OperationDto operation, int quantity) => checked((long)decimal.Round(
         checked((operation.SetupTimeMinutes + checked(operation.TimePerPieceMinutes * quantity)) * 60m),
         MidpointRounding.ToEven));
 
-    private static long Seconds(DateTime horizonStart, DateTime value) => checked((long)(value.ToUniversalTime() - horizonStart).TotalSeconds);
+    private static long Seconds(DateTime horizonStart, DateTime value) =>
+        checked((long)(value.ToUniversalTime() - horizonStart).TotalSeconds);
 }

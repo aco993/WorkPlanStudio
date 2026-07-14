@@ -335,4 +335,46 @@
   <data name="ProductionSchedule_Subtitle" xml:space="preserve"><value>Run, monitor and cancel durable scheduling jobs.</value></data>
   <data name="ProductionSchedule_Create" xml:space="preserve"><value>Create schedule</value></data>
   <data name="ProductionSchedule_Runs" xml:space="preserve"><value>Schedule runs</value></data>
+  <data name="Auth_AuthenticatorCode" xml:space="preserve"><value>Authenticator code</value></data>
+  <data name="Auth_RecoveryCode" xml:space="preserve"><value>Recovery code</value></data>
+  <data name="Auth_UseRecoveryCode" xml:space="preserve"><value>Use a recovery code instead</value></data>
+  <data name="Auth_TwoFactorRequired" xml:space="preserve"><value>Enter the code from your authenticator app or use a recovery code.</value></data>
+  <data name="Accessibility_SkipToContent" xml:space="preserve"><value>Skip to main content</value></data>
+  <data name="Accessibility_PrimaryNavigation" xml:space="preserve"><value>Primary navigation</value></data>
+  <data name="Common_Loading" xml:space="preserve"><value>Loading</value></data>
+  <data name="Nav_AccountSecurity" xml:space="preserve"><value>Account security</value></data>
+  <data name="Security_Title" xml:space="preserve"><value>Account security</value></data>
+  <data name="Security_Subtitle" xml:space="preserve"><value>Protect your production account with an authenticator and one-time recovery codes.</value></data>
+  <data name="Security_MfaTitle" xml:space="preserve"><value>Multi-factor authentication</value></data>
+  <data name="Security_MfaEnabled" xml:space="preserve"><value>Authenticator MFA is enabled.</value></data>
+  <data name="Security_MfaDisabled" xml:space="preserve"><value>Authenticator MFA is not enabled.</value></data>
+  <data name="Security_CodesLeft" xml:space="preserve"><value>Recovery codes remaining:</value></data>
+  <data name="Security_Setup" xml:space="preserve"><value>Set up authenticator</value></data>
+  <data name="Security_Enable" xml:space="preserve"><value>Verify and enable</value></data>
+  <data name="Security_Disable" xml:space="preserve"><value>Disable MFA</value></data>
+  <data name="Security_Regenerate" xml:space="preserve"><value>Generate new recovery codes</value></data>
+  <data name="Security_AddKey" xml:space="preserve"><value>Add this key to your authenticator app, then enter its six-digit code.</value></data>
+  <data name="Security_OpenAuthenticator" xml:space="preserve"><value>Open in authenticator app</value></data>
+  <data name="Security_RecoveryTitle" xml:space="preserve"><value>New recovery codes</value></data>
+  <data name="Security_RecoveryWarning" xml:space="preserve"><value>Save these codes now in a secure password manager. Each code works once and they will not be shown again.</value></data>
+  <data name="Security_EnabledSuccess" xml:space="preserve"><value>Multi-factor authentication is enabled.</value></data>
+  <data name="Security_RegeneratedSuccess" xml:space="preserve"><value>New recovery codes were generated. Previous codes no longer work.</value></data>
+  <data name="Security_DisabledSuccess" xml:space="preserve"><value>Multi-factor authentication is disabled.</value></data>
+  <data name="ProductionSchedule_Creating" xml:space="preserve"><value>Creating…</value></data>
+  <data name="ProductionSchedule_Summary" xml:space="preserve"><value>Scheduling summary</value></data>
+  <data name="ProductionSchedule_AvailableOrders" xml:space="preserve"><value>Available released orders</value></data>
+  <data name="ProductionSchedule_Selected" xml:space="preserve"><value>Selected orders</value></data>
+  <data name="ProductionSchedule_ActiveRuns" xml:space="preserve"><value>Active runs</value></data>
+  <data name="ProductionSchedule_NoOrders" xml:space="preserve"><value>No released orders are ready</value></data>
+  <data name="ProductionSchedule_NoOrdersHint" xml:space="preserve"><value>Create or release a production order before starting a schedule.</value></data>
+  <data name="ProductionSchedule_NoRuns" xml:space="preserve"><value>No schedule has been started yet.</value></data>
+  <data name="ProductionSchedule_Progress" xml:space="preserve"><value>Schedule progress</value></data>
+  <data name="ProductionSchedule_Queued" xml:space="preserve"><value>The scheduling run was queued.</value></data>
+  <data name="ProductionSchedule_CancelRequested" xml:space="preserve"><value>Cancellation was requested.</value></data>
+  <data name="Status_Scheduled" xml:space="preserve"><value>Scheduled</value></data>
+  <data name="Status_Completed" xml:space="preserve"><value>Completed</value></data>
+  <data name="Status_Cancelled" xml:space="preserve"><value>Cancelled</value></data>
+  <data name="Status_Queued" xml:space="preserve"><value>Queued</value></data>
+  <data name="Status_Running" xml:space="preserve"><value>Running</value></data>
+  <data name="Status_Failed" xml:space="preserve"><value>Failed</value></data>
 </root>

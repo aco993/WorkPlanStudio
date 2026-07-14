@@ -5,6 +5,7 @@
 @inject BackendState Backend
 @inject ServerSession Session
 
+<a class="skip-link" href="#main-content">@L["Accessibility_SkipToContent"]</a>
 <div class="app-shell @(_navOpen ? "nav-open" : null)">
     <aside class="sidebar">
         <div class="brand">
@@ -37,7 +38,7 @@
             <CultureSelector />
         </header>
 
-        <main class="page-body">
+        <main id="main-content" class="page-body" tabindex="-1">
             @Body
         </main>
     </div>

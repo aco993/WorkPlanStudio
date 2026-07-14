@@ -76,12 +76,7 @@ public static class ScheduleRunEndpoints
         };
         db.ScheduleRuns.Add(run);
         await db.SaveChangesAsync(cancellationToken);
-        if (!queue.TryQueue(run.Id))
-        {
-            db.ScheduleRuns.Remove(run);
-            await db.SaveChangesAsync(cancellationToken);
-            return Results.Json(new ApiError("schedule_queue_full", "Scheduling queue is full."), statusCode: StatusCodes.Status503ServiceUnavailable);
-        }
+        _ = queue.TryQueue(run.Id); // Durable DB polling is the fallback when the local wake-up channel is full.
         await EndpointSupport.AuditAsync(db, principal, context, "queue", run, request, cancellationToken);
         return Results.Accepted($"/api/schedule-runs/{run.Id}", run.ToDto());
     }
@@ -98,13 +93,14 @@ public static class ScheduleRunEndpoints
         if (run.Status is ScheduleRunStatus.Completed or ScheduleRunStatus.Failed or ScheduleRunStatus.Cancelled)
             return Results.Conflict(new ApiError("schedule_run_finished", "The schedule run is already finished."));
         queue.Cancel(id);
+        run.CancellationRequestedUtc = DateTime.UtcNow;
         if (run.Status == ScheduleRunStatus.Queued)
         {
             run.Status = ScheduleRunStatus.Cancelled;
             run.ErrorCode = "cancelled";
             run.CompletedUtc = DateTime.UtcNow;
-            await db.SaveChangesAsync(cancellationToken);
         }
+        await db.SaveChangesAsync(cancellationToken);
         await EndpointSupport.AuditAsync(db, principal, context, "cancel", run, null, cancellationToken);
         return Results.Accepted($"/api/schedule-runs/{id}", run.ToDto());
     }

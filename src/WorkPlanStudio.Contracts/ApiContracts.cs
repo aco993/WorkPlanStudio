@@ -4,9 +4,18 @@ namespace WorkPlanStudio.Contracts;
 
 public sealed record ApiError(string Code, string Message, IReadOnlyDictionary<string, string[]>? Errors = null);
 
-public sealed record AuthRequest(string Email, string Password);
+public sealed record AuthRequest(
+    string Email,
+    string Password,
+    string? TwoFactorCode = null,
+    string? RecoveryCode = null);
 public sealed record UserInfo(string Id, string Email, IReadOnlyList<string> Roles);
 public sealed record AntiforgeryToken(string Token);
+public sealed record MfaStatusDto(bool IsEnabled, bool HasAuthenticatorKey, int RecoveryCodesLeft);
+public sealed record MfaPasswordRequest(string CurrentPassword);
+public sealed record MfaEnableRequest(string CurrentPassword, string Code);
+public sealed record MfaSetupDto(string SharedKey, string AuthenticatorUri);
+public sealed record MfaRecoveryCodesDto(IReadOnlyList<string> RecoveryCodes);
 
 public sealed record WorkCenterDto(
     int Id,

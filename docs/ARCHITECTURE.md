@@ -29,7 +29,7 @@ flowchart LR
 
 All tenant data carries an `OwnerId`; endpoints apply owner filters before reads or mutation. Released work plans are copied into immutable production-order routing snapshots. A schedule request persists its parameters before queueing. The worker reloads only owner-scoped released orders and their snapshots, builds timezone/DST-aware capacity windows, subtracts downtime, applies sequence-dependent setup matrices and stores the result. Queued/running jobs are recovered after a process restart.
 
-The in-process worker is intentionally single-consumer. Scale the web container to one replica unless schedule claiming is moved to a distributed lease/queue. PostgreSQL remains the production source of truth.
+Each worker remains single-consumer, but PostgreSQL is now also the durable coordination boundary. Replicas atomically claim a run with a two-minute lease, renew it every ten seconds, persist cross-replica cancellation and reclaim only expired work. The local channel is a low-latency hint; database polling guarantees eventual pickup. See [ADR 0008](adr/0008-durable-schedule-run-leases.md).
 
 ## Offline demo
 
@@ -37,4 +37,4 @@ Auto mode probes readiness and falls back to local browser storage only when the
 
 ## Scheduling limits
 
-The scheduler is a deterministic heuristic, not a proof of global optimality. It enforces precedence, finite parallel capacity, availability windows and setup transitions. Search budgets are count-based and cancellation is cooperative. For very large instances or optimality requirements, move execution to a distributed worker and evaluate CP-SAT/MILP.
+The scheduler is a deterministic heuristic, not a proof of global optimality. It enforces precedence, finite parallel capacity, availability windows and setup transitions. An exhaustive permutation oracle proves equality with the optimum for a small reference instance, but this is a regression oracle, not a general proof or lower bound. For larger optimality requirements, evaluate CP-SAT/MILP against measured business SLAs.

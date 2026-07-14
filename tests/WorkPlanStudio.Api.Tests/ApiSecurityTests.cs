@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Security.Cryptography;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
@@ -39,6 +40,36 @@ public sealed class ApiSecurityTests : IAsyncLifetime
         using var client = _factory.CreateClient();
         var response = await client.GetAsync("/api/work-centers", TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Hosted_wasm_entrypoints_are_served_without_fingerprint_404s()
+    {
+        using var client = _factory.CreateClient();
+        var cancellationToken = TestContext.Current.CancellationToken;
+        var index = await client.GetStringAsync("/", cancellationToken);
+        Assert.Contains("_framework/blazor.webassembly.js", index, StringComparison.Ordinal);
+        Assert.Equal(HttpStatusCode.OK,
+            (await client.GetAsync("/_framework/dotnet.js", cancellationToken)).StatusCode);
+    }
+
+    [Fact]
+    public async Task Security_headers_and_concurrent_liveness_smoke_are_stable()
+    {
+        using var client = _factory.CreateClient();
+        var cancellationToken = TestContext.Current.CancellationToken;
+        using var root = await client.GetAsync("/", cancellationToken);
+        Assert.True(root.Headers.Contains("Content-Security-Policy"));
+        Assert.Equal("nosniff", Assert.Single(root.Headers.GetValues("X-Content-Type-Options")));
+        Assert.True(root.Headers.Contains("Referrer-Policy"));
+        Assert.True(root.Headers.Contains("Permissions-Policy"));
+
+        var requests = Enumerable.Range(0, 100)
+            .Select(_ => client.GetAsync("/health/live", cancellationToken));
+        var responses = await Task.WhenAll(requests);
+        Assert.All(responses, response => Assert.Equal(HttpStatusCode.OK, response.StatusCode));
+        foreach (var response in responses)
+            response.Dispose();
     }
 
     [Fact]
@@ -132,6 +163,47 @@ public sealed class ApiSecurityTests : IAsyncLifetime
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
+    [Fact]
+    public async Task Authenticator_mfa_and_single_use_recovery_login_work_end_to_end()
+    {
+        const string password = "Valid!Password123456";
+        var email = $"mfa-{Guid.NewGuid():N}@example.com";
+        using var client = _factory.CreateClient();
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await RegisterAndLoginAsync(client, email, cancellationToken);
+
+        var setup = await PostAsync(client, "/api/auth/mfa/setup", new MfaPasswordRequest(password), cancellationToken);
+        Assert.Equal(HttpStatusCode.OK, setup.StatusCode);
+        var setupDetails = await setup.Content.ReadFromJsonAsync<MfaSetupDto>(cancellationToken);
+        Assert.False(string.IsNullOrWhiteSpace(setupDetails!.SharedKey));
+        var authenticatorCode = CurrentTotp(setupDetails.SharedKey);
+        var enabled = await PostAsync(
+            client, "/api/auth/mfa/enable", new MfaEnableRequest(password, authenticatorCode), cancellationToken);
+        var recovery = await enabled.Content.ReadFromJsonAsync<MfaRecoveryCodesDto>(cancellationToken);
+        Assert.Equal(HttpStatusCode.OK, enabled.StatusCode);
+        Assert.Equal(10, recovery!.RecoveryCodes.Count);
+
+        Assert.Equal(HttpStatusCode.NoContent,
+            (await PostAsync<object?>(client, "/api/auth/logout", null, cancellationToken)).StatusCode);
+        var token = await TokenAsync(client, cancellationToken);
+        using var passwordOnly = new HttpRequestMessage(HttpMethod.Post, "/api/auth/login")
+        {
+            Content = JsonContent.Create(new AuthRequest(email, password))
+        };
+        passwordOnly.Headers.Add("X-CSRF-TOKEN", token);
+        var challenge = await client.SendAsync(passwordOnly, cancellationToken);
+        Assert.Equal(HttpStatusCode.Unauthorized, challenge.StatusCode);
+        Assert.Equal("two_factor_required", (await challenge.Content.ReadFromJsonAsync<ApiError>(cancellationToken))!.Code);
+
+        token = await TokenAsync(client, cancellationToken);
+        using var recoveryLogin = new HttpRequestMessage(HttpMethod.Post, "/api/auth/login")
+        {
+            Content = JsonContent.Create(new AuthRequest(email, password, RecoveryCode: recovery.RecoveryCodes[0]))
+        };
+        recoveryLogin.Headers.Add("X-CSRF-TOKEN", token);
+        Assert.Equal(HttpStatusCode.OK, (await client.SendAsync(recoveryLogin, cancellationToken)).StatusCode);
+    }
+
     private static async Task RegisterAndLoginAsync(HttpClient client, string email, CancellationToken cancellationToken)
     {
         const string password = "Valid!Password123456";
@@ -158,6 +230,32 @@ public sealed class ApiSecurityTests : IAsyncLifetime
 
     private static async Task<string> TokenAsync(HttpClient client, CancellationToken cancellationToken) =>
         (await client.GetFromJsonAsync<AntiforgeryToken>("/api/auth/antiforgery", cancellationToken))!.Token;
+
+    private static string CurrentTotp(string base32Secret)
+    {
+        const string alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+        var bits = 0;
+        var value = 0;
+        var bytes = new List<byte>();
+        foreach (var character in base32Secret.Replace(" ", "", StringComparison.Ordinal).TrimEnd('=').ToUpperInvariant())
+        {
+            value = (value << 5) | alphabet.IndexOf(character, StringComparison.Ordinal);
+            bits += 5;
+            if (bits < 8) continue;
+            bytes.Add((byte)(value >> (bits - 8)));
+            bits -= 8;
+        }
+        var counter = DateTimeOffset.UtcNow.ToUnixTimeSeconds() / 30;
+        Span<byte> counterBytes = stackalloc byte[8];
+        System.Buffers.Binary.BinaryPrimitives.WriteInt64BigEndian(counterBytes, counter);
+        var hash = HMACSHA1.HashData(bytes.ToArray(), counterBytes);
+        var offset = hash[^1] & 0x0f;
+        var binaryCode = ((hash[offset] & 0x7f) << 24) |
+                         (hash[offset + 1] << 16) |
+                         (hash[offset + 2] << 8) |
+                         hash[offset + 3];
+        return (binaryCode % 1_000_000).ToString("D6", System.Globalization.CultureInfo.InvariantCulture);
+    }
 
     public async ValueTask DisposeAsync()
     {

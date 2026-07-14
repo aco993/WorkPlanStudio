@@ -19,9 +19,15 @@ public sealed class ServerSession(HttpClient httpClient)
             : null;
     }
 
-    public async Task<ApiError?> LoginAsync(string email, string password, CancellationToken cancellationToken = default)
+    public async Task<ApiError?> LoginAsync(
+        string email,
+        string password,
+        string? twoFactorCode = null,
+        string? recoveryCode = null,
+        CancellationToken cancellationToken = default)
     {
-        var response = await SendAsync(HttpMethod.Post, "api/auth/login", new AuthRequest(email, password), cancellationToken);
+        var response = await SendAsync(
+            HttpMethod.Post, "api/auth/login", new AuthRequest(email, password, twoFactorCode, recoveryCode), cancellationToken);
         if (!response.IsSuccessStatusCode)
             return await ReadErrorAsync(response, cancellationToken);
         User = await response.Content.ReadFromJsonAsync<UserInfo>(cancellationToken);

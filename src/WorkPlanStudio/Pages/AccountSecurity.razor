@@ -1,0 +1,150 @@
+@page "/account-security"
+@inject IStringLocalizer<SharedResource> L
+@inject BackendState Backend
+@inject AccountSecurityService Security
+
+<PageTitle>@L["Security_Title"] · WorkPlan Studio</PageTitle>
+
+<div class="page-head">
+    <div><h1>@L["Security_Title"]</h1><p class="muted">@L["Security_Subtitle"]</p></div>
+</div>
+
+<div aria-live="polite" aria-atomic="true">
+    @if (_message is not null) { <div class="form-banner @(_error ? "error" : null)" role="@(_error ? "alert" : "status")">@_message</div> }
+</div>
+
+@if (Backend.Mode != BackendMode.Server)
+{
+    <div class="form-banner">@L["Common_ServerOnly"]</div>
+}
+else if (_loading)
+{
+    <div class="loading-row" role="status"><span class="spinner" aria-hidden="true"></span><span class="sr-only">@L["Common_Loading"]</span></div>
+}
+else
+{
+    <section class="card" aria-labelledby="mfa-title">
+        <h2 id="mfa-title">@L["Security_MfaTitle"]</h2>
+        <p class="muted">@L[_status?.IsEnabled == true ? "Security_MfaEnabled" : "Security_MfaDisabled"]</p>
+        @if (_status?.IsEnabled == true)
+        {
+            <p>@L["Security_CodesLeft"] <strong>@_status.RecoveryCodesLeft</strong></p>
+        }
+        <div class="form-grid">
+            <label class="field wide"><span>@L["Auth_Password"]</span><input class="input" type="password" autocomplete="current-password" @bind="_password" disabled="@_busy" /></label>
+            @if (_setup is not null || _status?.IsEnabled == true)
+            {
+                <label class="field wide"><span>@L["Auth_AuthenticatorCode"]</span><input class="input" inputmode="numeric" autocomplete="one-time-code" @bind="_code" disabled="@_busy" /></label>
+            }
+        </div>
+        @if (_setup is not null)
+        {
+            <div class="form-banner" role="status">
+                <p>@L["Security_AddKey"]</p>
+                <p class="mono break-anywhere"><strong>@_setup.SharedKey</strong></p>
+                <a href="@_setup.AuthenticatorUri">@L["Security_OpenAuthenticator"]</a>
+            </div>
+        }
+        <div class="head-actions">
+            @if (_status?.IsEnabled != true && _setup is null)
+            {
+                <button class="btn btn-primary" @onclick="SetupAsync" disabled="@_busy">@L["Security_Setup"]</button>
+            }
+            else if (_status?.IsEnabled != true)
+            {
+                <button class="btn btn-primary" @onclick="EnableAsync" disabled="@_busy">@L["Security_Enable"]</button>
+            }
+            else
+            {
+                <button class="btn btn-ghost" @onclick="RegenerateAsync" disabled="@_busy">@L["Security_Regenerate"]</button>
+                <button class="btn btn-danger" @onclick="DisableAsync" disabled="@_busy">@L["Security_Disable"]</button>
+            }
+        </div>
+    </section>
+
+    @if (_recoveryCodes.Count > 0)
+    {
+        <section class="card" aria-labelledby="recovery-title">
+            <h2 id="recovery-title">@L["Security_RecoveryTitle"]</h2>
+            <div class="form-banner warning" role="alert">@L["Security_RecoveryWarning"]</div>
+            <ul class="recovery-codes">@foreach (var recoveryCode in _recoveryCodes) { <li><code>@recoveryCode</code></li> }</ul>
+        </section>
+    }
+}
+
+@code {
+    private MfaStatusDto? _status;
+    private MfaSetupDto? _setup;
+    private IReadOnlyList<string> _recoveryCodes = [];
+    private string _password = "";
+    private string _code = "";
+    private string? _message;
+    private bool _loading = true;
+    private bool _busy;
+    private bool _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Backend.Mode == BackendMode.Server)
+            _status = await Security.GetStatusAsync();
+        _loading = false;
+    }
+
+    private async Task SetupAsync() => await RunAsync(async () =>
+    {
+        var result = await Security.SetupAsync(_password);
+        if (!result.IsSuccess) return result.Error;
+        _setup = result.Value;
+        return null;
+    });
+
+    private async Task EnableAsync() => await RunAsync(async () =>
+    {
+        var result = await Security.EnableAsync(_password, _code);
+        if (!result.IsSuccess) return result.Error;
+        _recoveryCodes = result.Value?.RecoveryCodes ?? [];
+        _setup = null;
+        await ReloadAsync();
+        return null;
+    }, "Security_EnabledSuccess");
+
+    private async Task RegenerateAsync() => await RunAsync(async () =>
+    {
+        var result = await Security.RegenerateAsync(_password);
+        if (!result.IsSuccess) return result.Error;
+        _recoveryCodes = result.Value?.RecoveryCodes ?? [];
+        await ReloadAsync();
+        return null;
+    }, "Security_RegeneratedSuccess");
+
+    private async Task DisableAsync() => await RunAsync(async () =>
+    {
+        var error = await Security.DisableAsync(_password, _code);
+        if (error is not null) return error;
+        _recoveryCodes = [];
+        await ReloadAsync();
+        return null;
+    }, "Security_DisabledSuccess");
+
+    private async Task RunAsync(Func<Task<ApiError?>> action, string? successKey = null)
+    {
+        _busy = true;
+        _message = null;
+        _error = false;
+        try
+        {
+            var error = await action();
+            _error = error is not null;
+            _message = error?.Message ?? (successKey is null ? null : L[successKey].Value);
+            if (error is null) { _password = ""; _code = ""; }
+        }
+        catch (HttpRequestException)
+        {
+            _error = true;
+            _message = L["Auth_ServerUnavailable"];
+        }
+        finally { _busy = false; }
+    }
+
+    private async Task ReloadAsync() => _status = await Security.GetStatusAsync();
+}

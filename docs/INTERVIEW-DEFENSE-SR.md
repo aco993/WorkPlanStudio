@@ -276,10 +276,10 @@ AI alati su intenzivno korišćeni za početnu generaciju i kasniji review/harde
 
 - Browser storage nije migracija, backup ni multi-device sync.
 - Scheduler radi na UI threadu i heuristički je; nema optimality gap.
-- Hosted queue je single-replica; nema distributed claim/lease.
+- Svaki worker je single-consumer, ali DB claim/lease/heartbeat sprečava duplu obradu između replika; nema tenant quota/fairness scheduler-a.
 - AI ključ u localStorageu je kompromis isključivo za eksplicitni offline BYOK demo.
 - Hosted identity nema završen MFA/email-confirmation/password-delivery operativni tok.
-- Nema screen-reader audit-a, samo automatizovane semantic/keyboard provjere.
+- Postoji Chrome accessibility-tree/label/contrast i keyboard dokaz, ali nema ljudskog NVDA/VoiceOver audita.
 - Performance rezultat je sa jedne mašine i generated data seta.
 
 ## Mogući live-coding zadaci
