@@ -13,25 +13,27 @@ browser and no `wasm-tools` workload.
 
 ```mermaid
 graph TD
-    E2E["🌐 <b>E2E</b> — Playwright · 10 tests<br/>real Chromium, persistence reload/reset, keyboard, mobile and localization"]
-    WEB["🧩 <b>Data + Boundary + Component</b> — xUnit/bUnit · 54 tests<br/>real SQLite, validation, mapper, pages &amp; assistant"]
-    UNIT["⚙️ <b>Unit + Property + Architecture</b> — xUnit/CsCheck · 90 tests<br/>the engine, limits, invariants &amp; design rules"]
+    E2E["🌐 <b>E2E</b> — Playwright<br/>real Chromium, persistence reload/reset, keyboard, mobile and localization"]
+    API["🔐 <b>API integration</b> — real SQLite<br/>auth, antiforgery and tenant isolation"]
+    WEB["🧩 <b>Data + Boundary + Component</b> — xUnit/bUnit<br/>real SQLite, validation, mapper, pages &amp; assistant"]
+    UNIT["⚙️ <b>Unit + Property + Architecture</b> — xUnit/CsCheck<br/>engine, calendars, setup, limits, invariants &amp; design rules"]
 
-    E2E --> WEB --> UNIT
+    E2E --> API --> WEB --> UNIT
 
     classDef fast fill:#dcfce7,stroke:#16a34a,color:#14532d;
     classDef slow fill:#fef3c7,stroke:#b45309,color:#7c2d12;
     class UNIT fast;
-    class WEB,E2E slow;
+    class WEB,API,E2E slow;
 ```
 
 ## The layers
 
 | Layer | Project | Tests | Guards | Needs WASM? | Runtime |
 | --- | --- | --: | --- | :---: | --- |
-| Engine + property + architecture | `tests/WorkPlanStudio.Scheduling.Tests` | 90 | determinism, feasibility, rules, scoring, bounded search, overflow, cancellation, explanations and a dependency-free core | no | ~3 s |
-| Data + mapper + component + assistant | `tests/WorkPlanStudio.Web.Tests` | 54 | real SQLite constraints/CRUD/reload/recovery failures, all-or-nothing mapper, localized component states, modal semantics and stubbed AI transport | yes¹ | ~12 s |
-| End-to-end | `tests/WorkPlanStudio.E2E` | 10 | real Chromium: schedule changes, determinism, language + `html lang`, invalid input, save→hard reload, confirmed reset, modal Escape/focus return and mobile drawer | browser² | ~2 min |
+| Engine + property + architecture | `tests/WorkPlanStudio.Scheduling.Tests` | 93 | determinism, feasibility, rules, calendars/setup, scoring, bounded search, overflow, cancellation and dependency boundaries | no | ~4 s |
+| Data + mapper + component + assistant | `tests/WorkPlanStudio.Web.Tests` | 54 | real SQLite CRUD/recovery, all-or-nothing mapper, localized components, modal semantics and stubbed AI transport | yes¹ | ~12 s |
+| Production API | `tests/WorkPlanStudio.Api.Tests` | 5 | migrated SQLite, liveness/readiness, anonymous rejection, Identity/antiforgery/owner isolation and full order→worker→result flow | yes¹ | ~10 s |
+| End-to-end | `tests/WorkPlanStudio.E2E` | 10 | Chromium scheduling, determinism, localization, invalid input, reload persistence, reset, keyboard and mobile | browser² | ~3 min |
 
 ¹ These reference the Blazor app assembly, so building them compiles the app (hence `wasm-tools`). The tests themselves run on a normal host.
 ² Needs a Chromium download (`playwright install`) and the app running; no `wasm-tools` if you serve a pre-published build.
@@ -99,6 +101,9 @@ form. This is why the page depends on the `IProductionScheduleService`
 
 ### 🤖 Assistant — narration & fallback
 
+Production mode sends bounded computed facts to an authenticated server proxy; provider
+credentials never enter the browser. The deterministic narrator remains the fallback.
+
 The [schedule assistant](AI-ASSISTANT.md) is tested without ever touching the
 network. The rule-based narrator is checked directly (deterministic lines and
 tones). The optional AI narrator runs against a **stubbed `HttpMessageHandler`**:
@@ -128,6 +133,7 @@ and focus return.
 # Everything except E2E (fast, no browser):
 dotnet test tests/WorkPlanStudio.Scheduling.Tests/WorkPlanStudio.Scheduling.Tests.csproj
 dotnet test tests/WorkPlanStudio.Web.Tests/WorkPlanStudio.Web.Tests.csproj
+dotnet test tests/WorkPlanStudio.Api.Tests/WorkPlanStudio.Api.Tests.csproj
 
 # E2E — start the app, install a browser once, then run:
 dotnet run --project src/WorkPlanStudio/WorkPlanStudio.csproj &           # serves http://localhost:5235
@@ -140,7 +146,7 @@ Useful environment variables for E2E: `E2E_BASE_URL` (default `http://localhost:
 
 ## Coverage
 
-The engine job measures code coverage with the Microsoft Testing Platform collector. The hardened branch on 2026-07-12 measured **411/424 lines (96.93 %) and 160/183 branches (87.43 %)**. The pre-hardening baseline was 97.90/91.61%; the added validation/cancellation branches explain the lower percentage. Run the command below rather than treating a badge as evidence:
+The engine job measures code coverage with the Microsoft Testing Platform collector. The production-platform branch on 2026-07-13 measured **452/469 lines (96.38 %) and 201/235 branches (85.53 %)**. The added calendar, downtime, setup-transition, horizon-failure and cancellation branches explain the branch percentage; run the command below rather than treating a badge as evidence:
 
 ```bash
 dotnet test tests/WorkPlanStudio.Scheduling.Tests/WorkPlanStudio.Scheduling.Tests.csproj \
@@ -151,6 +157,6 @@ dotnet test tests/WorkPlanStudio.Scheduling.Tests/WorkPlanStudio.Scheduling.Test
 
 | Workflow | Runs | When |
 | --- | --- | --- |
-| [`ci.yml`](../.github/workflows/ci.yml) | engine tests (no WASM) + mapper/component tests (WASM) as two jobs | every pull request |
+| [`ci.yml`](../.github/workflows/ci.yml) | dependency audit, engine/web/API tests, migration scripts, performance ceilings and container build | every pull request |
 | [`e2e.yml`](../.github/workflows/e2e.yml) | builds, serves the app, installs Chromium, runs Playwright, uploads screenshots | every pull request |
 | [`deploy.yml`](../.github/workflows/deploy.yml) | engine tests gate the GitHub Pages deploy | push to `main` |

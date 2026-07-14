@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Hosted production API with Identity cookies, owner-scoped authorization,
+  antiforgery validation, rate limiting, audit records and health checks.
+- Shared Domain/Contracts projects, PostgreSQL persistence with separate migrations,
+  and `ProductionOrder` with immutable routing snapshots.
+- Machine calendars, downtime, setup transitions and persisted background schedule runs.
+- OpenTelemetry, Docker Compose, backup/restore scripts and API integration tests.
+
 - Central business validation, SQLite constraints, typed mutation results and
   localized recovery/error states.
 - Explicit browser-storage recovery with corrupt-payload export, confirmed reset,
@@ -33,14 +40,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Removed the misleading application-level Explicit due-date choice until a real
-  `ProductionOrder` model supplies order due dates.
-- Hardened BYOK endpoints and added a 15-second provider timeout; raw provider
-  failures are no longer shown to users.
-
-- Suppressed one transitive NuGet advisory (GHSA-2m69-gcr7-jv3q — native SQLite
-  pulled in by EF Core) with a documented justification in `Directory.Build.props`;
-  the security audit stays strict for every other package.
+- Server scheduling now consumes real orders with explicit release/due dates;
+  the static demo retains its smaller routing-based scenario.
+- Production AI keys moved behind an authenticated, timed and rate-limited server proxy.
+- Upgraded the native SQLite bundle to 3.0.3 and removed the previous advisory suppression.
 
 ## [0.1.0] — 2026-07-08
 

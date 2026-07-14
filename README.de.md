@@ -9,7 +9,7 @@
 
 **WorkPlan Studio** ist eine kompakte, eigenständige Portfolio-Anwendung zur Verwaltung von **Fertigungs-Arbeitsplänen** (Routings): die geordnete Folge der Arbeitsgänge zur Herstellung eines Teils, die Arbeitsplätze, auf denen diese laufen, sowie die daraus resultierende **Zeit und Kosten** für eine gegebene Losgröße.
 
-Die Anwendung einschließlich ihrer relationalen Datenbank läuft vollständig im Browser als statische WebAssembly-App. Es gibt kein Backend, keine API und keine serverseitige Speicherung.
+Die öffentliche Live-Demo läuft weiterhin vollständig im Browser. Das Repository enthält inzwischen zusätzlich einen gehärteten ASP.NET-Core-/PostgreSQL-Produktionsmodus mit Identity, mandantenbezogener API, Produktionsaufträgen, Kapazitätskalendern und persistierten Planungsläufen. Die aktuelle Architektur und Betriebsanleitung stehen in der [englischen README](README.md) und im [Production Runbook](docs/PRODUCTION.md).
 
 > **Live-Demo:** <https://aco993.github.io/WorkPlanStudio/>
 

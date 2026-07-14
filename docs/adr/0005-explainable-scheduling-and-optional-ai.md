@@ -1,47 +1,20 @@
-# 5. Deterministic explanation first; AI is an optional narrator
+# ADR 0005: Deterministic explanation first; AI only narrates facts
 
-- **Status:** Accepted
-- **Date:** 2026-07-09
+- Status: Accepted
+- Date: 2026-07-09
+- Updated: 2026-07-13
 
 ## Context
 
-A schedule is only useful if a planner understands *why* it turned out the way it
-did — which resource is the constraint, why a job is late, what to try next. An
-An AI narrator is one possible way to surface that. A direct LLM-only feature would
-be a poor fit for this application:
-it could hallucinate numbers, it would not work in the public GitHub Pages demo
-(no server, no key), and a browser app cannot hold a secret. The app is also a
-static WebAssembly site, so any live model call is a *client-side* request to a
-third-party endpoint.
+Planners need to understand constraints and lateness. An LLM cannot be the source of scheduling truth and a browser cannot safely hold a production provider key.
 
 ## Decision
 
-Separate the **analysis** from its **narration**.
-
-1. The engine produces a **deterministic, structured, language-neutral**
-   `ScheduleExplanation` (`ScheduleExplainer`): summary KPIs, the bottleneck work
-   center, the worst late jobs with the resource each queued on, and one *computed*
-   recommendation (found by re-dispatching the other rules). No prose, no AI.
-2. The app narrates that explanation behind one seam, `IScheduleNarrator`:
-   - `RuleBasedNarrator` — the **default**. Deterministic, offline, localized
-     (EN/DE), needs no key. It is also the demo/test provider and the fallback.
-   - `OpenAiScheduleNarrator` — **optional**, bring-your-own-key, for any
-     OpenAI-compatible endpoint. It only ever rephrases the computed facts.
-3. `ScheduleAssistant` owns provider selection and **falls back** to the
-   rule-based text on any AI error. BYOK settings live only in the browser's
-   `localStorage`; nothing secret is committed.
+`ScheduleExplainer` computes a language-neutral `ScheduleExplanation`: KPIs, bottleneck, late jobs and a recommendation based on re-dispatching rules. `RuleBasedNarrator` is the always-available localized default. In server mode, `ScheduleAssistant` sends only bounded computed facts to the authenticated `/api/assistant/narrate` proxy; provider endpoint/model/key are operator-controlled server configuration. Failures fall back to deterministic narration. Offline demo mode may use an explicitly non-production browser BYOK option.
 
 ## Consequences
 
-- ✅ The public demo works with **zero configuration** — the explanation is always
-  there, computed on-device.
-- ✅ The AI cannot invent numbers: it is handed the facts and asked to rephrase
-  them; the deterministic version is always available for comparison.
-- ✅ Provider selection is isolated behind a small interface and failure does not
-  remove the deterministic explanation.
-- ✅ Everything is testable without a network: the rule-based narrator directly,
-  the AI narrator over a stubbed HTTP transport, the fallback via the façade.
-- ➖ The BYOK endpoint must permit browser (CORS) requests, which not every
-  provider does; this is documented in [AI-ASSISTANT.md](../AI-ASSISTANT.md).
-- ➖ Two narrators and a façade are more moving parts than a single call — the
-  price of the fallback and the offline default.
+- AI never decides or changes the schedule and cannot invent source KPIs unnoticed.
+- Production provider secrets never reach the browser.
+- Provider calls are authorized, HTTPS-only, timed out and rate-limited.
+- The base product and public demo remain fully usable without an AI provider.

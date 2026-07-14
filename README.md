@@ -2,251 +2,152 @@
 
 # WorkPlan Studio
 
-**English** · [Deutsch](README.de.md)
-
 [![CI](https://github.com/aco993/WorkPlanStudio/actions/workflows/ci.yml/badge.svg)](.github/workflows/ci.yml)
+[![E2E](https://github.com/aco993/WorkPlanStudio/actions/workflows/e2e.yml/badge.svg)](.github/workflows/e2e.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-**WorkPlan Studio** is a small, self-contained portfolio application for managing **manufacturing routings** (work plans): the ordered list of operations needed to produce a part, the work centers those operations run on, and the resulting **time and cost** for a given lot size.
+WorkPlan Studio manages manufacturing routings, production orders and finite-capacity schedules. A routing defines the ordered operations for a part; a production order freezes that routing revision together with quantity, release time, due time and priority; the scheduler then places work inside machine calendars while respecting capacity, downtime and sequence-dependent setup.
 
-The application, including its relational database, runs entirely in the browser as a static WebAssembly app. There is no backend, API or server-side storage.
+> **Offline portfolio demo:** <https://aco993.github.io/WorkPlanStudio/>
+> The GitHub Pages build deliberately runs without a backend. Production-only identity, orders, calendars and durable jobs are available in the hosted API mode.
 
-> **Live demo:** <https://aco993.github.io/WorkPlanStudio/>
+The UI is localized in English and German and is responsive from desktop to mobile.
 
-The interface is available in **English and German**, switchable at runtime.
+## What is implemented
 
----
-
-## Highlights
-
-- 📋 **Work plans / routings** — create, edit, search and filter work plans by status (Draft / Released / Archived).
-- 🔧 **Operations editor** — an editable grid of operations (setup time, run time per piece, work center, remarks) with a **live summary** of total time and estimated cost that recalculates as you type.
-- 🏭 **Work centers** — master data with hourly rates, cost centers and validated parallel capacity, plus guards against deleting referenced centers or deactivating centers used by released plans.
-- 📊 **Dashboard** — key figures, a status distribution bar and the most recently updated plans.
-- 🗓️ **Production scheduling** — a finite-capacity scheduler that assigns each released plan a target date and sequences its operations across the work centers, with six dispatch rules, configurable due-date assignment, multi-start + local-search optimisation, a Gantt chart and on-time / tardiness KPIs. Deterministic and covered by unit tests.
-- 🤖 **Schedule assistant** — explains each run in plain language (the bottleneck work center, why a job is late, a *computed* recommendation), derived **on-device** with no key needed. An optional **bring-your-own-key** AI narrator can rephrase it, with a graceful fallback to the built-in explanation. See [`docs/AI-ASSISTANT.md`](docs/AI-ASSISTANT.md).
-- 🌍 **Bilingual UI (EN / DE)** — full localization via `IStringLocalizer` and `.resx` resources, including culture-correct number, date and currency formatting.
-- 💾 **Real database in the browser** — EF Core talks to SQLite compiled to WebAssembly; WAL-safe snapshots survive reloads, while corrupt/incompatible payloads enter an explicit export/reset recovery flow.
-- 📱 **Responsive** — works from wide desktops down to a mobile drawer layout.
-
-## What makes it technically interesting
-
-The headline feature is that **EF Core + SQLite run client-side in WebAssembly**:
-
-- The native SQLite engine is relinked into the app's `dotnet.native.wasm` at build time (via the `wasm-tools` workload).
-- On startup the app reads a base64-encoded SQLite file from `localStorage` into the browser's in-memory file system; on first run it creates the schema and seeds sample data.
-- After every change the SQLite file is written back to `localStorage`.
-- A schema-version key guards against loading an incompatible database after a model change. Incompatible data is preserved for export and requires an explicit reset; this demo does not pretend that reseeding is a migration.
-
-This means the app demonstrates a full data layer — `DbContext`, relationships, LINQ queries, an `IDbContextFactory`, a service layer — **without any server**.
-
-## Production scheduling
-
-The **Scheduling** page turns the released work plans into a finite-capacity production schedule — the most algorithm-heavy part of the project. It lives in its own dependency-free library (`src/WorkPlanStudio.Scheduling`) so the whole engine can be unit-tested on a plain .NET runner, without Blazor or the WebAssembly toolchain.
-
-1. **Target dates ("meta").** Each demonstration job is assigned a target by Total Work Content (TWK), Number of Operations (NOP), Equal Slack (SLK) or Constant Allowance (CON). Customer-order due dates are intentionally out of scope until the app has a real `ProductionOrder` model.
-2. **Dispatch scheduling.** A finite-capacity list scheduler places each job's operations on the earliest free slot of their work center, respecting operation precedence and machine capacity. Six dispatch rules decide who goes first on a contended machine: FIFO, SPT, LPT, EDD, Critical Ratio and WSPT.
-3. **Optimisation.** A seeded multi-start search plus a first-improvement local search refine the sequence; the result is never worse than the pure rule schedule.
-4. **Scoring.** Makespan, total / maximum tardiness, on-time rate and work-center utilisation are rolled up into a single penalty the search minimises.
-
-The scheduler is designed around three explicit constraints:
-
-- **Deterministic.** All time is integer seconds and randomness comes from a small fixed-algorithm PRNG, so the same seed yields a bit-for-bit identical schedule on the desktop, in CI and in the browser.
-- **Feasible by construction.** Local search perturbs the job *priority order* and re-dispatches, so every candidate it evaluates is a valid schedule.
-- **Tested at several levels.** Unit and **property-based invariant tests** cover the engine; an architecture test enforces its dependency boundary; mapper and bUnit tests cover the application boundary; Playwright scenarios exercise the running app.
-
-See [`docs/SCHEDULING.md`](docs/SCHEDULING.md) for the algorithm write-up and [`docs/TESTING.md`](docs/TESTING.md) for the test strategy.
+- Validated work-plan and work-center CRUD with relational constraints and optimistic concurrency.
+- `ProductionOrder` lifecycle with an immutable routing snapshot, explicit release/due timestamps, quantity and priority.
+- Deterministic finite-capacity heuristic with six dispatch rules, seeded multi-start/local search, parallel resources, availability windows, downtime and sequence-dependent setup.
+- Persisted background schedule runs with progress, cancellation and restart recovery.
+- ASP.NET Core Identity cookie authentication, owner-scoped authorization, antiforgery validation, rate limiting and audit entries.
+- PostgreSQL production persistence with a separate provider-correct migration assembly; SQLite remains available for development and the offline browser demo.
+- OpenTelemetry traces/metrics, liveness/readiness probes, security headers, Docker Compose and backup/restore scripts.
+- Deterministic rule-based schedule explanation plus an optional authenticated server-side AI proxy. AI never makes scheduling decisions.
 
 ## Screenshots
 
-The Scheduling page reacting to a **single parameter change** — loosening vs. tightening the target dates. Tightening turns the jobs late: red-ringed Gantt bars, a "Late" legend and red status pills. _(Both images are captured automatically by the end-to-end test run.)_
-
-| On-time — flow factor `3.0` | Late — flow factor `0.5` |
+| On-time scenario | Tight-target late scenario |
 | --- | --- |
 | ![On-time schedule](docs/schedule-ontime.png) | ![Late schedule](docs/schedule-late.png) |
 
-The sample data ships **seven released plans** competing for the same machines, so the dispatch rule and seed visibly change the result too — not just the target dates.
-
-
-## Tech stack
-
-| Area | Choice |
-| --- | --- |
-| Framework | .NET 10, Blazor WebAssembly (standalone) |
-| Data | Entity Framework Core 10 + SQLite (compiled to WebAssembly) |
-| Persistence | Browser `localStorage` via JS interop |
-| Localization | `Microsoft.Extensions.Localization`, `IStringLocalizer`, `.resx` |
-| Styling | Hand-written CSS design system (CSS custom properties) |
-| Scheduling | Pure C# domain library — finite-capacity dispatch + due-date assignment |
-| Testing | xUnit v3 (Microsoft Testing Platform), CsCheck property tests, bUnit components, Playwright E2E |
-| CI / Hosting | GitHub Actions — layered test workflows + test-gated GitHub Pages deploy |
-
-## Architecture at a glance
+## Architecture
 
 ```mermaid
 flowchart LR
-    UI["Blazor UI"] --> SVC["Validated application services"]
-    SVC --> DB["EF Core + SQLite WASM"]
-    DB --> LS["Versioned localStorage snapshot"]
-    UI --> PREP["ScheduleMapper diagnostics"]
-    PREP --> CORE["Pure deterministic scheduler"]
-    CORE --> UI
+    UI["Blazor WebAssembly"] --> MODE{"Runtime mode"}
+    MODE -->|Hosted| API["ASP.NET Core API"]
+    API --> AUTH["Identity + owner authorization"]
+    API --> DB["EF Core / PostgreSQL"]
+    API --> JOB["Persisted schedule worker"]
+    JOB --> CORE["Pure scheduling library"]
+    API --> AIP["Server-side AI proxy"]
+    MODE -->|Offline demo| WASM["EF Core + SQLite WASM"]
+    WASM --> CORE
 ```
 
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for invariants, failure boundaries and the persistence lifecycle.
+The important boundary is `WorkPlanStudio.Scheduling`: it has no Blazor, EF Core, JavaScript or network dependency, and an architecture test enforces that rule. See [Architecture](docs/ARCHITECTURE.md), [Security](docs/SECURITY.md) and the [production runbook](docs/PRODUCTION.md).
 
-## Documentation
+## Technology
 
-| Topic | English | Deutsch |
-| --- | --- | --- |
-| Project overview | this README | [README.de.md](README.de.md) |
-| Scheduling algorithm | [docs/SCHEDULING.md](docs/SCHEDULING.md) | [docs/SCHEDULING.de.md](docs/SCHEDULING.de.md) |
-| Schedule assistant (AI) | [docs/AI-ASSISTANT.md](docs/AI-ASSISTANT.md) | — |
-| Testing strategy | [docs/TESTING.md](docs/TESTING.md) | [docs/TESTING.de.md](docs/TESTING.de.md) |
-| Architecture | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | — |
-| Security posture | [docs/SECURITY.md](docs/SECURITY.md) | — |
-| Performance scenarios | [docs/PERFORMANCE.md](docs/PERFORMANCE.md) | — |
-| Decision records (ADR) | [docs/adr](docs/adr) | — |
-| Contributing | [CONTRIBUTING.md](CONTRIBUTING.md) | — |
-| AI-agent context | [AGENTS.md](AGENTS.md) | — |
+| Area | Choice |
+| --- | --- |
+| Runtime/UI | .NET 10, C#, hosted Blazor WebAssembly |
+| API/security | ASP.NET Core, Identity cookies, antiforgery, authorization policies, rate limiting |
+| Data | EF Core 10, PostgreSQL 18 production, SQLite development/browser demo |
+| Scheduling | Pure deterministic C# heuristic, integer-second time model |
+| Operations | OpenTelemetry, health checks, Docker/Compose, non-root read-only container |
+| Tests | xUnit v3, CsCheck property tests, bUnit, real-SQLite API integration tests, Playwright |
+| Delivery | GitHub Actions for tests, audit, migration scripts, performance ceilings, container and Pages demo |
 
-## Engineering practices
+## Repository map
 
-The repository applies the following engineering practices:
-
-- **Strict builds** — nullable reference types, .NET analyzers and **warnings treated as errors** (`Directory.Build.props`).
-- **Central Package Management** — every NuGet version in one [`Directory.Packages.props`](Directory.Packages.props).
-- **Consistent style** — a comprehensive [`.editorconfig`](.editorconfig) and line-ending normalisation via [`.gitattributes`](.gitattributes).
-- **Layered tests + coverage** — 154 tests across three test projects, including real-SQLite persistence, property-based invariants, components, browser reload/reset and mobile flows; the hardened engine currently measures 96.93% line and 87.43% branch coverage.
-- **Architecture enforced by a test** — the engine cannot accrue a Blazor / EF / JS dependency.
-- **Decisions recorded** — see the [Architecture Decision Records](docs/adr).
-- **Dependency hygiene** — [Dependabot](.github/dependabot.yml) keeps NuGet and GitHub Actions current.
-- **CI/CD** — test workflows run for pull requests and `main`; deployment is gated by engine tests.
-
-## What this project demonstrates
-
-This is a public **learning and portfolio** project — it deliberately uses a
-generic manufacturing domain and fictitious data, and shares no code with any
-proprietary system. The point is to show *how* I build, not just that a feature
-works:
-
-| Area | Where to look | What it shows |
-| --- | --- | --- |
-| **Architecture boundary** | `src/WorkPlanStudio.Scheduling` vs the app | a pure domain core behind an *enforced* dependency boundary |
-| **Algorithms** | `SchedulingEngine`, `DispatchScheduler`, `LocalSearch` | finite-capacity scheduling, dispatch rules, local-search optimisation |
-| **Determinism & correctness** | `DeterministicRandom`, `DeterminismTests` | reproducible results pinned by golden-value tests |
-| **Testing strategy** | `tests/`, [`docs/TESTING.md`](docs/TESTING.md) | four layers from unit to end-to-end, plus an architecture test |
-| **Modern .NET** | `Directory.*.props`, `.editorconfig` | .NET 10, nullable, analyzers, warnings-as-errors, central packages |
-| **Front-end** | `Pages/Schedule.razor`, `wwwroot/css` | Blazor WebAssembly, a hand-written design system, a Gantt chart |
-| **Data engineering** | `Data/BrowserDatabase.cs` | a real relational DB (EF Core + SQLite) running client-side |
-| **Internationalisation** | `Resources/`, `CultureSelector` | full EN/DE localization with culture-correct formatting |
-| **Documentation** | `docs/`, ADRs, `AGENTS.md` | decisions recorded, not just code written |
-| **DevOps** | `.github/workflows` | per-layer CI and a test-gated deploy |
-
-Short on time? The fastest tour is `AGENTS.md` → `SchedulingEngine.cs` →
-`DeterminismTests.cs` → `ScheduleMapper.cs` → `Pages/Schedule.razor`.
-
-## Project structure
-
-```
-WorkPlanStudio/
-├─ .github/workflows/
-│  ├─ ci.yml                        # engine + mapper/component tests (PRs)
-│  ├─ e2e.yml                       # Playwright end-to-end tests (PRs)
-│  └─ deploy.yml                    # test-gated publish + deploy to GitHub Pages
-├─ docs/                            # banner, screenshots, SCHEDULING.md, TESTING.md
-├─ global.json                      # SDK pin + Microsoft Testing Platform runner
-├─ src/
-│  ├─ WorkPlanStudio/               # the Blazor WebAssembly app
-│  │  ├─ Models/                    # WorkPlan, Operation, WorkCenter, WorkPlanStatus
-│  │  ├─ Data/                      # AppDbContext, SeedData, BrowserDatabase
-│  │  ├─ Services/                  # WorkPlan/WorkCenter services, IProductionScheduleService, ScheduleMapper, view models, Format
-│  │  ├─ Resources/                 # SharedResource(.de).resx — UI translations
-│  │  ├─ Components/                # Modal, StatusBadge, CultureSelector
-│  │  ├─ Layout/                    # MainLayout, NavMenu
-│  │  ├─ Pages/                     # Home, WorkPlans, WorkPlanEditor, WorkCenters, Schedule, About
-│  │  ├─ wwwroot/                   # index.html, css/app.css, js/app.js
-│  │  └─ Program.cs                 # DI registration + culture bootstrap
-│  └─ WorkPlanStudio.Scheduling/    # pure scheduling engine (no Blazor / EF / WASM)
-│     ├─ Inputs/                    # ProductionJob, JobStep, MachineCapacity
-│     ├─ Parameters/                # SchedulingParameters, DispatchRule, DueDateRule
-│     ├─ Core/                      # DispatchScheduler, DueDateAssigner, LocalSearch, PriorityOrdering, DeterministicRandom
-│     ├─ Evaluation/                # ScheduleEvaluator, ScheduleEvaluation
-│     ├─ Outputs/                   # Schedule, ScheduledOperation, JobSchedule
-│     └─ SchedulingEngine.cs        # orchestrator: due dates → multi-start → local search
-└─ tests/
-   ├─ WorkPlanStudio.Scheduling.Tests/   # engine: determinism, feasibility, rules, search, architecture
-   ├─ WorkPlanStudio.Web.Tests/          # EF→domain mapping + bUnit component tests
-   └─ WorkPlanStudio.E2E/                # Playwright end-to-end (page object + scenarios)
+```text
+src/
+  WorkPlanStudio.Domain/              shared entities and validators
+  WorkPlanStudio.Contracts/           client/server API contracts
+  WorkPlanStudio.Scheduling/          dependency-free scheduling core
+  WorkPlanStudio.Persistence/         DbContext + SQLite migrations
+  WorkPlanStudio.PostgresMigrations/  PostgreSQL migration set
+  WorkPlanStudio.Api/                 auth, API, audit, telemetry, worker
+  WorkPlanStudio/                     Blazor UI + offline demo adapter
+tests/
+  WorkPlanStudio.Scheduling.Tests/    unit, property and architecture tests
+  WorkPlanStudio.Web.Tests/           persistence, mapping and bUnit tests
+  WorkPlanStudio.Api.Tests/           auth/CSRF/tenant integration tests
+  WorkPlanStudio.E2E/                 real Chromium flows
 ```
 
-## Getting started
+## Run it
 
-### Prerequisites
-
-- [.NET 10 SDK](https://dotnet.microsoft.com/download)
-- The WebAssembly tools workload (needed to relink native SQLite):
-
-  ```bash
-  dotnet workload install wasm-tools
-  ```
-
-### Run locally
+Prerequisite: [.NET 10 SDK](https://dotnet.microsoft.com/download) and the WebAssembly workload.
 
 ```bash
-dotnet run --project src/WorkPlanStudio/WorkPlanStudio.csproj
+dotnet workload install wasm-tools
+dotnet restore WorkPlanStudio.slnx
 ```
 
-Then open the URL printed in the console (e.g. `http://localhost:5235`).
-The first build is slower because the native SQLite engine is compiled to WebAssembly; subsequent builds are cached.
-
-### Run the tests
-
-The engine is a pure .NET library, so most of the suite needs **no** WebAssembly workload and runs in seconds:
+Offline demo:
 
 ```bash
-dotnet test tests/WorkPlanStudio.Scheduling.Tests/WorkPlanStudio.Scheduling.Tests.csproj   # engine + architecture
-dotnet test tests/WorkPlanStudio.Web.Tests/WorkPlanStudio.Web.Tests.csproj                 # mapping + bUnit components
+dotnet run --project src/WorkPlanStudio/WorkPlanStudio.csproj --launch-profile http
 ```
 
-The Playwright end-to-end tests drive a real browser against the running app — see [`docs/TESTING.md`](docs/TESTING.md) for the full strategy and how to run them.
-
-### Publish a static build
+Hosted development mode (SQLite, registration enabled):
 
 ```bash
-dotnet publish src/WorkPlanStudio/WorkPlanStudio.csproj -c Release -o publish
+dotnet run --project src/WorkPlanStudio.Api/WorkPlanStudio.Api.csproj --launch-profile http
 ```
 
-The deployable site is in `publish/wwwroot/` and can be served by any static file host.
+Production-like PostgreSQL deployment:
 
-## Deployment
+```bash
+cp .env.example .env
+# replace all required placeholders
+docker compose up --build -d
+```
 
-The repository ships with a GitHub Actions workflow ([`.github/workflows/deploy.yml`](.github/workflows/deploy.yml)) that publishes the app to **GitHub Pages** on every push to `main`. It:
+Never commit `.env`. Put TLS at the ingress and remove bootstrap-admin variables after first startup.
 
-1. installs the `wasm-tools` workload and publishes the app,
-2. rewrites `<base href="/" />` to `/<repository-name>/` so assets resolve under the project page sub-path,
-3. adds a `404.html` SPA fallback and a `.nojekyll` marker,
-4. uploads and deploys the artifact.
+## Verify it
 
-To enable it: push this repo to GitHub, then in **Settings → Pages** set **Source = GitHub Actions**.
+Verified locally on 2026-07-13: **93 scheduling + 54 web/data/component + 5 API + 10 Chromium E2E = 162 passed, 0 failed, 0 skipped**. Release build completed with 0 errors and the two documented `WASM0001` warning groups; package vulnerability and outdated audits were clean.
 
-## Notes
+```bash
+dotnet build WorkPlanStudio.slnx -c Release --no-restore
+dotnet format WorkPlanStudio.slnx --verify-no-changes
+dotnet test tests/WorkPlanStudio.Scheduling.Tests/WorkPlanStudio.Scheduling.Tests.csproj -c Release
+dotnet test tests/WorkPlanStudio.Web.Tests/WorkPlanStudio.Web.Tests.csproj -c Release
+dotnet test tests/WorkPlanStudio.Api.Tests/WorkPlanStudio.Api.Tests.csproj -c Release
+dotnet list WorkPlanStudio.slnx package --vulnerable --include-transitive
+```
 
-- Routing data is stored locally in your browser. The optional BYOK narrator sends structured schedule facts to the endpoint you configure; the base application works without it.
-- Browser storage is local demo persistence, not a backup/migration system or secret vault. Schema mismatch preserves the payload for export and requires confirmed reset.
-- Sample part numbers, machines and times are fictitious and for illustration only.
+Playwright setup and full test-layer details are in [docs/TESTING.md](docs/TESTING.md). CI also generates both migration scripts, verifies performance regression ceilings and builds the production container.
 
-## Limitations and roadmap
+## Engineering decisions and limitations
 
-- The scheduler is a deterministic heuristic and does not prove a globally optimal schedule.
-- A released work plan currently acts as one demonstration job. Customer orders, calendars, routing-revision snapshots and order-specific due dates require a future `ProductionOrder` model.
-- Scheduling runs on the browser UI thread. The reproducible 250-job scenario completed in about 395 ms on the documented review machine but allocated roughly 243 MB; a Worker or backend is justified only after representative browser profiling.
-- The versioned SQLite payload supports safe recovery/reset, not cross-version migration or cloud synchronization.
-- One high transitive SQLite advisory is explicitly tracked and risk-assessed in [docs/SECURITY.md](docs/SECURITY.md); the repository does not claim zero vulnerabilities.
+- The scheduler is a deterministic heuristic; it does **not** prove global optimality.
+- The in-process worker is a durable single-consumer design. Run one API replica until job claiming is moved to a distributed lease/queue.
+- The browser database is explicit demo persistence, not confidential multi-user storage or a cross-version migration service.
+- GitHub Pages demonstrates the offline feature set; it cannot demonstrate server identity or PostgreSQL.
+- AI is optional narration over computed facts. It is not required and cannot change a schedule.
+- Native SQLite still produces the known linker warning `WASM0001` for unused varargs entry points. Runtime CRUD/reload behavior is covered by Playwright; the dependency audit is clean with `SQLitePCLRaw.bundle_e_sqlite3` 3.0.3 and no advisory suppression.
 
 ## AI-assisted development disclosure
 
-AI tools were used intensively to help generate and review the initial code and later hardening changes. The project is not represented as entirely hand-written. The candidate remains responsible for the specification, verification, debugging, tests, integration and final engineering decisions, and should be able to explain every accepted part. No percentage of “AI-written lines” is claimed because that number is neither known nor meaningful; AI output is accepted only after review and executable evidence.
+AI tools were used intensively for initial implementation and hardening. This repository is not represented as entirely hand-written, and no invented percentage of AI-generated lines is claimed. The candidate is responsible for the specification, code review, threat/failure analysis, debugging, integration, executable tests and final decisions, and should be able to explain every accepted component and limitation.
+
+## Documentation
+
+- [Architecture](docs/ARCHITECTURE.md)
+- [Scheduling algorithm](docs/SCHEDULING.md)
+- [Testing strategy](docs/TESTING.md)
+- [Security posture](docs/SECURITY.md)
+- [Production runbook](docs/PRODUCTION.md)
+- [Production hardening report and verdict (SR)](docs/PRODUCTION-HARDENING-REPORT-SR.md)
+- [Performance scenarios](docs/PERFORMANCE.md)
+- [Interview defense (SR)](docs/INTERVIEW-DEFENSE-SR.md)
+- [Demo script (SR)](docs/DEMO-SCRIPT-SR.md)
+- [Architecture decision records](docs/adr)
 
 ## License
 
