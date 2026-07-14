@@ -81,7 +81,7 @@ Konačne brojke se održavaju u [TESTING.md](TESTING.md). Obavezni gate uključu
 - DB-backed atomski claim, lease/heartbeat i persisted cancellation sada sprečavaju duplu obradu između API replika; tenant fairness i poseban worker autoscaling model nisu implementirani.
 - TOTP MFA, jednokratni recovery kodovi i jednosatni single-use password-reset tok preko konfigurisanog SMTP-a su završeni; help-desk identity proofing ostaje organizaciona procedura.
 - Data Protection volume mora biti backupovan i za višestruke hostove zaštićen certificate/KMS mehanizmom.
-- CI ima realan container/WASM smoke, SMTP/Mailpit reset dokaz i 100-request load smoke; zaseban workflow daje podesivi/weekly 60-minute soak i OWASP ZAP baseline. To i dalje nije nezavisni penetration test ni ljudski NVDA/VoiceOver audit.
+- CI ima realan container/WASM smoke, SMTP/Mailpit reset dokaz i 100-request load smoke; zaseban workflow daje podesivi soak, petominutni PR dokaz, nedeljni četvoročasovni soak i OWASP ZAP baseline. To i dalje nije nezavisni penetration test ni ljudski NVDA/VoiceOver audit.
 
 ### Accepted portfolio limitations
 
