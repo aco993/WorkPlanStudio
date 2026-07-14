@@ -53,6 +53,10 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
     })
     .AddEntityFrameworkStores<ProductionDbContext>()
     .AddDefaultTokenProviders();
+builder.Services.Configure<DataProtectionTokenProviderOptions>(options =>
+    options.TokenLifespan = TimeSpan.FromHours(1));
+builder.Services.Configure<EmailDeliveryOptions>(builder.Configuration.GetSection("Email"));
+builder.Services.AddSingleton<IEmailDelivery, SmtpEmailDelivery>();
 builder.Services.ConfigureApplicationCookie(options =>
 {
     options.Cookie.Name = "__Host-WorkPlanStudio";

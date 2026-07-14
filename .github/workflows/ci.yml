@@ -142,13 +142,24 @@ jobs:
           tags: workplanstudio:ci
           cache-from: type=gha
           cache-to: type=gha,mode=max
+      - name: Start isolated SMTP test service
+        run: |
+          docker network create workplan-ci
+          docker run --detach --name mailpit-ci --network workplan-ci --publish 8025:8025 axllent/mailpit:v1.30.0
       - name: Start production image with disposable SQLite
         run: >
-          docker run --detach --name workplan-ci --publish 8080:8080
+          docker run --detach --name workplan-ci --network workplan-ci --publish 8080:8080
           --env AllowedHosts=localhost
           --env Database__Provider=Sqlite
           --env 'ConnectionStrings__Production=Data Source=/tmp/workplan.db'
           --env Database__ApplyMigrationsOnStartup=true
+          --env Identity__AllowRegistration=true
+          --env Email__Enabled=true
+          --env Email__Host=mailpit-ci
+          --env Email__Port=1025
+          --env Email__UseSsl=false
+          --env Email__SenderAddress=no-reply@workplan.test
+          --env Email__PublicBaseUrl=http://localhost:8080
           workplanstudio:ci
       - name: Runtime, static-asset and security-header smoke
         run: |
@@ -159,13 +170,48 @@ jobs:
           curl --fail --silent --header 'Host: localhost' http://localhost:8080/_framework/dotnet.js --output /dev/null
           curl --silent --head --header 'Host: localhost' http://localhost:8080/ | grep -qi 'content-security-policy:'
           curl --silent --head --header 'Host: localhost' http://localhost:8080/ | grep -qi 'x-content-type-options: nosniff'
+      - name: SMTP password-reset delivery and one-time-token flow
+        run: |
+          cookies=$(mktemp)
+          csrf=$(curl --fail --silent --cookie-jar "$cookies" --header 'Host: localhost' http://localhost:8080/api/auth/antiforgery | jq -r .token)
+          register_status=$(curl --silent --output /dev/null --write-out '%{http_code}' --cookie "$cookies" --cookie-jar "$cookies" \
+            --header 'Host: localhost' --header 'Content-Type: application/json' --header "X-CSRF-TOKEN: $csrf" \
+            --data '{"email":"reset-ci@example.com","password":"Initial!Password123456"}' \
+            http://localhost:8080/api/auth/register)
+          test "$register_status" = 201
+          csrf=$(curl --fail --silent --cookie "$cookies" --cookie-jar "$cookies" --header 'Host: localhost' http://localhost:8080/api/auth/antiforgery | jq -r .token)
+          reset_status=$(curl --silent --output /dev/null --write-out '%{http_code}' --cookie "$cookies" \
+            --header 'Host: localhost' --header 'Content-Type: application/json' --header "X-CSRF-TOKEN: $csrf" \
+            --data '{"email":"reset-ci@example.com"}' http://localhost:8080/api/auth/password-reset/request)
+          test "$reset_status" = 202
+          for attempt in {1..20}; do
+            message=$(curl --fail --silent http://localhost:8025/view/latest.txt 2>/dev/null || true)
+            echo "$message" | grep -q 'resetToken=' && break
+            sleep 1
+          done
+          reset_url=$(echo "$message" | grep -o 'http://localhost:8080/?resetEmail=[^[:space:]]*' | head -1)
+          test -n "$reset_url"
+          reset_token=${reset_url##*resetToken=}
+          csrf=$(curl --fail --silent --cookie "$cookies" --cookie-jar "$cookies" --header 'Host: localhost' http://localhost:8080/api/auth/antiforgery | jq -r .token)
+          confirm_body=$(jq -n --arg token "$reset_token" \
+            '{email:"reset-ci@example.com",token:$token,newPassword:"Changed!Password123456"}')
+          confirm_status=$(curl --silent --output /dev/null --write-out '%{http_code}' --cookie "$cookies" \
+            --header 'Host: localhost' --header 'Content-Type: application/json' --header "X-CSRF-TOKEN: $csrf" \
+            --data "$confirm_body" http://localhost:8080/api/auth/password-reset/confirm)
+          test "$confirm_status" = 204
+          smtp_accepted=$(curl --fail --silent http://localhost:8025/api/v1/info | jq -r .RuntimeStats.SMTPAccepted)
+          test "$smtp_accepted" = 1
       - name: Concurrent HTTP load smoke
         run: >
           seq 1 100 | xargs -P 20 -I '{}' curl --fail --silent
           --header 'Host: localhost' http://localhost:8080/health/live --output /dev/null
       - name: Container diagnostics
         if: failure()
-        run: docker logs workplan-ci
+        run: |
+          docker logs workplan-ci || true
+          docker logs mailpit-ci || true
       - name: Stop production image
         if: always()
-        run: docker rm --force workplan-ci || true
+        run: |
+          docker rm --force workplan-ci mailpit-ci || true
+          docker network rm workplan-ci || true

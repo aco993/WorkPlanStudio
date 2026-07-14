@@ -41,6 +41,27 @@ public sealed class ServerSession(HttpClient httpClient)
         return response.IsSuccessStatusCode ? null : await ReadErrorAsync(response, cancellationToken);
     }
 
+    public async Task<ApiError?> RequestPasswordResetAsync(string email, CancellationToken cancellationToken = default)
+    {
+        using var response = await SendAsync(
+            HttpMethod.Post, "api/auth/password-reset/request", new PasswordResetRequest(email), cancellationToken);
+        return response.IsSuccessStatusCode ? null : await ReadErrorAsync(response, cancellationToken);
+    }
+
+    public async Task<ApiError?> ConfirmPasswordResetAsync(
+        string email,
+        string token,
+        string newPassword,
+        CancellationToken cancellationToken = default)
+    {
+        using var response = await SendAsync(
+            HttpMethod.Post,
+            "api/auth/password-reset/confirm",
+            new PasswordResetConfirmRequest(email, token, newPassword),
+            cancellationToken);
+        return response.IsSuccessStatusCode ? null : await ReadErrorAsync(response, cancellationToken);
+    }
+
     public async Task LogoutAsync(CancellationToken cancellationToken = default)
     {
         using var response = await SendAsync<object>(HttpMethod.Post, "api/auth/logout", null, cancellationToken);

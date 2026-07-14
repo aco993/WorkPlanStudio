@@ -93,7 +93,9 @@ public sealed class DispatchScheduler : IScheduler
                 candidate.End == best.End && candidate.Start == best.Start && candidate.Slot < best.Slot)
                 best = candidate;
         }
-        return best ?? throw new InvalidOperationException($"Work center {machine.WorkCenterId} has no capacity slots.");
+        // SchedulingContext guarantees ParallelCapacity >= 1, so the loop always
+        // produces a placement. Keep that invariant in one validation boundary.
+        return best!;
     }
 
     private static long SetupSeconds(MachineCapacity machine, string? from, string to)

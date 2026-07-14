@@ -89,6 +89,61 @@ public sealed class CoverageGapTests
         Assert.Null(ScheduleExplainer.Explain(context, result).Bottleneck);
     }
 
+    [Fact]
+    public void Remaining_defensive_and_fallback_paths_are_explicitly_verified()
+    {
+        var zeroStateRandom = new DeterministicRandom(8_482_583_892_990_087_863L);
+        Assert.NotEqual(0UL, zeroStateRandom.NextUInt64());
+        Assert.Equal(0, zeroStateRandom.NextInt(1));
+        Assert.InRange(zeroStateRandom.NextInt(2), 0, 1);
+
+        var job = Scenario.Job(7, Scenario.Step(1, 1, 10));
+        Assert.Equal(job.TotalProcessingSeconds, PriorityOrdering.KeyFor(
+            (DispatchRule)999, job, new Dictionary<int, long>()));
+
+        var context = Scenario.Context(new SchedulingParameters(), [Scenario.Machine(1)], job);
+        var scheduler = new DispatchScheduler();
+        Assert.Equal("Finite-capacity dispatch", scheduler.Name);
+        Assert.Equal(10, scheduler.Run(context, [0], new Dictionary<int, long>()).Jobs.Single().DueSeconds);
+
+        var zeroLength = new Schedule([new ScheduledOperation(1, 1, 1, 0, 0, 0)], []);
+        Assert.Equal(0, ScheduleEvaluator.Evaluate(zeroLength, context).UtilizationByWorkCenter[1]);
+
+        var unknownCenterResult = new SchedulingResult(
+            new Schedule([], []),
+            new ScheduleEvaluation { UtilizationByWorkCenter = new Dictionary<int, double> { [404] = 0.5 } },
+            new Dictionary<int, long>(),
+            0);
+        Assert.Equal("404", ScheduleExplainer.Explain(
+            new SchedulingContext([], [], new SchedulingParameters()), unknownCenterResult).Bottleneck?.WorkCenterName);
+    }
+
+    [Fact]
+    public void Setup_lookup_covers_mismatches_matches_and_missing_transitions()
+    {
+        var machine = new MachineCapacity(1, "M")
+        {
+            SetupDurations =
+            [
+                new SetupDuration("X", "B", 1),
+                new SetupDuration("A", "C", 2),
+                new SetupDuration("A", "B", 3)
+            ]
+        };
+        var matched = Scenario.Job(1,
+            new JobStep(1, 1, 10, "A"),
+            new JobStep(2, 1, 10, "B"));
+        var missing = Scenario.Job(2,
+            new JobStep(1, 1, 10, "A"),
+            new JobStep(2, 1, 10, "D"));
+
+        var matchedResult = new SchedulingEngine().Run(Scenario.Context(new SchedulingParameters(), [machine], matched));
+        var missingResult = new SchedulingEngine().Run(Scenario.Context(new SchedulingParameters(), [machine], missing));
+
+        Assert.Equal(3, matchedResult.Schedule.Operations.Single(operation => operation.StepNumber == 2).SetupSeconds);
+        Assert.Equal(0, missingResult.Schedule.Operations.Single(operation => operation.StepNumber == 2).SetupSeconds);
+    }
+
     private static void AssertInvalidStep(JobStep step)
     {
         var job = new ProductionJob { Id = 1, Reference = "J1", Steps = [step] };

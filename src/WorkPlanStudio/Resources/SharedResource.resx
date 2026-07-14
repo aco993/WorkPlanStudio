@@ -377,4 +377,14 @@
   <data name="Status_Queued" xml:space="preserve"><value>Queued</value></data>
   <data name="Status_Running" xml:space="preserve"><value>Running</value></data>
   <data name="Status_Failed" xml:space="preserve"><value>Failed</value></data>
+  <data name="Auth_ForgotPassword" xml:space="preserve"><value>Forgot password?</value></data>
+  <data name="Auth_ResetRequestTitle" xml:space="preserve"><value>Reset password</value></data>
+  <data name="Auth_ResetConfirmTitle" xml:space="preserve"><value>Choose a new password</value></data>
+  <data name="Auth_SendResetLink" xml:space="preserve"><value>Send reset link</value></data>
+  <data name="Auth_ResetPassword" xml:space="preserve"><value>Reset password</value></data>
+  <data name="Auth_ResetLinkSent" xml:space="preserve"><value>If the account exists, a one-time reset link has been sent.</value></data>
+  <data name="Auth_ResetComplete" xml:space="preserve"><value>Your password was reset. You can now sign in.</value></data>
+  <data name="Auth_BackToLogin" xml:space="preserve"><value>Back to sign in</value></data>
+  <data name="ProductionSchedule_ExactMode" xml:space="preserve"><value>Prove the best dispatch order (maximum 9 selected orders)</value></data>
+  <data name="ProductionSchedule_ExactModeHint" xml:space="preserve"><value>Exhaustively evaluates every job order. The proof applies to this dispatch-order model, not unrestricted job-shop scheduling.</value></data>
 </root>

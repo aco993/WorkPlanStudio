@@ -47,6 +47,10 @@ public static class ScheduleRunEndpoints
         var ids = request.ProductionOrderIds.Distinct().ToList();
         if (ids.Count is < 1 or > 500)
             return Results.BadRequest(new ApiError("invalid_order_count", "A schedule run needs between 1 and 500 distinct orders."));
+        if (request.ExactDispatchOrder && ids.Count > ExactDispatchOrderOptimizer.MaxJobs)
+            return Results.BadRequest(new ApiError(
+                "exact_order_limit",
+                $"Exact dispatch-order optimization supports at most {ExactDispatchOrderOptimizer.MaxJobs} orders."));
         try
         {
             SchedulingParameterLimits.Validate(new SchedulingParameters

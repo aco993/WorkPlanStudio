@@ -2,7 +2,7 @@
 
 ## Pet rečenica koje moraju biti tačne
 
-- Scheduler je deterministička heuristika, nije optimal solver.
+- Default scheduler je deterministička heuristika; bounded exact režim dokazuje najbolji dispatch order do devet poslova, ali nije opšti job-shop solver.
 - AI je opcioni narrator, nije dio scheduling odluke.
 - Offline SQLite/localStorage je eksplicitna demo persistence; hosted režim koristi Identity API i PostgreSQL.
 - Released routing je potpuno scheduleovan ili potpuno odbijen sa structured reason codeom.
@@ -11,11 +11,11 @@
 ## Brojevi za 2026-07-14
 
 - Baseline commit: `0e1e3c514f35d8479dfe1bdc51905d31de8729b3`.
-- Scheduling tests: 99 passed.
+- Scheduling tests: 102 passed.
 - Web/data/component tests: 54 passed.
-- Production API integration tests: 11 passed.
+- Production API integration tests: 12 passed.
 - Playwright E2E: 10 passed, uključujući save→hard reload, confirmed reset i mobile drawer.
-- Current engine coverage: 467/469 linija (99.57%) i 226/235 grana (96.17%).
+- Current engine coverage: 508/508 linija i 245/245 grana (100% / 100%).
 - Scenario runner: 25/100/250 jobs; 32.9/275.2/601.0 ms i 0.57/42.73/436.57 MB allocations na finalnom runu.
 - Central budget: 1–64 starts, 0–20.000 local steps.
 - Work-center capacity: 1–64.

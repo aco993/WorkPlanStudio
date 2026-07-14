@@ -176,14 +176,32 @@ public sealed class ScheduleWorker(
             LocalSearchMaxSteps = request.LocalSearchMaxSteps,
             Seed = request.Seed
         };
-        var result = new SchedulingEngine().RunCancellable(new SchedulingContext(jobs, machines, parameters), cancellationToken);
+        var schedulingContext = new SchedulingContext(jobs, machines, parameters);
+        SchedulingResult result;
+        object? exactProof = null;
+        if (request.ExactDispatchOrder)
+        {
+            var exact = ExactDispatchOrderOptimizer.Run(schedulingContext, cancellationToken);
+            result = exact.Result;
+            exactProof = new
+            {
+                Scope = "dispatch-order-model",
+                exact.EvaluatedOrders,
+                exact.IsOptimalWithinDispatchOrderModel,
+                MaxJobs = ExactDispatchOrderOptimizer.MaxJobs
+            };
+        }
+        else
+        {
+            result = new SchedulingEngine().RunCancellable(schedulingContext, cancellationToken);
+        }
 
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
         var leases = scope.ServiceProvider.GetRequiredService<ScheduleRunLeaseManager>();
         var completed = await leases.TryCompleteAsync(
             id,
             _workerId,
-            JsonSerializer.Serialize(new { HorizonStartUtc = horizonStart, Result = result }),
+            JsonSerializer.Serialize(new { HorizonStartUtc = horizonStart, Result = result, ExactProof = exactProof }),
             DateTime.UtcNow,
             cancellationToken);
         if (completed != 1)

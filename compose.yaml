@@ -32,6 +32,15 @@ services:
       Identity__AllowRegistration: "false"
       Identity__BootstrapAdminEmail: ${BOOTSTRAP_ADMIN_EMAIL:-}
       Identity__BootstrapAdminPassword: ${BOOTSTRAP_ADMIN_PASSWORD:-}
+      Email__Enabled: ${EMAIL_ENABLED:-false}
+      Email__Host: ${SMTP_HOST:-}
+      Email__Port: ${SMTP_PORT:-587}
+      Email__UseSsl: ${SMTP_USE_SSL:-true}
+      Email__UserName: ${SMTP_USERNAME:-}
+      Email__Password: ${SMTP_PASSWORD:-}
+      Email__SenderAddress: ${SMTP_SENDER_ADDRESS:-}
+      Email__SenderName: ${SMTP_SENDER_NAME:-WorkPlan Studio}
+      Email__PublicBaseUrl: ${PUBLIC_BASE_URL:-http://localhost:8080}
       Assistant__ApiKey: ${ASSISTANT_API_KEY:-}
       Assistant__Endpoint: ${ASSISTANT_ENDPOINT:-https://api.openai.com/v1/}
       Assistant__Model: ${ASSISTANT_MODEL:-gpt-4.1-mini}
