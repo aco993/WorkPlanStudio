@@ -47,4 +47,4 @@ The automated lease suite proves one-winner claims, heartbeat extension, cancell
 
 ## Scheduled evidence
 
-`.github/workflows/production-evidence.yml` runs a weekly 60-minute concurrent health/readiness soak and OWASP ZAP passive baseline. Manual runs accept a shorter duration for pull-request verification. The ZAP baseline is DAST evidence, not an independent penetration test.
+`.github/workflows/production-evidence.yml` runs a weekly four-hour concurrent health/readiness soak and OWASP ZAP passive baseline. Pull requests use a five-minute gate and manual runs accept a configurable duration. The ZAP baseline is DAST evidence, not an independent penetration test.

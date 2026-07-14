@@ -23,9 +23,9 @@ jobs:
   soak-and-dast:
     name: HTTP soak + OWASP ZAP baseline
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 330
     env:
-      SOAK_MINUTES: ${{ github.event_name == 'schedule' && '60' || github.event_name == 'pull_request' && '5' || inputs.duration_minutes || '15' }}
+      SOAK_MINUTES: ${{ github.event_name == 'schedule' && '240' || github.event_name == 'pull_request' && '5' || inputs.duration_minutes || '15' }}
     steps:
       - uses: actions/checkout@v7
       - name: Build production image
@@ -45,15 +45,62 @@ jobs:
           done
       - name: Sustained concurrent HTTP soak
         run: |
-          deadline=$((SECONDS + SOAK_MINUTES * 60))
-          requests=0
-          while (( SECONDS < deadline )); do
-            seq 1 200 | xargs -P 25 -I '{}' curl --fail --silent \
-              --header 'Host: localhost' http://localhost:8080/health/live --output /dev/null
-            requests=$((requests + 200))
-          done
+          set -o pipefail
+          node <<'NODE' | tee soak-summary.txt
+          const http = require('node:http');
+
+          const concurrency = 25;
+          const durationMs = Number(process.env.SOAK_MINUTES) * 60_000;
+          const deadline = Date.now() + durationMs;
+          const agent = new http.Agent({ keepAlive: true, maxSockets: concurrency });
+          let requests = 0;
+          let failures = 0;
+          const statusCounts = new Map();
+
+          function requestOnce() {
+            return new Promise((resolve) => {
+              const request = http.get({
+                agent,
+                hostname: 'localhost',
+                port: 8080,
+                path: '/health/live',
+                headers: { Host: 'localhost' },
+                timeout: 5_000
+              }, (response) => {
+                response.resume();
+                response.on('end', () => {
+                  requests += 1;
+                  statusCounts.set(response.statusCode, (statusCounts.get(response.statusCode) ?? 0) + 1);
+                  if (response.statusCode !== 200) failures += 1;
+                  resolve();
+                });
+              });
+              request.on('timeout', () => request.destroy(new Error('request timeout')));
+              request.on('error', () => {
+                requests += 1;
+                failures += 1;
+                resolve();
+              });
+            });
+          }
+
+          async function worker() {
+            while (Date.now() < deadline) await requestOnce();
+          }
+
+          Promise.all(Array.from({ length: concurrency }, worker)).then(() => {
+            agent.destroy();
+            console.log(JSON.stringify({
+              durationMinutes: Number(process.env.SOAK_MINUTES),
+              concurrency,
+              requests,
+              failures,
+              statusCounts: Object.fromEntries(statusCounts)
+            }, null, 2));
+            if (requests === 0 || failures !== 0) process.exitCode = 1;
+          });
+          NODE
           curl --fail --silent --header 'Host: localhost' http://localhost:8080/api/health/ready | jq -e '.status == "ready"'
-          echo "Completed $requests requests over ${SOAK_MINUTES} minutes" | tee soak-summary.txt
       - name: OWASP ZAP passive baseline
         run: |
           mkdir -p zap-results
