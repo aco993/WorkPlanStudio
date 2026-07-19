@@ -213,7 +213,14 @@ jobs:
             docker compose exec --no-TTY database pg_isready -U workplanstudio -d workplanstudio && break
             sleep 1
           done
-          docker compose ps database --format json | jq -e 'select(.Health == "healthy")'
+          database_id=$(docker compose ps --quiet database)
+          test -n "$database_id"
+          for attempt in {1..40}; do
+            database_health=$(docker inspect --format '{{.State.Health.Status}}' "$database_id")
+            test "$database_health" = healthy && break
+            sleep 1
+          done
+          test "$database_health" = healthy
       - name: Start isolated SMTP test service
         run: >
           docker run --detach --name mailpit-ci --network workplan-ci_default --publish 8025:8025
