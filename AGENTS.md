@@ -44,7 +44,10 @@ dependency-free* library. Full picture: [README.md](README.md).
 | `src/WorkPlanStudio/Pages/Schedule.razor` | the scheduling UI (parameters, Gantt, KPIs, assistant) |
 | `tests/WorkPlanStudio.Scheduling.Tests/` | engine unit + architecture tests |
 | `tests/WorkPlanStudio.Web.Tests/` | mapper + bUnit component tests |
+| `tests/WorkPlanStudio.Api.Tests/` | hosted Identity/API integration tests on SQLite |
+| `tests/WorkPlanStudio.Postgres.Tests/` | migrations and lease fencing on real PostgreSQL |
 | `tests/WorkPlanStudio.E2E/` | Playwright end-to-end |
+| `tests/WorkPlanStudio.ProductionE2E/` | authenticated Playwright checks against the production container |
 | `docs/` | SCHEDULING.md, TESTING.md (both EN/DE), `adr/` |
 
 ## Build, run, test
@@ -86,6 +89,7 @@ E2E (Playwright) needs the app running + a browser — see [docs/TESTING.md](doc
 
 ## Out of scope on purpose
 
-Backward scheduling, distributed run claiming, alternative-machine optimization,
-optimality proofs and HA deployment remain roadmap items. Do not add them without
-a measured requirement and an explicit architecture decision.
+Backward scheduling, alternative-machine optimization, unrestricted optimality
+proofs and a target-environment HA deployment remain roadmap items. Distributed
+run claiming already uses fenced database leases; do not replace or expand these
+boundaries without a measured requirement and an explicit architecture decision.

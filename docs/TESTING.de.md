@@ -13,28 +13,35 @@ Browser und ohne die `wasm-tools`-Workload.
 
 ```mermaid
 graph TD
-    E2E["🌐 <b>E2E</b> — Playwright · 10 Tests<br/>Chromium, Reload/Reset, Tastatur, Mobile und Sprache"]
-    WEB["🧩 <b>Daten + Grenze + Komponenten</b> — xUnit/bUnit · 54 Tests<br/>echtes SQLite, Validierung, Mapping, UI &amp; Assistent"]
-    UNIT["⚙️ <b>Unit + Property + Architektur</b> — xUnit/CsCheck · 90 Tests<br/>Engine, Limits, Invarianten &amp; Designregeln"]
+    PROD["🚢 <b>Production E2E</b> — Playwright + Docker · 3 Tests<br/>Login, Auth, Sprache und Mobile"]
+    E2E["🌐 <b>Offline E2E</b> — Playwright · 10 Tests<br/>Chromium, Reload/Reset, Tastatur, Mobile und Sprache"]
+    PG["🐘 <b>PostgreSQL</b> · 2 Tests<br/>Migrationen, Claims und Lease-Fencing"]
+    API["🔐 <b>API-Integration</b> · 12 Tests<br/>Identity, CSRF und Owner-Isolation"]
+    WEB["🧩 <b>Daten + Grenze + Komponenten</b> — xUnit/bUnit · 55 Tests<br/>echtes SQLite, Validierung, Mapping, UI &amp; Assistent"]
+    UNIT["⚙️ <b>Unit + Property + Architektur</b> — xUnit/CsCheck · 102 Tests<br/>Engine, Kalender, Setup, Limits, Invarianten &amp; Designregeln"]
 
-    E2E --> WEB --> UNIT
+    PROD --> E2E --> PG --> API --> WEB --> UNIT
 
     classDef fast fill:#dcfce7,stroke:#16a34a,color:#14532d;
     classDef slow fill:#fef3c7,stroke:#b45309,color:#7c2d12;
     class UNIT fast;
-    class WEB,E2E slow;
+    class WEB,API,PG,E2E,PROD slow;
 ```
 
 ## Die Schichten
 
 | Schicht | Projekt | Tests | Sichert | WASM nötig? | Laufzeit |
 | --- | --- | --: | --- | :---: | --- |
-| Engine + Property + Architektur | `tests/WorkPlanStudio.Scheduling.Tests` | 90 | Determinismus, Zulässigkeit, Regeln, Limits, Overflow, Cancellation, Erklärungen und die reine Architekturgrenze | nein | ~3 s |
-| Daten + Mapping + Komponenten + Assistent | `tests/WorkPlanStudio.Web.Tests` | 54 | echtes SQLite, CRUD/Constraints/Recovery, vollständiges Routing-Mapping, UI-Zustände, Accessibility und gestubbter KI-Transport | ja¹ | ~12 s |
-| End-to-End | `tests/WorkPlanStudio.E2E` | 10 | Chromium: Planung, Determinismus, Sprache/`html lang`, ungültige Eingaben, Save→Reload, Reset, Modal-Tastatur/Fokus und Mobile Drawer | Browser² | ~2 min |
+| Engine + Property + Architektur | `tests/WorkPlanStudio.Scheduling.Tests` | 102 | Determinismus, Zulässigkeit, Regeln, Kalender/Setup, bounded Exact Search, Limits, Overflow, Cancellation und Architekturgrenze | nein | ~8 s |
+| Daten + Mapping + Komponenten + Assistent | `tests/WorkPlanStudio.Web.Tests` | 55 | echtes SQLite, CRUD/Constraints/Recovery, vollständiges Routing-Mapping, UI-Zustände, Accessibility und gestubbter KI-Transport | ja¹ | ~12 s |
+| Production API | `tests/WorkPlanStudio.Api.Tests` | 12 | migriertes SQLite, Identity/MFA/Reset, CSRF, Owner-Isolation, Worker und Health | ja¹ | ~35 s |
+| PostgreSQL-Integration | `tests/WorkPlanStudio.Postgres.Tests` | 2 | echte Migrationen, konkurrierender Claim, Lease-Übernahme und stale-owner Fencing | nein³ | ~10 s |
+| Offline-End-to-End | `tests/WorkPlanStudio.E2E` | 10 | Chromium: Planung, Sprache, ungültige Eingaben, Save→Reload, Reset, Tastatur und Mobile | Browser² | ~3 min |
+| Production-End-to-End | `tests/WorkPlanStudio.ProductionE2E` | 3 | Container-Login, authentifizierte Navigation, Accessibility-Semantik, Deutsch und Mobile Drawer | Browser² | ~20 s |
 
 ¹ Diese referenzieren das Blazor-App-Assembly, daher kompiliert ihr Build die App (also `wasm-tools`). Die Tests selbst laufen auf einem normalen Host.
 ² Braucht einen Chromium-Download (`playwright install`) und die laufende App; kein `wasm-tools`, wenn ein vorab veröffentlichter Build ausgeliefert wird.
+³ Benötigt explizit `WPS_POSTGRES_CONNECTION`; die CI stellt PostgreSQL 18 bereit. Ohne Variable wird bewusst übersprungen, niemals still durch SQLite ersetzt.
 
 ## Was jede Schicht tut
 
@@ -116,6 +123,7 @@ Makespan reproduziert und dass die Oberfläche auf Deutsch umschaltet.
 # Alles außer E2E (schnell, ohne Browser):
 dotnet test tests/WorkPlanStudio.Scheduling.Tests/WorkPlanStudio.Scheduling.Tests.csproj
 dotnet test tests/WorkPlanStudio.Web.Tests/WorkPlanStudio.Web.Tests.csproj
+dotnet test tests/WorkPlanStudio.Api.Tests/WorkPlanStudio.Api.Tests.csproj
 
 # E2E — App starten, Browser einmalig installieren, dann ausführen:
 dotnet run --project src/WorkPlanStudio/WorkPlanStudio.csproj &           # liefert http://localhost:5235
@@ -128,7 +136,7 @@ Nützliche Umgebungsvariablen für E2E: `E2E_BASE_URL` (Standard `http://localho
 
 ## Abdeckung
 
-Der Engine-Job misst die Code-Abdeckung mit dem Collector der Microsoft Testing Platform; die Planungsbibliothek liegt bei etwa **98 % Zeilen / 92 % Zweige**. Lokal reproduzierbar mit:
+Der Engine-Job misst die Code-Abdeckung mit dem Collector der Microsoft Testing Platform. Die verifizierte Engine-Abdeckung beträgt **508/508 Zeilen und 245/245 Zweige (100 % / 100 %)** über 102 Tests. Lokal reproduzierbar mit:
 
 ```bash
 dotnet test tests/WorkPlanStudio.Scheduling.Tests/WorkPlanStudio.Scheduling.Tests.csproj \
@@ -139,6 +147,8 @@ dotnet test tests/WorkPlanStudio.Scheduling.Tests/WorkPlanStudio.Scheduling.Test
 
 | Workflow | Läuft | Wann |
 | --- | --- | --- |
-| [`ci.yml`](../.github/workflows/ci.yml) | Engine-Tests (ohne WASM) + Mapper-/Komponententests (mit WASM) als zwei Jobs | bei jedem Pull Request |
+| [`ci.yml`](../.github/workflows/ci.yml) | fail-closed Dependency-Audit, Format/Dokumente, Engine/Web/API/PostgreSQL, Migrationen, Performance, Container und Production-E2E | bei jedem Pull Request |
 | [`e2e.yml`](../.github/workflows/e2e.yml) | baut, liefert die App aus, installiert Chromium, führt Playwright aus, lädt Screenshots hoch | bei jedem Pull Request |
-| [`deploy.yml`](../.github/workflows/deploy.yml) | Engine-Tests sichern das GitHub-Pages-Deploy ab | Push auf `main` |
+| [`codeql.yml`](../.github/workflows/codeql.yml) | CodeQL C# mit `security-extended` | Pull Requests, `main`, wöchentlich |
+| [`production-evidence.yml`](../.github/workflows/production-evidence.yml) | rate-kontrollierter Soak plus passiver OWASP-ZAP-Baseline | Pull Requests, wöchentlich, manuell |
+| [`deploy.yml`](../.github/workflows/deploy.yml) | vollständiger Release-Gate vor dem GitHub-Pages-Deploy | Push auf `main` |

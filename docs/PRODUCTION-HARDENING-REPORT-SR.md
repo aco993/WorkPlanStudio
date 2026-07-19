@@ -1,6 +1,6 @@
 # WorkPlan Studio — završni production hardening izveštaj
 
-Datum revizije: 2026-07-13
+Datum revizije: 2026-07-19
 Grana: `codex/production-platform`
 
 ## Executive summary
@@ -68,7 +68,7 @@ Offline demo tok ostaje `Razor → application services → BrowserDatabase → 
 
 ## Build i test evidence
 
-Konačne brojke se održavaju u [TESTING.md](TESTING.md). Obavezni gate uključuje pojedinačne test projekte, Release build, format, dependency audit, migration script generation, scenario ceilings, Compose config, browser E2E i authenticated API smoke. Poznati `WASM0001` potiče od varargs exporta u SQLite native biblioteci; aplikacija ne poziva te configuration overloads, a real Chromium CRUD/reload E2E je obavezna regresija.
+Konačne brojke se održavaju u [TESTING.md](TESTING.md). Lokalna revizija je izvršila 184/184 testa bez failure/skip rezultata, Release build, format, dokumentacione linkove, fail-closed dependency audit, oba migration skripta, scenario ceilings, Compose/PostgreSQL health, production security headers/restrictions, offline i authenticated production Chromium, SMTP reset delivery/single-use token i kratak rate-controlled soak. Poznati `WASM0001` potiče od varargs exporta u SQLite native biblioteci; aplikacija ne poziva te configuration overloads, a real Chromium CRUD/reload E2E je obavezna regresija.
 
 ## Rizici
 
@@ -105,14 +105,14 @@ Konačne brojke se održavaju u [TESTING.md](TESTING.md). Obavezni gate uključu
 | Reliability | 9/10 | DB lease/heartbeat/recovery, cross-replica cancellation, readiness i backup |
 | Architecture | 9/10 | čist scheduler, shared contracts/domain, provider migrations; svesno bez pattern inflation-a |
 | Maintainability | 8/10 | jasne granice i ADR; API endpoint fajlovi ostaju ručno mapirani |
-| Testability | 9.5/10 | 102 engine + 55 web + 12 API + 10 browser testova, real SQLite, SMTP adapter i Chromium |
-| Security | 8.5/10 | Identity/CSRF/ownership/rate limits/TOTP/recovery/password reset + ZAP workflow; bez nezavisnog pen testa |
-| Accessibility | 8.5/10 | keyboard/modal/lang/mobile + Chrome AX-tree/label/contrast audit; bez ljudskog NVDA/VoiceOver testa |
-| UX | 9/10 | status tiles, empty/live states, localized statuses, progress/cancel, account security i password-reset UI |
-| Dokumentacija | 9/10 | architecture/security/production/AI/ADR/intervju dokumenti |
-| GitHub prezentacija | 9/10 | problem, dijagram, live demo, evidence i limitations odmah vidljivi |
+| Testability | 9.5/10 | 184 testova u šest slojeva, real SQLite/PostgreSQL, offline i production Chromium |
+| Security | 9/10 | Identity/CSRF/ownership/rate limits/TOTP/recovery/SMTP reset, fail-closed audit, digest pins i CodeQL; bez nezavisnog pen testa |
+| Accessibility | 8.5/10 | keyboard/modal/lang/mobile + authenticated production semantics/AX evidence; bez ljudskog NVDA/VoiceOver testa |
+| UX | 8.5/10 | status/empty/live/progress/cancel/account tokovi; bez formalnog usability testa i završnog dizajnerskog polish-a |
+| Dokumentacija | 9.5/10 | provereni lokalni linkovi, architecture/security/production/AI/ADR/intervju dokumenti i nova samoevaluacija |
+| GitHub prezentacija | 9/10 | problem, dijagram, live demo, evidence i limitations; konačna ocena zavisi od zelenih novih PR checkova |
 | Interview readiness | 9/10 | dokazive tehničke priče i iskren AI disclosure |
-| Production readiness | 8.5/10 | multi-replica-safe worker, SMTP, runtime/load i scheduled soak/ZAP; nije target-environment HA/regulated potpis |
+| Production readiness | 8.5/10 | real PostgreSQL/container/SMTP evidence i multi-replica-safe worker; nije target-environment HA/regulated potpis |
 
 ## Hiring-manager procena
 

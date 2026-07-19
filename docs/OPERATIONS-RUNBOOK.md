@@ -29,7 +29,7 @@ This runbook is the executable baseline for the hosted WorkPlan Studio platform.
 5. Send a cancellation request through a different replica and confirm the database records `CancellationRequestedUtc` before the worker stops.
 6. Record recovery time. The current lease configuration implies an upper failover bound of roughly two minutes plus polling and scheduling time.
 
-The automated lease suite proves one-winner claims, heartbeat extension, cancellation exclusion and expired-lease takeover against a real relational provider. The drill above proves the deployment/network/orchestrator layer and must be repeated in each target environment.
+The automated PostgreSQL lease suite proves one-winner claims, expired-lease takeover and stale-owner completion fencing on PostgreSQL. The broader API suite covers heartbeat/cancellation behaviour. The drill above proves the deployment/network/orchestrator layer and must be repeated in each target environment.
 
 ## Backup and restore drill
 
@@ -47,4 +47,4 @@ The automated lease suite proves one-winner claims, heartbeat extension, cancell
 
 ## Scheduled evidence
 
-`.github/workflows/production-evidence.yml` runs a weekly four-hour concurrent health/readiness soak and OWASP ZAP passive baseline. Pull requests use a five-minute gate and manual runs accept a configurable duration. The ZAP baseline is DAST evidence, not an independent penetration test.
+`.github/workflows/production-evidence.yml` configures a weekly four-hour, rate-controlled health/readiness soak and an OWASP ZAP passive baseline. Pull requests use a five-minute gate; manual runs accept configurable duration and target RPS. The previous unbounded worker loop was replaced because it could overload the hosted runner and lose evidence near the end of a long run. A complete scheduled artifact must be inspected before claiming that a four-hour run passed. The ZAP baseline is DAST evidence, not an independent penetration test.
