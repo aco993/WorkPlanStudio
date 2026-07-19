@@ -95,7 +95,8 @@ for each job in priority order:
     for each step in the job (in sequence):
         slot   = the work center's earliest-free slot
         start  = max(jobReadyAt, slotFreeAt[slot])
-        end    = start + step.DurationSeconds
+        setup  = sequence-dependent setup for the selected slot/family transition
+        end    = start + setup + step.DurationSeconds
         slotFreeAt[slot] = end
         jobReadyAt       = end
 ```
@@ -105,6 +106,8 @@ Two invariants hold by construction, which is what makes every output **feasible
 - **precedence** — a step's `start` is `≥ jobReadyAt`, the end of the previous step;
 - **capacity** — each slot's clock is strictly serial, so a work center never runs
   more than `ParallelCapacity` operations at once.
+- **setup occupancy** — sequence-dependent setup is part of the occupied interval,
+  so it consumes the same slot and calendar capacity as processing.
 
 The scheduler is a pure function of `(context, order)` — no randomness, no shared
 state — so it is trivially reproducible.
@@ -202,8 +205,9 @@ Kept out of scope on purpose, to stay simple and provably correct:
   `MinutesPerWorkingDay` only buckets it into days for the Gantt.
 - **Per-work-center machine counts** — the app maps every work center to one slot,
   though the engine already supports `ParallelCapacity > 1` (and the tests use it).
-- **Sequence-dependent setup, lot-splitting, gap back-filling** — all natural next
-  steps, none required for a clear, well-tested baseline.
+- **Lot-splitting and gap back-filling** — natural next steps, but not required for
+  this clear, well-tested forward-scheduling baseline. Sequence-dependent setup is
+  supported and included in slot/calendar occupancy.
 
 ---
 

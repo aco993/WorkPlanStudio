@@ -94,7 +94,8 @@ für jeden Auftrag in Prioritätsreihenfolge:
     für jeden Schritt des Auftrags (in Reihenfolge):
         slot   = der früheste freie Slot des Arbeitsplatzes
         start  = max(jobReadyAt, slotFreeAt[slot])
-        end    = start + step.DurationSeconds
+        setup  = reihenfolgeabhängige Rüstzeit für Slot/Familienübergang
+        end    = start + setup + step.DurationSeconds
         slotFreeAt[slot] = end
         jobReadyAt       = end
 ```
@@ -105,6 +106,8 @@ Zwei Invarianten gelten per Konstruktion und machen jede Ausgabe **zulässig**:
   vorigen Schritts;
 - **Kapazität** — die Uhr jedes Slots ist streng seriell, sodass ein Arbeitsplatz
   nie mehr als `ParallelCapacity` Arbeitsgänge gleichzeitig ausführt.
+- **Rüstzeitbelegung** — die Rüstzeit gehört zum belegten Intervall und verbraucht
+  dieselbe Slot- und Kalenderkapazität wie die Bearbeitung.
 
 Der Scheduler ist eine reine Funktion von `(context, order)` — keine Zufälligkeit,
 kein geteilter Zustand — und damit trivial reproduzierbar.
@@ -214,8 +217,9 @@ Bewusst außerhalb des Umfangs gelassen, um einfach und beweisbar korrekt zu ble
 - **Maschinenanzahl je Arbeitsplatz** — die App bildet jeden Arbeitsplatz auf einen
   Slot ab, obwohl die Engine `ParallelCapacity > 1` bereits unterstützt (und die
   Tests es nutzen).
-- **Reihenfolgeabhängige Rüstzeiten, Losteilung, Lückenfüllung** — alles natürliche
-  nächste Schritte, keiner für eine klare, gut getestete Basis nötig.
+- **Losteilung und Lückenfüllung** — natürliche nächste Schritte, für diese klare,
+  gut getestete Vorwärtsplanungs-Basis aber nicht erforderlich. Reihenfolgeabhängige
+  Rüstzeiten werden unterstützt und als Slot-/Kalenderbelegung berücksichtigt.
 
 ---
 
