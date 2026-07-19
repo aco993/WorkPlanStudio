@@ -75,10 +75,10 @@ are the classic operations-research due-date rules (`release` = job release seco
 | **CON** — Constant Allowance | `due = release + allowance` |
 | **Explicit** | the job's own value, else falls back to CON |
 
-`Explicit` is an engine capability for callers that own a real per-job due date.
-The current Blazor application intentionally hides it because `WorkPlan` is a
-routing template and the app has no `ProductionOrder` due-date field. See
-[ADR 0007](adr/0007-defer-production-order.md).
+`Explicit` is used by hosted scheduling, where each `ProductionOrder` owns a real
+release/due date and an immutable routing snapshot. The offline demo continues to
+derive illustrative jobs from routing templates and therefore exposes only the
+four assignment rules. See [ADR 0007](adr/0007-production-order-routing-snapshot.md).
 
 The targets drive both the due-date dispatch rules (EDD, Critical Ratio) and every
 lateness / tardiness KPI.

@@ -20,7 +20,7 @@ Za javni demo koristi čist browser context za očekivani seed. Za hosted demo p
 
 1:30–1:50 — Promijeni DE i pokaži `html lang` kroz DevTools samo ako je brzo.
 
-1:50–2:00 — Zaključi: “Najjači dokaz nije screenshot nego četiri nivoa testova: 102 engine, 55 web/data, 12 API i 10 real-browser scenarija.”
+1:50–2:00 — Zaključi: “Najjači dokaz nije screenshot nego šest slojeva: 102 engine, 55 web/data, 12 API, 2 prava PostgreSQL, 10 offline-browser i 3 authenticated production-browser testa.”
 
 ## Demo od 5 minuta
 

@@ -13,17 +13,19 @@ browser and no `wasm-tools` workload.
 
 ```mermaid
 graph TD
-    E2E["🌐 <b>E2E</b> — Playwright<br/>real Chromium, persistence reload/reset, keyboard, mobile and localization"]
-    API["🔐 <b>API integration</b> — real SQLite<br/>auth, antiforgery and tenant isolation"]
+    PROD["🚢 <b>Production E2E</b> — Playwright + Docker<br/>authenticated Chromium, navigation, language and mobile"]
+    E2E["🌐 <b>Offline E2E</b> — Playwright<br/>real Chromium, persistence reload/reset, keyboard, mobile and localization"]
+    PG["🐘 <b>PostgreSQL integration</b><br/>real migrations, concurrent claims and lease fencing"]
+    API["🔐 <b>API integration</b> — isolated SQLite<br/>auth, antiforgery and tenant isolation"]
     WEB["🧩 <b>Data + Boundary + Component</b> — xUnit/bUnit<br/>real SQLite, validation, mapper, pages &amp; assistant"]
     UNIT["⚙️ <b>Unit + Property + Architecture</b> — xUnit/CsCheck<br/>engine, calendars, setup, limits, invariants &amp; design rules"]
 
-    E2E --> API --> WEB --> UNIT
+    PROD --> E2E --> PG --> API --> WEB --> UNIT
 
     classDef fast fill:#dcfce7,stroke:#16a34a,color:#14532d;
     classDef slow fill:#fef3c7,stroke:#b45309,color:#7c2d12;
     class UNIT fast;
-    class WEB,API,E2E slow;
+    class WEB,API,PG,E2E,PROD slow;
 ```
 
 ## The layers
@@ -33,10 +35,23 @@ graph TD
 | Engine + property + architecture | `tests/WorkPlanStudio.Scheduling.Tests` | 102 | determinism, feasibility, rules, calendars/setup, scoring, bounded search, exact dispatch-order proof, overflow, cancellation and dependency boundaries | no | ~8 s |
 | Data + mapper + component + assistant | `tests/WorkPlanStudio.Web.Tests` | 55 | real SQLite CRUD/recovery, all-or-nothing mapper, localized components, modal/reset semantics and stubbed AI transport | yes¹ | ~12 s |
 | Production API | `tests/WorkPlanStudio.Api.Tests` | 12 | migrated SQLite, liveness/readiness, Identity/MFA/password reset/antiforgery/owner isolation, durable fenced leases and full order→worker→result flow | yes¹ | ~35 s |
-| End-to-end | `tests/WorkPlanStudio.E2E` | 10 | Chromium scheduling, determinism, localization, invalid input, reload persistence, reset, keyboard and mobile | browser² | ~3 min |
+| PostgreSQL integration | `tests/WorkPlanStudio.Postgres.Tests` | 2 | provider-correct migrations/model, atomic concurrent claim, expired takeover and stale-owner completion fencing | no³ | ~10 s |
+| Offline end-to-end | `tests/WorkPlanStudio.E2E` | 10 | Chromium scheduling, determinism, localization, invalid input, reload persistence, reset, keyboard and mobile | browser² | ~3 min |
+| Production end-to-end | `tests/WorkPlanStudio.ProductionE2E` | 3 | production login semantics, authenticated navigation/account security, German language and mobile drawer against Docker/PostgreSQL | browser² | ~20 s |
 
 ¹ These reference the Blazor app assembly, so building them compiles the app (hence `wasm-tools`). The tests themselves run on a normal host.
 ² Needs a Chromium download (`playwright install`) and the app running; no `wasm-tools` if you serve a pre-published build.
+³ Requires an explicit `WPS_POSTGRES_CONNECTION`; CI supplies a disposable PostgreSQL 18 service. Without it the project is skipped intentionally rather than silently substituting SQLite.
+
+## Verification snapshot
+
+The explicitly orchestrated local run on 2026-07-19 passed **184/184 tests with
+0 failures and 0 skips**: 102 engine, 55 web/data/component, 12 API, 2 real
+PostgreSQL, 10 offline Chromium and 3 authenticated production Chromium. The two
+infrastructure-dependent projects use conditional discovery so a casual
+`dotnet test` without PostgreSQL/production credentials does not create a false
+SQLite substitute; CI supplies the dependencies and enforces minimum expected
+test counts, so a skipped infrastructure layer fails its job.
 
 ## What each layer does
 
@@ -127,6 +142,12 @@ input stays recoverable, a saved plan survives a hard reload (including the WASM
 WAL checkpoint path), and the work-center modal supports dialog semantics, Escape
 and focus return.
 
+`WorkPlanStudio.ProductionE2E` targets the separate hosted trust boundary. It
+requires `E2E_PRODUCTION_BASE_URL`, `E2E_PRODUCTION_EMAIL` and
+`E2E_PRODUCTION_PASSWORD`, signs in through the real Identity cookie flow, and
+checks authenticated desktop/mobile/localization/accessibility semantics. CI runs
+it against the hardened container and PostgreSQL; credentials are disposable.
+
 ## Running the tests
 
 ```bash
@@ -134,6 +155,9 @@ and focus return.
 dotnet test tests/WorkPlanStudio.Scheduling.Tests/WorkPlanStudio.Scheduling.Tests.csproj
 dotnet test tests/WorkPlanStudio.Web.Tests/WorkPlanStudio.Web.Tests.csproj
 dotnet test tests/WorkPlanStudio.Api.Tests/WorkPlanStudio.Api.Tests.csproj
+
+# Real PostgreSQL (explicit connection required; PowerShell example):
+pwsh -Command "$env:WPS_POSTGRES_CONNECTION='Host=localhost;Port=55432;Database=workplan_tests;Username=postgres;Password=...'; dotnet test tests/WorkPlanStudio.Postgres.Tests/WorkPlanStudio.Postgres.Tests.csproj"
 
 # E2E — start the app, install a browser once, then run:
 dotnet run --project src/WorkPlanStudio/WorkPlanStudio.csproj &           # serves http://localhost:5235
@@ -143,20 +167,25 @@ dotnet test tests/WorkPlanStudio.E2E/WorkPlanStudio.E2E.csproj
 
 Useful environment variables for E2E: `E2E_BASE_URL` (default `http://localhost:5235`),
 `HEADED=1` to watch the browser, `E2E_ARTIFACTS=<dir>` to collect screenshots.
+The authenticated suite uses the three `E2E_PRODUCTION_*` variables documented
+above and is orchestrated in `ci.yml` so secrets never need to be committed.
 
 ## Coverage
 
-The engine job measures code coverage with the Microsoft Testing Platform collector. The production-platform branch on 2026-07-14 measured **508/508 lines and 245/245 branches (100% / 100%)** across 102 engine tests. The result was achieved with executable edge-case tests and removal of one redundant unreachable fallback behind the validated capacity invariant—not coverage exclusions; run the command below rather than treating a badge as evidence:
+The engine job measures code coverage with the Microsoft Testing Platform collector and `Assert-CoberturaCoverage.ps1` fails both CI and the Pages release gate below 100% line or branch coverage. A fresh local run on 2026-07-19 measured **508/508 lines and 245/245 branches (100% / 100%)** across 102 engine tests. The result was achieved with executable edge-case tests and removal of one redundant unreachable fallback behind the validated capacity invariant—not coverage exclusions; run the commands below rather than treating a badge as evidence:
 
 ```bash
 dotnet test tests/WorkPlanStudio.Scheduling.Tests/WorkPlanStudio.Scheduling.Tests.csproj \
-  --coverage --coverage-output-format cobertura
+  --coverage --coverage-output-format cobertura --coverage-output coverage.cobertura.xml
+pwsh -NoProfile -File scripts/Assert-CoberturaCoverage.ps1 -FileName coverage.cobertura.xml
 ```
 
 ## In CI
 
 | Workflow | Runs | When |
 | --- | --- | --- |
-| [`ci.yml`](../.github/workflows/ci.yml) | dependency audit, engine/web/API tests, migration scripts, performance ceilings and container build | every pull request |
+| [`ci.yml`](../.github/workflows/ci.yml) | fail-closed dependency audit, format/docs, engine/web/API/PostgreSQL tests, migrations, performance ceilings, hardened container and authenticated production E2E | every pull request |
 | [`e2e.yml`](../.github/workflows/e2e.yml) | builds, serves the app, installs Chromium, runs Playwright, uploads screenshots | every pull request |
-| [`deploy.yml`](../.github/workflows/deploy.yml) | engine tests gate the GitHub Pages deploy | push to `main` |
+| [`codeql.yml`](../.github/workflows/codeql.yml) | CodeQL C# `security-extended` analysis | pull requests, `main`, weekly |
+| [`production-evidence.yml`](../.github/workflows/production-evidence.yml) | rate-controlled soak plus OWASP ZAP passive baseline | pull requests, weekly, manual |
+| [`deploy.yml`](../.github/workflows/deploy.yml) | dependency/format/docs/unit/API/browser release gate before GitHub Pages deploy | push to `main` |

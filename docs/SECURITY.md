@@ -24,7 +24,9 @@ The legacy BYOK option remains available only in offline demo mode. Browser stor
 
 ## Dependencies
 
-The browser explicitly uses `SQLitePCLRaw.bundle_e_sqlite3` 3.0.3, which supplies SQLite 3.50.4.5 for WebAssembly. The previous `SQLitePCLRaw.lib.e_sqlite3` 2.1.11 advisory suppression has been removed. CI runs NuGet vulnerability audit and fails on reported vulnerable packages.
+The browser explicitly uses the patched `SQLitePCLRaw.bundle_e_sqlite3` 3.0.4 graph. The previous `SQLitePCLRaw.lib.e_sqlite3` 2.1.11 advisory suppression has been removed. Because `dotnet list package --vulnerable` can exit successfully while merely reporting findings, CI parses its JSON output and fails when any direct or transitive vulnerability is present. `AngleSharp` is also pinned directly above the transitive bUnit advisory fix.
+
+GitHub Actions and container base images are pinned to immutable commit/image digests. Dependabot is configured for NuGet, GitHub Actions and Docker, while CodeQL runs the `security-extended` C# query suite. These automated checks reduce known-risk exposure; they do not replace threat modelling or an independent penetration test.
 
 ## Operations
 

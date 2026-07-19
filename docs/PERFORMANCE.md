@@ -10,13 +10,13 @@ dotnet run --project tools/WorkPlanStudio.Scheduling.Scenarios/WorkPlanStudio.Sc
 
 CI runs the same scenarios with `--verify`; each scenario must remain deterministic, finish within 10 seconds and allocate less than 512 MB on the hosted runner. These are regression ceilings, not latency promises.
 
-Verified on 2026-07-13 with .NET runtime 10.0.9, Windows 10.0.26200 and four reported logical processors:
+Verified again on 2026-07-19 with .NET runtime 10.0.9, Windows 10.0.26200 and four reported logical processors:
 
 | Scenario | Jobs | Operations | Centers | Capacity | Starts | Local steps | Duration ms | Allocated MB | Peak working MB | Penalty | Deterministic |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
-| small | 25 | 100 | 5 | 1 | 4 | 500 | 32.9 | 0.57 | 27.5 | 1515.5194 | yes |
-| medium | 100 | 600 | 10 | 2 | 8 | 2,000 | 275.2 | 42.73 | 31.8 | 10457.8722 | yes |
-| large | 250 | 2,000 | 20 | 2 | 16 | 5,000 | 601.0 | 436.57 | 42.7 | 73010.8853 | yes |
+| small | 25 | 100 | 5 | 1 | 4 | 500 | 5.7 | 0.57 | 25.8 | 1515.5194 | yes |
+| medium | 100 | 600 | 10 | 2 | 8 | 2,000 | 150.5 | 42.73 | 29.8 | 10457.8722 | yes |
+| large | 250 | 2,000 | 20 | 2 | 16 | 5,000 | 544.4 | 436.57 | 40.8 | 73010.8853 | yes |
 
 Numbers vary by machine and JIT state. The runner warms the JIT, forces GC before each measured run, reports current-thread allocations, and repeats each run to compare exact operation signatures.
 

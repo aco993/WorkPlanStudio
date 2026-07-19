@@ -44,7 +44,7 @@ Damit demonstriert die App eine vollständige Datenschicht — `DbContext`, Bezi
 
 Die Seite **Planung** verwandelt die freigegebenen Arbeitspläne in einen kapazitätsbeschränkten Produktionsplan — der algorithmisch anspruchsvollste Teil des Projekts. Er liegt in einer eigenen, abhängigkeitsfreien Bibliothek (`src/WorkPlanStudio.Scheduling`), sodass die gesamte Engine auf einem normalen .NET-Runner unit-getestet werden kann — ohne Blazor oder die WebAssembly-Toolchain.
 
-1. **Zieltermine („Meta").** Jeder Demo-Auftrag erhält einen Termin nach TWK, NOP, SLK oder CON. Kundenspezifische Auftragstermine bleiben bis zu einem echten `ProductionOrder`-Modell bewusst außerhalb des Scopes.
+1. **Zieltermine („Meta").** Der Hosted-Modus nutzt Release-/Due-Termine echter `ProductionOrder`-Snapshots; der Offline-Demo-Modus vergibt illustrative Termine nach TWK, NOP, SLK oder CON.
 2. **Dispatch-Planung.** Ein kapazitätsbeschränkter List-Scheduler platziert die Arbeitsgänge jedes Auftrags auf dem frühesten freien Slot ihres Arbeitsplatzes, unter Beachtung von Arbeitsgang-Reihenfolge und Maschinenkapazität. Sechs Prioritätsregeln entscheiden, wer auf einer umkämpften Maschine zuerst drankommt: FIFO, SPT, LPT, EDD, Critical Ratio und WSPT.
 3. **Optimierung.** Eine seed-basierte Multi-Start-Suche plus eine First-Improvement-Lokalsuche verfeinern die Reihenfolge; das Ergebnis ist nie schlechter als der reine Regel-Plan.
 4. **Bewertung.** Durchlaufzeit (Makespan), Gesamt-/Maximalverspätung, Termintreue und Arbeitsplatz-Auslastung werden zu einem einzigen Strafwert zusammengefasst, den die Suche minimiert.
@@ -99,11 +99,11 @@ Das Repository setzt folgende Entwicklungspraktiken um:
 - **Strikte Builds** — Nullable Reference Types, .NET-Analyzer und **Warnungen als Fehler** (`Directory.Build.props`).
 - **Central Package Management** — jede NuGet-Version in einer [`Directory.Packages.props`](Directory.Packages.props).
 - **Einheitlicher Stil** — eine umfassende [`.editorconfig`](.editorconfig) und Zeilenende-Normalisierung über [`.gitattributes`](.gitattributes).
-- **Geschichtete Tests + Abdeckung** — 154 Tests in drei Testprojekten, einschließlich echtem SQLite, Browser-Reload/Reset, Mobile-Flow und eigenschaftsbasierten Invarianten; die gehärtete Engine liegt aktuell bei 96,93 % Zeilen- und 87,43 % Zweigabdeckung.
+- **Geschichtete Tests + Abdeckung** — sechs ausführbare Schichten mit echtem SQLite und PostgreSQL, API-/Identity-Grenzen, Browser-Reload/Reset, authentifiziertem Produktions-Container, Mobile-Flow und eigenschaftsbasierten Invarianten; die Engine liegt bei 100 % Zeilen- und 100 % Zweigabdeckung.
 - **Architektur per Test erzwungen** — die Engine kann keine Blazor-/EF-/JS-Abhängigkeit ansammeln.
 - **Entscheidungen dokumentiert** — siehe die [Architecture Decision Records](docs/adr).
-- **Abhängigkeits-Hygiene** — [Dependabot](.github/dependabot.yml) hält NuGet und GitHub Actions aktuell.
-- **CI/CD** — Test-Workflows laufen für Pull Requests und `main`; das Deployment ist durch Engine-Tests abgesichert.
+- **Abhängigkeits-Hygiene** — [Dependabot](.github/dependabot.yml) hält NuGet, Docker und GitHub Actions aktuell; der Vulnerability-Check ist fail-closed.
+- **CI/CD** — Test-, CodeQL-, Container- und Browser-Workflows laufen für Pull Requests; das Pages-Deployment besitzt denselben vollständigen Release-Gate.
 
 ## Was dieses Projekt zeigt
 
@@ -117,7 +117,7 @@ funktioniert:
 | **Clean Architecture** | `src/WorkPlanStudio.Scheduling` vs. App | ein reiner Domänenkern hinter einer *erzwungenen* Abhängigkeitsgrenze |
 | **Algorithmen** | `SchedulingEngine`, `DispatchScheduler`, `LocalSearch` | endliche Kapazitätsplanung, Prioritätsregeln, lokale Suche |
 | **Determinismus & Korrektheit** | `DeterministicRandom`, `DeterminismTests` | reproduzierbare Ergebnisse, durch Golden-Value-Tests fixiert |
-| **Teststrategie** | `tests/`, [`docs/TESTING.de.md`](docs/TESTING.de.md) | vier Schichten von Unit bis End-to-End, plus ein Architektur-Test |
+| **Teststrategie** | `tests/`, [`docs/TESTING.de.md`](docs/TESTING.de.md) | sechs Schichten von Unit bis authentifiziertem Production-E2E, plus Architektur- und Supply-Chain-Gates |
 | **Modernes .NET** | `Directory.*.props`, `.editorconfig` | .NET 10, Nullable, Analyzer, Warnings-as-Errors, zentrale Pakete |
 | **Front-End** | `Pages/Schedule.razor`, `wwwroot/css` | Blazor WebAssembly, ein handgeschriebenes Design-System, ein Gantt-Diagramm |
 | **Data Engineering** | `Data/BrowserDatabase.cs` | eine echte relationale DB (EF Core + SQLite) im Browser |
@@ -133,9 +133,10 @@ Wenig Zeit? Der schnellste Rundgang ist `AGENTS.md` → `SchedulingEngine.cs` �
 ```
 WorkPlanStudio/
 ├─ .github/workflows/
-│  ├─ ci.yml                        # Engine- + Mapper-/Komponententests (PRs)
-│  ├─ e2e.yml                       # Playwright-End-to-End-Tests (PRs)
-│  └─ deploy.yml                    # test-gesichertes Veröffentlichen + Deploy zu GitHub Pages
+│  ├─ ci.yml                        # Code, DB, Container und Production-E2E (PRs)
+│  ├─ e2e.yml                       # Offline-Playwright-End-to-End (PRs)
+│  ├─ codeql.yml                    # CodeQL Security-Extended
+│  └─ deploy.yml                    # vollständiger Release-Gate + GitHub Pages
 ├─ docs/                            # Banner, Screenshots, SCHEDULING(.de).md, TESTING(.de).md
 ├─ global.json                      # SDK-Pin + Microsoft-Testing-Platform-Runner
 ├─ src/
@@ -159,7 +160,10 @@ WorkPlanStudio/
 └─ tests/
    ├─ WorkPlanStudio.Scheduling.Tests/   # Engine: Determinismus, Zulässigkeit, Regeln, Suche, Architektur
    ├─ WorkPlanStudio.Web.Tests/          # EF→Domain-Mapping + bUnit-Komponententests
-   └─ WorkPlanStudio.E2E/                # Playwright-End-to-End (Page-Object + Szenarien)
+   ├─ WorkPlanStudio.Api.Tests/          # Identity, CSRF und Owner-Isolation
+   ├─ WorkPlanStudio.Postgres.Tests/     # echte PostgreSQL-Migrationen und Lease-Fencing
+   ├─ WorkPlanStudio.E2E/                # Offline-Playwright-End-to-End
+   └─ WorkPlanStudio.ProductionE2E/      # authentifizierte Production-Container-Flows
 ```
 
 ## Erste Schritte
@@ -189,6 +193,7 @@ Die Engine ist eine reine .NET-Bibliothek, daher braucht der Großteil der Suite
 ```bash
 dotnet test tests/WorkPlanStudio.Scheduling.Tests/WorkPlanStudio.Scheduling.Tests.csproj   # Engine + Architektur
 dotnet test tests/WorkPlanStudio.Web.Tests/WorkPlanStudio.Web.Tests.csproj                 # Mapping + bUnit-Komponenten
+dotnet test tests/WorkPlanStudio.Api.Tests/WorkPlanStudio.Api.Tests.csproj                 # Hosted API
 ```
 
 Die Playwright-End-to-End-Tests steuern einen echten Browser gegen die laufende App — siehe [`docs/TESTING.de.md`](docs/TESTING.de.md) für die vollständige Strategie und Ausführung.
@@ -205,10 +210,11 @@ Die deploybare Seite liegt in `publish/wwwroot/` und kann von jedem statischen D
 
 Das Repository bringt einen GitHub-Actions-Workflow mit ([`.github/workflows/deploy.yml`](.github/workflows/deploy.yml)), der die App bei jedem Push auf `main` zu **GitHub Pages** veröffentlicht. Er:
 
-1. installiert die `wasm-tools`-Workload und veröffentlicht die App,
-2. schreibt `<base href="/" />` auf `/<repository-name>/` um, damit Assets unter dem Projektseiten-Unterpfad aufgelöst werden,
-3. fügt einen `404.html`-SPA-Fallback und eine `.nojekyll`-Markierung hinzu,
-4. lädt das Artefakt hoch und deployt es.
+1. führt Dependency-, Format-, Dokumentations-, Unit-, API- und Chromium-Gates aus,
+2. installiert die `wasm-tools`-Workload und veröffentlicht die App,
+3. schreibt `<base href="/" />` auf `/<repository-name>/` um, damit Assets unter dem Projektseiten-Unterpfad aufgelöst werden,
+4. fügt einen `404.html`-SPA-Fallback und eine `.nojekyll`-Markierung hinzu,
+5. lädt das Artefakt hoch und deployt es.
 
 Zum Aktivieren: dieses Repo zu GitHub pushen, dann unter **Settings → Pages** **Source = GitHub Actions** setzen.
 

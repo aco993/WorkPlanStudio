@@ -8,13 +8,15 @@
 - Released routing je potpuno scheduleovan ili potpuno odbijen sa structured reason codeom.
 - AI je intenzivno korišćen; odgovornost je u provjeri, debugovanju, testovima, integraciji i odlukama, ne u tvrdnji da je sve ručno napisano.
 
-## Brojevi za 2026-07-14
+## Brojevi za 2026-07-19
 
 - Baseline commit: `0e1e3c514f35d8479dfe1bdc51905d31de8729b3`.
 - Scheduling tests: 102 passed.
-- Web/data/component tests: 54 passed.
+- Web/data/component tests: 55 passed.
 - Production API integration tests: 12 passed.
-- Playwright E2E: 10 passed, uključujući save→hard reload, confirmed reset i mobile drawer.
+- Real-PostgreSQL integration: 2 passed (migrations, atomic claim i lease fencing).
+- Offline Playwright E2E: 10 passed, uključujući save→hard reload, confirmed reset i mobile drawer.
+- Authenticated production Playwright E2E: 3 passed protiv Docker/PostgreSQL stack-a.
 - Current engine coverage: 508/508 linija i 245/245 grana (100% / 100%).
 - Scenario runner: 25/100/250 jobs; 32.9/275.2/601.0 ms i 0.57/42.73/436.57 MB allocations na finalnom runu.
 - Central budget: 1–64 starts, 0–20.000 local steps.
@@ -55,7 +57,7 @@
 - `Core/LocalSearch.cs`: bounded first-improvement.
 - `tests/.../BrowserDatabaseTests.cs`: real-SQLite failure evidence.
 - `tests/.../ScheduleE2ETests.cs`: browser reload/accessibility evidence.
-- ADR 0006/0007: browser persistence i ProductionOrder snapshot odluke.
+- ADR 0006/0007/0008: browser persistence, ProductionOrder snapshot i durable worker lease odluke.
 
 ## Ako se ne zna odgovor
 

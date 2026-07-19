@@ -15,6 +15,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and `ProductionOrder` with immutable routing snapshots.
 - Machine calendars, downtime, setup transitions and persisted background schedule runs.
 - OpenTelemetry, Docker Compose, backup/restore scripts and API integration tests.
+- Real-PostgreSQL migration/lease-fencing tests and authenticated Playwright checks
+  against the production container.
+- Fail-closed NuGet advisory parsing, CodeQL `security-extended`, documentation-link
+  validation, immutable Action/image pins and Docker Dependabot updates.
+- Enforced 100% scheduling-engine line/branch coverage in CI and the Pages release gate.
+- Rate-controlled soak evidence with latency percentiles and a full release gate
+  before GitHub Pages deployment.
 
 - Central business validation, SQLite constraints, typed mutation results and
   localized recovery/error states.
@@ -43,7 +50,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Server scheduling now consumes real orders with explicit release/due dates;
   the static demo retains its smaller routing-based scenario.
 - Production AI keys moved behind an authenticated, timed and rate-limited server proxy.
-- Upgraded the native SQLite bundle to 3.0.3 and removed the previous advisory suppression.
+- Upgraded the native SQLite bundle to 3.0.4, pinned the patched transitive HTML
+  parser and removed the previous advisory suppression.
 
 ## [0.1.0] — 2026-07-08
 

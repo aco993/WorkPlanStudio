@@ -56,8 +56,8 @@ The important boundary is `WorkPlanStudio.Scheduling`: it has no Blazor, EF Core
 | Data | EF Core 10, PostgreSQL 18 production, SQLite development/browser demo |
 | Scheduling | Pure deterministic C# heuristic, integer-second time model |
 | Operations | OpenTelemetry, health checks, Docker/Compose, non-root read-only container |
-| Tests | xUnit v3, CsCheck property tests, bUnit, real-SQLite API integration tests, Playwright |
-| Delivery | GitHub Actions for tests, audit, migration scripts, performance ceilings, container and Pages demo |
+| Tests | xUnit v3, CsCheck, bUnit, SQLite/PostgreSQL integration tests and Playwright |
+| Delivery | GitHub Actions for tests, fail-closed dependency audit, CodeQL, migration scripts, performance ceilings, production-container checks and Pages demo |
 
 ## Repository map
 
@@ -74,7 +74,9 @@ tests/
   WorkPlanStudio.Scheduling.Tests/    unit, property and architecture tests
   WorkPlanStudio.Web.Tests/           persistence, mapping and bUnit tests
   WorkPlanStudio.Api.Tests/           auth/CSRF/tenant integration tests
-  WorkPlanStudio.E2E/                 real Chromium flows
+  WorkPlanStudio.Postgres.Tests/      real-PostgreSQL migrations and lease fencing
+  WorkPlanStudio.E2E/                 offline-demo Chromium flows
+  WorkPlanStudio.ProductionE2E/       authenticated production Chromium flows
 ```
 
 ## Run it
@@ -110,7 +112,7 @@ Never commit `.env`. Put TLS at the ingress and remove bootstrap-admin variables
 
 ## Verify it
 
-Verified locally on 2026-07-14: **102 scheduling + 55 web/data/component + 12 API + 10 Chromium E2E = 179 passed, 0 failed, 0 skipped**. Engine coverage is **100% lines / 100% branches (508/508 lines, 245/245 branches)**. Release build completed with 0 errors and the two documented `WASM0001` warning groups; package vulnerability and outdated audits were clean.
+Verified locally on 2026-07-19: **102 scheduling + 55 web/data/component + 12 API + 2 real-PostgreSQL + 10 offline Chromium + 3 authenticated production Chromium = 184 passed, 0 failed, 0 skipped** in the explicitly orchestrated runs. Engine coverage is **100% lines / 100% branches (508/508 lines, 245/245 branches)**. The production image, PostgreSQL readiness, security headers, container restrictions, SMTP reset delivery/single-use token and a rate-controlled HTTP smoke were also exercised. Reproduction details and assurance boundaries are in [docs/TESTING.md](docs/TESTING.md) and the [self-evaluation](docs/SELF-EVALUATION-SR.md).
 
 ```bash
 dotnet build WorkPlanStudio.slnx -c Release --no-restore
@@ -118,7 +120,9 @@ dotnet format WorkPlanStudio.slnx --verify-no-changes
 dotnet test tests/WorkPlanStudio.Scheduling.Tests/WorkPlanStudio.Scheduling.Tests.csproj -c Release
 dotnet test tests/WorkPlanStudio.Web.Tests/WorkPlanStudio.Web.Tests.csproj -c Release
 dotnet test tests/WorkPlanStudio.Api.Tests/WorkPlanStudio.Api.Tests.csproj -c Release
-dotnet list WorkPlanStudio.slnx package --vulnerable --include-transitive
+dotnet test tests/WorkPlanStudio.Postgres.Tests/WorkPlanStudio.Postgres.Tests.csproj -c Release
+pwsh ./scripts/Assert-NoVulnerablePackages.ps1
+pwsh ./scripts/Test-DocumentationLinks.ps1
 ```
 
 Playwright setup and full test-layer details are in [docs/TESTING.md](docs/TESTING.md). CI also generates both migration scripts, verifies performance regression ceilings and builds the production container.
@@ -130,7 +134,7 @@ Playwright setup and full test-layer details are in [docs/TESTING.md](docs/TESTI
 - The browser database is explicit demo persistence, not confidential multi-user storage or a cross-version migration service.
 - GitHub Pages demonstrates the offline feature set; it cannot demonstrate server identity or PostgreSQL.
 - AI is optional narration over computed facts. It is not required and cannot change a schedule.
-- Native SQLite still produces the known linker warning `WASM0001` for unused varargs entry points. Runtime CRUD/reload behavior is covered by Playwright; the dependency audit is clean with `SQLitePCLRaw.bundle_e_sqlite3` 3.0.3 and no advisory suppression.
+- Native SQLite still produces the known linker warning `WASM0001` for unused varargs entry points. Runtime CRUD/reload behavior is covered by Playwright; the fail-closed dependency audit uses the patched `SQLitePCLRaw.bundle_e_sqlite3` 3.0.4 and an explicit `AngleSharp` security pin, with no advisory suppression.
 
 ## AI-assisted development disclosure
 
@@ -146,6 +150,7 @@ AI tools were used intensively for initial implementation and hardening. This re
 - [Operations and failover runbook](docs/OPERATIONS-RUNBOOK.md)
 - [External assurance sign-off](docs/EXTERNAL-ASSURANCE-CHECKLIST.md)
 - [Production hardening report and verdict (SR)](docs/PRODUCTION-HARDENING-REPORT-SR.md)
+- [Evidence-based self-evaluation (SR)](docs/SELF-EVALUATION-SR.md)
 - [Performance scenarios](docs/PERFORMANCE.md)
 - [Interview defense (SR)](docs/INTERVIEW-DEFENSE-SR.md)
 - [Demo script (SR)](docs/DEMO-SCRIPT-SR.md)
