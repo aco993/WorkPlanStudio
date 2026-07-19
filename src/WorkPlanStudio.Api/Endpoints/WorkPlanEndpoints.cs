@@ -114,8 +114,8 @@ public static class WorkPlanEndpoints
         if (await db.ProductionOrders.AnyAsync(order => order.OwnerId == ownerId && order.WorkPlanId == id, cancellationToken))
             return Results.Conflict(new ApiError("routing_in_use", "Production orders reference this work plan."));
         db.Entry(plan).Property(item => item.Version).OriginalValue = version;
-        await EndpointSupport.AuditAsync(db, principal, context, "delete", plan, null, cancellationToken);
         db.WorkPlans.Remove(plan);
+        EndpointSupport.AddAudit(db, principal, context, "delete", plan, null);
         try
         {
             await db.SaveChangesAsync(cancellationToken);

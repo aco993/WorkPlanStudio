@@ -73,8 +73,8 @@ public static class ProductionOrderEndpoints
         };
         db.ProductionOrders.Add(order);
         await db.SaveChangesAsync(cancellationToken);
-        order.WorkPlan = plan;
         await EndpointSupport.AuditAsync(db, principal, context, "create", order, request, cancellationToken);
+        order.WorkPlan = plan;
         return Results.Created($"/api/production-orders/{order.Id}", order.ToDto());
     }
 
@@ -144,8 +144,8 @@ public static class ProductionOrderEndpoints
         if (order.Status != ProductionOrderStatus.Draft && order.Status != ProductionOrderStatus.Cancelled)
             return Results.Conflict(new ApiError("order_not_deletable", "Only draft or cancelled orders can be deleted."));
         db.Entry(order).Property(item => item.Version).OriginalValue = version;
-        await EndpointSupport.AuditAsync(db, principal, context, "delete", order, null, cancellationToken);
         db.ProductionOrders.Remove(order);
+        EndpointSupport.AddAudit(db, principal, context, "delete", order, null);
         try
         {
             await db.SaveChangesAsync(cancellationToken);
