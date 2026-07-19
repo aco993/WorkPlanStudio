@@ -123,8 +123,8 @@ public static class WorkCenterEndpoints
         if (await db.Operations.AnyAsync(operation => operation.WorkCenterId == id && operation.WorkPlan!.OwnerId == ownerId, cancellationToken))
             return Results.Conflict(new ApiError("work_center_in_use", "The work center is referenced by routing operations."));
         db.Entry(center).Property(item => item.Version).OriginalValue = version;
-        await EndpointSupport.AuditAsync(db, principal, context, "delete", center, null, cancellationToken);
         db.WorkCenters.Remove(center);
+        EndpointSupport.AddAudit(db, principal, context, "delete", center, null);
         try
         {
             await db.SaveChangesAsync(cancellationToken);

@@ -52,6 +52,18 @@ internal static class EndpointSupport
         object? changes,
         CancellationToken cancellationToken)
     {
+        AddAudit(db, principal, context, action, entity, changes);
+        await db.SaveChangesAsync(cancellationToken);
+    }
+
+    public static void AddAudit(
+        ProductionDbContext db,
+        ClaimsPrincipal principal,
+        HttpContext context,
+        string action,
+        object entity,
+        object? changes)
+    {
         var ownerId = principal.RequiredUserId();
         db.AuditEntries.Add(new AuditEntry
         {
@@ -64,7 +76,6 @@ internal static class EndpointSupport
             CorrelationId = context.TraceIdentifier,
             OccurredUtc = DateTime.UtcNow
         });
-        await db.SaveChangesAsync(cancellationToken);
     }
 
     public static async Task<IReadOnlyDictionary<int, WorkCenter>> OwnedCentersAsync(

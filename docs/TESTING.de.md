@@ -16,7 +16,7 @@ graph TD
     PROD["🚢 <b>Production E2E</b> — Playwright + Docker · 3 Tests<br/>Login, Auth, Sprache und Mobile"]
     E2E["🌐 <b>Offline E2E</b> — Playwright · 10 Tests<br/>Chromium, Reload/Reset, Tastatur, Mobile und Sprache"]
     PG["🐘 <b>PostgreSQL</b> · 2 Tests<br/>Migrationen, Claims und Lease-Fencing"]
-    API["🔐 <b>API-Integration</b> · 13 Tests<br/>Identity, CSRF, Log-Datenschutz und Owner-Isolation"]
+    API["🔐 <b>API-Integration</b> · 17 Tests<br/>Identity, CSRF, CRUD-Lebenszyklus, Validierungsgrenzen, Log-Datenschutz und Owner-Isolation"]
     WEB["🧩 <b>Daten + Grenze + Komponenten</b> — xUnit/bUnit · 55 Tests<br/>echtes SQLite, Validierung, Mapping, UI &amp; Assistent"]
     UNIT["⚙️ <b>Unit + Property + Architektur</b> — xUnit/CsCheck · 102 Tests<br/>Engine, Kalender, Setup, Limits, Invarianten &amp; Designregeln"]
 
@@ -34,7 +34,7 @@ graph TD
 | --- | --- | --: | --- | :---: | --- |
 | Engine + Property + Architektur | `tests/WorkPlanStudio.Scheduling.Tests` | 102 | Determinismus, Zulässigkeit, Regeln, Kalender/Setup, bounded Exact Search, Limits, Overflow, Cancellation und Architekturgrenze | nein | ~8 s |
 | Daten + Mapping + Komponenten + Assistent | `tests/WorkPlanStudio.Web.Tests` | 55 | echtes SQLite, CRUD/Constraints/Recovery, vollständiges Routing-Mapping, UI-Zustände, Accessibility und gestubbter KI-Transport | ja¹ | ~12 s |
-| Production API | `tests/WorkPlanStudio.Api.Tests` | 13 | migriertes SQLite, Identity/MFA/Reset, CSRF, Bootstrap-Log-Datenschutz, Owner-Isolation, Worker und Health | ja¹ | ~35 s |
+| Production API | `tests/WorkPlanStudio.Api.Tests` | 17 | migriertes SQLite, Identity/MFA/Reset, CSRF, CRUD-Lebenszyklus, Validierungsgrenzen, Bootstrap-Log-Datenschutz, Owner-Isolation, Worker und Health | ja¹ | ~35 s |
 | PostgreSQL-Integration | `tests/WorkPlanStudio.Postgres.Tests` | 2 | echte Migrationen, konkurrierender Claim, Lease-Übernahme und stale-owner Fencing | nein³ | ~10 s |
 | Offline-End-to-End | `tests/WorkPlanStudio.E2E` | 10 | Chromium: Planung, Sprache, ungültige Eingaben, Save→Reload, Reset, Tastatur und Mobile | Browser² | ~3 min |
 | Production-End-to-End | `tests/WorkPlanStudio.ProductionE2E` | 3 | Container-Login, authentifizierte Navigation, Accessibility-Semantik, Deutsch und Mobile Drawer | Browser² | ~20 s |
