@@ -1,10 +1,7 @@
 name: CI
 
-# Build and test on every pull request. Split into two jobs by what they need:
-#   • engine-tests — the pure scheduling library; no Blazor, no SQLite, no
-#     WebAssembly, so it runs in seconds and also measures code coverage.
-#   • web-tests    — the mapper and bUnit component tests; these reference the
-#     Blazor WASM app, so the job installs the wasm-tools workload to build it.
+# Independent jobs keep pure-engine coverage fast while API/PostgreSQL,
+# WebAssembly, container and browser boundaries receive their own evidence.
 
 on:
   push:
@@ -20,26 +17,41 @@ jobs:
     name: Dependency security audit
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-dotnet@v5
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5
         with:
           dotnet-version: 10.0.x
       - run: dotnet restore WorkPlanStudio.slnx
-      - run: dotnet list WorkPlanStudio.slnx package --vulnerable --include-transitive
+      - name: Fail on vulnerable direct or transitive packages
+        run: pwsh -NoProfile -File scripts/Assert-NoVulnerablePackages.ps1
+
+  quality:
+    name: Formatting + documentation integrity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5
+        with:
+          dotnet-version: 10.0.x
+      - run: dotnet restore WorkPlanStudio.slnx
+      - name: Verify formatting
+        run: dotnet format WorkPlanStudio.slnx --verify-no-changes --no-restore
+      - name: Verify local documentation links
+        run: pwsh -NoProfile -File scripts/Test-DocumentationLinks.ps1
 
   engine-tests:
     name: Engine tests + coverage
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 
       - name: Setup .NET 10
-        uses: actions/setup-dotnet@v5
+        uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5
         with:
           dotnet-version: 10.0.x
 
       - name: Cache NuGet packages
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: ~/.nuget/packages
           key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', 'Directory.Packages.props') }}
@@ -50,11 +62,33 @@ jobs:
           dotnet test tests/WorkPlanStudio.Scheduling.Tests/WorkPlanStudio.Scheduling.Tests.csproj -c Release
           --coverage --coverage-output-format cobertura --coverage-output coverage.cobertura.xml
 
+      - name: Enforce 100% engine line and branch coverage
+        run: pwsh -NoProfile -File scripts/Assert-CoberturaCoverage.ps1 -FileName coverage.cobertura.xml
+
       - name: Build coverage report
         if: always()
         run: |
-          dotnet tool install --global dotnet-reportgenerator-globaltool
-          reportgenerator -reports:'**/coverage.cobertura.xml' -targetdir:coverage-report -reporttypes:'Html;TextSummary'
+          mkdir -p coverage-report
+          python3 - <<'PY'
+          from pathlib import Path
+          import shutil
+          import xml.etree.ElementTree as ET
+
+          outputs = list(Path('.').rglob('coverage.cobertura.xml'))
+          if not outputs:
+              summary = 'Coverage artifact unavailable because the test step did not produce it.\n'
+          else:
+              source = outputs[0]
+              root = ET.parse(source).getroot()
+              summary = (
+                  f"Lines: {root.attrib['lines-covered']}/{root.attrib['lines-valid']} "
+                  f"({float(root.attrib['line-rate']) * 100:.2f}%)\n"
+                  f"Branches: {root.attrib['branches-covered']}/{root.attrib['branches-valid']} "
+                  f"({float(root.attrib['branch-rate']) * 100:.2f}%)\n"
+              )
+              shutil.copy2(source, 'coverage-report/coverage.cobertura.xml')
+          Path('coverage-report/Summary.txt').write_text(summary, encoding='utf-8')
+          PY
           echo '### Engine code coverage' >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
           cat coverage-report/Summary.txt >> "$GITHUB_STEP_SUMMARY"
@@ -62,7 +96,7 @@ jobs:
 
       - name: Upload coverage report
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: coverage-report
           path: coverage-report
@@ -72,15 +106,15 @@ jobs:
     name: Mapper & component tests (bUnit)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 
       - name: Setup .NET 10
-        uses: actions/setup-dotnet@v5
+        uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5
         with:
           dotnet-version: 10.0.x
 
       - name: Cache NuGet packages
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: ~/.nuget/packages
           key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', 'Directory.Packages.props') }}
@@ -95,9 +129,23 @@ jobs:
   api-tests:
     name: API integration tests + migrations
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18-alpine@sha256:9a8afca54e7861fd90fab5fdf4c42477a6b1cb7d293595148e674e0a3181de15
+        env:
+          POSTGRES_DB: workplan_tests
+          POSTGRES_USER: workplan_tests
+          POSTGRES_PASSWORD: CiPostgresTest_2026_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U workplan_tests -d workplan_tests"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-dotnet@v5
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5
         with:
           dotnet-version: 10.0.x
       - name: Install WebAssembly tools
@@ -106,6 +154,12 @@ jobs:
         run: dotnet tool restore
       - name: Test authenticated production API
         run: dotnet test tests/WorkPlanStudio.Api.Tests/WorkPlanStudio.Api.Tests.csproj -c Release
+      - name: Test real PostgreSQL migrations and lease fencing
+        env:
+          WPS_POSTGRES_CONNECTION: Host=localhost;Port=5432;Database=workplan_tests;Username=workplan_tests;Password=CiPostgresTest_2026_only
+        run: >
+          dotnet test tests/WorkPlanStudio.Postgres.Tests/WorkPlanStudio.Postgres.Tests.csproj -c Release
+          -- --no-progress --minimum-expected-tests 2
       - name: Generate SQLite migration script
         run: dotnet ef migrations script --project src/WorkPlanStudio.Persistence --startup-project src/WorkPlanStudio.Api --output sqlite-migrations.sql
       - name: Generate PostgreSQL migration script
@@ -113,7 +167,7 @@ jobs:
           Database__Provider: Postgres
           ConnectionStrings__Production: Host=localhost;Database=workplanstudio;Username=ci;Password=ci
         run: dotnet ef migrations script --project src/WorkPlanStudio.PostgresMigrations --startup-project src/WorkPlanStudio.Api --output postgres-migrations.sql
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: migration-scripts
           path: '*-migrations.sql'
@@ -122,8 +176,8 @@ jobs:
     name: Scheduling regression ceilings
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-dotnet@v5
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5
         with:
           dotnet-version: 10.0.x
       - run: dotnet run --project tools/WorkPlanStudio.Scheduling.Scenarios/WorkPlanStudio.Scheduling.Scenarios.csproj -c Release -- --verify
@@ -131,10 +185,19 @@ jobs:
   container:
     name: Production container runtime + HTTP smoke
     runs-on: ubuntu-latest
+    env:
+      COMPOSE_PROJECT_NAME: workplan-ci
+      POSTGRES_PASSWORD: CiComposePostgres_2026_only
+      ALLOWED_HOSTS: localhost
+      BOOTSTRAP_ADMIN_EMAIL: production-e2e@example.com
+      BOOTSTRAP_ADMIN_PASSWORD: ProductionE2E_2026_only_Strong!
     steps:
-      - uses: actions/checkout@v7
-      - uses: docker/setup-buildx-action@v4
-      - uses: docker/build-push-action@v7
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5
+        with:
+          dotnet-version: 10.0.x
+      - uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4
+      - uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
         with:
           context: .
           push: false
@@ -142,24 +205,38 @@ jobs:
           tags: workplanstudio:ci
           cache-from: type=gha
           cache-to: type=gha,mode=max
-      - name: Start isolated SMTP test service
+      - name: Validate Compose and start PostgreSQL 18
         run: |
-          docker network create workplan-ci
-          docker run --detach --name mailpit-ci --network workplan-ci --publish 8025:8025 axllent/mailpit:v1.30.0
-      - name: Start production image with disposable SQLite
+          docker compose config --quiet
+          docker compose up --detach database
+          for attempt in {1..40}; do
+            docker compose exec --no-TTY database pg_isready -U workplanstudio -d workplanstudio && break
+            sleep 1
+          done
+          docker compose ps database --format json | jq -e 'select(.Health == "healthy")'
+      - name: Start isolated SMTP test service
         run: >
-          docker run --detach --name workplan-ci --network workplan-ci --publish 8080:8080
+          docker run --detach --name mailpit-ci --network workplan-ci_default --publish 8025:8025
+          axllent/mailpit:v1.30.0@sha256:0059ef81e492a7192af3816281eed6859eb078bd7bdc58b76757c13e10e53a7d
+      - name: Start production image with PostgreSQL, Identity and SMTP
+        run: >
+          docker run --detach --name workplan-api-ci --network workplan-ci_default --publish 8080:8080
+          --read-only --cap-drop ALL --security-opt no-new-privileges
+          --tmpfs /tmp:rw,noexec,nosuid,size=64m --volume workplan-ci-keys:/keys
           --env AllowedHosts=localhost
-          --env Database__Provider=Sqlite
-          --env 'ConnectionStrings__Production=Data Source=/tmp/workplan.db'
+          --env Database__Provider=Postgres
+          --env 'ConnectionStrings__Production=Host=database;Port=5432;Database=workplanstudio;Username=workplanstudio;Password=CiComposePostgres_2026_only'
           --env Database__ApplyMigrationsOnStartup=true
           --env Identity__AllowRegistration=true
+          --env Identity__BootstrapAdminEmail=production-e2e@example.com
+          --env 'Identity__BootstrapAdminPassword=ProductionE2E_2026_only_Strong!'
           --env Email__Enabled=true
           --env Email__Host=mailpit-ci
           --env Email__Port=1025
           --env Email__UseSsl=false
           --env Email__SenderAddress=no-reply@workplan.test
           --env Email__PublicBaseUrl=http://localhost:8080
+          --env Logging__LogLevel__Microsoft.AspNetCore.Hosting.Diagnostics=Warning
           workplanstudio:ci
       - name: Runtime, static-asset and security-header smoke
         run: |
@@ -170,6 +247,10 @@ jobs:
           curl --fail --silent --header 'Host: localhost' http://localhost:8080/_framework/dotnet.js --output /dev/null
           curl --silent --head --header 'Host: localhost' http://localhost:8080/ | grep -qi 'content-security-policy:'
           curl --silent --head --header 'Host: localhost' http://localhost:8080/ | grep -qi 'x-content-type-options: nosniff'
+          test "$(docker inspect workplan-api-ci --format '{{.Config.User}}')" != "0"
+          test "$(docker inspect workplan-api-ci --format '{{.HostConfig.ReadonlyRootfs}}')" = "true"
+          docker inspect workplan-api-ci --format '{{json .HostConfig.CapDrop}}' | grep -q 'ALL'
+          docker inspect workplan-api-ci --format '{{json .HostConfig.SecurityOpt}}' | grep -q 'no-new-privileges'
       - name: SMTP password-reset delivery and one-time-token flow
         run: |
           cookies=$(mktemp)
@@ -205,13 +286,27 @@ jobs:
         run: >
           seq 1 100 | xargs -P 20 -I '{}' curl --fail --silent
           --header 'Host: localhost' http://localhost:8080/health/live --output /dev/null
+      - name: Build authenticated production E2E tests
+        run: dotnet build tests/WorkPlanStudio.ProductionE2E/WorkPlanStudio.ProductionE2E.csproj -c Release
+      - name: Install Playwright Chromium
+        run: pwsh tests/WorkPlanStudio.ProductionE2E/bin/Release/net10.0/playwright.ps1 install --with-deps chromium
+      - name: Authenticated production UX and accessibility E2E
+        env:
+          E2E_PRODUCTION_BASE_URL: http://localhost:8080
+          E2E_PRODUCTION_EMAIL: production-e2e@example.com
+          E2E_PRODUCTION_PASSWORD: ProductionE2E_2026_only_Strong!
+        run: >
+          dotnet test tests/WorkPlanStudio.ProductionE2E/WorkPlanStudio.ProductionE2E.csproj -c Release --no-build
+          -- --no-progress --minimum-expected-tests 3
       - name: Container diagnostics
         if: failure()
         run: |
-          docker logs workplan-ci || true
+          docker logs workplan-api-ci || true
           docker logs mailpit-ci || true
+          docker compose logs database || true
       - name: Stop production image
         if: always()
         run: |
-          docker rm --force workplan-ci mailpit-ci || true
-          docker network rm workplan-ci || true
+          docker rm --force workplan-api-ci mailpit-ci || true
+          docker volume rm workplan-ci-keys || true
+          docker compose down --volumes || true
