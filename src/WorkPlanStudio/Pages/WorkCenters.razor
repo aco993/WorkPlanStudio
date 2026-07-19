@@ -15,7 +15,7 @@
 
 @if (_loading)
 {
-    <div class="loading-row"><span class="spinner"></span></div>
+    <div class="loading-row" role="status"><span class="spinner" aria-hidden="true"></span><span class="sr-only">@L["Common_Loading"]</span></div>
 }
 else if (_centers.Count == 0)
 {
@@ -32,16 +32,17 @@ else
     }
     <div class="card no-pad">
         <table class="data-table hover">
+            <caption class="sr-only">@L["WorkCenters_Title"]</caption>
             <thead>
                 <tr>
-                    <th>@L["Field_Code"]</th>
-                    <th>@L["Field_Name"]</th>
-                    <th>@L["Field_CostCenter"]</th>
-                    <th class="num">@L["Field_HourlyRate"]</th>
-                    <th class="num">@L["Field_Capacity"]</th>
-                    <th>@L["Field_Status"]</th>
-                    <th class="num">@L["Field_Operations"]</th>
-                    <th class="actions-col">@L["Common_Actions"]</th>
+                    <th scope="col">@L["Field_Code"]</th>
+                    <th scope="col">@L["Field_Name"]</th>
+                    <th scope="col">@L["Field_CostCenter"]</th>
+                    <th scope="col" class="num">@L["Field_HourlyRate"]</th>
+                    <th scope="col" class="num">@L["Field_Capacity"]</th>
+                    <th scope="col">@L["Field_Status"]</th>
+                    <th scope="col" class="num">@L["Field_Operations"]</th>
+                    <th scope="col" class="actions-col">@L["Common_Actions"]</th>
                 </tr>
             </thead>
             <tbody>
@@ -63,20 +64,20 @@ else
                         <td class="actions-col">
                             @if (Backend.Mode == BackendMode.Server)
                             {
-                                <a class="icon-btn" href="work-centers/@wc.Id/capacity" title="@L["Capacity_Title"]">⚙</a>
+                                <a class="icon-btn" href="work-centers/@wc.Id/capacity" aria-label="@L["Capacity_Title"]" title="@L["Capacity_Title"]">⚙</a>
                             }
-                            <button class="icon-btn" title="@L["Common_Edit"]" @onclick="() => Edit(wc)">
+                            <button class="icon-btn" aria-label="@L["Common_Edit"]" title="@L["Common_Edit"]" @onclick="() => Edit(wc)">
                                 <svg viewBox="0 0 24 24"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
                             </button>
                             @if (usage > 0)
                             {
-                                <button class="icon-btn" disabled title="@L["WorkCenters_InUse"]">
+                                <button class="icon-btn" aria-label="@L["WorkCenters_InUse"]" disabled title="@L["WorkCenters_InUse"]">
                                     <svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" /></svg>
                                 </button>
                             }
                             else
                             {
-                                <button class="icon-btn danger" title="@L["Common_Delete"]" @onclick="() => AskDelete(wc)">
+                                <button class="icon-btn danger" aria-label="@L["Common_Delete"]" title="@L["Common_Delete"]" @onclick="() => AskDelete(wc)">
                                     <svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" /></svg>
                                 </button>
                             }
@@ -93,38 +94,38 @@ else
     <div class="form-grid">
         <label class="field">
             <span>@L["Field_Code"]</span>
-            <input class="input @(_formErrors.ContainsKey("Code") ? "error" : null)" @bind="_editing.Code" @bind:event="oninput" />
+            <input id="wc-code" class="input @(_formErrors.ContainsKey("Code") ? "error" : null)" autocomplete="off" aria-invalid="@(_formErrors.ContainsKey("Code") ? "true" : "false")" aria-describedby="@(_formErrors.ContainsKey("Code") ? "wc-code-error" : null)" @bind="_editing.Code" @bind:event="oninput" />
             @if (_formErrors.TryGetValue("Code", out var ce))
             {
-                <span class="field-error">@ce</span>
+                <span id="wc-code-error" class="field-error">@ce</span>
             }
         </label>
         <label class="field">
             <span>@L["Field_CostCenter"]</span>
-            <input class="input" @bind="_editing.CostCenter" @bind:event="oninput" />
+            <input class="input" autocomplete="off" @bind="_editing.CostCenter" @bind:event="oninput" />
         </label>
         <label class="field wide">
             <span>@L["Field_Name"]</span>
-            <input class="input @(_formErrors.ContainsKey("Name") ? "error" : null)" @bind="_editing.Name" @bind:event="oninput" />
+            <input id="wc-name" class="input @(_formErrors.ContainsKey("Name") ? "error" : null)" autocomplete="off" aria-invalid="@(_formErrors.ContainsKey("Name") ? "true" : "false")" aria-describedby="@(_formErrors.ContainsKey("Name") ? "wc-name-error" : null)" @bind="_editing.Name" @bind:event="oninput" />
             @if (_formErrors.TryGetValue("Name", out var ne))
             {
-                <span class="field-error">@ne</span>
+                <span id="wc-name-error" class="field-error">@ne</span>
             }
         </label>
         <label class="field">
             <span>@L["Field_HourlyRate"]</span>
-            <input class="input @(_formErrors.ContainsKey("HourlyRate") ? "error" : null)" type="number" min="0" max="1000000" step="1" @bind="_editing.HourlyRate" @bind:event="oninput" />
+            <input id="wc-rate" class="input @(_formErrors.ContainsKey("HourlyRate") ? "error" : null)" type="number" min="0" max="1000000" step="1" autocomplete="off" aria-invalid="@(_formErrors.ContainsKey("HourlyRate") ? "true" : "false")" aria-describedby="@(_formErrors.ContainsKey("HourlyRate") ? "wc-rate-error" : null)" @bind="_editing.HourlyRate" @bind:event="oninput" />
             @if (_formErrors.TryGetValue("HourlyRate", out var he))
             {
-                <span class="field-error">@he</span>
+                <span id="wc-rate-error" class="field-error">@he</span>
             }
         </label>
         <label class="field">
             <span>@L["Field_Capacity"]</span>
-            <input class="input @(_formErrors.ContainsKey("ParallelCapacity") ? "error" : null)" type="number" min="1" max="64" @bind="_editing.ParallelCapacity" @bind:event="oninput" />
+            <input id="wc-capacity" class="input @(_formErrors.ContainsKey("ParallelCapacity") ? "error" : null)" type="number" min="1" max="64" autocomplete="off" aria-invalid="@(_formErrors.ContainsKey("ParallelCapacity") ? "true" : "false")" aria-describedby="@(_formErrors.ContainsKey("ParallelCapacity") ? "wc-capacity-error" : null)" @bind="_editing.ParallelCapacity" @bind:event="oninput" />
             @if (_formErrors.TryGetValue("ParallelCapacity", out var capacityError))
             {
-                <span class="field-error">@capacityError</span>
+                <span id="wc-capacity-error" class="field-error">@capacityError</span>
             }
         </label>
         <label class="field check">
@@ -142,10 +143,14 @@ else
 <Modal @bind-Visible="_showDelete" Title="@L["Confirm_DeleteWorkCenterTitle"]">
     <ChildContent>
         <p>@(string.Format(L["Confirm_DeleteWorkCenterBody"], _pendingDelete?.Code))</p>
+        @if (_deleteError is not null)
+        {
+            <div class="form-banner error" role="alert">@_deleteError</div>
+        }
     </ChildContent>
     <Footer>
         <button class="btn btn-ghost" @onclick="() => _showDelete = false">@L["Common_Cancel"]</button>
-        <button class="btn btn-danger" @onclick="ConfirmDeleteAsync">@L["Common_Delete"]</button>
+        <button class="btn btn-danger" @onclick="ConfirmDeleteAsync" disabled="@_deleting">@L["Common_Delete"]</button>
     </Footer>
 </Modal>
 
@@ -162,6 +167,8 @@ else
 
     private bool _showDelete;
     private WorkCenter? _pendingDelete;
+    private string? _deleteError;
+    private bool _deleting;
 
     protected override async Task OnInitializedAsync() => await ReloadAsync();
 
@@ -190,6 +197,7 @@ else
             CostCenter = wc.CostCenter,
             HourlyRate = wc.HourlyRate,
             ParallelCapacity = wc.ParallelCapacity,
+            TimeZoneId = wc.TimeZoneId,
             IsActive = wc.IsActive
         };
         _formErrors.Clear();
@@ -235,16 +243,42 @@ else
     private void AskDelete(WorkCenter wc)
     {
         _pendingDelete = wc;
+        _deleteError = null;
         _showDelete = true;
     }
 
     private async Task ConfirmDeleteAsync()
     {
-        if (_pendingDelete is not null)
-            await Centers.DeleteAsync(_pendingDelete.Id);
+        if (_pendingDelete is null) return;
 
-        _showDelete = false;
-        _pendingDelete = null;
-        await ReloadAsync();
+        var pendingId = _pendingDelete.Id;
+        _deleting = true;
+        _deleteError = null;
+        try
+        {
+            var result = await Centers.DeleteAsync(pendingId);
+            if (!result.IsSuccess)
+            {
+                _deleteError = result.ValidationIssues is { Count: > 0 }
+                    ? string.Join(" ", result.ValidationIssues.Select(issue => L[issue.MessageKey, issue.Arguments]))
+                    : result.Status == ApplicationResultStatus.NotFound
+                        ? L["Error_NotFound"]
+                        : L["Error_SaveFailed"];
+                return;
+            }
+
+            _showDelete = false;
+            _pendingDelete = null;
+            await ReloadAsync();
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(exception, "Deleting work center {WorkCenterId} failed", pendingId);
+            _deleteError = L["Error_SaveFailed"];
+        }
+        finally
+        {
+            _deleting = false;
+        }
     }
 }

@@ -107,7 +107,7 @@ a:hover { text-decoration: underline; }
 .brand-tag { color: var(--sidebar-muted); font-size: .72rem; }
 
 .nav-menu { display: flex; flex-direction: column; gap: 2px; padding: .5rem .7rem; flex: 1; }
-.skip-link { position: fixed; left: 1rem; top: -5rem; z-index: 1000; padding: .7rem 1rem; background: var(--surface); color: var(--text); border: 2px solid var(--accent); border-radius: .4rem; }
+.skip-link { position: fixed; left: 1rem; top: -5rem; z-index: 1000; padding: .7rem 1rem; background: var(--surface); color: var(--text); border: 2px solid var(--primary); border-radius: .4rem; }
 .skip-link:focus { top: 1rem; }
 .break-anywhere { overflow-wrap: anywhere; }
 .recovery-codes { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: .5rem; padding-left: 1.5rem; }

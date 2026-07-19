@@ -20,7 +20,7 @@
 }
 else if (_loading)
 {
-    <div class="loading-row"><span class="spinner"></span></div>
+    <div class="loading-row" role="status"><span class="spinner" aria-hidden="true"></span><span class="sr-only">@L["Common_Loading"]</span></div>
 }
 else
 {
@@ -46,13 +46,13 @@ else
 <Modal @bind-Visible="_editing" Title="@(_model.Id == 0 ? L["Orders_New"] : L["Orders_Edit"])">
     <ChildContent>
         <div class="form-grid">
-            <label class="field"><span>@L["Orders_Number"]</span><input class="input" @bind="_model.OrderNumber" /></label>
-            <label class="field"><span>@L["Orders_Routing"]</span><select class="input" @bind="_model.WorkPlanId">@foreach (var plan in _releasedPlans) { <option value="@plan.Id">@plan.PlanNumber — @plan.PartName</option> }</select></label>
-            <label class="field"><span>@L["Orders_Quantity"]</span><input class="input" type="number" min="1" max="1000000" @bind="_model.Quantity" /></label>
-            <label class="field"><span>@L["Orders_Priority"]</span><input class="input" type="number" min="1" max="10" @bind="_model.Priority" /></label>
-            <label class="field"><span>@L["Orders_Release"]</span><input class="input" type="datetime-local" @bind="_model.ReleaseLocal" /></label>
-            <label class="field"><span>@L["Orders_Due"]</span><input class="input" type="datetime-local" @bind="_model.DueLocal" /></label>
-            <label class="field"><span>@L["Field_Status"]</span><select class="input" @bind="_model.Status">@foreach (var status in Enum.GetValues<ProductionOrderStatus>()) { <option value="@status">@status</option> }</select></label>
+            <label class="field"><span>@L["Orders_Number"]</span><input class="input" autocomplete="off" @bind="_model.OrderNumber" /></label>
+            <label class="field"><span>@L["Orders_Routing"]</span><select class="input" autocomplete="off" @bind="_model.WorkPlanId">@foreach (var plan in _releasedPlans) { <option value="@plan.Id">@plan.PlanNumber — @plan.PartName</option> }</select></label>
+            <label class="field"><span>@L["Orders_Quantity"]</span><input class="input" type="number" min="1" max="1000000" autocomplete="off" @bind="_model.Quantity" /></label>
+            <label class="field"><span>@L["Orders_Priority"]</span><input class="input" type="number" min="1" max="10" autocomplete="off" @bind="_model.Priority" /></label>
+            <label class="field"><span>@L["Orders_Release"]</span><input class="input" type="datetime-local" autocomplete="off" @bind="_model.ReleaseLocal" /></label>
+            <label class="field"><span>@L["Orders_Due"]</span><input class="input" type="datetime-local" autocomplete="off" @bind="_model.DueLocal" /></label>
+            <label class="field"><span>@L["Field_Status"]</span><select class="input" autocomplete="off" @bind="_model.Status">@foreach (var status in Enum.GetValues<ProductionOrderStatus>()) { <option value="@status">@status</option> }</select></label>
         </div>
     </ChildContent>
     <Footer>
