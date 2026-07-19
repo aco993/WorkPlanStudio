@@ -17,3 +17,9 @@ updates:
     directory: "/"
     schedule:
       interval: weekly
+
+  # Refresh Dockerfile and Compose image pins through reviewed pull requests.
+  - package-ecosystem: docker
+    directory: "/"
+    schedule:
+      interval: weekly
