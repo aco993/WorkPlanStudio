@@ -109,6 +109,7 @@ builder.Services.AddHealthChecks()
     .AddDbContextCheck<ProductionDbContext>("database", tags: ["ready"]);
 builder.Services.AddSingleton<ScheduleRunQueue>();
 builder.Services.AddScoped<ScheduleRunLeaseManager>();
+builder.Services.AddScoped<ScheduleRunFinalizer>();
 builder.Services.AddHostedService<ScheduleWorker>();
 
 var otlpEndpoint = builder.Configuration["OpenTelemetry:OtlpEndpoint"];

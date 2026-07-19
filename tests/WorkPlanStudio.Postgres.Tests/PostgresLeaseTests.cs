@@ -70,11 +70,102 @@ public sealed class PostgresLeaseTests
         Assert.Equal("{\"recovered\":true}", run.ResultJson);
     }
 
+    [Fact(Skip = "WPS_POSTGRES_CONNECTION must point to a disposable PostgreSQL database.", SkipUnless = nameof(PostgresAvailable))]
+    public async Task Retrying_execution_strategy_completes_run_and_orders_atomically()
+    {
+        var suffix = Guid.NewGuid().ToString("N");
+        var ownerId = $"postgres-finalizer-{suffix}";
+        var workerId = $"worker-{suffix}";
+        var runId = Guid.NewGuid();
+        int orderId;
+
+        await using (var setup = CreateContext())
+        {
+            await setup.Database.MigrateAsync(TestContext.Current.CancellationToken);
+            var plan = new WorkPlan
+            {
+                OwnerId = ownerId,
+                PlanNumber = $"WP-{suffix[..8]}",
+                PartNumber = "PART",
+                PartName = "PostgreSQL finalizer test",
+                Status = WorkPlanStatus.Released,
+                LotSize = 1,
+                CreatedUtc = DateTime.UtcNow,
+                ModifiedUtc = DateTime.UtcNow
+            };
+            setup.WorkPlans.Add(plan);
+            await setup.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+            var releaseUtc = DateTime.UtcNow;
+            var order = new ProductionOrder
+            {
+                OwnerId = ownerId,
+                OrderNumber = $"PO-{suffix[..8]}",
+                WorkPlanId = plan.Id,
+                Quantity = 1,
+                ReleaseUtc = releaseUtc,
+                DueUtc = releaseUtc.AddHours(1),
+                Priority = 5,
+                Status = ProductionOrderStatus.Released,
+                RoutingRevision = "A",
+                RoutingSnapshotJson = "{}",
+                CreatedUtc = releaseUtc,
+                ModifiedUtc = releaseUtc
+            };
+            setup.ProductionOrders.Add(order);
+            setup.ScheduleRuns.Add(new ScheduleRun
+            {
+                Id = runId,
+                OwnerId = ownerId,
+                Status = ScheduleRunStatus.Running,
+                ProgressPercent = 25,
+                ParametersJson = "{}",
+                LeaseOwner = workerId,
+                LeaseExpiresUtc = releaseUtc.AddMinutes(2),
+                CreatedUtc = releaseUtc,
+                StartedUtc = releaseUtc
+            });
+            await setup.SaveChangesAsync(TestContext.Current.CancellationToken);
+            orderId = order.Id;
+        }
+
+        var completedUtc = DateTime.UtcNow;
+        await using (var completionDb = CreateContext())
+        {
+            var leases = new ScheduleRunLeaseManager(completionDb);
+            var finalizer = new ScheduleRunFinalizer(completionDb, leases);
+            Assert.True(await finalizer.TryCompleteAsync(
+                runId,
+                workerId,
+                ownerId,
+                [orderId],
+                "{\"completed\":true}",
+                completedUtc,
+                TestContext.Current.CancellationToken));
+        }
+
+        await using var verification = CreateContext();
+        var run = await verification.ScheduleRuns.AsNoTracking().SingleAsync(
+            item => item.Id == runId, TestContext.Current.CancellationToken);
+        var orderStatus = await verification.ProductionOrders.AsNoTracking()
+            .Where(item => item.Id == orderId)
+            .Select(item => item.Status)
+            .SingleAsync(TestContext.Current.CancellationToken);
+
+        Assert.Equal(ScheduleRunStatus.Completed, run.Status);
+        Assert.Equal(100, run.ProgressPercent);
+        Assert.Null(run.LeaseOwner);
+        Assert.Equal(ProductionOrderStatus.Scheduled, orderStatus);
+    }
+
     private static ProductionDbContext CreateContext()
     {
         var options = new DbContextOptionsBuilder<ProductionDbContext>()
             .UseNpgsql(ConnectionString, npgsql =>
-                npgsql.MigrationsAssembly("WorkPlanStudio.PostgresMigrations"))
+            {
+                npgsql.EnableRetryOnFailure(5);
+                npgsql.MigrationsAssembly("WorkPlanStudio.PostgresMigrations");
+            })
             .Options;
         return new ProductionDbContext(options);
     }

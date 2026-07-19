@@ -196,30 +196,21 @@ public sealed class ScheduleWorker(
             result = new SchedulingEngine().RunCancellable(schedulingContext, cancellationToken);
         }
 
-        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
-        var leases = scope.ServiceProvider.GetRequiredService<ScheduleRunLeaseManager>();
-        var completed = await leases.TryCompleteAsync(
+        var finalizer = scope.ServiceProvider.GetRequiredService<ScheduleRunFinalizer>();
+        var completed = await finalizer.TryCompleteAsync(
             id,
             _workerId,
+            run.OwnerId,
+            request.ProductionOrderIds,
             JsonSerializer.Serialize(new { HorizonStartUtc = horizonStart, Result = result, ExactProof = exactProof }),
             DateTime.UtcNow,
             cancellationToken);
-        if (completed != 1)
+        if (!completed)
         {
-            await transaction.RollbackAsync(CancellationToken.None);
             queue.Cancel(id);
             cancellationToken.ThrowIfCancellationRequested();
             throw new InvalidOperationException("The schedule run lease was lost before completion.");
         }
-        var trackedOrders = await db.ProductionOrders.Where(order => order.OwnerId == run.OwnerId && request.ProductionOrderIds.Contains(order.Id))
-            .ToListAsync(cancellationToken);
-        foreach (var order in trackedOrders.Where(order => order.Status == ProductionOrderStatus.Released))
-        {
-            order.Status = ProductionOrderStatus.Scheduled;
-            order.ModifiedUtc = DateTime.UtcNow;
-        }
-        await db.SaveChangesAsync(cancellationToken);
-        await transaction.CommitAsync(cancellationToken);
     }
 
     private async Task FinishAsync(
