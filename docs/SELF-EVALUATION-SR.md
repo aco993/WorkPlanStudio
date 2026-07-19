@@ -16,7 +16,7 @@ samim pisanjem koda u repository-ju.
 
 | Dokaz | Rezultat 2026-07-19 |
 | --- | --- |
-| Testovi | 184 passed, 0 failed, 0 skipped u eksplicitno orkestriranim slojevima |
+| Testovi | 185 passed, 0 failed, 0 skipped u eksplicitno orkestriranim slojevima |
 | Engine coverage | 508/508 linija i 245/245 grana — 100% / 100% |
 | Release build | uspešan, 0 errors; ostaju dva dokumentovana `WASM0001` warning bloka |
 | Format i dokumentacija | `dotnet format` čist; 36 Markdown fajlova bez nepostojećih lokalnih linkova |
@@ -24,8 +24,10 @@ samim pisanjem koda u repository-ju.
 | Baze | oba migration skripta generisana; PostgreSQL 18 migracije/model i lease fencing 2/2 |
 | Browser | offline Chromium 10/10; authenticated production Chromium 3/3 |
 | Container | PostgreSQL/API healthy; Npgsql readiness; non-root, read-only, `cap_drop=ALL`, `no-new-privileges` |
+| Remote PR gate | svih 10 obaveznih checkova zeleno; CodeQL, real PostgreSQL, production container/E2E i ZAP izvršeni |
 | HTTP smoke | 60/60 odgovora 200 na 10 RPS; 0 grešaka; latency percentili zabeleženi |
 | Account recovery | Mailpit SMTP delivery potvrđen; reset uspeo; ponovna upotreba tokena odbijena |
+| Log privacy | bootstrap startup potvrđuje postojanje naloga bez zapisivanja email adrese; integracioni test hvata regresiju |
 | Performance | 25/100/250-job scenariji deterministični i ispod CI time/allocation plafona |
 
 GitHub Actions sada dodatno imaju immutable Action/image pinove, fail-closed NuGet
@@ -46,7 +48,7 @@ production E2E i puni Pages release gate. Njihov status je remote dokaz i mora s
 | Accessibility | 8.5/10 | keyboard/modal/lang/mobile i production DOM/AX semantika automatizovani; bez ljudskog NVDA/VoiceOver potpisa |
 | UX | 8.5/10 | statusi, lokalizovane greške, offline/server stanje, progress/cancel i account tokovi; funkcionalni UI nije formalno usability-testiran ni dizajnerski finalizovan |
 | Dokumentacija | 9.5/10 | aktivni dokumenti usklađeni i linkovi automatski provereni; operativne evidencije moraju nastajati po deploymentu |
-| GitHub/CI | 9/10 | slojeviti gateovi, CodeQL, artifacts, digest pinovi i full deploy gate; branch governance i novi remote run moraju biti potvrđeni na GitHub-u |
+| GitHub/CI | 9.5/10 | svih deset obaveznih PR checkova zeleno, CodeQL/artifacts/digest pinovi/full deploy gate i aktivna zaštita `main` grane; spoljne usluge ipak ostaju operativna zavisnost |
 | Production readiness | 8.5/10 | stvarni Docker/PostgreSQL/SMTP baseline i replica-safe claim; nema multi-zone infrastrukture, failover/RPO/RTO ni regulatornog potpisa |
 
 ## Šta i dalje nije završivo samo kodom

@@ -34,7 +34,7 @@ graph TD
 | --- | --- | --: | --- | :---: | --- |
 | Engine + property + architecture | `tests/WorkPlanStudio.Scheduling.Tests` | 102 | determinism, feasibility, rules, calendars/setup, scoring, bounded search, exact dispatch-order proof, overflow, cancellation and dependency boundaries | no | ~8 s |
 | Data + mapper + component + assistant | `tests/WorkPlanStudio.Web.Tests` | 55 | real SQLite CRUD/recovery, all-or-nothing mapper, localized components, modal/reset semantics and stubbed AI transport | yes¹ | ~12 s |
-| Production API | `tests/WorkPlanStudio.Api.Tests` | 12 | migrated SQLite, liveness/readiness, Identity/MFA/password reset/antiforgery/owner isolation, durable fenced leases and full order→worker→result flow | yes¹ | ~35 s |
+| Production API | `tests/WorkPlanStudio.Api.Tests` | 13 | migrated SQLite, liveness/readiness, Identity/MFA/password reset/antiforgery/owner isolation, bootstrap-log privacy, durable fenced leases and full order→worker→result flow | yes¹ | ~35 s |
 | PostgreSQL integration | `tests/WorkPlanStudio.Postgres.Tests` | 2 | provider-correct migrations/model, atomic concurrent claim, expired takeover and stale-owner completion fencing | no³ | ~10 s |
 | Offline end-to-end | `tests/WorkPlanStudio.E2E` | 10 | Chromium scheduling, determinism, localization, invalid input, reload persistence, reset, keyboard and mobile | browser² | ~3 min |
 | Production end-to-end | `tests/WorkPlanStudio.ProductionE2E` | 3 | production login semantics, authenticated navigation/account security, German language and mobile drawer against Docker/PostgreSQL | browser² | ~20 s |
@@ -45,8 +45,8 @@ graph TD
 
 ## Verification snapshot
 
-The explicitly orchestrated local run on 2026-07-19 passed **184/184 tests with
-0 failures and 0 skips**: 102 engine, 55 web/data/component, 12 API, 2 real
+The explicitly orchestrated local run on 2026-07-19 passed **185/185 tests with
+0 failures and 0 skips**: 102 engine, 55 web/data/component, 13 API, 2 real
 PostgreSQL, 10 offline Chromium and 3 authenticated production Chromium. The two
 infrastructure-dependent projects use conditional discovery so a casual
 `dotnet test` without PostgreSQL/production credentials does not create a false
