@@ -23,7 +23,7 @@
 
     <div class="content-area">
         <header class="topbar">
-            <button class="hamburger" type="button" aria-label="Menu" aria-controls="primary-navigation" aria-expanded="@_navOpen" @onclick="ToggleNav">
+            <button class="hamburger" type="button" aria-label="@L["Accessibility_Menu"]" aria-controls="primary-navigation" aria-expanded="@(_navOpen ? "true" : "false")" @onclick="ToggleNav">
                 <svg viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18" /></svg>
             </button>
             <div class="topbar-spacer"></div>

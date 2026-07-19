@@ -27,15 +27,16 @@ else
     @if (_error is not null) { <div class="form-banner error" role="alert">@_error</div> }
     <div class="card no-pad">
         <table class="data-table hover">
-            <thead><tr><th>@L["Orders_Number"]</th><th>@L["Orders_Routing"]</th><th class="num">@L["Orders_Quantity"]</th><th>@L["Orders_Release"]</th><th>@L["Orders_Due"]</th><th class="num">@L["Orders_Priority"]</th><th>@L["Field_Status"]</th><th></th></tr></thead>
+            <caption class="sr-only">@L["Orders_Title"]</caption>
+            <thead><tr><th scope="col">@L["Orders_Number"]</th><th scope="col">@L["Orders_Routing"]</th><th scope="col" class="num">@L["Orders_Quantity"]</th><th scope="col">@L["Orders_Release"]</th><th scope="col">@L["Orders_Due"]</th><th scope="col" class="num">@L["Orders_Priority"]</th><th scope="col">@L["Field_Status"]</th><th scope="col"><span class="sr-only">@L["Common_Actions"]</span></th></tr></thead>
             <tbody>
             @foreach (var order in _orders)
             {
                 <tr>
                     <td class="mono">@order.OrderNumber</td><td>@order.WorkPlanNumber <span class="muted">rev @order.RoutingRevision</span></td>
                     <td class="num">@order.Quantity</td><td>@order.ReleaseUtc.ToLocalTime().ToString("g")</td><td>@order.DueUtc.ToLocalTime().ToString("g")</td>
-                    <td class="num">@order.Priority</td><td><span class="pill">@order.Status</span></td>
-                    <td class="actions-col"><button class="icon-btn" title="@L["Common_Edit"]" @onclick="() => Edit(order)">✎</button></td>
+                    <td class="num">@order.Priority</td><td><span class="pill">@StatusLabel(order.Status)</span></td>
+                    <td class="actions-col"><button class="icon-btn" aria-label="@L["Common_Edit"]" title="@L["Common_Edit"]" @onclick="() => Edit(order)">✎</button></td>
                 </tr>
             }
             </tbody>
@@ -52,7 +53,7 @@ else
             <label class="field"><span>@L["Orders_Priority"]</span><input class="input" type="number" min="1" max="10" autocomplete="off" @bind="_model.Priority" /></label>
             <label class="field"><span>@L["Orders_Release"]</span><input class="input" type="datetime-local" autocomplete="off" @bind="_model.ReleaseLocal" /></label>
             <label class="field"><span>@L["Orders_Due"]</span><input class="input" type="datetime-local" autocomplete="off" @bind="_model.DueLocal" /></label>
-            <label class="field"><span>@L["Field_Status"]</span><select class="input" autocomplete="off" @bind="_model.Status">@foreach (var status in Enum.GetValues<ProductionOrderStatus>()) { <option value="@status">@status</option> }</select></label>
+            <label class="field"><span>@L["Field_Status"]</span><select class="input" autocomplete="off" @bind="_model.Status">@foreach (var status in Enum.GetValues<ProductionOrderStatus>()) { <option value="@status">@StatusLabel(status)</option> }</select></label>
         </div>
     </ChildContent>
     <Footer>
@@ -118,6 +119,9 @@ else
     }
 
     private void Close() => _editing = false;
+
+    private string StatusLabel(ProductionOrderStatus status) =>
+        L[$"Status_{status}"];
 
     private sealed class OrderModel
     {

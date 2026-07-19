@@ -15,12 +15,38 @@ window.documentLanguage = {
 
 window.workplanModal = {
     previousFocus: new WeakMap(),
+    traps: new WeakMap(),
     open: function (dialog) {
         this.previousFocus.set(dialog, document.activeElement);
         const target = dialog.querySelector('input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), a[href]');
         (target || dialog).focus();
+
+        const onKeyDown = (event) => {
+            if (event.key !== 'Tab') return;
+            const focusable = [...dialog.querySelectorAll('input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])')]
+                .filter(element => element.offsetParent !== null);
+            if (focusable.length === 0) {
+                event.preventDefault();
+                dialog.focus();
+                return;
+            }
+            const first = focusable[0];
+            const last = focusable[focusable.length - 1];
+            if (event.shiftKey && document.activeElement === first) {
+                event.preventDefault();
+                last.focus();
+            } else if (!event.shiftKey && document.activeElement === last) {
+                event.preventDefault();
+                first.focus();
+            }
+        };
+        dialog.addEventListener('keydown', onKeyDown);
+        this.traps.set(dialog, onKeyDown);
     },
     close: function (dialog) {
+        const trap = this.traps.get(dialog);
+        if (trap) dialog.removeEventListener('keydown', trap);
+        this.traps.delete(dialog);
         const previous = this.previousFocus.get(dialog);
         if (previous && document.contains(previous)) {
             previous.focus();

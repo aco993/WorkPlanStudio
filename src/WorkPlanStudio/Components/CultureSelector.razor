@@ -1,11 +1,14 @@
 @inject IJSRuntime JS
+@inject IStringLocalizer<SharedResource> L
 @inject NavigationManager Nav
 
-<div class="culture-selector" role="group">
+<div class="culture-selector" role="group" aria-label="@L["About_LanguageTitle"]">
     @foreach (var option in _cultures)
     {
         <button type="button"
                 class="culture-btn @(IsCurrent(option.Code) ? "active" : null)"
+                aria-label="@($"{option.Short}: {option.Name}")"
+                aria-pressed="@(IsCurrent(option.Code) ? "true" : "false")"
                 title="@option.Name"
                 @onclick="() => SetCultureAsync(option.Code)">
             @option.Short

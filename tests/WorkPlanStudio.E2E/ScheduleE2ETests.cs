@@ -101,10 +101,14 @@ public sealed class ScheduleE2ETests
         var (context, schedule) = await OpenAsync();
         await using var _ = context;
 
+        var culture = schedule.Page.Locator(".culture-selector");
+        Assert.Equal("true", await culture.GetByRole(AriaRole.Button, new() { Name = "EN" }).GetAttributeAsync("aria-pressed"));
         await schedule.SwitchToGermanAsync();
 
         Assert.Contains("Produktionsplanung", await schedule.Heading.InnerTextAsync());
         Assert.Equal("de", await schedule.DocumentLanguageAsync());
+        Assert.Equal("false", await culture.GetByRole(AriaRole.Button, new() { Name = "EN" }).GetAttributeAsync("aria-pressed"));
+        Assert.Equal("true", await culture.GetByRole(AriaRole.Button, new() { Name = "DE" }).GetAttributeAsync("aria-pressed"));
     }
 
     [Fact]
@@ -176,6 +180,9 @@ public sealed class ScheduleE2ETests
         Assert.Equal("true", await dialog.GetAttributeAsync("aria-modal"));
         Assert.Equal("off", await dialog.GetByLabel("Code").GetAttributeAsync("autocomplete"));
         Assert.Equal("false", await dialog.GetByLabel("Code").GetAttributeAsync("aria-invalid"));
+        await dialog.GetByRole(AriaRole.Button, new() { Name = "Save" }).FocusAsync();
+        await page.Keyboard.PressAsync("Tab");
+        Assert.True(await dialog.GetByRole(AriaRole.Button, new() { Name = "Close" }).EvaluateAsync<bool>("element => element === document.activeElement"));
         await page.Keyboard.PressAsync("Escape");
 
         await dialog.WaitForAsync(new() { State = WaitForSelectorState.Detached });
@@ -240,7 +247,10 @@ public sealed class ScheduleE2ETests
         await page.GotoAsync($"{_fixture.BaseUrl}/schedule");
         await page.GetByRole(AriaRole.Heading, new() { Name = "Production Scheduling" }).WaitForAsync(new() { Timeout = 60_000 });
 
-        await page.GetByRole(AriaRole.Button, new() { Name = "Menu" }).ClickAsync();
+        var menu = page.GetByRole(AriaRole.Button, new() { Name = "Open navigation menu" });
+        Assert.Equal("false", await menu.GetAttributeAsync("aria-expanded"));
+        await menu.ClickAsync();
+        Assert.Equal("true", await menu.GetAttributeAsync("aria-expanded"));
         await page.GetByRole(AriaRole.Link, new() { Name = "Work Centers" }).ClickAsync();
 
         await page.GetByRole(AriaRole.Heading, new() { Name = "Work Centers" }).WaitForAsync();
