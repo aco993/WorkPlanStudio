@@ -78,9 +78,14 @@ public sealed class ProductionE2ETests
             await page.GetByRole(AriaRole.Heading, new() { Name = "Übersicht" })
                 .WaitForAsync(new() { Timeout = 30_000 });
             Assert.Equal("de", await page.Locator("html").GetAttributeAsync("lang"));
+            var culture = page.Locator(".culture-selector");
+            Assert.Equal("false", await culture.GetByRole(AriaRole.Button, new() { Name = "EN" }).GetAttributeAsync("aria-pressed"));
+            Assert.Equal("true", await culture.GetByRole(AriaRole.Button, new() { Name = "DE" }).GetAttributeAsync("aria-pressed"));
 
-            var menu = page.GetByRole(AriaRole.Button, new() { Name = "Menu" });
+            var menu = page.Locator("button.hamburger");
+            Assert.False(string.IsNullOrWhiteSpace(await menu.GetAttributeAsync("aria-label")));
             await menu.ClickAsync();
+            Assert.Equal("true", await menu.GetAttributeAsync("aria-expanded"));
             Assert.True(await page.GetByRole(AriaRole.Navigation, new() { Name = "Hauptnavigation" }).IsVisibleAsync());
             await page.GetByRole(AriaRole.Link, new() { Name = "Kontosicherheit" }).ClickAsync();
             await page.GetByRole(AriaRole.Heading, new() { Name = "Kontosicherheit" })

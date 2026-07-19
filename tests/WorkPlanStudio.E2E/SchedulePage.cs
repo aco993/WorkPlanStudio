@@ -15,6 +15,7 @@ public sealed class SchedulePage
     }
 
     public ILocator Heading => _page.Locator(".page-head h1");
+    public IPage Page => _page;
     public ILocator KpiCards => _page.Locator(".stat-card");
     public ILocator GanttBars => _page.Locator(".gantt-bar");
     public ILocator LateBars => _page.Locator(".gantt-bar.late");

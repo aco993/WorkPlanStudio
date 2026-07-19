@@ -80,20 +80,21 @@ else
             </div>
             <div class="card-body no-pad">
                 <table class="data-table">
+                    <caption class="sr-only">@L["Dashboard_Recent"]</caption>
                     <thead>
                         <tr>
-                            <th>@L["Field_PlanNumber"]</th>
-                            <th>@L["Field_PartName"]</th>
-                            <th>@L["Field_Status"]</th>
-                            <th class="num">@L["Field_TotalTime"]</th>
-                            <th class="num">@L["Field_Modified"]</th>
+                            <th scope="col">@L["Field_PlanNumber"]</th>
+                            <th scope="col">@L["Field_PartName"]</th>
+                            <th scope="col">@L["Field_Status"]</th>
+                            <th scope="col" class="num">@L["Field_TotalTime"]</th>
+                            <th scope="col" class="num">@L["Field_Modified"]</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach (var p in Recent)
                         {
                             <tr class="clickable" @onclick="() => Open(p.Id)">
-                                <td><span class="mono">@p.PlanNumber</span></td>
+                        <td><a class="table-primary-link" href="work-plans/@p.Id" @onclick:stopPropagation="true"><span class="mono">@p.PlanNumber</span></a></td>
                                 <td>@p.PartName</td>
                                 <td><StatusBadge Status="p.Status" /></td>
                                 <td class="num">@Format.Hours(p.TotalTimeMinutes)</td>
