@@ -24,7 +24,8 @@ internal static class Feasibility
             {
                 var step = job.Steps.Single(s => s.StepNumber == op.StepNumber);
                 Assert.Equal(step.WorkCenterId, op.WorkCenterId);
-                Assert.Equal(step.DurationSeconds, op.DurationSeconds);
+                Assert.InRange(op.SetupSeconds, 0, op.DurationSeconds);
+                Assert.Equal(step.DurationSeconds, op.DurationSeconds - op.SetupSeconds);
                 Assert.True(op.StartSeconds >= previousEnd,
                     $"Job {job.Id} step {op.StepNumber} starts at {op.StartSeconds}, before {previousEnd}.");
                 previousEnd = op.EndSeconds;

@@ -159,7 +159,7 @@ jobs:
           WPS_POSTGRES_CONNECTION: Host=localhost;Port=5432;Database=workplan_tests;Username=workplan_tests;Password=CiPostgresTest_2026_only
         run: >
           dotnet test tests/WorkPlanStudio.Postgres.Tests/WorkPlanStudio.Postgres.Tests.csproj -c Release
-          -- --no-progress --minimum-expected-tests 2
+          -- --no-progress --minimum-expected-tests 3
       - name: Generate SQLite migration script
         run: dotnet ef migrations script --project src/WorkPlanStudio.Persistence --startup-project src/WorkPlanStudio.Api --output sqlite-migrations.sql
       - name: Generate PostgreSQL migration script

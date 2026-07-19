@@ -32,7 +32,7 @@ graph TD
 
 | Layer | Project | Tests | Guards | Needs WASM? | Runtime |
 | --- | --- | --: | --- | :---: | --- |
-| Engine + property + architecture | `tests/WorkPlanStudio.Scheduling.Tests` | 102 | determinism, feasibility, rules, calendars/setup, scoring, bounded search, exact dispatch-order proof, overflow, cancellation and dependency boundaries | no | ~8 s |
+| Engine + property + architecture | `tests/WorkPlanStudio.Scheduling.Tests` | 106 | determinism, feasibility, rules, calendars/setup, scoring, bounded search, independent permutation oracle, exact dispatch-order proof, overflow, cancellation and dependency boundaries | no | ~8 s |
 | Data + mapper + component + assistant | `tests/WorkPlanStudio.Web.Tests` | 55 | real SQLite CRUD/recovery, all-or-nothing mapper, localized components, modal/reset semantics and stubbed AI transport | yes¹ | ~12 s |
 | Production API | `tests/WorkPlanStudio.Api.Tests` | 17 | migrated SQLite, liveness/readiness, Identity/MFA/password reset/antiforgery/owner isolation, CRUD/lifecycle/validation boundaries, bootstrap-log privacy, durable fenced leases and full order→worker→result flow | yes¹ | ~35 s |
 | PostgreSQL integration | `tests/WorkPlanStudio.Postgres.Tests` | 3 | provider-correct migrations/model, atomic concurrent claim, expired takeover, stale-owner completion fencing and retry-safe finalization | no³ | ~10 s |
@@ -45,8 +45,8 @@ graph TD
 
 ## Verification snapshot
 
-The explicitly orchestrated local run on 2026-07-19 passed **190/190 tests with
-0 failures and 0 skips**: 102 engine, 55 web/data/component, 17 API, 3 real
+The explicitly orchestrated local run on 2026-07-19 passed **194/194 tests with
+0 failures and 0 skips**: 106 engine, 55 web/data/component, 17 API, 3 real
 PostgreSQL, 10 offline Chromium and 3 authenticated production Chromium. The two
 infrastructure-dependent projects use conditional discovery so a casual
 `dotnet test` without PostgreSQL/production credentials does not create a false
@@ -172,7 +172,7 @@ above and is orchestrated in `ci.yml` so secrets never need to be committed.
 
 ## Coverage
 
-The engine job measures code coverage with the Microsoft Testing Platform collector and `Assert-CoberturaCoverage.ps1` fails both CI and the Pages release gate below 100% line or branch coverage. A fresh local run on 2026-07-19 measured **508/508 lines and 245/245 branches (100% / 100%)** across 102 engine tests. The result was achieved with executable edge-case tests and removal of one redundant unreachable fallback behind the validated capacity invariant—not coverage exclusions; run the commands below rather than treating a badge as evidence:
+The engine job measures code coverage with the Microsoft Testing Platform collector and `Assert-CoberturaCoverage.ps1` fails both CI and the Pages release gate below 100% line or branch coverage. A fresh local run on 2026-07-19 measured **508/508 lines and 245/245 branches (100% / 100%)** across 106 engine tests. The result was achieved with executable edge-case tests and removal of one redundant unreachable fallback behind the validated capacity invariant—not coverage exclusions; run the commands below rather than treating a badge as evidence:
 
 ```bash
 dotnet test tests/WorkPlanStudio.Scheduling.Tests/WorkPlanStudio.Scheduling.Tests.csproj \

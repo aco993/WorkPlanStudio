@@ -19,7 +19,7 @@ public sealed record ScheduledOperation(
     long StartSeconds,
     long EndSeconds)
 {
-    /// <summary>Processing time of this placement, in seconds.</summary>
+    /// <summary>Total occupied time of this placement, including sequence-dependent setup.</summary>
     public long DurationSeconds => EndSeconds - StartSeconds;
 
     /// <summary>Sequence-dependent setup included at the beginning of this placement.</summary>
