@@ -15,7 +15,7 @@
 <div class="toolbar">
     <div class="search">
         <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
-        <input type="search" placeholder="@L["WorkPlans_SearchPlaceholder"]"
+        <input type="search" autocomplete="off" placeholder="@L["WorkPlans_SearchPlaceholder"]"
                value="@_search" @oninput="OnSearch" />
     </div>
     <div class="seg">
@@ -29,7 +29,7 @@
 
 @if (_loading)
 {
-    <div class="loading-row"><span class="spinner"></span></div>
+    <div class="loading-row" role="status"><span class="spinner" aria-hidden="true"></span><span class="sr-only">@L["Common_Loading"]</span></div>
 }
 else if (!Filtered.Any())
 {

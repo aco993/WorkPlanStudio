@@ -174,10 +174,32 @@ public sealed class ScheduleE2ETests
         var dialog = page.GetByRole(AriaRole.Dialog, new() { Name = "New work center" });
         await dialog.WaitForAsync();
         Assert.Equal("true", await dialog.GetAttributeAsync("aria-modal"));
+        Assert.Equal("off", await dialog.GetByLabel("Code").GetAttributeAsync("autocomplete"));
+        Assert.Equal("false", await dialog.GetByLabel("Code").GetAttributeAsync("aria-invalid"));
         await page.Keyboard.PressAsync("Escape");
 
         await dialog.WaitForAsync(new() { State = WaitForSelectorState.Detached });
         Assert.True(await open.EvaluateAsync<bool>("element => element === document.activeElement"));
+    }
+
+    [Fact]
+    public async Task Work_center_validation_marks_the_invalid_control_and_explains_the_error()
+    {
+        var context = await _fixture.Browser.NewContextAsync();
+        await using var _ = context;
+        var page = await context.NewPageAsync();
+        await page.GotoAsync($"{_fixture.BaseUrl}/work-centers");
+
+        await page.GetByRole(AriaRole.Button, new() { Name = "New work center" }).ClickAsync();
+        var dialog = page.GetByRole(AriaRole.Dialog, new() { Name = "New work center" });
+        await dialog.GetByLabel("Name").FillAsync("Validation review");
+        await dialog.GetByRole(AriaRole.Button, new() { Name = "Save" }).ClickAsync();
+
+        var code = dialog.GetByLabel("Code");
+        await page.GetByText("Required", new() { Exact = true }).WaitForAsync();
+        Assert.Equal("true", await code.GetAttributeAsync("aria-invalid"));
+        Assert.Equal("wc-code-error", await code.GetAttributeAsync("aria-describedby"));
+        Assert.Equal(1, await dialog.Locator("#wc-code-error").CountAsync());
     }
 
     [Fact]

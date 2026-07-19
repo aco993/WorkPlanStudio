@@ -16,7 +16,7 @@
 }
 else if (_loading)
 {
-    <div class="loading-row"><span class="spinner"></span></div>
+    <div class="loading-row" role="status"><span class="spinner" aria-hidden="true"></span><span class="sr-only">@L["Common_Loading"]</span></div>
 }
 else
 {
@@ -24,9 +24,9 @@ else
     <section class="card">
         <h2>@L["Capacity_Shifts"]</h2>
         <div class="form-grid inline-editor">
-            <label class="field"><span>@L["Capacity_Day"]</span><select class="input" @bind="_shiftDay">@foreach (var day in Enum.GetValues<DayOfWeek>()) { <option value="@day">@day</option> }</select></label>
-            <label class="field"><span>@L["Capacity_Start"]</span><input class="input" type="time" @bind="_shiftStart" /></label>
-            <label class="field"><span>@L["Capacity_End"]</span><input class="input" type="time" @bind="_shiftEnd" /></label>
+            <label class="field"><span>@L["Capacity_Day"]</span><select class="input" autocomplete="off" @bind="_shiftDay">@foreach (var day in Enum.GetValues<DayOfWeek>()) { <option value="@day">@day</option> }</select></label>
+            <label class="field"><span>@L["Capacity_Start"]</span><input class="input" type="time" autocomplete="off" @bind="_shiftStart" /></label>
+            <label class="field"><span>@L["Capacity_End"]</span><input class="input" type="time" autocomplete="off" @bind="_shiftEnd" /></label>
             <button class="btn btn-primary" @onclick="AddShiftAsync">@L["Common_Add"]</button>
         </div>
         <ul class="compact-list">
@@ -36,9 +36,9 @@ else
     <section class="card">
         <h2>@L["Capacity_Downtime"]</h2>
         <div class="form-grid inline-editor">
-            <label class="field"><span>@L["Capacity_Start"]</span><input class="input" type="datetime-local" @bind="_downStart" /></label>
-            <label class="field"><span>@L["Capacity_End"]</span><input class="input" type="datetime-local" @bind="_downEnd" /></label>
-            <label class="field"><span>@L["Capacity_Reason"]</span><input class="input" @bind="_downReason" /></label>
+            <label class="field"><span>@L["Capacity_Start"]</span><input class="input" type="datetime-local" autocomplete="off" @bind="_downStart" /></label>
+            <label class="field"><span>@L["Capacity_End"]</span><input class="input" type="datetime-local" autocomplete="off" @bind="_downEnd" /></label>
+            <label class="field"><span>@L["Capacity_Reason"]</span><input class="input" autocomplete="off" @bind="_downReason" /></label>
             <button class="btn btn-primary" @onclick="AddDowntimeAsync">@L["Common_Add"]</button>
         </div>
         <ul class="compact-list">
@@ -48,9 +48,9 @@ else
     <section class="card">
         <h2>@L["Capacity_Setups"]</h2>
         <div class="form-grid inline-editor">
-            <label class="field"><span>@L["Capacity_From"]</span><input class="input" @bind="_setupFrom" /></label>
-            <label class="field"><span>@L["Capacity_To"]</span><input class="input" @bind="_setupTo" /></label>
-            <label class="field"><span>@L["Capacity_Minutes"]</span><input class="input" type="number" min="0" max="1440" @bind="_setupMinutes" /></label>
+            <label class="field"><span>@L["Capacity_From"]</span><input class="input" autocomplete="off" @bind="_setupFrom" /></label>
+            <label class="field"><span>@L["Capacity_To"]</span><input class="input" autocomplete="off" @bind="_setupTo" /></label>
+            <label class="field"><span>@L["Capacity_Minutes"]</span><input class="input" type="number" min="0" max="1440" autocomplete="off" @bind="_setupMinutes" /></label>
             <button class="btn btn-primary" @onclick="AddSetupAsync">@L["Common_Add"]</button>
         </div>
         <ul class="compact-list">

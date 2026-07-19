@@ -21,7 +21,7 @@
 
 @if (_loading)
 {
-    <div class="loading-row"><span class="spinner"></span></div>
+    <div class="loading-row" role="status"><span class="spinner" aria-hidden="true"></span><span class="sr-only">@L["Common_Loading"]</span></div>
 }
 else
 {
@@ -36,15 +36,15 @@ else
                 <div class="form-grid">
                     <label class="field">
                         <span>@L["Field_PlanNumber"]</span>
-                        <input class="input @(_errors.ContainsKey("PlanNumber") ? "error" : null)" @bind="_model.PlanNumber" @bind:event="oninput" />
+                        <input id="plan-number" class="input @(_errors.ContainsKey("PlanNumber") ? "error" : null)" autocomplete="off" aria-invalid="@(_errors.ContainsKey("PlanNumber") ? "true" : "false")" aria-describedby="@(_errors.ContainsKey("PlanNumber") ? "plan-number-error" : null)" @bind="_model.PlanNumber" @bind:event="oninput" />
                         @if (_errors.TryGetValue("PlanNumber", out var pe))
                         {
-                            <span class="field-error">@pe</span>
+                            <span id="plan-number-error" class="field-error">@pe</span>
                         }
                     </label>
                     <label class="field">
                         <span>@L["Field_Status"]</span>
-                        <select class="input @(_errors.ContainsKey("Status") ? "error" : null)" @bind="_model.Status">
+                        <select id="plan-status" class="input @(_errors.ContainsKey("Status") ? "error" : null)" autocomplete="off" aria-invalid="@(_errors.ContainsKey("Status") ? "true" : "false")" aria-describedby="@(_errors.ContainsKey("Status") ? "plan-status-error" : null)" @bind="_model.Status">
                             @foreach (var s in Enum.GetValues<WorkPlanStatus>())
                             {
                                 <option value="@s">@StatusLabel(s)</option>
@@ -52,31 +52,31 @@ else
                         </select>
                         @if (_errors.TryGetValue("Status", out var se))
                         {
-                            <span class="field-error">@se</span>
+                            <span id="plan-status-error" class="field-error">@se</span>
                         }
                     </label>
                     <label class="field">
                         <span>@L["Field_PartNumber"]</span>
-                        <input class="input" @bind="_model.PartNumber" @bind:event="oninput" />
+                        <input class="input" autocomplete="off" @bind="_model.PartNumber" @bind:event="oninput" />
                     </label>
                     <label class="field">
                         <span>@L["Field_Revision"]</span>
-                        <input class="input" @bind="_model.Revision" @bind:event="oninput" />
+                        <input class="input" autocomplete="off" @bind="_model.Revision" @bind:event="oninput" />
                     </label>
                     <label class="field wide">
                         <span>@L["Field_PartName"]</span>
-                        <input class="input @(_errors.ContainsKey("PartName") ? "error" : null)" @bind="_model.PartName" @bind:event="oninput" />
+                        <input id="part-name" class="input @(_errors.ContainsKey("PartName") ? "error" : null)" autocomplete="off" aria-invalid="@(_errors.ContainsKey("PartName") ? "true" : "false")" aria-describedby="@(_errors.ContainsKey("PartName") ? "part-name-error" : null)" @bind="_model.PartName" @bind:event="oninput" />
                         @if (_errors.TryGetValue("PartName", out var ne))
                         {
-                            <span class="field-error">@ne</span>
+                            <span id="part-name-error" class="field-error">@ne</span>
                         }
                     </label>
                     <label class="field">
                         <span>@L["Field_LotSize"]</span>
-                        <input class="input @(_errors.ContainsKey("LotSize") ? "error" : null)" type="number" min="1" max="1000000" @bind="_model.LotSize" @bind:event="oninput" />
+                        <input id="lot-size" class="input @(_errors.ContainsKey("LotSize") ? "error" : null)" type="number" min="1" max="1000000" autocomplete="off" aria-invalid="@(_errors.ContainsKey("LotSize") ? "true" : "false")" aria-describedby="@(_errors.ContainsKey("LotSize") ? "lot-size-error" : null)" @bind="_model.LotSize" @bind:event="oninput" />
                         @if (_errors.TryGetValue("LotSize", out var le))
                         {
-                            <span class="field-error">@le</span>
+                            <span id="lot-size-error" class="field-error">@le</span>
                         }
                     </label>
                 </div>
@@ -106,7 +106,7 @@ else
 
         @if (_errors.TryGetValue("Operations", out var oe))
         {
-            <div class="form-banner error">@oe</div>
+            <div class="form-banner error" role="alert">@oe</div>
         }
 
         @if (_model.Operations.Count == 0)
@@ -118,24 +118,25 @@ else
         else
         {
             <table class="data-table op-table">
+                <caption class="sr-only">@L["Field_Operations"]</caption>
                 <thead>
                     <tr>
-                        <th class="num narrow">@L["Field_OperationNo"]</th>
-                        <th class="wc-col">@L["Field_WorkCenter"]</th>
-                        <th>@L["Field_Description"]</th>
-                        <th class="num">@L["Field_SetupTime"]</th>
-                        <th class="num">@L["Field_TimePerPiece"]</th>
-                        <th>@L["Field_Remarks"]</th>
-                        <th></th>
+                        <th scope="col" class="num narrow">@L["Field_OperationNo"]</th>
+                        <th scope="col" class="wc-col">@L["Field_WorkCenter"]</th>
+                        <th scope="col">@L["Field_Description"]</th>
+                        <th scope="col" class="num">@L["Field_SetupTime"]</th>
+                        <th scope="col" class="num">@L["Field_TimePerPiece"]</th>
+                        <th scope="col">@L["Field_Remarks"]</th>
+                        <th scope="col"><span class="sr-only">@L["Common_Actions"]</span></th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach (var op in _model.Operations)
                     {
                         <tr>
-                            <td class="num narrow"><input class="input mini num" type="number" min="0" step="10" @bind="op.OperationNumber" @bind:event="oninput" /></td>
+                            <td class="num narrow"><input class="input mini num" type="number" min="0" step="10" autocomplete="off" aria-label="@L["Field_OperationNo"]" @bind="op.OperationNumber" @bind:event="oninput" /></td>
                             <td class="wc-col">
-                                <select class="input" @bind="op.WorkCenterId">
+                                <select class="input" autocomplete="off" aria-label="@L["Field_WorkCenter"]" @bind="op.WorkCenterId">
                                     <option value="0">—</option>
                                     @foreach (var wc in _workCenters)
                                     {
@@ -143,12 +144,12 @@ else
                                     }
                                 </select>
                             </td>
-                            <td><input class="input" @bind="op.Description" @bind:event="oninput" /></td>
-                            <td class="num"><input class="input mini num" type="number" min="0" step="0.1" @bind="op.SetupTimeMinutes" @bind:event="oninput" /></td>
-                            <td class="num"><input class="input mini num" type="number" min="0" step="0.1" @bind="op.TimePerPieceMinutes" @bind:event="oninput" /></td>
-                            <td><input class="input" @bind="op.Remarks" @bind:event="oninput" /></td>
+                            <td><input class="input" autocomplete="off" aria-label="@L["Field_Description"]" @bind="op.Description" @bind:event="oninput" /></td>
+                            <td class="num"><input class="input mini num" type="number" min="0" step="0.1" autocomplete="off" aria-label="@L["Field_SetupTime"]" @bind="op.SetupTimeMinutes" @bind:event="oninput" /></td>
+                            <td class="num"><input class="input mini num" type="number" min="0" step="0.1" autocomplete="off" aria-label="@L["Field_TimePerPiece"]" @bind="op.TimePerPieceMinutes" @bind:event="oninput" /></td>
+                            <td><input class="input" autocomplete="off" aria-label="@L["Field_Remarks"]" @bind="op.Remarks" @bind:event="oninput" /></td>
                             <td class="actions-col">
-                                <button class="icon-btn danger" title="@L["Common_Delete"]" @onclick="() => RemoveOperation(op)">
+                                <button class="icon-btn danger" aria-label="@L["Common_Delete"]" title="@L["Common_Delete"]" @onclick="() => RemoveOperation(op)">
                                     <svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" /></svg>
                                 </button>
                             </td>
