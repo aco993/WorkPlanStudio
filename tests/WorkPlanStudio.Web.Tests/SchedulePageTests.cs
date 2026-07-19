@@ -92,8 +92,10 @@ public class SchedulePageTests : Bunit.TestContext
         var cut = RenderComponent<SchedulePage>();
         cut.WaitForAssertion(() => Assert.NotEmpty(cut.FindAll(".param-grid")));
 
-        // selects are, in order: dispatch rule, then target-date rule
-        cut.FindAll("select")[1].Change(DueDateRule.NumberOfOperations.ToString());
+        // Address the target-date field semantically instead of relying on the
+        // collection indexer ABI shared by bUnit and AngleSharp.
+        cut.Find(".param-grid label:nth-of-type(2) select")
+            .Change(DueDateRule.NumberOfOperations.ToString());
 
         // the pass-through localizer echoes keys, so the NOP field's label key is now present
         Assert.Contains("Sched_NopMinutes", cut.Markup);
