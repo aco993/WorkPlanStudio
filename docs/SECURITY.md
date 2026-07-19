@@ -12,6 +12,7 @@ WorkPlan Studio has two explicit trust modes:
 - Login attempts lock after five failures; auth, general API and AI routes have separate rate limits.
 - Optimistic concurrency versions prevent silent lost updates. Released production orders retain an immutable routing snapshot.
 - Audit entries record actor, action, entity and request correlation without recording passwords or provider keys.
+- Bootstrap startup logs confirm only that an administrator account exists; they never write its email address. An integration test captures the real startup log to guard this privacy boundary.
 - CSP, HSTS, MIME sniffing protection, referrer policy and restrictive permissions policy are emitted by the server.
 - Production startup fails if PostgreSQL mode receives a non-PostgreSQL connection string. Registration is disabled by default.
 - The container runs as a non-root user, drops Linux capabilities, uses a read-only filesystem and exposes liveness/readiness endpoints.

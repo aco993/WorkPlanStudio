@@ -45,7 +45,7 @@ public static class DatabaseStartup
         }
         if (!await users.IsInRoleAsync(user, "Administrator"))
             IdentityResultGuard(await users.AddToRoleAsync(user, "Administrator"), "assign Administrator role");
-        logger.LogInformation("Bootstrap administrator {Email} is present", email);
+        logger.LogInformation("Bootstrap administrator account is present");
     }
 
     private static void IdentityResultGuard(IdentityResult result, string action)

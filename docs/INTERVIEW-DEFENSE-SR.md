@@ -278,7 +278,7 @@ AI alati su intenzivno korišćeni za početnu generaciju i kasniji review/harde
 - Scheduler radi na UI threadu i heuristički je; nema optimality gap.
 - Svaki worker je single-consumer, ali DB claim/lease/heartbeat sprečava duplu obradu između replika; nema tenant quota/fairness scheduler-a.
 - AI ključ u localStorageu je kompromis isključivo za eksplicitni offline BYOK demo.
-- Hosted identity nema završen MFA/email-confirmation/password-delivery operativni tok.
+- Hosted identity ima TOTP MFA, jednokratne recovery kodove i SMTP password-reset delivery sa single-use tokenom; email-confirmation delivery i formalni help-desk identity-proofing ostaju nezavršeni operativni tokovi.
 - Postoji Chrome accessibility-tree/label/contrast i keyboard dokaz, ali nema ljudskog NVDA/VoiceOver audita.
 - Performance rezultat je sa jedne mašine i generated data seta.
 

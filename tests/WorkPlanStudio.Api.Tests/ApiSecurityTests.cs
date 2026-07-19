@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Http.Json;
 using System.Security.Cryptography;
@@ -7,6 +8,7 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using WorkPlanStudio.Api.Security;
 using WorkPlanStudio.Contracts;
 using WorkPlanStudio.Models;
@@ -252,6 +254,48 @@ public sealed class ApiSecurityTests : IAsyncLifetime
             (await LoginAsync(client, email, newPassword, cancellationToken)).StatusCode);
     }
 
+    [Fact]
+    public async Task Bootstrap_admin_startup_log_does_not_expose_the_email_address()
+    {
+        var database = Path.Combine(Path.GetTempPath(), $"workplan-bootstrap-{Guid.NewGuid():N}.db");
+        var email = $"bootstrap-{Guid.NewGuid():N}@example.com";
+        var logs = new RecordingLoggerProvider();
+
+        try
+        {
+            await using var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
+            {
+                builder.UseEnvironment("Development");
+                builder.ConfigureAppConfiguration((_, config) => config.AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["ConnectionStrings:Production"] = $"Data Source={database}",
+                    ["Database:Provider"] = "Sqlite",
+                    ["Database:ApplyMigrationsOnStartup"] = "true",
+                    ["Identity:BootstrapAdminEmail"] = email,
+                    ["Identity:BootstrapAdminPassword"] = "Valid!BootstrapPassword123456"
+                }));
+                builder.ConfigureLogging(logging => logging.AddProvider(logs));
+            });
+
+            using var client = factory.CreateClient();
+            Assert.Equal(HttpStatusCode.OK,
+                (await client.GetAsync("/health/live", TestContext.Current.CancellationToken)).StatusCode);
+            Assert.Contains(logs.Messages,
+                message => message.Contains("Bootstrap administrator account is present", StringComparison.Ordinal));
+            Assert.DoesNotContain(logs.Messages,
+                message => message.Contains(email, StringComparison.OrdinalIgnoreCase));
+        }
+        finally
+        {
+            Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+            foreach (var path in new[] { database, database + "-shm", database + "-wal" })
+            {
+                try { if (File.Exists(path)) File.Delete(path); }
+                catch (IOException) { /* The OS temp directory owns delayed cleanup. */ }
+            }
+        }
+    }
+
     private static async Task RegisterAndLoginAsync(HttpClient client, string email, CancellationToken cancellationToken)
     {
         const string password = "Valid!Password123456";
@@ -337,6 +381,29 @@ public sealed class ApiSecurityTests : IAsyncLifetime
         {
             Deliveries.Add((recipient, resetUrl));
             return Task.CompletedTask;
+        }
+    }
+
+    private sealed class RecordingLoggerProvider : ILoggerProvider
+    {
+        public ConcurrentQueue<string> Messages { get; } = new();
+
+        public ILogger CreateLogger(string categoryName) => new RecordingLogger(Messages);
+
+        public void Dispose() { }
+
+        private sealed class RecordingLogger(ConcurrentQueue<string> messages) : ILogger
+        {
+            public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+
+            public bool IsEnabled(LogLevel logLevel) => true;
+
+            public void Log<TState>(
+                LogLevel logLevel,
+                EventId eventId,
+                TState state,
+                Exception? exception,
+                Func<TState, Exception?, string> formatter) => messages.Enqueue(formatter(state, exception));
         }
     }
 }

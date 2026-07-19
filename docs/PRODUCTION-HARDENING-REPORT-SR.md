@@ -68,7 +68,7 @@ Offline demo tok ostaje `Razor → application services → BrowserDatabase → 
 
 ## Build i test evidence
 
-Konačne brojke se održavaju u [TESTING.md](TESTING.md). Lokalna revizija je izvršila 184/184 testa bez failure/skip rezultata, Release build, format, dokumentacione linkove, fail-closed dependency audit, oba migration skripta, scenario ceilings, Compose/PostgreSQL health, production security headers/restrictions, offline i authenticated production Chromium, SMTP reset delivery/single-use token i kratak rate-controlled soak. Poznati `WASM0001` potiče od varargs exporta u SQLite native biblioteci; aplikacija ne poziva te configuration overloads, a real Chromium CRUD/reload E2E je obavezna regresija.
+Konačne brojke se održavaju u [TESTING.md](TESTING.md). Lokalna revizija je izvršila 185/185 testova bez failure/skip rezultata, Release build, format, dokumentacione linkove, fail-closed dependency audit, oba migration skripta, scenario ceilings, Compose/PostgreSQL health, production security headers/restrictions, offline i authenticated production Chromium, SMTP reset delivery/single-use token, bootstrap-log privacy i kratak rate-controlled soak. Poznati `WASM0001` potiče od varargs exporta u SQLite native biblioteci; aplikacija ne poziva te configuration overloads, a real Chromium CRUD/reload E2E je obavezna regresija.
 
 ## Rizici
 
@@ -105,12 +105,12 @@ Konačne brojke se održavaju u [TESTING.md](TESTING.md). Lokalna revizija je iz
 | Reliability | 9/10 | DB lease/heartbeat/recovery, cross-replica cancellation, readiness i backup |
 | Architecture | 9/10 | čist scheduler, shared contracts/domain, provider migrations; svesno bez pattern inflation-a |
 | Maintainability | 8/10 | jasne granice i ADR; API endpoint fajlovi ostaju ručno mapirani |
-| Testability | 9.5/10 | 184 testova u šest slojeva, real SQLite/PostgreSQL, offline i production Chromium |
+| Testability | 9.5/10 | 185 testova u šest slojeva, real SQLite/PostgreSQL, offline i production Chromium |
 | Security | 9/10 | Identity/CSRF/ownership/rate limits/TOTP/recovery/SMTP reset, fail-closed audit, digest pins i CodeQL; bez nezavisnog pen testa |
 | Accessibility | 8.5/10 | keyboard/modal/lang/mobile + authenticated production semantics/AX evidence; bez ljudskog NVDA/VoiceOver testa |
 | UX | 8.5/10 | status/empty/live/progress/cancel/account tokovi; bez formalnog usability testa i završnog dizajnerskog polish-a |
 | Dokumentacija | 9.5/10 | provereni lokalni linkovi, architecture/security/production/AI/ADR/intervju dokumenti i nova samoevaluacija |
-| GitHub prezentacija | 9/10 | problem, dijagram, live demo, evidence i limitations; konačna ocena zavisi od zelenih novih PR checkova |
+| GitHub prezentacija | 9.5/10 | problem, dijagram, live demo, evidence i limitations; svih deset obaveznih PR checkova i zaštita `main` grane potvrđeni |
 | Interview readiness | 9/10 | dokazive tehničke priče i iskren AI disclosure |
 | Production readiness | 8.5/10 | real PostgreSQL/container/SMTP evidence i multi-replica-safe worker; nije target-environment HA/regulated potpis |
 

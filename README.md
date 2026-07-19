@@ -112,7 +112,7 @@ Never commit `.env`. Put TLS at the ingress and remove bootstrap-admin variables
 
 ## Verify it
 
-Verified locally on 2026-07-19: **102 scheduling + 55 web/data/component + 12 API + 2 real-PostgreSQL + 10 offline Chromium + 3 authenticated production Chromium = 184 passed, 0 failed, 0 skipped** in the explicitly orchestrated runs. Engine coverage is **100% lines / 100% branches (508/508 lines, 245/245 branches)**. The production image, PostgreSQL readiness, security headers, container restrictions, SMTP reset delivery/single-use token and a rate-controlled HTTP smoke were also exercised. Reproduction details and assurance boundaries are in [docs/TESTING.md](docs/TESTING.md) and the [self-evaluation](docs/SELF-EVALUATION-SR.md).
+Verified locally on 2026-07-19: **102 scheduling + 55 web/data/component + 13 API + 2 real-PostgreSQL + 10 offline Chromium + 3 authenticated production Chromium = 185 passed, 0 failed, 0 skipped** in the explicitly orchestrated runs. Engine coverage is **100% lines / 100% branches (508/508 lines, 245/245 branches)**. The production image, PostgreSQL readiness, security headers, container restrictions, SMTP reset delivery/single-use token, bootstrap-log privacy and a rate-controlled HTTP smoke were also exercised. Reproduction details and assurance boundaries are in [docs/TESTING.md](docs/TESTING.md) and the [self-evaluation](docs/SELF-EVALUATION-SR.md).
 
 ```bash
 dotnet build WorkPlanStudio.slnx -c Release --no-restore
