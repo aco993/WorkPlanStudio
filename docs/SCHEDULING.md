@@ -121,23 +121,67 @@ on a key, with the job id as a deterministic tie-break:
 | CR — critical ratio | `due / P` (evaluated at the horizon) |
 | WSPT — weighted shortest processing | `P / weight` |
 
+### The rules are not independent of the target rule
+
+With every job released at second 0 and `P` = total processing time:
+
+| Target rule | Sets | Therefore |
+| --- | --- | --- |
+| **TWK** | `due = f · P` | strictly increasing in `P`, so **EDD ≡ SPT**; `CR = due/P = f` is constant, so **CR ≡ FIFO** |
+| **SLK** | `due = P + s` | **EDD ≡ SPT**; `CR = (P+s)/P` decreases in `P`, so **CR ≡ LPT** |
+| **CON** | `due = c` | every target is equal, so **EDD ≡ FIFO**; `CR = c/P` decreases in `P`, so **CR ≡ LPT** |
+| **NOP** | `due = t · n` | keyed on the operation count rather than the work content — the only rule that decouples all six |
+
+So on the default TWK targets, the six dispatch rules produce **four** distinct
+schedules. This is a property of the formulas, not a bug — but a user who changes
+a dropdown and sees no change deserves to be told why, so
+`PriorityOrdering.EquivalentRules` computes the collapse from the orders
+themselves (never from a hard-coded table, which could drift from the code) and
+the page shows it beneath the selector. `RuleEquivalenceTests` pins every
+identity above; see [ADR 0009](adr/0009-report-rule-equivalences.md).
+
 ## 6. Multi-start + local search
 
 A single greedy pass is rarely optimal, so `SchedulingEngine` wraps the dispatcher
 in a small, transparent metaheuristic (a GRASP-style scheme):
 
-1. **Run 0** uses the pure rule order, so the result is *never worse than the
-   dispatch rule on its own*.
-2. **Runs 1…N−1** shuffle the order with a stream seeded from `(Seed, runIndex)`
-   and keep the best by penalty. More starts can only help.
-3. **Local search** (`LocalSearch`) then polishes the best order with
-   first-improvement **adjacent swaps**, re-dispatching and re-scoring each
-   neighbour. It accepts a neighbour only on a *strict* improvement and never
-   overwrites the incumbent with something worse — so the final schedule is
-   guaranteed `≤` the best multi-start result, which is `≤` the rule order.
+1. **Restart 0** starts from the pure rule order, so the result is *never worse
+   than the dispatch rule on its own*.
+2. **Restarts 1…N−1** shuffle that order with a stream seeded from
+   `(Seed, runIndex)`. More restarts can only help.
+3. **Every restart** then runs a `LocalSearch` descent over the **insertion**
+   (or-opt) neighbourhood: remove one job from the sequence and re-insert it at
+   each other position — `n·(n−1)` neighbours per pass — adopting the single best
+   *strict* improvement. The incumbent is never replaced by something worse, so
+   the final schedule is guaranteed `≤` the rule order.
 
-Because local search perturbs the **priority order** (not the placed operations)
+Because the search perturbs the **priority order** (not the placed operations)
 and re-runs the dispatcher, every candidate it ever looks at is a valid schedule.
+
+### Why insertion and not adjacent swaps
+
+The original implementation swapped adjacent jobs and accepted the first
+improvement. It stalled after 7–16 of its 2000-neighbour budget, which was the
+clue: an adjacent swap moves a job one position per improving step, so a job that
+belongs ten places earlier is unreachable unless all ten intermediate positions
+also improve. On a tardiness objective they usually do not.
+
+Measured against brute-force enumeration of all `n!` orders, 20 random 8-job
+instances:
+
+| | mean gap to optimum | worst | optimal |
+| --- | ---: | ---: | ---: |
+| dispatch rule alone | 72.5 % | 127.5 % | 0/20 |
+| adjacent swap + 8 restarts | 27.3 % | 62.8 % | 0/20 |
+| **insertion + 8 restarts** | **0.2 %** | **3.0 %** | **19/20** |
+
+Runtime: ~10 ms at 8 jobs, ~530 ms at 100. `OptimalityTests` asserts this against
+enumeration, so a regression in search quality fails the build. See
+[ADR 0008](adr/0008-insertion-neighbourhood.md).
+
+A consequence worth knowing: a good search makes the *starting rule* matter much
+less. Different dispatch rules now converge on the same schedule unless the
+optimiser is turned off (multi-start = 1, local search = 0).
 
 > **Why the sample data has seven jobs.** On a two-job problem the search is
 > effectively exhaustive, so every dispatch rule and every seed converge to the

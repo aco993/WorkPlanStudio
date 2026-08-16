@@ -132,8 +132,11 @@ Ein einzelner Greedy-Durchlauf ist selten optimal, daher umhüllt
    ist als die Dispatch-Regel allein*.
 2. **Läufe 1…N−1** mischen die Reihenfolge mit einem aus `(Seed, runIndex)`
    abgeleiteten Strom und behalten das beste Ergebnis. Mehr Starts können nur helfen.
-3. Die **Lokalsuche** (`LocalSearch`) poliert dann die beste Reihenfolge mit
-   First-Improvement-**Nachbartausch**, dispatcht und bewertet jeden Nachbarn neu.
+3. **Jeder Neustart** durchläuft anschließend einen `LocalSearch`-Abstieg über
+   die **Insertion**-Nachbarschaft (or-opt): einen Auftrag entnehmen und an jeder
+   anderen Position wieder einfügen, dispatcht und bewertet jeden Nachbarn neu.
+   Gemessen gegen vollständige Enumeration sinkt der mittlere Abstand zum Optimum
+   damit von 27,3 % auf 0,2 % (siehe ADR 0008).
    Sie übernimmt einen Nachbarn nur bei *strikter* Verbesserung und überschreibt
    den Amtsinhaber nie mit etwas Schlechterem — der finale Plan ist also garantiert
    `≤` dem besten Multi-Start-Ergebnis, das `≤` der Regel-Reihenfolge ist.
