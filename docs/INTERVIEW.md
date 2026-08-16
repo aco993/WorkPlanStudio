@@ -358,10 +358,11 @@ penalty. The result is mapped back into Gantt rows and KPI cards.
 **"How do you know the schedules are any good?"** → §3.1. Lead with the table.
 
 **"What's your test strategy?"**
-Four layers, weighted by where the risk is. 108 engine tests on a plain runner —
-unit, property-based invariants via CsCheck, and brute-force optimality. 59 web
-tests including a real SQLite database on a normal host, EF→domain mapping, and
-localization parity. bUnit component tests for the page with a faked service.
+Four layers, weighted by where the risk is. 135 engine tests on a plain runner —
+unit, property-based invariants via CsCheck, brute-force optimality, and
+adversarial cases chosen to break a plausible-but-wrong implementation. 63 web
+tests including a real SQLite database on a normal host, EF→domain mapping,
+accessibility semantics and localization parity. bUnit component tests for the page with a faked service.
 Playwright end-to-end through a real browser. The pyramid is deliberate: the
 bottom layer is fast enough that expensive tests like exhaustive enumeration are
 affordable.
@@ -404,8 +405,8 @@ approached it, so the knob was decorative.
 | --- | --- |
 | Engine library | ~1 340 lines |
 | Blazor app | ~3 950 lines |
-| Tests | ~2 910 lines, 179 tests (108 engine / 59 web / 12 E2E) |
-| Engine coverage | 97.1 % line, 89.1 % branch |
+| Tests | 210 tests (135 engine / 63 web / 12 E2E) |
+| Engine coverage | 96.4 % line, 89.1 % branch |
 | Search gap to optimum | 0.2 % mean, 19/20 solved exactly |
 | Schedule runtime | ~10 ms at 8 jobs, ~533 ms at 100 |
 | Dead Bootstrap removed | 8.4 MB, 44 files |
