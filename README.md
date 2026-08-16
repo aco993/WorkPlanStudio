@@ -45,15 +45,17 @@ This means the app demonstrates a full data layer — `DbContext`, relationships
 The **Scheduling** page turns the released work plans into a finite-capacity production schedule — the most algorithm-heavy part of the project. It lives in its own dependency-free library (`src/WorkPlanStudio.Scheduling`) so the whole engine can be unit-tested on a plain .NET runner, without Blazor or the WebAssembly toolchain.
 
 1. **Target dates ("meta").** Each demonstration job is assigned a target by Total Work Content (TWK), Number of Operations (NOP), Equal Slack (SLK) or Constant Allowance (CON). Customer-order due dates are intentionally out of scope until the app has a real `ProductionOrder` model.
-2. **Dispatch scheduling.** A finite-capacity list scheduler places each job's operations on the earliest free slot of their work center, respecting operation precedence and machine capacity. Six dispatch rules decide who goes first on a contended machine: FIFO, SPT, LPT, EDD, Critical Ratio and WSPT.
-3. **Optimisation.** A seeded multi-start search plus a first-improvement local search refine the sequence; the result is never worse than the pure rule schedule.
+2. **Dispatch scheduling.** A finite-capacity list scheduler places each job's operations on the earliest free slot of their work center, respecting operation precedence and machine capacity. Six dispatch rules set the initial job sequence: FIFO, SPT, LPT, EDD, Critical Ratio and WSPT.
+3. **Optimisation.** A seeded multi-start, each restart followed by an insertion-neighbourhood descent over the job sequence; the result is never worse than the pure rule schedule.
 4. **Scoring.** Makespan, total / maximum tardiness, on-time rate and work-center utilisation are rolled up into a single penalty the search minimises.
 
 The scheduler is designed around three explicit constraints:
 
 - **Deterministic.** All time is integer seconds and randomness comes from a small fixed-algorithm PRNG, so the same seed yields a bit-for-bit identical schedule on the desktop, in CI and in the browser.
 - **Feasible by construction.** Local search perturbs the job *priority order* and re-dispatches, so every candidate it evaluates is a valid schedule.
-- **Tested at several levels.** Unit and **property-based invariant tests** cover the engine; an architecture test enforces its dependency boundary; mapper and bUnit tests cover the application boundary; Playwright scenarios exercise the running app.
+- **Measured, not asserted.** On instances small enough to enumerate all `n!` job orders the true optimum is computable, so schedule quality is a test: the engine lands 0.2 % from optimal on average and solves 19 of 20 random instances exactly (the previous adjacent-swap search: 27.3 % and 0 of 20).
+- **Honest about its parameters.** The dispatch and target rules interact — under the default targets EDD is the same sort as SPT, and critical ratio collapses to FIFO — so the page reports which other rules would give the identical order instead of returning a silently unchanged schedule.
+- **Tested at several levels.** Unit, **property-based** and **brute-force optimality** tests cover the engine; an architecture test enforces its dependency boundary; mapper and bUnit tests cover the application boundary; Playwright scenarios exercise the running app.
 
 See [`docs/SCHEDULING.md`](docs/SCHEDULING.md) for the algorithm write-up and [`docs/TESTING.md`](docs/TESTING.md) for the test strategy.
 
@@ -117,7 +119,7 @@ The repository applies the following engineering practices:
 - **Strict builds** — nullable reference types, .NET analyzers and **warnings treated as errors** (`Directory.Build.props`).
 - **Central Package Management** — every NuGet version in one [`Directory.Packages.props`](Directory.Packages.props).
 - **Consistent style** — a comprehensive [`.editorconfig`](.editorconfig) and line-ending normalisation via [`.gitattributes`](.gitattributes).
-- **Layered tests + coverage** — 154 tests across three test projects, including real-SQLite persistence, property-based invariants, components, browser reload/reset and mobile flows; the hardened engine currently measures 96.93% line and 87.43% branch coverage.
+- **Layered tests + coverage** — 177 tests across three test projects, including real-SQLite persistence, property-based invariants, brute-force optimality checks, localization parity, components, browser reload/reset and mobile flows; the engine measures 97.13 % line and 89.10 % branch coverage.
 - **Architecture enforced by a test** — the engine cannot accrue a Blazor / EF / JS dependency.
 - **Decisions recorded** — see the [Architecture Decision Records](docs/adr).
 - **Dependency hygiene** — [Dependabot](.github/dependabot.yml) keeps NuGet and GitHub Actions current.
