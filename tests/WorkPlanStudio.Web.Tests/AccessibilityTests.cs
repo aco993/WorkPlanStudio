@@ -105,9 +105,8 @@ public sealed class AccessibilityTests : BunitContext
 
         var invalid = cut.FindAll("input[aria-invalid=true]");
         Assert.NotEmpty(invalid);
-        foreach (var input in invalid)
+        foreach (var describedBy in invalid.Select(input => input.GetAttribute("aria-describedby")))
         {
-            var describedBy = input.GetAttribute("aria-describedby");
             Assert.False(string.IsNullOrWhiteSpace(describedBy), "an invalid input must point at its message");
             Assert.NotEmpty(cut.FindAll($"#{describedBy}"));   // and the message must exist
         }
@@ -121,36 +120,29 @@ public sealed class AccessibilityTests : BunitContext
     [Fact]
     public void Every_busy_indicator_is_exposed_as_a_status()
     {
-        var componentsRoot = Path.Combine(RepositoryRoot(), "src", "WorkPlanStudio");
-        var offenders = new List<string>();
+        var componentsRoot = Path.Join(RepositoryRoot(), "src", "WorkPlanStudio");
 
-        foreach (var file in Directory.EnumerateFiles(componentsRoot, "*.razor", SearchOption.AllDirectories))
-        {
-            foreach (var line in File.ReadAllLines(file))
-            {
-                if (!line.Contains("loading-row", StringComparison.Ordinal))
-                    continue;
-
-                // A bare spinning div is invisible to a screen reader: it needs a
-                // status role, hidden decoration and text to announce.
-                if (!line.Contains("role=\"status\"", StringComparison.Ordinal)
-                    || !line.Contains("aria-hidden=\"true\"", StringComparison.Ordinal)
-                    || !line.Contains("sr-only", StringComparison.Ordinal))
-                {
-                    offenders.Add($"{Path.GetFileName(file)}: {line.Trim()}");
-                }
-            }
-        }
+        // A bare spinning div is invisible to a screen reader: it needs a status
+        // role, hidden decoration, and text to announce.
+        var offenders = Directory
+            .EnumerateFiles(componentsRoot, "*.razor", SearchOption.AllDirectories)
+            .SelectMany(file => File.ReadAllLines(file).Select(line => (File: file, Line: line)))
+            .Where(entry => entry.Line.Contains("loading-row", StringComparison.Ordinal))
+            .Where(entry => !entry.Line.Contains("role=\"status\"", StringComparison.Ordinal)
+                         || !entry.Line.Contains("aria-hidden=\"true\"", StringComparison.Ordinal)
+                         || !entry.Line.Contains("sr-only", StringComparison.Ordinal))
+            .Select(entry => $"{Path.GetFileName(entry.File)}: {entry.Line.Trim()}")
+            .ToArray();
 
         Assert.True(
-            offenders.Count == 0,
+            offenders.Length == 0,
             "busy indicators without a status role: " + string.Join(" | ", offenders));
     }
 
     private static string RepositoryRoot()
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
-        while (directory is not null && !Directory.Exists(Path.Combine(directory.FullName, "src")))
+        while (directory is not null && !Directory.Exists(Path.Join(directory.FullName, "src")))
             directory = directory.Parent;
 
         Assert.NotNull(directory);

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using WorkPlanStudio.Data;
@@ -12,15 +13,15 @@ namespace WorkPlanStudio.Web.Tests;
 /// </summary>
 internal sealed class TempDatabaseFiles : IDisposable
 {
-    private readonly string _directory = Path.Combine(Path.GetTempPath(), $"workplanstudio-{Guid.NewGuid():N}");
+    private readonly string _directory = Path.Join(Path.GetTempPath(), $"workplanstudio-{Guid.NewGuid():N}");
 
     public TempDatabaseFiles() => Directory.CreateDirectory(_directory);
 
-    public TestDbContextFactory CreateFactory(string fileName) => new(Path.Combine(_directory, fileName));
+    public TestDbContextFactory CreateFactory(string fileName) => new(Path.Join(_directory, fileName));
 
     public BrowserDatabase CreateDatabase(string fileName, FakeStorage storage)
     {
-        var path = Path.Combine(_directory, fileName);
+        var path = Path.Join(_directory, fileName);
         return new BrowserDatabase(
             new TestDbContextFactory(path),
             storage,
@@ -31,7 +32,16 @@ internal sealed class TempDatabaseFiles : IDisposable
     public void Dispose()
     {
         Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
-        try { Directory.Delete(_directory, recursive: true); } catch (IOException) { }
+        try
+        {
+            Directory.Delete(_directory, recursive: true);
+        }
+        catch (IOException exception)
+        {
+            // Best effort: a leaked temp directory must not fail an otherwise
+            // green test run, but swallowing it silently hides a handle leak.
+            Debug.WriteLine($"Could not remove the temp database directory: {exception.Message}");
+        }
     }
 }
 
