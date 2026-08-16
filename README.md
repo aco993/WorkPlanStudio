@@ -106,6 +106,7 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for invariants, failure boundar
 | Schedule assistant (AI) | [docs/AI-ASSISTANT.md](docs/AI-ASSISTANT.md) | — |
 | Testing strategy | [docs/TESTING.md](docs/TESTING.md) | [docs/TESTING.de.md](docs/TESTING.de.md) |
 | Architecture | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | — |
+| Interview defence | [docs/INTERVIEW.md](docs/INTERVIEW.md) | — |
 | Security posture | [docs/SECURITY.md](docs/SECURITY.md) | — |
 | Performance scenarios | [docs/PERFORMANCE.md](docs/PERFORMANCE.md) | — |
 | Decision records (ADR) | [docs/adr](docs/adr) | — |
