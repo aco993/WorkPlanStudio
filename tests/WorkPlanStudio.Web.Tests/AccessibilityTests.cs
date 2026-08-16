@@ -7,7 +7,7 @@ using WorkPlanStudio.Resources;
 
 namespace WorkPlanStudio.Web.Tests;
 
-public sealed class AccessibilityTests : Bunit.TestContext
+public sealed class AccessibilityTests : BunitContext
 {
     [Fact]
     public void Modal_has_dialog_semantics_localized_close_name_and_escape_behavior()
@@ -16,7 +16,7 @@ public sealed class AccessibilityTests : Bunit.TestContext
         Services.AddSingleton<IStringLocalizer<SharedResource>>(new PassThroughLocalizer<SharedResource>());
         var closed = false;
 
-        var cut = RenderComponent<Modal>(parameters => parameters
+        var cut = Render<Modal>(parameters => parameters
             .Add(component => component.Visible, true)
             .Add(component => component.Title, "Accessible title")
             .Add(component => component.VisibleChanged,
