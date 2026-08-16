@@ -1,0 +1,272 @@
+@page "/production-orders"
+@using System.Globalization
+@inject IStringLocalizer<SharedResource> L
+@inject ProductionOrderService Orders
+@inject WorkPlanService Plans
+
+<PageTitle>@L["Orders_Title"] · WorkPlan Studio</PageTitle>
+
+<div class="page-head">
+    <div>
+        <h1>@L["Orders_Title"]</h1>
+        <p class="page-sub">@L["Orders_Subtitle"]</p>
+    </div>
+    <button class="btn btn-primary" @onclick="New">
+        <span class="btn-plus">+</span> @L["Orders_New"]
+    </button>
+</div>
+
+@if (_error is not null)
+{
+    <div class="form-banner error" role="alert">@_error</div>
+}
+
+@if (_loading)
+{
+    <div class="loading-row" role="status"><span class="spinner" aria-hidden="true"></span><span class="sr-only">@L["Common_Loading"]</span></div>
+}
+else if (_orders.Count == 0)
+{
+    <div class="empty-state">
+        <svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2" /><path d="M9 9h6M9 13h6M9 17h3" /></svg>
+        <p>@L["Orders_Empty"]</p>
+    </div>
+}
+else
+{
+    <div class="card no-pad">
+        <table class="data-table hover">
+            <caption class="sr-only">@L["Orders_Title"]</caption>
+            <thead>
+                <tr>
+                    <th scope="col">@L["Orders_Number"]</th>
+                    <th scope="col">@L["Field_PartName"]</th>
+                    <th scope="col">@L["Orders_Routing"]</th>
+                    <th scope="col" class="num">@L["Orders_Quantity"]</th>
+                    <th scope="col" class="num">@L["Orders_Release"]</th>
+                    <th scope="col" class="num">@L["Orders_Due"]</th>
+                    <th scope="col" class="center">@L["Field_Priority"]</th>
+                    <th scope="col">@L["Field_Status"]</th>
+                    <th scope="col" class="actions-col">@L["Common_Actions"]</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var order in _orders)
+                {
+                    <tr>
+                        <td><span class="mono">@order.OrderNumber</span></td>
+                        <td>@(order.WorkPlan?.PartName ?? "—")</td>
+                        <td>
+                            <span class="mono muted">@(order.WorkPlan?.PlanNumber ?? "—")</span>
+                            @if (order.Status != ProductionOrderStatus.Draft)
+                            {
+                                <span class="pill frozen" title="@L["Orders_SnapshotTooltip"]">@L["Orders_Frozen"]</span>
+                            }
+                        </td>
+                        <td class="num">@Format.Number(order.Quantity)</td>
+                        <td class="num muted">@order.ReleaseUtc.ToString("d", CultureInfo.CurrentCulture)</td>
+                        <td class="num">@order.DueUtc.ToString("d", CultureInfo.CurrentCulture)</td>
+                        <td class="center">@order.Priority</td>
+                        <td><span class="badge order-@order.Status.ToString().ToLowerInvariant()">@StatusLabel(order.Status)</span></td>
+                        <td class="actions-col">
+                            @if (order.Status == ProductionOrderStatus.Draft)
+                            {
+                                <button class="btn btn-outline" @onclick="() => ReleaseAsync(order.Id)">@L["Orders_Release"]</button>
+                                <button class="icon-btn danger" aria-label="@L["Common_Delete"]" title="@L["Common_Delete"]" @onclick="() => DeleteAsync(order.Id)">
+                                    <svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" /></svg>
+                                </button>
+                            }
+                            else if (order.Status == ProductionOrderStatus.Released)
+                            {
+                                <button class="btn btn-ghost" @onclick="() => CancelAsync(order.Id)">@L["Orders_Cancel"]</button>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <p class="page-sub" style="margin-top:1rem">@L["Orders_ImmutabilityNote"]</p>
+}
+
+<Modal @bind-Visible="_showEditor" Title="@L["Orders_NewTitle"]">
+    <ChildContent>
+        <div class="form-grid">
+            <label class="field">
+                <span>@L["Orders_Number"]</span>
+                <input id="po-number" class="input @(_formErrors.ContainsKey("OrderNumber") ? "error" : null)"
+                       autocomplete="off"
+                       aria-invalid="@(_formErrors.ContainsKey("OrderNumber") ? "true" : "false")"
+                       aria-describedby="@(_formErrors.ContainsKey("OrderNumber") ? "po-number-error" : null)"
+                       @bind="_editing.OrderNumber" @bind:event="oninput" />
+                @if (_formErrors.TryGetValue("OrderNumber", out var numberError))
+                {
+                    <span id="po-number-error" class="field-error">@numberError</span>
+                }
+            </label>
+
+            <label class="field">
+                <span>@L["Orders_Routing"]</span>
+                <select class="input" @bind="_editing.WorkPlanId">
+                    <option value="0">—</option>
+                    @foreach (var plan in _plans)
+                    {
+                        <option value="@plan.Id">@plan.PlanNumber — @plan.PartName</option>
+                    }
+                </select>
+            </label>
+
+            <label class="field">
+                <span>@L["Orders_Quantity"]</span>
+                <input id="po-qty" class="input num @(_formErrors.ContainsKey("Quantity") ? "error" : null)"
+                       type="number" min="1" max="1000000"
+                       aria-invalid="@(_formErrors.ContainsKey("Quantity") ? "true" : "false")"
+                       aria-describedby="@(_formErrors.ContainsKey("Quantity") ? "po-qty-error" : null)"
+                       @bind="_editing.Quantity" @bind:event="oninput" />
+                @if (_formErrors.TryGetValue("Quantity", out var quantityError))
+                {
+                    <span id="po-qty-error" class="field-error">@quantityError</span>
+                }
+            </label>
+
+            <label class="field">
+                <span>@L["Field_Priority"]</span>
+                <select class="input" @bind="_editing.Priority">
+                    @for (int p = 1; p <= 5; p++)
+                    {
+                        <option value="@p">@p</option>
+                    }
+                </select>
+            </label>
+
+            <label class="field">
+                <span>@L["Orders_Release"]</span>
+                <input class="input" type="date" @bind="_releaseDate" />
+            </label>
+
+            <label class="field">
+                <span>@L["Orders_Due"]</span>
+                <input id="po-due" class="input @(_formErrors.ContainsKey("DueUtc") ? "error" : null)"
+                       type="date"
+                       aria-invalid="@(_formErrors.ContainsKey("DueUtc") ? "true" : "false")"
+                       aria-describedby="@(_formErrors.ContainsKey("DueUtc") ? "po-due-error" : null)"
+                       @bind="_dueDate" />
+                @if (_formErrors.TryGetValue("DueUtc", out var dueError))
+                {
+                    <span id="po-due-error" class="field-error">@dueError</span>
+                }
+            </label>
+        </div>
+    </ChildContent>
+    <Footer>
+        <button class="btn btn-ghost" @onclick="() => _showEditor = false">@L["Common_Cancel"]</button>
+        <button class="btn btn-primary" @onclick="SaveAsync">@L["Common_Save"]</button>
+    </Footer>
+</Modal>
+
+@code {
+    private bool _loading = true;
+    private string? _error;
+    private List<ProductionOrder> _orders = [];
+    private List<WorkPlan> _plans = [];
+
+    private bool _showEditor;
+    private ProductionOrder _editing = new();
+    private DateTime _releaseDate = DateTime.UtcNow.Date;
+    private DateTime _dueDate = DateTime.UtcNow.Date.AddDays(7);
+    private readonly Dictionary<string, string> _formErrors = [];
+
+    protected override async Task OnInitializedAsync() => await ReloadAsync();
+
+    private async Task ReloadAsync()
+    {
+        _loading = true;
+        _orders = await Orders.GetAllAsync();
+        _plans = (await Plans.GetAllAsync())
+            .Where(p => p.Status == WorkPlanStatus.Released)
+            .ToList();
+        _loading = false;
+    }
+
+    private async Task New()
+    {
+        _formErrors.Clear();
+        _error = null;
+        _releaseDate = DateTime.UtcNow.Date;
+        _dueDate = DateTime.UtcNow.Date.AddDays(7);
+        _editing = new ProductionOrder
+        {
+            OrderNumber = await Orders.SuggestOrderNumberAsync(),
+            Quantity = 100,
+            Priority = 1
+        };
+        _showEditor = true;
+    }
+
+    private async Task SaveAsync()
+    {
+        _formErrors.Clear();
+        _error = null;
+
+        _editing.ReleaseUtc = DateTime.SpecifyKind(_releaseDate, DateTimeKind.Utc);
+        _editing.DueUtc = DateTime.SpecifyKind(_dueDate, DateTimeKind.Utc);
+
+        var result = await Orders.SaveAsync(_editing);
+        if (!Apply(result))
+            return;
+
+        _showEditor = false;
+        await ReloadAsync();
+    }
+
+    private async Task ReleaseAsync(int id)
+    {
+        _error = null;
+        if (Apply(await Orders.ReleaseAsync(id)))
+            await ReloadAsync();
+    }
+
+    private async Task CancelAsync(int id)
+    {
+        _error = null;
+        if (Apply(await Orders.CancelAsync(id)))
+            await ReloadAsync();
+    }
+
+    private async Task DeleteAsync(int id)
+    {
+        _error = null;
+        var result = await Orders.DeleteAsync(id);
+        if (result.IsSuccess)
+        {
+            await ReloadAsync();
+            return;
+        }
+
+        _error = L["Error_ActionFailed"];
+    }
+
+    /// <summary>Routes a result to either the field errors or the page banner.</summary>
+    private bool Apply<T>(ApplicationResult<T> result)
+    {
+        if (result.IsSuccess)
+            return true;
+
+        foreach (var issue in result.ValidationIssues ?? [])
+            _formErrors[issue.Field] = L[issue.MessageKey, issue.Arguments];
+
+        if (_formErrors.Count == 0)
+            _error = L["Error_ActionFailed"];
+
+        return false;
+    }
+
+    private string StatusLabel(ProductionOrderStatus status) => status switch
+    {
+        ProductionOrderStatus.Draft => L["Orders_StatusDraft"],
+        ProductionOrderStatus.Released => L["Orders_StatusReleased"],
+        ProductionOrderStatus.Cancelled => L["Orders_StatusCancelled"],
+        _ => status.ToString()
+    };
+}

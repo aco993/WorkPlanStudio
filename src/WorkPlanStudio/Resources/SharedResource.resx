@@ -291,4 +291,31 @@
   <data name="Sched_Ai_FailureUnavailable" xml:space="preserve"><value>provider unavailable</value></data>
   <data name="Sched_RuleEquivalent" xml:space="preserve"><value>With these targets this is the same order as: {0}</value></data>
   <data name="Common_Loading" xml:space="preserve"><value>Loading…</value></data>
+  <data name="Orders_Title" xml:space="preserve"><value>Production Orders</value></data>
+  <data name="Orders_Subtitle" xml:space="preserve"><value>What actually gets scheduled. Releasing an order freezes the routing it will be built to.</value></data>
+  <data name="Orders_New" xml:space="preserve"><value>New order</value></data>
+  <data name="Orders_NewTitle" xml:space="preserve"><value>New production order</value></data>
+  <data name="Orders_Empty" xml:space="preserve"><value>No production orders yet. Create one from a released work plan to schedule it.</value></data>
+  <data name="Orders_Number" xml:space="preserve"><value>Order no.</value></data>
+  <data name="Orders_Routing" xml:space="preserve"><value>Routing</value></data>
+  <data name="Orders_Quantity" xml:space="preserve"><value>Quantity</value></data>
+  <data name="Orders_Release" xml:space="preserve"><value>Release</value></data>
+  <data name="Orders_Due" xml:space="preserve"><value>Due</value></data>
+  <data name="Orders_Cancel" xml:space="preserve"><value>Cancel order</value></data>
+  <data name="Orders_Frozen" xml:space="preserve"><value>frozen</value></data>
+  <data name="Orders_SnapshotTooltip" xml:space="preserve"><value>This order carries a copy of the routing as it was when released.</value></data>
+  <data name="Orders_StatusDraft" xml:space="preserve"><value>Draft</value></data>
+  <data name="Orders_StatusReleased" xml:space="preserve"><value>Released</value></data>
+  <data name="Orders_StatusCancelled" xml:space="preserve"><value>Cancelled</value></data>
+  <data name="Orders_ImmutabilityNote" xml:space="preserve"><value>Editing a work plan does not change orders already released from it — each carries the routing it was released with.</value></data>
+  <data name="Nav_Orders" xml:space="preserve"><value>Production Orders</value></data>
+  <data name="Val_QuantityRange" xml:space="preserve"><value>Must be between {0} and {1}.</value></data>
+  <data name="Val_PriorityRange" xml:space="preserve"><value>Must be between {0} and {1}.</value></data>
+  <data name="Val_DueBeforeRelease" xml:space="preserve"><value>The due date must be after the release date.</value></data>
+  <data name="Val_OrderNumberTaken" xml:space="preserve"><value>This order number is already used.</value></data>
+  <data name="Val_OrderNotDraft" xml:space="preserve"><value>Only a draft order can be changed.</value></data>
+  <data name="Val_WorkPlanMissing" xml:space="preserve"><value>Select a work plan.</value></data>
+  <data name="Val_OrderPlanHasNoOperations" xml:space="preserve"><value>That work plan has no operations to freeze.</value></data>
+  <data name="Error_ActionFailed" xml:space="preserve"><value>That action could not be completed. Please try again.</value></data>
+  <data name="Field_Priority" xml:space="preserve"><value>Priority</value></data>
 </root>

@@ -465,3 +465,9 @@ select.input { cursor: pointer; }
     white-space: nowrap;
     border: 0;
 }
+
+/* ----- Production orders ----- */
+.badge.order-draft { background: var(--slate-soft); color: var(--slate); }
+.badge.order-released { background: var(--green-soft); color: var(--green); }
+.badge.order-cancelled { background: var(--red-soft); color: var(--red); }
+.pill.frozen { background: var(--primary-soft); color: var(--primary); margin-left: .5rem; }

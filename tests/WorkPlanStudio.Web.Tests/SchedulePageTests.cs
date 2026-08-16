@@ -82,7 +82,7 @@ public class SchedulePageTests : BunitContext
         Assert.True(fake.Calls > callsAfterLoad);
         Assert.NotNull(fake.LastParameters);
         Assert.Equal(DispatchRule.EarliestDueDate, fake.LastParameters!.DispatchRule);   // the form default
-        Assert.Equal(DueDateRule.TotalWorkContent, fake.LastParameters.DueDateRule);
+        Assert.Equal(DueDateRule.Explicit, fake.LastParameters.DueDateRule);
     }
 
     [Fact]
@@ -101,17 +101,19 @@ public class SchedulePageTests : BunitContext
     }
 
     [Fact]
-    public void Explicit_due_date_is_not_exposed_without_a_production_order_due_date()
+    public void Explicit_due_dates_are_offered_now_that_orders_carry_one()
     {
         Arrange(Sample.OnTime());
 
         var cut = Render<SchedulePage>();
 
-        cut.WaitForAssertion(() => Assert.DoesNotContain("Sched_Due_Explicit", cut.Markup));
+        // Production orders supply a real customer due date, so the rule that
+        // consumes one is no longer hidden - it is the default.
+        cut.WaitForAssertion(() => Assert.Contains("Sched_Due_Explicit", cut.Markup));
     }
 
     [Fact]
-    public void Rejected_plan_diagnostics_link_to_the_problematic_plan()
+    public void Rejected_order_diagnostics_name_the_order_and_link_to_the_orders_page()
     {
         var result = Sample.OnTime() with
         {
@@ -119,7 +121,7 @@ public class SchedulePageTests : BunitContext
             [
                 new SchedulePreparationIssue(
                     42,
-                    "WP-42",
+                    "PO-42",
                     20,
                     SchedulePreparationErrorCode.InactiveWorkCenter,
                     "WC-2")
@@ -130,7 +132,8 @@ public class SchedulePageTests : BunitContext
         var cut = Render<SchedulePage>();
 
         cut.WaitForAssertion(() => Assert.Contains("Sched_RejectedTitle", cut.Markup));
-        Assert.Equal("work-plans/42", cut.Find(".form-banner a").GetAttribute("href"));
+        Assert.Equal("production-orders", cut.Find(".form-banner a").GetAttribute("href"));
+        Assert.Contains("PO-42", cut.Markup, StringComparison.Ordinal);
         Assert.Contains("Sched_Error_InactiveWorkCenter", cut.Markup);
     }
 

@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using WorkPlanStudio.Models;
 
 namespace WorkPlanStudio.Data;
@@ -172,5 +173,61 @@ public static class SeedData
                 }
             }
         );
+
+        // Orders are what actually gets scheduled, so the demo needs some. They
+        // are saved first so the plans get their keys, then released - which is
+        // what captures each routing snapshot.
+        db.SaveChanges();
+        ReleaseOrders(db);
+    }
+
+    /// <summary>
+    /// One released order per released plan, with staggered releases and due
+    /// dates so the schedule has real slack to work with rather than everything
+    /// starting at zero and sharing one target.
+    /// </summary>
+    private static void ReleaseOrders(AppDbContext db)
+    {
+        if (db.ProductionOrders.Any())
+            return;
+
+        var horizon = new DateTime(2026, 6, 15, 6, 0, 0, DateTimeKind.Utc);
+
+        // plan number -> (quantity, release offset in hours, due offset in hours, priority)
+        var terms = new Dictionary<string, (int Quantity, int ReleaseHours, int DueHours, int Priority)>
+        {
+            ["WP-1001"] = (100, 0, 96, 3),
+            ["WP-1002"] = (250, 0, 120, 1),
+            ["WP-1003"] = (40, 8, 72, 5),
+            ["WP-1005"] = (80, 0, 108, 1),
+            ["WP-1006"] = (60, 16, 84, 4),
+            ["WP-1007"] = (200, 8, 132, 1),
+            ["WP-1008"] = (120, 24, 144, 2),
+        };
+
+        int sequence = 1001;
+        foreach (var plan in db.WorkPlans.Include(p => p.Operations).ThenInclude(o => o.WorkCenter)
+                     .Where(p => p.Status == WorkPlanStatus.Released)
+                     .OrderBy(p => p.PlanNumber)
+                     .ToList())
+        {
+            if (!terms.TryGetValue(plan.PlanNumber, out var t))
+                continue;
+
+            db.ProductionOrders.Add(new ProductionOrder
+            {
+                OrderNumber = $"PO-{sequence++}",
+                WorkPlanId = plan.Id,
+                Quantity = t.Quantity,
+                ReleaseUtc = horizon.AddHours(t.ReleaseHours),
+                DueUtc = horizon.AddHours(t.DueHours),
+                Priority = t.Priority,
+                Status = ProductionOrderStatus.Released,
+                RoutingRevision = plan.Revision ?? "",
+                RoutingSnapshotJson = RoutingSnapshot.Capture(plan).Serialize(),
+                CreatedUtc = horizon,
+                ModifiedUtc = horizon
+            });
+        }
     }
 }
