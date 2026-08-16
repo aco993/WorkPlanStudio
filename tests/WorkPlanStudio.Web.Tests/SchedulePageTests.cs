@@ -11,7 +11,7 @@ namespace WorkPlanStudio.Web.Tests;
 /// a fake service — no browser, no database. They verify the page's rendering and
 /// interaction logic (the engine is tested separately).
 /// </summary>
-public class SchedulePageTests : Bunit.TestContext
+public class SchedulePageTests : BunitContext
 {
     private readonly FakeAssistantConfig _assistantConfig = new();
 
@@ -35,7 +35,7 @@ public class SchedulePageTests : Bunit.TestContext
     {
         Arrange(Sample.OnTime());
 
-        var cut = RenderComponent<SchedulePage>();
+        var cut = Render<SchedulePage>();
 
         cut.WaitForAssertion(() => Assert.Equal(4, cut.FindAll(".stat-card").Count));
         Assert.Equal(2, cut.FindAll(".gantt-row").Count);
@@ -50,7 +50,7 @@ public class SchedulePageTests : Bunit.TestContext
     {
         Arrange(ScheduleResult.Empty(480));
 
-        var cut = RenderComponent<SchedulePage>();
+        var cut = Render<SchedulePage>();
 
         cut.WaitForAssertion(() => Assert.Single(cut.FindAll(".empty-state")));
         Assert.Empty(cut.FindAll(".gantt"));
@@ -62,7 +62,7 @@ public class SchedulePageTests : Bunit.TestContext
     {
         Arrange(Sample.WithLateJob());
 
-        var cut = RenderComponent<SchedulePage>();
+        var cut = Render<SchedulePage>();
 
         cut.WaitForAssertion(() => Assert.NotEmpty(cut.FindAll(".pill.late")));
         Assert.NotEmpty(cut.FindAll(".gantt-bar.late"));
@@ -73,7 +73,7 @@ public class SchedulePageTests : Bunit.TestContext
     public void Generate_invokes_the_service_with_the_selected_parameters()
     {
         var fake = Arrange(Sample.OnTime());
-        var cut = RenderComponent<SchedulePage>();
+        var cut = Render<SchedulePage>();
         cut.WaitForAssertion(() => Assert.True(fake.Calls >= 1));   // runs once on load
         var callsAfterLoad = fake.Calls;
 
@@ -89,7 +89,7 @@ public class SchedulePageTests : Bunit.TestContext
     public void Choosing_the_NOP_due_rule_swaps_in_its_allowance_field()
     {
         Arrange(Sample.OnTime());
-        var cut = RenderComponent<SchedulePage>();
+        var cut = Render<SchedulePage>();
         cut.WaitForAssertion(() => Assert.NotEmpty(cut.FindAll(".param-grid")));
 
         // selects are, in order: dispatch rule, then target-date rule
@@ -105,7 +105,7 @@ public class SchedulePageTests : Bunit.TestContext
     {
         Arrange(Sample.OnTime());
 
-        var cut = RenderComponent<SchedulePage>();
+        var cut = Render<SchedulePage>();
 
         cut.WaitForAssertion(() => Assert.DoesNotContain("Sched_Due_Explicit", cut.Markup));
     }
@@ -127,7 +127,7 @@ public class SchedulePageTests : Bunit.TestContext
         };
         Arrange(result);
 
-        var cut = RenderComponent<SchedulePage>();
+        var cut = Render<SchedulePage>();
 
         cut.WaitForAssertion(() => Assert.Contains("Sched_RejectedTitle", cut.Markup));
         Assert.Equal("work-plans/42", cut.Find(".form-banner a").GetAttribute("href"));
@@ -140,7 +140,7 @@ public class SchedulePageTests : Bunit.TestContext
         var fake = Arrange(Sample.OnTime());
         fake.ExceptionToThrow = new InvalidOperationException("internal details");
 
-        var cut = RenderComponent<SchedulePage>();
+        var cut = Render<SchedulePage>();
 
         cut.WaitForAssertion(() => Assert.Contains("Error_ScheduleFailed", cut.Markup));
         var generate = cut.Find(".page-head .btn-primary");
@@ -153,7 +153,7 @@ public class SchedulePageTests : Bunit.TestContext
     {
         Arrange(Sample.WithLateJob());
 
-        var cut = RenderComponent<SchedulePage>();
+        var cut = Render<SchedulePage>();
 
         cut.WaitForAssertion(() => Assert.Single(cut.FindAll(".assistant-card")));
         Assert.NotEmpty(cut.FindAll(".assistant-line"));
@@ -166,7 +166,7 @@ public class SchedulePageTests : Bunit.TestContext
     {
         Arrange(Sample.OnTime());
 
-        var cut = RenderComponent<SchedulePage>();
+        var cut = Render<SchedulePage>();
 
         cut.WaitForAssertion(() => Assert.Single(cut.FindAll(".assistant-card")));
         Assert.DoesNotContain("Sched_Ai_AskAi", cut.Markup);
@@ -184,7 +184,7 @@ public class SchedulePageTests : Bunit.TestContext
         };
         Arrange(Sample.OnTime());
 
-        var cut = RenderComponent<SchedulePage>();
+        var cut = Render<SchedulePage>();
 
         cut.WaitForAssertion(() => Assert.Contains("Sched_Ai_AskAi", cut.Markup));
     }
