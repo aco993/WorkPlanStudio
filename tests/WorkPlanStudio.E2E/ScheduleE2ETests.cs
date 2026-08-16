@@ -67,6 +67,12 @@ public sealed class ScheduleE2ETests
         var (context, schedule) = await OpenAsync();
         await using var _ = context;
 
+        // With the optimiser on, a good search converges different starting rules
+        // onto the same near-optimal schedule, so the rule's own effect is only
+        // observable with multi-start and local search switched off.
+        await schedule.UseRuleOnlyAsync();
+        await schedule.GenerateAsync();
+
         int barsBefore = await schedule.GanttBars.CountAsync();
         var makespanBefore = await schedule.MakespanTextAsync();   // EDD (the form default)
 
@@ -77,6 +83,44 @@ public sealed class ScheduleE2ETests
         Assert.Equal(barsBefore, await schedule.GanttBars.CountAsync());
         // … and the rule visibly changes the result (different makespan).
         Assert.NotEqual(makespanBefore, await schedule.MakespanTextAsync());
+    }
+
+    /// <summary>
+    /// The optimiser is meant to make the starting rule largely irrelevant — that
+    /// is the point of it, so it is worth asserting rather than assuming.
+    /// </summary>
+    [Fact]
+    public async Task The_optimiser_converges_different_rules_onto_the_same_schedule()
+    {
+        var (context, schedule) = await OpenAsync();
+        await using var _ = context;
+
+        await schedule.SetDispatchRuleAsync("EarliestDueDate");
+        await schedule.GenerateAsync();
+        var fromEdd = await schedule.MakespanTextAsync();
+
+        await schedule.SetDispatchRuleAsync("LongestProcessingTime");
+        await schedule.GenerateAsync();
+
+        Assert.Equal(fromEdd, await schedule.MakespanTextAsync());
+    }
+
+    /// <summary>
+    /// Critical ratio on total-work-content targets is a constant, so it sorts
+    /// exactly like FIFO. The page has to say so rather than silently returning
+    /// an unchanged schedule.
+    /// </summary>
+    [Fact]
+    public async Task A_degenerate_rule_combination_is_explained_on_the_page()
+    {
+        var (context, schedule) = await OpenAsync();
+        await using var _ = context;
+
+        await schedule.SetDispatchRuleAsync("CriticalRatio");
+        await schedule.GenerateAsync();
+
+        await schedule.RuleEquivalenceHint.WaitForAsync(new() { Timeout = 15_000 });
+        Assert.Contains("FIFO", await schedule.RuleEquivalenceHint.InnerTextAsync(), StringComparison.Ordinal);
     }
 
     [Fact]

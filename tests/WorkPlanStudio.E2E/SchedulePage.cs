@@ -39,8 +39,24 @@ public sealed class SchedulePage
     public Task SetFlowFactorAsync(string value) =>
         _page.FillAsync(".param-grid label:nth-of-type(3) input.num", value);
 
+    public Task SetMultiStartAsync(string value) =>
+        _page.FillAsync(".param-grid label:nth-of-type(4) input.num", value);
+
+    public Task SetLocalSearchStepsAsync(string value) =>
+        _page.FillAsync(".param-grid label:nth-of-type(5) input.num", value);
+
     public Task SetSeedAsync(string value) =>
         _page.FillAsync(".param-grid label:nth-of-type(6) input.num", value);
+
+    /// <summary>Turns the optimiser off so a dispatch rule's raw effect is visible.</summary>
+    public async Task UseRuleOnlyAsync()
+    {
+        await SetMultiStartAsync("1");
+        await SetLocalSearchStepsAsync("0");
+    }
+
+    /// <summary>The "this is the same order as ..." note under the dispatch-rule selector.</summary>
+    public ILocator RuleEquivalenceHint => _page.Locator(".param-grid .field-hint").First;
 
     public async Task GenerateAsync()
     {
