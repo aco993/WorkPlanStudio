@@ -20,7 +20,7 @@ builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.
 builder.Services.AddLocalization();
 
 // EF Core + SQLite, running entirely in the browser.
-var databaseOptions = new BrowserDatabaseOptions("/data/workplan.db", SchemaVersion: 3);
+var databaseOptions = new BrowserDatabaseOptions("/data/workplan.db", SchemaVersion: 4);
 builder.Services.AddSingleton(databaseOptions);
 builder.Services.AddDbContextFactory<AppDbContext>(options =>
     options.UseSqlite($"Data Source={databaseOptions.DatabasePath}"));
@@ -28,6 +28,7 @@ builder.Services.AddSingleton<IBrowserDatabaseStorage, JsBrowserDatabaseStorage>
 builder.Services.AddSingleton<BrowserDatabase>();
 builder.Services.AddScoped<WorkPlanService>();
 builder.Services.AddScoped<WorkCenterService>();
+builder.Services.AddScoped<ProductionOrderService>();
 builder.Services.AddScoped<IProductionScheduleService, ProductionScheduleService>();
 
 // Schedule assistant: an always-on rule-based narrator plus an optional,

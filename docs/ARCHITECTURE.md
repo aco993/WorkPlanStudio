@@ -21,7 +21,7 @@ flowchart TD
 - The scheduling project has no Blazor, EF Core, JavaScript or network dependency. An architecture test enforces this boundary.
 - EF entities are persistence models. Mutating services normalize and validate them again; SQLite constraints and unique indexes are the final defense.
 - `ScheduleMapper.ToSeconds` is the only decimal-minute to integer-second conversion. It uses checked arithmetic and midpoint-to-even rounding.
-- A released routing is mapped completely or rejected completely. `SchedulePreparationIssue` carries plan, optional operation and stable reason code; UI text is localized without parsing exceptions.
+- A released order is mapped completely or rejected completely. `SchedulePreparationIssue` carries plan, optional operation and stable reason code; UI text is localized without parsing exceptions.
 - Work-center parallel capacity is validated as 1–64 and passed to the finite-capacity engine.
 - Availability calendars repeat over a declared period, so placement is total and the dispatcher has no failure path. Operations are not preemptable, so a step must fit inside one window - checked at context construction, never mid-search. See [ADR 0010](adr/0010-periodic-calendars-and-setup-families.md).
 - Sequence-dependent change-over is keyed by operation family; the transition matrix is flattened into a lookup once per context because it is queried on every slot of every step of every candidate order.
@@ -39,7 +39,7 @@ This is explicit local demo storage, not a migration system. Schema mismatch pre
 
 ## Scheduling model
 
-The current application treats each released `WorkPlan` as one schedulable demonstration job with its plan lot size as weight. The domain engine can model an explicit due second, but the application does not claim customer-order due-date support and hides that option. A real system would introduce `ProductionOrder`; see [ADR 0007](adr/0007-defer-production-order.md).
+The scheduler consumes **production orders**, not work plans. A work plan is master data and may be edited at any time; an order captures the routing as an immutable snapshot when it is released, so a later edit cannot change work already on the shop floor. That also gives the engine a real customer due date, which is what makes `DueDateRule.Explicit` usable — it is now the default. See [ADR 0011](adr/0011-production-orders-own-routing-snapshots.md), which supersedes [ADR 0007](adr/0007-defer-production-order.md).
 
 The scheduler is a deterministic heuristic:
 

@@ -23,7 +23,8 @@ The interface is available in **English and German**, switchable at runtime.
 - 🔧 **Operations editor** — an editable grid of operations (setup time, run time per piece, work center, remarks) with a **live summary** of total time and estimated cost that recalculates as you type.
 - 🏭 **Work centers** — master data with hourly rates, cost centers and validated parallel capacity, plus guards against deleting referenced centers or deactivating centers used by released plans.
 - 📊 **Dashboard** — key figures, a status distribution bar and the most recently updated plans.
-- 🗓️ **Production scheduling** — a finite-capacity scheduler that assigns each released plan a target date and sequences its operations across the work centers, with six dispatch rules, configurable due-date assignment, multi-start + local-search optimisation, a Gantt chart and on-time / tardiness KPIs. Deterministic and covered by unit tests.
+- 🧾 **Production orders** — a quantity of a part by a date. Releasing an order **freezes the routing** it will be built to, so editing the work plan afterwards cannot change work already on the shop floor.
+- 🗓️ **Production scheduling** — a finite-capacity scheduler that sequences released orders across the work centers, with six dispatch rules, configurable due-date assignment, repeating availability calendars, sequence-dependent change-over, multi-start + insertion local search, a Gantt chart and on-time / tardiness KPIs.
 - 🤖 **Schedule assistant** — explains each run in plain language (the bottleneck work center, why a job is late, a *computed* recommendation), derived **on-device** with no key needed. An optional **bring-your-own-key** AI narrator can rephrase it, with a graceful fallback to the built-in explanation. See [`docs/AI-ASSISTANT.md`](docs/AI-ASSISTANT.md).
 - 🌍 **Bilingual UI (EN / DE)** — full localization via `IStringLocalizer` and `.resx` resources, including culture-correct number, date and currency formatting.
 - 💾 **Real database in the browser** — EF Core talks to SQLite compiled to WebAssembly; WAL-safe snapshots survive reloads, while corrupt/incompatible payloads enter an explicit export/reset recovery flow.
@@ -44,9 +45,9 @@ This means the app demonstrates a full data layer — `DbContext`, relationships
 
 The **Scheduling** page turns the released work plans into a finite-capacity production schedule — the most algorithm-heavy part of the project. It lives in its own dependency-free library (`src/WorkPlanStudio.Scheduling`) so the whole engine can be unit-tested on a plain .NET runner, without Blazor or the WebAssembly toolchain.
 
-1. **Target dates ("meta").** Each demonstration job is assigned a target by Total Work Content (TWK), Number of Operations (NOP), Equal Slack (SLK) or Constant Allowance (CON). Customer-order due dates are intentionally out of scope until the app has a real `ProductionOrder` model.
+1. **Target dates ("meta").** A released order carries its own customer due date, so the default rule is simply to use it. Where no customer date applies, a target can still be derived by Total Work Content (TWK), Number of Operations (NOP), Equal Slack (SLK) or Constant Allowance (CON).
 1a. **Shop constraints.** Work centers may declare a repeating availability calendar (a day shift is one window in a 24-hour period) and a sequence-dependent change-over matrix between operation families. Both default to "no constraint".
-2. **Dispatch scheduling.** A finite-capacity list scheduler places each job's operations on the earliest free slot of their work center, respecting operation precedence and machine capacity. Six dispatch rules set the initial job sequence: FIFO, SPT, LPT, EDD, Critical Ratio and WSPT.
+2. **Dispatch scheduling.** A finite-capacity list scheduler places each order's operations on the earliest free slot of their work center, respecting operation precedence and machine capacity. Six dispatch rules set the initial job sequence: FIFO, SPT, LPT, EDD, Critical Ratio and WSPT.
 3. **Optimisation.** A seeded multi-start, each restart followed by an insertion-neighbourhood descent over the job sequence; the result is never worse than the pure rule schedule.
 4. **Scoring.** Makespan, total / maximum tardiness, on-time rate and work-center utilisation are rolled up into a single penalty the search minimises.
 
@@ -121,7 +122,7 @@ The repository applies the following engineering practices:
 - **Strict builds** — nullable reference types, .NET analyzers and **warnings treated as errors** (`Directory.Build.props`).
 - **Central Package Management** — every NuGet version in one [`Directory.Packages.props`](Directory.Packages.props).
 - **Consistent style** — a comprehensive [`.editorconfig`](.editorconfig) and line-ending normalisation via [`.gitattributes`](.gitattributes).
-- **Layered tests + coverage** — 210 tests across three test projects, including real-SQLite persistence, property-based invariants, brute-force optimality checks, adversarial algorithm cases, accessibility semantics, localization parity, components, browser reload/reset and mobile flows; the engine measures 96.37 % line and 89.05 % branch coverage.
+- **Layered tests + coverage** — 212 tests across three test projects, including real-SQLite persistence, property-based invariants, brute-force optimality checks, adversarial algorithm cases, accessibility semantics, localization parity, components, browser reload/reset and mobile flows; the engine measures 96.37 % line and 89.05 % branch coverage.
 - **Architecture enforced by a test** — the engine cannot accrue a Blazor / EF / JS dependency.
 - **Decisions recorded** — see the [Architecture Decision Records](docs/adr).
 - **Dependency hygiene** — [Dependabot](.github/dependabot.yml) keeps NuGet and GitHub Actions current.
