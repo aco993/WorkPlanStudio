@@ -47,7 +47,23 @@ jobs:
         with:
           languages: csharp
           build-mode: manual
-          queries: security-and-quality
+          # security-extended, not security-and-quality.
+          #
+          # The quality suite produced 48 alerts here and none was a defect:
+          # 15 in generated obj/ output, the rest style preferences already
+          # covered by .editorconfig, the Roslyn analyzers and
+          # TreatWarningsAsErrors - plus 7 "generic catch clause" hits on the
+          # deliberate boundary pattern where BrowserDatabase converts failures
+          # into typed results and pages show a banner instead of blanking.
+          #
+          # A security tab full of "missed ternary operator" is how a team
+          # learns to ignore the security tab, so this stays scoped to security
+          # and the style gate stays in the Quality workflow where it belongs.
+          queries: security-extended
+          config: |
+            paths-ignore:
+              - '**/obj/**'
+              - '**/bin/**'
 
       - name: Install WebAssembly tools
         run: dotnet workload install wasm-tools
