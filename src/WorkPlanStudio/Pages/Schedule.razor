@@ -33,6 +33,14 @@
                             <option value="@r">@DispatchLabel(r)</option>
                         }
                     </select>
+                    @if (_result is { EquivalentRules.Count: > 0 })
+                    {
+                        <span class="field-hint">
+                            @string.Format(
+                                L["Sched_RuleEquivalent"],
+                                string.Join(", ", _result.EquivalentRules.Select(DispatchLabel)))
+                        </span>
+                    }
                 </label>
 
                 <label class="field">

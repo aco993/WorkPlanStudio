@@ -44,6 +44,7 @@ public sealed class ProductionScheduleService : IProductionScheduleService
         return view with
         {
             Explanation = ScheduleExplainer.Explain(input.Context, result),
+            EquivalentRules = result.EquivalentRules,
             PreparationErrors = preparation.Errors
         };
     }
