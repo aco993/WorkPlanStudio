@@ -43,11 +43,27 @@ The scheduler is a deterministic heuristic:
 
 1. assign target dates;
 2. produce a dispatch-rule priority order;
-3. evaluate seeded multi-start permutations;
-4. improve the best order with bounded adjacent-swap local search;
-5. re-dispatch every candidate so precedence and capacity remain feasible by construction.
+3. run a bounded **insertion-neighbourhood** descent from the rule order and from each seeded multi-start permutation;
+4. re-dispatch every candidate so precedence and capacity remain feasible by construction.
 
-It does not prove global optimality. For larger or constraint-rich instances, CP-SAT/MILP or a background service is a roadmap choice, not a hidden capability.
+The neighbourhood is the part that matters. Adjacent swaps — the previous
+implementation — move a job one position per improving step and stall almost
+immediately on a tardiness objective; insertion moves it anywhere in one step.
+Measured against brute-force enumeration of all `n!` orders over 20 random
+8-job instances, the mean gap to the optimum went from 27.3 % to 0.2 %, and 19
+of 20 instances are now solved to optimality. `OptimalityTests` asserts this, so
+it is a tested property rather than a claim. See [ADR 0008](adr/0008-insertion-neighbourhood.md).
+
+It still does not *prove* global optimality — it is a descent, so it finds a
+local optimum that happens to be global on instances of this size. For larger or
+constraint-rich instances, CP-SAT/MILP or a background service is a roadmap
+choice, not a hidden capability.
+
+The dispatch rule and the target rule are not independent: under TWK targets EDD
+is literally the same sort as SPT, and critical ratio is constant so it collapses
+to FIFO. Six rules produce four schedules on the default targets. The page
+reports the collapse rather than returning a silently identical schedule; see
+[ADR 0009](adr/0009-report-rule-equivalences.md).
 
 ## Failure handling
 

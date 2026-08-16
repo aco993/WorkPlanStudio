@@ -14,3 +14,5 @@ the decision and its consequences, in the spirit of
 | [0005](0005-explainable-scheduling-and-optional-ai.md) | Deterministic explanation first; AI is an optional narrator | Accepted |
 | [0006](0006-explicit-browser-storage-recovery.md) | Use explicit browser-storage recovery instead of incomplete migrations | Accepted |
 | [0007](0007-defer-production-order.md) | Defer ProductionOrder and constrain scheduling scope | Accepted |
+| [0008](0008-insertion-neighbourhood.md) | Search the insertion neighbourhood, not adjacent swaps | Accepted |
+| [0009](0009-report-rule-equivalences.md) | Report dispatch-rule equivalences instead of hiding them | Accepted |

@@ -46,7 +46,7 @@ Die Seite **Planung** verwandelt die freigegebenen Arbeitspläne in einen kapazi
 
 1. **Zieltermine („Meta").** Jeder Demo-Auftrag erhält einen Termin nach TWK, NOP, SLK oder CON. Kundenspezifische Auftragstermine bleiben bis zu einem echten `ProductionOrder`-Modell bewusst außerhalb des Scopes.
 2. **Dispatch-Planung.** Ein kapazitätsbeschränkter List-Scheduler platziert die Arbeitsgänge jedes Auftrags auf dem frühesten freien Slot ihres Arbeitsplatzes, unter Beachtung von Arbeitsgang-Reihenfolge und Maschinenkapazität. Sechs Prioritätsregeln entscheiden, wer auf einer umkämpften Maschine zuerst drankommt: FIFO, SPT, LPT, EDD, Critical Ratio und WSPT.
-3. **Optimierung.** Eine seed-basierte Multi-Start-Suche plus eine First-Improvement-Lokalsuche verfeinern die Reihenfolge; das Ergebnis ist nie schlechter als der reine Regel-Plan.
+3. **Optimierung.** Eine seed-basierte Multi-Start-Suche, bei der jeder Neustart von einem Insertion-Nachbarschafts-Abstieg gefolgt wird; das Ergebnis ist nie schlechter als der reine Regel-Plan. Gegen vollständige Enumeration gemessen: 0,2 % mittlerer Abstand zum Optimum, 19 von 20 Instanzen exakt gelöst.
 4. **Bewertung.** Durchlaufzeit (Makespan), Gesamt-/Maximalverspätung, Termintreue und Arbeitsplatz-Auslastung werden zu einem einzigen Strafwert zusammengefasst, den die Suche minimiert.
 
 Der Planer folgt drei expliziten Randbedingungen:
@@ -99,7 +99,7 @@ Das Repository setzt folgende Entwicklungspraktiken um:
 - **Strikte Builds** — Nullable Reference Types, .NET-Analyzer und **Warnungen als Fehler** (`Directory.Build.props`).
 - **Central Package Management** — jede NuGet-Version in einer [`Directory.Packages.props`](Directory.Packages.props).
 - **Einheitlicher Stil** — eine umfassende [`.editorconfig`](.editorconfig) und Zeilenende-Normalisierung über [`.gitattributes`](.gitattributes).
-- **Geschichtete Tests + Abdeckung** — 154 Tests in drei Testprojekten, einschließlich echtem SQLite, Browser-Reload/Reset, Mobile-Flow und eigenschaftsbasierten Invarianten; die gehärtete Engine liegt aktuell bei 96,93 % Zeilen- und 87,43 % Zweigabdeckung.
+- **Geschichtete Tests + Abdeckung** — 177 Tests in drei Testprojekten, einschließlich echtem SQLite, Browser-Reload/Reset, Mobile-Flow, eigenschaftsbasierten Invarianten, Optimalitätsprüfung gegen vollständige Enumeration und EN/DE-Ressourcengleichheit; die Engine liegt bei 97,13 % Zeilen- und 89,10 % Zweigabdeckung.
 - **Architektur per Test erzwungen** — die Engine kann keine Blazor-/EF-/JS-Abhängigkeit ansammeln.
 - **Entscheidungen dokumentiert** — siehe die [Architecture Decision Records](docs/adr).
 - **Abhängigkeits-Hygiene** — [Dependabot](.github/dependabot.yml) hält NuGet und GitHub Actions aktuell.

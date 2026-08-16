@@ -14,8 +14,8 @@ browser and no `wasm-tools` workload.
 ```mermaid
 graph TD
     E2E["🌐 <b>E2E</b> — Playwright · 10 tests<br/>real Chromium, persistence reload/reset, keyboard, mobile and localization"]
-    WEB["🧩 <b>Data + Boundary + Component</b> — xUnit/bUnit · 54 tests<br/>real SQLite, validation, mapper, pages &amp; assistant"]
-    UNIT["⚙️ <b>Unit + Property + Architecture</b> — xUnit/CsCheck · 90 tests<br/>the engine, limits, invariants &amp; design rules"]
+    WEB["🧩 <b>Data + Boundary + Component</b> — xUnit/bUnit · 59 tests<br/>real SQLite, validation, mapper, localization, pages &amp; assistant"]
+    UNIT["⚙️ <b>Unit + Property + Optimality</b> — xUnit/CsCheck · 108 tests<br/>the engine, limits, invariants, brute-force optimality &amp; design rules"]
 
     E2E --> WEB --> UNIT
 
@@ -140,7 +140,7 @@ Useful environment variables for E2E: `E2E_BASE_URL` (default `http://localhost:
 
 ## Coverage
 
-The engine job measures code coverage with the Microsoft Testing Platform collector. The hardened branch on 2026-07-12 measured **411/424 lines (96.93 %) and 160/183 branches (87.43 %)**. The pre-hardening baseline was 97.90/91.61%; the added validation/cancellation branches explain the lower percentage. Run the command below rather than treating a badge as evidence:
+The engine job measures code coverage with the Microsoft Testing Platform collector. The current measurement is **97.13 % line and 89.10 % branch**; the hardened branch on 2026-07-12 measured 96.93 % / 87.43 %, and the pre-hardening baseline was 97.90 % / 91.61 % (the added validation and cancellation branches explain the dip). Run the command below rather than treating a badge as evidence:
 
 ```bash
 dotnet test tests/WorkPlanStudio.Scheduling.Tests/WorkPlanStudio.Scheduling.Tests.csproj \
