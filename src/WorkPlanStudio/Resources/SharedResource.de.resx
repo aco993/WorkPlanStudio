@@ -289,4 +289,5 @@
   <data name="Sched_Ai_FailureTimeout" xml:space="preserve"><value>Zeitüberschreitung der Anfrage</value></data>
   <data name="Sched_Ai_FailureResponse" xml:space="preserve"><value>ungültige Antwort des Anbieters</value></data>
   <data name="Sched_Ai_FailureUnavailable" xml:space="preserve"><value>Anbieter nicht verfügbar</value></data>
+  <data name="Sched_RuleEquivalent" xml:space="preserve"><value>Mit diesen Zielterminen ergibt sich dieselbe Reihenfolge wie: {0}</value></data>
 </root>

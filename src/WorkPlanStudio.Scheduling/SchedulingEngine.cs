@@ -74,6 +74,9 @@ public sealed class SchedulingEngine
             }
         }
 
-        return new SchedulingResult(bestSchedule!, bestEvaluation!, dueByJob, totalSteps);
+        return new SchedulingResult(bestSchedule!, bestEvaluation!, dueByJob, totalSteps)
+        {
+            EquivalentRules = PriorityOrdering.EquivalentRules(context, dueByJob)
+        };
     }
 }

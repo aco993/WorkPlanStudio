@@ -8,6 +8,37 @@ namespace WorkPlanStudio.Scheduling;
 /// </summary>
 public static class PriorityOrdering
 {
+    /// <summary>
+    /// The other dispatch rules that yield the identical order for this instance —
+    /// the ones a user could select instead and see no change at all.
+    /// <para>
+    /// Several rule pairs coincide by construction rather than by accident. TWK
+    /// targets are a strictly increasing function of processing time, so EDD and
+    /// SPT are the same sort; CON gives every job the same target, so EDD becomes
+    /// FIFO. Computing this from the orders themselves rather than from a table of
+    /// known identities means it cannot drift away from what the engine does.
+    /// </para>
+    /// </summary>
+    public static IReadOnlyList<DispatchRule> EquivalentRules(
+        SchedulingContext context, IReadOnlyDictionary<int, long> dueByJob)
+    {
+        var chosen = For(context, dueByJob);
+        var others = new List<DispatchRule>();
+
+        foreach (var rule in Enum.GetValues<DispatchRule>())
+        {
+            if (rule == context.Parameters.DispatchRule)
+                continue;
+
+            var candidate = context.Parameters with { DispatchRule = rule };
+            if (For(new SchedulingContext(context.Jobs, [.. context.Machines.Values], candidate), dueByJob)
+                .AsSpan().SequenceEqual(chosen))
+                others.Add(rule);
+        }
+
+        return others;
+    }
+
     /// <summary>Indices into <see cref="SchedulingContext.Jobs"/>, highest priority first.</summary>
     public static int[] For(SchedulingContext context, IReadOnlyDictionary<int, long> dueByJob)
     {

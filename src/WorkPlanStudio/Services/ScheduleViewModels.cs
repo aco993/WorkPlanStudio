@@ -22,6 +22,12 @@ public sealed record ScheduleResult(
     /// <summary>Released plans excluded because their routing is invalid.</summary>
     public IReadOnlyList<SchedulePreparationIssue> PreparationErrors { get; init; } = [];
 
+    /// <summary>
+    /// Dispatch rules that would have produced this exact job order. Shown so a
+    /// user who switches rules and sees no change understands why.
+    /// </summary>
+    public IReadOnlyList<DispatchRule> EquivalentRules { get; init; } = [];
+
     /// <summary>The result shown when there is nothing to schedule.</summary>
     public static ScheduleResult Empty(int minutesPerWorkingDay) =>
         new(false, new ScheduleKpis(0, 1, 0, 0, 0, 0), [], [], 0, minutesPerWorkingDay, 0);

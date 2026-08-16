@@ -13,4 +13,11 @@ public sealed record SchedulingResult(
     Schedule Schedule,
     ScheduleEvaluation Evaluation,
     IReadOnlyDictionary<int, long> DueByJob,
-    int LocalSearchSteps);
+    int LocalSearchSteps)
+{
+    /// <summary>
+    /// Dispatch rules that would have produced the identical job order for this
+    /// instance — see <see cref="PriorityOrdering.EquivalentRules"/>.
+    /// </summary>
+    public IReadOnlyList<DispatchRule> EquivalentRules { get; init; } = [];
+}
