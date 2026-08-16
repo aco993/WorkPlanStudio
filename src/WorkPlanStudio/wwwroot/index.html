@@ -6,6 +6,45 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>WorkPlan Studio</title>
     <base href="/" />
+    <meta name="description" content="Manage manufacturing routings and generate a finite-capacity production schedule - entirely in the browser." />
+
+    <!--
+      The app has no backend and loads no third-party asset, so everything is
+      pinned to the same origin. What each relaxation buys, and why:
+
+        'wasm-unsafe-eval'  the .NET WebAssembly runtime instantiates its module
+        'unsafe-inline' (style)  Blazor writes element styles inline - the Gantt
+                            bar positions are computed per render
+        'unsafe-inline' (script)  Blazor publishes a fingerprinted inline
+                            <script type="importmap">. Its content changes on
+                            every build, so a hash goes stale immediately, and a
+                            static host cannot mint a nonce. Verified against the
+                            published artifact: without this the runtime does not
+                            start at all.
+
+      connect-src has to allow https: because the optional bring-your-own-key
+      narrator posts to a user-supplied endpoint (api.openai.com by default).
+      Pinning it to 'self' would silently break that feature. It stays off
+      entirely until the user configures a key, and the schedule explanation
+      itself is computed on-device - see docs/AI-ASSISTANT.md.
+
+      So script-src and connect-src are not the directives doing the work here.
+      default-src 'none' is: no plugins, no frames, no workers, no media, and
+      nothing loads from another origin unless it is listed above.
+      frame-ancestors is omitted because <meta> CSP ignores it - clickjacking
+      protection needs a real response header, which GitHub Pages cannot set.
+    -->
+    <meta http-equiv="Content-Security-Policy" content="
+      default-src 'none';
+      script-src 'self' 'wasm-unsafe-eval' 'unsafe-inline';
+      style-src 'self' 'unsafe-inline';
+      img-src 'self' data:;
+      font-src 'self';
+      connect-src 'self' https:;
+      base-uri 'self';
+      form-action 'none'" />
+    <meta name="referrer" content="no-referrer" />
+
     <link rel="preload" id="webassembly" />
     <link rel="stylesheet" href="css/app.css" />
     <link rel="icon" type="image/png" href="favicon.png" />
