@@ -29,7 +29,7 @@
 
 @if (_loading)
 {
-    <div class="loading-row"><span class="spinner"></span></div>
+    <div class="loading-row" role="status"><span class="spinner" aria-hidden="true"></span><span class="sr-only">@L["Common_Loading"]</span></div>
 }
 else if (!Filtered.Any())
 {
@@ -42,18 +42,19 @@ else
 {
     <div class="card no-pad">
         <table class="data-table hover">
+            <caption class="sr-only">@L["WorkPlans_Title"]</caption>
             <thead>
                 <tr>
-                    <th>@L["Field_PlanNumber"]</th>
-                    <th>@L["Field_PartNumber"]</th>
-                    <th>@L["Field_PartName"]</th>
-                    <th class="center">@L["Field_RevisionShort"]</th>
-                    <th>@L["Field_Status"]</th>
-                    <th class="num">@L["Field_Operations"]</th>
-                    <th class="num">@L["Field_LotSize"]</th>
-                    <th class="num">@L["Field_TotalTime"]</th>
-                    <th class="num">@L["Field_TotalCost"]</th>
-                    <th class="actions-col">@L["Common_Actions"]</th>
+                    <th scope="col">@L["Field_PlanNumber"]</th>
+                    <th scope="col">@L["Field_PartNumber"]</th>
+                    <th scope="col">@L["Field_PartName"]</th>
+                    <th scope="col" class="center">@L["Field_RevisionShort"]</th>
+                    <th scope="col">@L["Field_Status"]</th>
+                    <th scope="col" class="num">@L["Field_Operations"]</th>
+                    <th scope="col" class="num">@L["Field_LotSize"]</th>
+                    <th scope="col" class="num">@L["Field_TotalTime"]</th>
+                    <th scope="col" class="num">@L["Field_TotalCost"]</th>
+                    <th scope="col" class="actions-col">@L["Common_Actions"]</th>
                 </tr>
             </thead>
             <tbody>
@@ -70,10 +71,10 @@ else
                         <td class="num">@Format.Hours(p.TotalTimeMinutes)</td>
                         <td class="num">@Format.Euro(p.TotalCost)</td>
                         <td class="actions-col" @onclick:stopPropagation="true">
-                            <button class="icon-btn" title="@L["Common_Edit"]" @onclick="() => Open(p.Id)">
+                            <button class="icon-btn" aria-label="@L["Common_Edit"]" title="@L["Common_Edit"]" @onclick="() => Open(p.Id)">
                                 <svg viewBox="0 0 24 24"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
                             </button>
-                            <button class="icon-btn danger" title="@L["Common_Delete"]" @onclick="() => AskDelete(p)">
+                            <button class="icon-btn danger" aria-label="@L["Common_Delete"]" title="@L["Common_Delete"]" @onclick="() => AskDelete(p)">
                                 <svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" /></svg>
                             </button>
                         </td>

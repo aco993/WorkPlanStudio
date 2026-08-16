@@ -15,7 +15,7 @@
 
 @if (_loading)
 {
-    <div class="loading-row"><span class="spinner"></span></div>
+    <div class="loading-row" role="status"><span class="spinner" aria-hidden="true"></span><span class="sr-only">@L["Common_Loading"]</span></div>
 }
 else
 {
@@ -82,11 +82,11 @@ else
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <th>@L["Field_PlanNumber"]</th>
-                            <th>@L["Field_PartName"]</th>
-                            <th>@L["Field_Status"]</th>
-                            <th class="num">@L["Field_TotalTime"]</th>
-                            <th class="num">@L["Field_Modified"]</th>
+                            <th scope="col">@L["Field_PlanNumber"]</th>
+                            <th scope="col">@L["Field_PartName"]</th>
+                            <th scope="col">@L["Field_Status"]</th>
+                            <th scope="col" class="num">@L["Field_TotalTime"]</th>
+                            <th scope="col" class="num">@L["Field_Modified"]</th>
                         </tr>
                     </thead>
                     <tbody>

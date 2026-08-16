@@ -24,11 +24,32 @@ internal static class Feasibility
             {
                 var step = job.Steps.Single(s => s.StepNumber == op.StepNumber);
                 Assert.Equal(step.WorkCenterId, op.WorkCenterId);
-                Assert.Equal(step.DurationSeconds, op.DurationSeconds);
+                // A placement occupies setup + processing, so the step's duration
+                // is the processing part, not the whole block.
+                Assert.Equal(step.DurationSeconds, op.ProcessingSeconds);
+                Assert.True(op.SetupSeconds >= 0, $"Job {job.Id} step {op.StepNumber} has negative setup.");
                 Assert.True(op.StartSeconds >= previousEnd,
                     $"Job {job.Id} step {op.StepNumber} starts at {op.StartSeconds}, before {previousEnd}.");
                 previousEnd = op.EndSeconds;
             }
+        }
+
+        // Calendar: every placement sits wholly inside one availability window of
+        // the repeating period.
+        foreach (var op in schedule.Operations)
+        {
+            var machine = context.Machines[op.WorkCenterId];
+            if (machine.AvailabilityWindows.Count == 0)
+                continue;
+
+            long period = machine.CalendarPeriodSeconds;
+            long offsetStart = op.StartSeconds % period;
+            long offsetEnd = offsetStart + op.DurationSeconds;
+
+            Assert.True(
+                machine.AvailabilityWindows.Any(w => offsetStart >= w.StartSeconds && offsetEnd <= w.EndSeconds),
+                $"Job {op.JobId} step {op.StepNumber} runs [{op.StartSeconds}, {op.EndSeconds}) " +
+                $"outside work center {op.WorkCenterId}'s availability windows.");
         }
 
         // Capacity, per work center: a sweep line over (start,end) intervals must

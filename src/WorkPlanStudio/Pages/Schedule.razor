@@ -128,7 +128,7 @@
         }
         @if (_result is null)
         {
-            <div class="loading-row"><span class="spinner"></span></div>
+            <div class="loading-row" role="status"><span class="spinner" aria-hidden="true"></span><span class="sr-only">@L["Common_Loading"]</span></div>
         }
         else if (!_result.HasData)
         {
@@ -209,12 +209,12 @@
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <th>@L["Field_PlanNumber"]</th>
-                            <th>@L["Field_PartName"]</th>
-                            <th class="num">@L["Sched_Target"]</th>
-                            <th class="num">@L["Sched_Completion"]</th>
-                            <th class="num">@L["Sched_Lateness"]</th>
-                            <th>@L["Field_Status"]</th>
+                            <th scope="col">@L["Field_PlanNumber"]</th>
+                            <th scope="col">@L["Field_PartName"]</th>
+                            <th scope="col" class="num">@L["Sched_Target"]</th>
+                            <th scope="col" class="num">@L["Sched_Completion"]</th>
+                            <th scope="col" class="num">@L["Sched_Lateness"]</th>
+                            <th scope="col">@L["Field_Status"]</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -267,7 +267,7 @@
                     <p class="assistant-sub muted">@L["Sched_Ai_Subtitle"]</p>
                     @if (_narration is null)
                     {
-                        <div class="loading-row"><span class="spinner"></span></div>
+                        <div class="loading-row" role="status"><span class="spinner" aria-hidden="true"></span><span class="sr-only">@L["Common_Loading"]</span></div>
                     }
                     else
                     {
