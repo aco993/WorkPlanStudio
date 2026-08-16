@@ -50,3 +50,16 @@ changed.
   `k` = 6 rules. Negligible next to the search, but not free.
 - ➖ Only detects *exact* order equality. Two rules that differ on one job pair
   but produce the same final schedule are not reported.
+
+## Postscript (2026-08-16)
+
+[ADR 0011](0011-production-orders-own-routing-snapshots.md) gave jobs real
+release dates. Every identity in the table above assumes a common release at
+second 0, so with staggered releases most of them dissolve — on the current
+sample data none of them fires.
+
+This vindicates the implementation choice rather than undermining it. Had the
+equivalences been a hard-coded table, they would now be confidently wrong.
+Computing them from the orders means the feature simply reports nothing when
+nothing collapses, and starts reporting again the moment a set of orders shares
+a release date.

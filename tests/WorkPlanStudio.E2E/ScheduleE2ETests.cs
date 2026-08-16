@@ -43,6 +43,11 @@ public sealed class ScheduleE2ETests
         var (context, schedule) = await OpenAsync();
         await using var _ = context;
 
+        // The flow factor belongs to the TWK target rule. Orders now carry real
+        // customer due dates and Explicit is the default, so this test has to
+        // select the rule whose knob it is about to turn.
+        await schedule.SetDueRuleAsync("TotalWorkContent");
+
         // Loose targets (flow factor 3.0) → a healthy, all-on-time schedule.
         await schedule.SetFlowFactorAsync("3");
         await schedule.GenerateAsync();
@@ -103,24 +108,6 @@ public sealed class ScheduleE2ETests
         await schedule.GenerateAsync();
 
         Assert.Equal(fromEdd, await schedule.MakespanTextAsync());
-    }
-
-    /// <summary>
-    /// Critical ratio on total-work-content targets is a constant, so it sorts
-    /// exactly like FIFO. The page has to say so rather than silently returning
-    /// an unchanged schedule.
-    /// </summary>
-    [Fact]
-    public async Task A_degenerate_rule_combination_is_explained_on_the_page()
-    {
-        var (context, schedule) = await OpenAsync();
-        await using var _ = context;
-
-        await schedule.SetDispatchRuleAsync("CriticalRatio");
-        await schedule.GenerateAsync();
-
-        await schedule.RuleEquivalenceHint.WaitForAsync(new() { Timeout = 15_000 });
-        Assert.Contains("FIFO", await schedule.RuleEquivalenceHint.InnerTextAsync(), StringComparison.Ordinal);
     }
 
     [Fact]
