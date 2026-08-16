@@ -13,7 +13,7 @@ browser and no `wasm-tools` workload.
 
 ```mermaid
 graph TD
-    E2E["🌐 <b>E2E</b> — Playwright · 10 tests<br/>real Chromium, persistence reload/reset, keyboard, mobile and localization"]
+    E2E["🌐 <b>E2E</b> — Playwright · 11 tests<br/>real Chromium, persistence reload/reset, keyboard, mobile and localization"]
     WEB["🧩 <b>Data + Boundary + Component</b> — xUnit/bUnit · 65 tests<br/>real SQLite, validation, mapper, localization, pages &amp; assistant"]
     UNIT["⚙️ <b>Unit + Property + Optimality</b> — xUnit/CsCheck · 135 tests<br/>the engine, limits, invariants, brute-force optimality &amp; design rules"]
 

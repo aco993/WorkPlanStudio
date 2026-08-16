@@ -168,7 +168,16 @@ With all jobs released at *t* = 0 and *P* = total processing time:
 | **CON** | `due = c` | all targets equal, so **EDD ≡ FIFO**; `CR = c/P` decreases in *P*, so **CR ≡ LPT** |
 | **NOP** | `due = t · n` | keyed on operation count, the only rule that decouples all six |
 
-So on the default targets, six rules produce **four** distinct schedules.
+So on *derived* targets, six rules produce **four** distinct schedules.
+
+There is a twist worth having ready. All of that assumes every job is released at
+second 0 — true while the app scheduled work plans, which carry no release date.
+Production orders carry real ones, and a staggered release breaks the identities:
+`due/P = release/P + f` is no longer constant, so CR stops sorting like FIFO. On
+the current sample data **no collapse occurs at all**. Fixing the domain model
+dissolved the degeneracy that the reporting was built to explain — and the
+reporting still earns its place, because the collapse returns the moment orders
+share a release date.
 
 Three options were on the table: delete the redundant rules (wrong — they're only
 redundant under *particular* target rules), say nothing (the status quo, and
@@ -427,7 +436,7 @@ approached it, so the knob was decorative.
 | --- | --- |
 | Engine library | ~1 340 lines |
 | Blazor app | ~3 950 lines |
-| Tests | 212 tests (135 engine / 65 web / 12 E2E) |
+| Tests | 211 tests (135 engine / 65 web / 11 E2E) |
 | Engine coverage | 96.4 % line, 89.1 % branch |
 | Search gap to optimum | 0.2 % mean, 19/20 solved exactly |
 | Schedule runtime | ~10 ms at 8 jobs, ~533 ms at 100 |

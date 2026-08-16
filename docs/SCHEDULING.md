@@ -140,6 +140,21 @@ themselves (never from a hard-coded table, which could drift from the code) and
 the page shows it beneath the selector. `RuleEquivalenceTests` pins every
 identity above; see [ADR 0009](adr/0009-report-rule-equivalences.md).
 
+### The collapse depends on equal release times
+
+Everything above assumes every job is released at second 0, which was true while
+the app scheduled work plans — they carried no release date. Production orders
+carry real ones, and a staggered release breaks most of the identities: with
+`due = release + f·P`, the critical ratio `due/P = release/P + f` is no longer
+constant, so CR stops sorting like FIFO.
+
+On the current sample data no collapse occurs at all. That is a result, not an
+omission: giving orders real release dates is what made the six dispatch rules
+genuinely six rules. The reporting stays because the collapse returns the moment
+orders share a release date — which is exactly why it is computed from the
+orders rather than from the table above.
+
+
 ## 6. Multi-start + local search
 
 A single greedy pass is rarely optimal, so `SchedulingEngine` wraps the dispatcher
