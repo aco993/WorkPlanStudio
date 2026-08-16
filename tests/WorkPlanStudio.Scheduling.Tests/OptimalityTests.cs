@@ -9,35 +9,14 @@ namespace WorkPlanStudio.Scheduling.Tests;
 /// </summary>
 public class OptimalityTests
 {
-    /// <summary>The best penalty achievable for this instance, over every job order.</summary>
-    private static double BruteForceOptimum(SchedulingContext context)
-    {
-        var due = DueDateAssigner.Assign(context);
-        var scheduler = new DispatchScheduler();
-        double best = double.MaxValue;
-
-        foreach (var order in Permutations([.. Enumerable.Range(0, context.Jobs.Count)]))
-            best = Math.Min(best, ScheduleEvaluator.Evaluate(scheduler.Run(context, order, due), context).Penalty);
-
-        return best;
-    }
-
-    private static IEnumerable<int[]> Permutations(int[] items, int fixedPrefix = 0)
-    {
-        if (fixedPrefix == items.Length)
-        {
-            yield return (int[])items.Clone();
-            yield break;
-        }
-
-        for (int i = fixedPrefix; i < items.Length; i++)
-        {
-            (items[fixedPrefix], items[i]) = (items[i], items[fixedPrefix]);
-            foreach (var permutation in Permutations(items, fixedPrefix + 1))
-                yield return permutation;
-            (items[fixedPrefix], items[i]) = (items[i], items[fixedPrefix]);
-        }
-    }
+    /// <summary>
+    /// The best penalty achievable for this instance, over every job order. Uses
+    /// the shipped <see cref="ExactDispatchOrderOptimizer"/> rather than a second
+    /// copy of the enumeration - it is a different algorithm from the heuristic
+    /// under test, so this is a reference, not a tautology.
+    /// </summary>
+    private static double BruteForceOptimum(SchedulingContext context) =>
+        ExactDispatchOrderOptimizer.Run(context).Result.Evaluation.Penalty;
 
     /// <summary>Deterministic pseudo-random 7-job instances, built from the engine's own PRNG.</summary>
     private static SchedulingContext RandomInstance(int seed, DispatchRule rule = DispatchRule.EarliestDueDate)
