@@ -19,6 +19,16 @@ public sealed record ScheduledOperation(
     long StartSeconds,
     long EndSeconds)
 {
-    /// <summary>Processing time of this placement, in seconds.</summary>
+    /// <summary>
+    /// Change-over time included in this placement, in seconds. The bar on the
+    /// Gantt chart covers setup plus processing; this says how much of it was
+    /// setup.
+    /// </summary>
+    public long SetupSeconds { get; init; }
+
+    /// <summary>Total occupied time, setup included.</summary>
     public long DurationSeconds => EndSeconds - StartSeconds;
+
+    /// <summary>Time spent actually processing, excluding change-over.</summary>
+    public long ProcessingSeconds => DurationSeconds - SetupSeconds;
 }

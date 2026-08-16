@@ -190,6 +190,56 @@ optimiser is turned off (multi-start = 1, local search = 0).
 > and the seed visibly change the schedule. To watch a rule's *raw* effect (before
 > optimisation), set **multi-start = 1** and **local-search = 0**.
 
+## 6a. Calendars and change-over
+
+Both are optional and both default to "no constraint", so an instance that sets
+neither behaves exactly as it did before they existed.
+
+### Availability windows
+
+A work center may declare windows it is available in, plus the length of the
+period they repeat over — `[08:00, 16:00)` with a 24-hour period is a day shift.
+
+Calendars repeat deliberately. A finite list of windows either runs out
+mid-schedule or forces the caller to materialise a year of them; a period makes
+the calendar total without either. Windows live on the same abstract work-time
+axis as everything else, so no time zone or daylight-saving rule enters the core.
+
+An operation must fit **entirely inside one window** — there is no preemption.
+That is checked when the `SchedulingContext` is built, not during dispatch: the
+search evaluates thousands of candidate orders, and an exception thrown from
+inside that loop would abort the whole run rather than reporting an input problem
+the caller can fix.
+
+### Sequence-dependent setup
+
+Each step belongs to a *family*, and a work center may declare what changing
+between families costs. Same family costs nothing; an undeclared transition
+costs nothing; the first operation on a slot costs nothing.
+
+This is what makes the order of work on a machine matter beyond queueing —
+running all the steel parts together and then all the aluminium ones beats
+alternating. With a 2-hour change-over, four alternating jobs cost 6 hours of
+setup against 2 hours when grouped.
+
+It also changes how a slot is chosen. The dispatcher picks the placement that
+**finishes earliest**, not the slot that is free earliest: a slot that frees
+later but already ran this family can finish sooner than one that is free now
+and needs a change-over.
+
+## 6b. Exhaustive search for small instances
+
+`ExactDispatchOrderOptimizer` evaluates all `n!` job orders, up to 9 jobs
+(362 880 dispatches, about a second).
+
+Be precise about what it proves. It is exact **within the dispatch-order model**:
+of every order the dispatcher can be handed, it returns the best. It is *not* a
+general job-shop optimality proof — the dispatcher places each job greedily and
+never back-fills idle gaps, so better schedules may exist outside that model.
+
+It serves two purposes: a real answer for small shops, and the reference the
+heuristic is measured against in `OptimalityTests`.
+
 ## 7. Scoring
 
 `ScheduleEvaluator` rolls the schedule up into KPIs and a single penalty:
@@ -242,8 +292,7 @@ Kept out of scope on purpose, to stay simple and provably correct:
 - **Backward (due-date-anchored) scheduling** — under shared finite capacity this
   needs a second scheduler and can produce infeasible plans; forward scheduling
   with due-date *dispatch* rules captures most of the value.
-- **A working-day calendar** — the engine uses a continuous work-time axis;
-  `MinutesPerWorkingDay` only buckets it into days for the Gantt.
+
 - **Per-work-center machine counts** — the app maps every work center to one slot,
   though the engine already supports `ParallelCapacity > 1` (and the tests use it).
 - **Sequence-dependent setup, lot-splitting, gap back-filling** — all natural next
