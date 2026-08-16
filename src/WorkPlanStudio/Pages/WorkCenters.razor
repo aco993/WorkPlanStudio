@@ -14,7 +14,7 @@
 
 @if (_loading)
 {
-    <div class="loading-row"><span class="spinner"></span></div>
+    <div class="loading-row" role="status"><span class="spinner" aria-hidden="true"></span><span class="sr-only">@L["Common_Loading"]</span></div>
 }
 else if (_centers.Count == 0)
 {
@@ -31,16 +31,17 @@ else
     }
     <div class="card no-pad">
         <table class="data-table hover">
+            <caption class="sr-only">@L["WorkCenters_Title"]</caption>
             <thead>
                 <tr>
-                    <th>@L["Field_Code"]</th>
-                    <th>@L["Field_Name"]</th>
-                    <th>@L["Field_CostCenter"]</th>
-                    <th class="num">@L["Field_HourlyRate"]</th>
-                    <th class="num">@L["Field_Capacity"]</th>
-                    <th>@L["Field_Status"]</th>
-                    <th class="num">@L["Field_Operations"]</th>
-                    <th class="actions-col">@L["Common_Actions"]</th>
+                    <th scope="col">@L["Field_Code"]</th>
+                    <th scope="col">@L["Field_Name"]</th>
+                    <th scope="col">@L["Field_CostCenter"]</th>
+                    <th scope="col" class="num">@L["Field_HourlyRate"]</th>
+                    <th scope="col" class="num">@L["Field_Capacity"]</th>
+                    <th scope="col">@L["Field_Status"]</th>
+                    <th scope="col" class="num">@L["Field_Operations"]</th>
+                    <th scope="col" class="actions-col">@L["Common_Actions"]</th>
                 </tr>
             </thead>
             <tbody>
@@ -60,18 +61,18 @@ else
                         </td>
                         <td class="num muted">@usage</td>
                         <td class="actions-col">
-                            <button class="icon-btn" title="@L["Common_Edit"]" @onclick="() => Edit(wc)">
+                            <button class="icon-btn" aria-label="@L["Common_Edit"]" title="@L["Common_Edit"]" @onclick="() => Edit(wc)">
                                 <svg viewBox="0 0 24 24"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
                             </button>
                             @if (usage > 0)
                             {
-                                <button class="icon-btn" disabled title="@L["WorkCenters_InUse"]">
+                                <button class="icon-btn" disabled aria-label="@L["WorkCenters_InUse"]" title="@L["WorkCenters_InUse"]">
                                     <svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" /></svg>
                                 </button>
                             }
                             else
                             {
-                                <button class="icon-btn danger" title="@L["Common_Delete"]" @onclick="() => AskDelete(wc)">
+                                <button class="icon-btn danger" aria-label="@L["Common_Delete"]" title="@L["Common_Delete"]" @onclick="() => AskDelete(wc)">
                                     <svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" /></svg>
                                 </button>
                             }
@@ -88,10 +89,10 @@ else
     <div class="form-grid">
         <label class="field">
             <span>@L["Field_Code"]</span>
-            <input class="input @(_formErrors.ContainsKey("Code") ? "error" : null)" @bind="_editing.Code" @bind:event="oninput" />
+            <input id="wc-code" aria-invalid="@(_formErrors.ContainsKey("Code") ? "true" : "false")" aria-describedby="@(_formErrors.ContainsKey("Code") ? "wc-code-error" : null)" class="input @(_formErrors.ContainsKey("Code") ? "error" : null)" @bind="_editing.Code" @bind:event="oninput" />
             @if (_formErrors.TryGetValue("Code", out var ce))
             {
-                <span class="field-error">@ce</span>
+                <span id="wc-code-error" class="field-error">@ce</span>
             }
         </label>
         <label class="field">
@@ -100,26 +101,26 @@ else
         </label>
         <label class="field wide">
             <span>@L["Field_Name"]</span>
-            <input class="input @(_formErrors.ContainsKey("Name") ? "error" : null)" @bind="_editing.Name" @bind:event="oninput" />
+            <input id="wc-name" aria-invalid="@(_formErrors.ContainsKey("Name") ? "true" : "false")" aria-describedby="@(_formErrors.ContainsKey("Name") ? "wc-name-error" : null)" class="input @(_formErrors.ContainsKey("Name") ? "error" : null)" @bind="_editing.Name" @bind:event="oninput" />
             @if (_formErrors.TryGetValue("Name", out var ne))
             {
-                <span class="field-error">@ne</span>
+                <span id="wc-name-error" class="field-error">@ne</span>
             }
         </label>
         <label class="field">
             <span>@L["Field_HourlyRate"]</span>
-            <input class="input @(_formErrors.ContainsKey("HourlyRate") ? "error" : null)" type="number" min="0" max="1000000" step="1" @bind="_editing.HourlyRate" @bind:event="oninput" />
+            <input id="wc-rate" aria-invalid="@(_formErrors.ContainsKey("HourlyRate") ? "true" : "false")" aria-describedby="@(_formErrors.ContainsKey("HourlyRate") ? "wc-rate-error" : null)" class="input @(_formErrors.ContainsKey("HourlyRate") ? "error" : null)" type="number" min="0" max="1000000" step="1" @bind="_editing.HourlyRate" @bind:event="oninput" />
             @if (_formErrors.TryGetValue("HourlyRate", out var he))
             {
-                <span class="field-error">@he</span>
+                <span id="wc-rate-error" class="field-error">@he</span>
             }
         </label>
         <label class="field">
             <span>@L["Field_Capacity"]</span>
-            <input class="input @(_formErrors.ContainsKey("ParallelCapacity") ? "error" : null)" type="number" min="1" max="64" @bind="_editing.ParallelCapacity" @bind:event="oninput" />
+            <input id="wc-capacity" aria-invalid="@(_formErrors.ContainsKey("ParallelCapacity") ? "true" : "false")" aria-describedby="@(_formErrors.ContainsKey("ParallelCapacity") ? "wc-capacity-error" : null)" class="input @(_formErrors.ContainsKey("ParallelCapacity") ? "error" : null)" type="number" min="1" max="64" @bind="_editing.ParallelCapacity" @bind:event="oninput" />
             @if (_formErrors.TryGetValue("ParallelCapacity", out var capacityError))
             {
-                <span class="field-error">@capacityError</span>
+                <span id="wc-capacity-error" class="field-error">@capacityError</span>
             }
         </label>
         <label class="field check">
