@@ -1,14 +1,15 @@
 namespace WorkPlanStudio.Scheduling;
 
 /// <summary>
-/// Orchestrates a full scheduling run, mirroring the proven GRASP-style pattern:
+/// Orchestrates a full scheduling run as a GRASP-style multi-start:
 /// <list type="number">
 /// <item>assign each job a target date (<see cref="DueDateAssigner"/>);</item>
 /// <item>build the rule-based priority order (<see cref="PriorityOrdering"/>);</item>
-/// <item>multi-start — evaluate the rule order plus several seeded shuffles, keep the best;</item>
-/// <item>local-search polish (<see cref="LocalSearch"/>), which can only improve on the best start.</item>
+/// <item>run a <see cref="LocalSearch"/> descent from the rule order and from each
+/// seeded shuffle of it, keeping the best result.</item>
 /// </list>
-/// The result is therefore never worse than the pure rule schedule, and is fully
+/// Restart 0 is always the rule order and the descent never regresses, so the
+/// result can never be worse than the pure rule schedule, and it is fully
 /// reproducible for a given seed.
 /// </summary>
 public sealed class SchedulingEngine
@@ -19,7 +20,7 @@ public sealed class SchedulingEngine
     public SchedulingEngine(IScheduler? scheduler = null) =>
         _scheduler = scheduler ?? new DispatchScheduler();
 
-    /// <summary>Runs the full pipeline (due dates → multi-start → local search) and returns the best schedule.</summary>
+    /// <summary>Runs the full pipeline (due dates → multi-start descents) and returns the best schedule.</summary>
     public SchedulingResult Run(SchedulingContext context) => RunCancellable(context, CancellationToken.None);
 
     /// <summary>Runs the full pipeline and observes cooperative cancellation.</summary>
@@ -36,38 +37,43 @@ public sealed class SchedulingEngine
             return new SchedulingResult(emptySchedule, ScheduleEvaluator.Evaluate(emptySchedule, context), dueByJob, 0);
         }
 
-        // Run 0: the pure rule order — always a candidate, so the chosen schedule
-        // can never be worse than what the dispatch rule alone produces.
         var baseOrder = PriorityOrdering.For(context, dueByJob);
-        int[] bestOrder = baseOrder;
-        var bestSchedule = _scheduler.RunCancellable(context, baseOrder, dueByJob, cancellationToken);
-        var bestEvaluation = ScheduleEvaluator.Evaluate(bestSchedule, context);
+        int restarts = Math.Max(1, context.Parameters.MultiStartRuns);
+        int budget = context.Parameters.LocalSearchMaxSteps;
 
-        // Runs 1..N-1: seeded shuffles for diversity. Strict-improvement keeps the
-        // tie with run 0, so equal-quality shuffles never displace the rule order.
-        int runs = Math.Max(1, context.Parameters.MultiStartRuns);
-        for (int i = 1; i < runs; i++)
+        Schedule? bestSchedule = null;
+        ScheduleEvaluation? bestEvaluation = null;
+        int totalSteps = 0;
+
+        // A descent from every restart, not just from the best raw shuffle: the
+        // starting point of a descent matters much less than how far it can walk,
+        // and polishing only the best shuffle wastes the other restarts entirely.
+        for (int restart = 0; restart < restarts; restart++)
         {
             cancellationToken.ThrowIfCancellationRequested();
+
+            // Restart 0 is the pure rule order, so the chosen schedule can never be
+            // worse than what the dispatch rule alone produces.
             var order = (int[])baseOrder.Clone();
-            DeterministicRandom.ForRun(context.Parameters.Seed, i).Shuffle(order);
+            if (restart > 0)
+                DeterministicRandom.ForRun(context.Parameters.Seed, restart).Shuffle(order);
 
             var schedule = _scheduler.RunCancellable(context, order, dueByJob, cancellationToken);
             var evaluation = ScheduleEvaluator.Evaluate(schedule, context);
-            if (evaluation.Penalty < bestEvaluation.Penalty)
+
+            var polished = LocalSearch.ImproveCancellable(
+                _scheduler, context, dueByJob, order, schedule, evaluation, budget, cancellationToken);
+            totalSteps += polished.StepsUsed;
+
+            // Strict improvement, so restart 0 keeps ties and the result does not
+            // depend on how many restarts were configured.
+            if (bestEvaluation is null || polished.Evaluation.Penalty < bestEvaluation.Penalty)
             {
-                bestOrder = order;
-                bestSchedule = schedule;
-                bestEvaluation = evaluation;
+                bestSchedule = polished.Schedule;
+                bestEvaluation = polished.Evaluation;
             }
         }
 
-        var polished = LocalSearch.ImproveCancellable(
-            _scheduler, context, dueByJob,
-            bestOrder, bestSchedule, bestEvaluation,
-            context.Parameters.LocalSearchMaxSteps,
-            cancellationToken);
-
-        return new SchedulingResult(polished.Schedule, polished.Evaluation, dueByJob, polished.StepsUsed);
+        return new SchedulingResult(bestSchedule!, bestEvaluation!, dueByJob, totalSteps);
     }
 }
