@@ -289,4 +289,5 @@
   <data name="Sched_Ai_FailureTimeout" xml:space="preserve"><value>request timed out</value></data>
   <data name="Sched_Ai_FailureResponse" xml:space="preserve"><value>invalid provider response</value></data>
   <data name="Sched_Ai_FailureUnavailable" xml:space="preserve"><value>provider unavailable</value></data>
+  <data name="Sched_RuleEquivalent" xml:space="preserve"><value>With these targets this is the same order as: {0}</value></data>
 </root>
