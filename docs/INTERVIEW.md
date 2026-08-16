@@ -292,9 +292,10 @@ confidence; being caught hiding one reads as the opposite.
 1. **Optimality is only verified to 8 jobs.** Past that, the engine is a descent
    with no known bound. A real answer needs an LP/CP relaxation for a lower
    bound.
-2. **No working-day calendar.** The engine schedules on a continuous work-time
-   axis; `MinutesPerWorkingDay` only buckets it into days for the Gantt. Real
-   shift patterns, holidays and non-work windows are absent.
+2. **The calendar is periodic and uniform.** Availability windows repeat over a
+   fixed period, so "08:00–16:00 every day" works but "closed on public holidays"
+   and "Friday is a half day" do not. Exceptions to the pattern would need a real
+   calendar model.
 3. **No gap back-filling.** A job's operations are placed in sequence without
    inserting later work into earlier idle windows. Fixing it would break the
    "the order determines the schedule" property the search depends on — that's

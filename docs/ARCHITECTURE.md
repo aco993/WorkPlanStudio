@@ -23,6 +23,8 @@ flowchart TD
 - `ScheduleMapper.ToSeconds` is the only decimal-minute to integer-second conversion. It uses checked arithmetic and midpoint-to-even rounding.
 - A released routing is mapped completely or rejected completely. `SchedulePreparationIssue` carries plan, optional operation and stable reason code; UI text is localized without parsing exceptions.
 - Work-center parallel capacity is validated as 1–64 and passed to the finite-capacity engine.
+- Availability calendars repeat over a declared period, so placement is total and the dispatcher has no failure path. Operations are not preemptable, so a step must fit inside one window - checked at context construction, never mid-search. See [ADR 0010](adr/0010-periodic-calendars-and-setup-families.md).
+- Sequence-dependent change-over is keyed by operation family; the transition matrix is flattened into a lookup once per context because it is queried on every slot of every step of every candidate order.
 - Scheduling budgets are deterministic count limits, not wall-clock cutoffs. Cancellation is cooperative and does not alter a completed result.
 
 ## Browser persistence lifecycle
@@ -54,8 +56,13 @@ Measured against brute-force enumeration of all `n!` orders over 20 random
 of 20 instances are now solved to optimality. `OptimalityTests` asserts this, so
 it is a tested property rather than a claim. See [ADR 0008](adr/0008-insertion-neighbourhood.md).
 
-It still does not *prove* global optimality — it is a descent, so it finds a
-local optimum that happens to be global on instances of this size. For larger or
+`ExactDispatchOrderOptimizer` enumerates all `n!` orders for instances up to nine
+jobs. It is exact *within the dispatch-order model* — the best of every order the
+dispatcher can be handed — and deliberately not described as a general job-shop
+optimality proof, since the dispatcher never back-fills idle gaps.
+
+The heuristic still does not *prove* global optimality — it is a descent, so it
+finds a local optimum that happens to be global on instances of this size. For larger or
 constraint-rich instances, CP-SAT/MILP or a background service is a roadmap
 choice, not a hidden capability.
 

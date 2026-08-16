@@ -16,3 +16,4 @@ the decision and its consequences, in the spirit of
 | [0007](0007-defer-production-order.md) | Defer ProductionOrder and constrain scheduling scope | Accepted |
 | [0008](0008-insertion-neighbourhood.md) | Search the insertion neighbourhood, not adjacent swaps | Accepted |
 | [0009](0009-report-rule-equivalences.md) | Report dispatch-rule equivalences instead of hiding them | Accepted |
+| [0010](0010-periodic-calendars-and-setup-families.md) | Model calendars as a repeating period, and setup by family | Accepted |
