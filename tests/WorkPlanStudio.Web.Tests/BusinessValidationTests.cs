@@ -110,19 +110,33 @@ public class BusinessValidationTests
             ParallelCapacity = 0
         };
 
-        var validOnly = ScheduleMapper.BuildInput(
-            [ValidPlan()],
+        var validOnly = ScheduleMapper.BuildInputFromOrders(
+            [ReleasedOrder(ValidPlan())],
             [valid, invalid],
             new SchedulingParameters { MultiStartRuns = 1, LocalSearchMaxSteps = 0 });
         Assert.NotNull(validOnly.Input);
 
         var plan = ValidPlan();
         plan.Operations[0].WorkCenterId = 2;
-        var rejected = ScheduleMapper.BuildInput(
-            [plan],
+        var rejected = ScheduleMapper.BuildInputFromOrders(
+            [ReleasedOrder(plan)],
             [valid, invalid],
             new SchedulingParameters { MultiStartRuns = 1, LocalSearchMaxSteps = 0 });
         Assert.Null(rejected.Input);
         Assert.Contains(rejected.Errors, error => error.Code == SchedulePreparationErrorCode.InvalidWorkCenterCapacity);
     }
+
+    /// <summary>A released order over a plan, which is what the scheduler consumes.</summary>
+    private static ProductionOrder ReleasedOrder(WorkPlan plan) => new()
+    {
+        Id = plan.Id == 0 ? 1 : plan.Id,
+        OrderNumber = "PO-TEST",
+        WorkPlanId = plan.Id,
+        Quantity = Math.Max(1, plan.LotSize),
+        Priority = 1,
+        ReleaseUtc = new DateTime(2026, 6, 15, 6, 0, 0, DateTimeKind.Utc),
+        DueUtc = new DateTime(2026, 6, 25, 6, 0, 0, DateTimeKind.Utc),
+        Status = ProductionOrderStatus.Released,
+        RoutingSnapshotJson = RoutingSnapshot.Capture(plan).Serialize()
+    };
 }

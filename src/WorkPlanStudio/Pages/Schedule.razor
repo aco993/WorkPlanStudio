@@ -46,7 +46,7 @@
                 <label class="field">
                     <span>@L["Sched_DueRule"]</span>
                     <select class="input" @bind="_form.DueDateRule">
-                        @foreach (var r in Enum.GetValues<DueDateRule>().Where(rule => rule != DueDateRule.Explicit))
+                        @foreach (var r in Enum.GetValues<DueDateRule>())
                         {
                             <option value="@r">@DueLabel(r)</option>
                         }
@@ -115,7 +115,7 @@
                     @foreach (var issue in _result.PreparationErrors)
                     {
                         <li>
-                            <a href="work-plans/@issue.PlanId">@issue.PlanReference</a>
+                            <a href="production-orders">@issue.OrderReference</a>
                             @if (issue.OperationNumber is not null)
                             {
                                 <span> · @L["Field_OperationNo"] @issue.OperationNumber</span>
@@ -513,7 +513,7 @@
     private sealed class Form
     {
         public DispatchRule DispatchRule { get; set; } = DispatchRule.EarliestDueDate;
-        public DueDateRule DueDateRule { get; set; } = DueDateRule.TotalWorkContent;
+        public DueDateRule DueDateRule { get; set; } = DueDateRule.Explicit;
         public double TwkFlowFactor { get; set; } = 2.0;
         public int NopMinutesPerOp { get; set; } = 60;
         public int SlackMinutes { get; set; } = 120;

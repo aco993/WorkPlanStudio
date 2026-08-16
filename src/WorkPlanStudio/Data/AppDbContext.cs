@@ -14,6 +14,7 @@ public class AppDbContext : DbContext
     public DbSet<WorkPlan> WorkPlans => Set<WorkPlan>();
     public DbSet<Operation> Operations => Set<Operation>();
     public DbSet<WorkCenter> WorkCenters => Set<WorkCenter>();
+    public DbSet<ProductionOrder> ProductionOrders => Set<ProductionOrder>();
 
     protected override void OnModelCreating(ModelBuilder model)
     {
@@ -79,5 +80,23 @@ public class AppDbContext : DbContext
              .HasForeignKey(x => x.WorkCenterId)
              .OnDelete(DeleteBehavior.Restrict);
         });
+        model.Entity<ProductionOrder>(e =>
+        {
+            e.Property(x => x.OrderNumber).HasMaxLength(30).IsRequired();
+            e.Property(x => x.RoutingRevision).HasMaxLength(10);
+            e.HasIndex(x => x.OrderNumber).IsUnique();
+
+            // Restrict, not cascade: deleting a work plan must not silently remove
+            // orders that were already released from it. Their snapshot is the
+            // record of what the shop was told to build.
+            e.HasOne(x => x.WorkPlan)
+             .WithMany()
+             .HasForeignKey(x => x.WorkPlanId)
+             .OnDelete(DeleteBehavior.Restrict);
+
+            e.ToTable(t => t.HasCheckConstraint("CK_ProductionOrder_Quantity", "Quantity >= 1"));
+            e.ToTable(t => t.HasCheckConstraint("CK_ProductionOrder_Priority", "Priority BETWEEN 1 AND 5"));
+        });
+
     }
 }

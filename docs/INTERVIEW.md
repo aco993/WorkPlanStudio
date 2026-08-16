@@ -215,6 +215,28 @@ This costs search power: only schedules reachable by reordering jobs are
 explored. It buys a guarantee that's otherwise hard to get. That trade is worth
 naming out loud, because it's the kind of thing an interviewer will probe.
 
+### 3.4a Orders own their routing
+
+Ask "what happens if someone edits the routing after the job is on the floor?"
+of most CRUD scheduling demos and the honest answer is "it silently changes".
+
+A **work plan** here is master data. A **production order** is a quantity of a
+part by a date, and releasing it captures the routing as an immutable snapshot.
+The scheduler reads the snapshot, never the live plan.
+
+Demonstrable in about fifteen seconds: note the makespan, open a released work
+plan, raise an operation's run time from 0.8 to 66 minutes, save, regenerate —
+the schedule is unchanged at 52.2 h.
+
+It also fixed something that had been quietly broken: `DueDateRule.Explicit`
+existed in the engine but was **hidden from the UI**, because nothing in the app
+could supply a customer due date. Orders supply one, so it is now the default.
+
+> **If asked "why a serialized blob instead of copied rows?"**
+> *"It is never queried, only replayed. Copied rows would sit there looking
+> editable, and the whole point is that they are not. The blob carries a format
+> version so an old snapshot is recognised rather than mis-read."*
+
 ### 3.5 EF Core + SQLite in the browser
 
 The headline technical curiosity. The native SQLite engine is relinked into the
@@ -360,7 +382,7 @@ penalty. The result is mapped back into Gantt rows and KPI cards.
 **"What's your test strategy?"**
 Four layers, weighted by where the risk is. 135 engine tests on a plain runner —
 unit, property-based invariants via CsCheck, brute-force optimality, and
-adversarial cases chosen to break a plausible-but-wrong implementation. 63 web
+adversarial cases chosen to break a plausible-but-wrong implementation. 65 web
 tests including a real SQLite database on a normal host, EF→domain mapping,
 accessibility semantics and localization parity. bUnit component tests for the page with a faked service.
 Playwright end-to-end through a real browser. The pyramid is deliberate: the
@@ -405,7 +427,7 @@ approached it, so the knob was decorative.
 | --- | --- |
 | Engine library | ~1 340 lines |
 | Blazor app | ~3 950 lines |
-| Tests | 210 tests (135 engine / 63 web / 12 E2E) |
+| Tests | 212 tests (135 engine / 65 web / 12 E2E) |
 | Engine coverage | 96.4 % line, 89.1 % branch |
 | Search gap to optimum | 0.2 % mean, 19/20 solved exactly |
 | Schedule runtime | ~10 ms at 8 jobs, ~533 ms at 100 |

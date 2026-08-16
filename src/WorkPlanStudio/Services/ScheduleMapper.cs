@@ -29,18 +29,34 @@ public static class ScheduleMapper
             MidpointRounding.ToEven));
     }
 
-    /// <summary>The mapped scheduling input plus a lookup back to the originating plans.</summary>
-    public sealed record Input(SchedulingContext Context, IReadOnlyDictionary<int, WorkPlan> PlanById);
+    /// <summary>The mapped scheduling input plus a lookup back to what produced each job.</summary>
+    public sealed record Input(SchedulingContext Context, IReadOnlyDictionary<int, JobOrigin> OriginById);
+
+    /// <summary>What a scheduled job came from, for labelling the Gantt and the table.</summary>
+    public sealed record JobOrigin(string Reference, string PartName);
 
     /// <summary>
-    /// Maps released plans + active work centers into a scheduling context. A plan
-    /// is either mapped completely or rejected completely with structured errors.
+    /// Maps released production orders into a scheduling context, reading each
+    /// order's frozen routing snapshot rather than the live work plan.
+    /// <para>
+    /// This is the difference that matters. Editing a work plan after an order is
+    /// released changes nothing about that order's schedule, because the routing
+    /// it will actually be built to was captured at release. Scheduling master
+    /// data directly cannot make that promise, which is why this replaced the
+    /// plan-based mapping rather than sitting beside it.
+    /// </para>
+    /// <para>
+    /// The horizon is second 0 at the earliest release across the orders, so
+    /// release and due dates become offsets on the engine's abstract time axis
+    /// without dragging wall-clock or time zones into the core.
+    /// </para>
     /// </summary>
-    public static SchedulePreparationResult BuildInput(
-        IEnumerable<WorkPlan> releasedPlans,
+    public static SchedulePreparationResult BuildInputFromOrders(
+        IEnumerable<ProductionOrder> releasedOrders,
         IEnumerable<WorkCenter> centers,
         SchedulingParameters parameters)
     {
+        var orderList = releasedOrders as IReadOnlyList<ProductionOrder> ?? releasedOrders.ToList();
         var centerList = centers as IReadOnlyList<WorkCenter> ?? centers.ToList();
         var centerById = centerList.ToDictionary(center => center.Id);
 
@@ -50,105 +66,103 @@ public static class ScheduleMapper
             .ToList();
 
         var jobs = new List<ProductionJob>();
-        var planById = new Dictionary<int, WorkPlan>();
+        var originById = new Dictionary<int, JobOrigin>();
         var errors = new List<SchedulePreparationIssue>();
-        foreach (var plan in releasedPlans)
+
+        // Snapshots are decoded first: the horizon needs the earliest release
+        // among the orders that actually made it through.
+        var decoded = new List<(ProductionOrder Order, RoutingSnapshot Snapshot)>();
+        foreach (var order in orderList)
         {
-            var planErrors = ValidateForScheduling(plan, centerById);
-            if (planErrors.Count > 0)
+            var snapshot = RoutingSnapshot.Deserialize(order.RoutingSnapshotJson);
+            if (snapshot is null || snapshot.Operations.Count == 0)
             {
-                errors.AddRange(planErrors);
+                errors.Add(new(order.Id, order.OrderNumber, null, SchedulePreparationErrorCode.NoOperations, null));
                 continue;
             }
 
-            var ordered = plan.Operations.OrderBy(o => o.OperationNumber).ToList();
+            var orderErrors = ValidateSnapshot(order, snapshot, centerById);
+            if (orderErrors.Count > 0)
+            {
+                errors.AddRange(orderErrors);
+                continue;
+            }
 
-            var steps = ordered
-                .Select((o, i) => new JobStep(i + 1, o.WorkCenterId, ToSeconds(o.SetupTimeMinutes, o.TimePerPieceMinutes, plan.LotSize)))
+            decoded.Add((order, snapshot));
+        }
+
+        long horizon = decoded.Count == 0 ? 0 : decoded.Min(d => d.Order.ReleaseUtc).Ticks;
+
+        foreach (var (order, snapshot) in decoded)
+        {
+            var steps = snapshot.Operations
+                .OrderBy(o => o.OperationNumber)
+                .Select((o, i) => new JobStep(
+                    i + 1,
+                    o.WorkCenterId,
+                    ToSeconds(o.SetupTimeMinutes, o.TimePerPieceMinutes, order.Quantity)))
                 .ToList();
 
             jobs.Add(new ProductionJob
             {
-                Id = plan.Id,
-                Reference = plan.PlanNumber,
-                ReleaseSeconds = 0,
-                Weight = Math.Max(1, plan.LotSize),
+                Id = order.Id,
+                Reference = order.OrderNumber,
+                ReleaseSeconds = ToOffsetSeconds(order.ReleaseUtc, horizon),
+                ExplicitDueSeconds = ToOffsetSeconds(order.DueUtc, horizon),
+                Weight = Math.Clamp(order.Priority, 1, 5),
                 Steps = steps
             });
-            planById[plan.Id] = plan;
+            originById[order.Id] = new JobOrigin(order.OrderNumber, snapshot.PartName);
         }
 
         var input = jobs.Count == 0
             ? null
-            : new Input(new SchedulingContext(jobs, machines, parameters), planById);
+            : new Input(new SchedulingContext(jobs, machines, parameters), originById);
 
         return new SchedulePreparationResult(input, errors);
     }
 
-    private static List<SchedulePreparationIssue> ValidateForScheduling(
-        WorkPlan plan,
+    private static long ToOffsetSeconds(DateTime moment, long horizonTicks) =>
+        Math.Max(0, (moment.Ticks - horizonTicks) / TimeSpan.TicksPerSecond);
+
+    private static List<SchedulePreparationIssue> ValidateSnapshot(
+        ProductionOrder order,
+        RoutingSnapshot snapshot,
         IReadOnlyDictionary<int, WorkCenter> centerById)
     {
         var errors = new List<SchedulePreparationIssue>();
         void Add(int? operationNumber, SchedulePreparationErrorCode code, string? center = null) =>
-            errors.Add(new(plan.Id, plan.PlanNumber, operationNumber, code, center));
+            errors.Add(new(order.Id, order.OrderNumber, operationNumber, code, center));
 
-        if (string.IsNullOrWhiteSpace(plan.PlanNumber) || string.IsNullOrWhiteSpace(plan.PartName))
-            Add(null, SchedulePreparationErrorCode.InvalidPlan);
-        if (plan.LotSize <= 0)
+        if (order.Quantity <= 0)
             Add(null, SchedulePreparationErrorCode.InvalidLotSize);
-        if (plan.Operations.Count == 0)
-            Add(null, SchedulePreparationErrorCode.NoOperations);
 
-        var duplicateNumbers = plan.Operations
-            .GroupBy(operation => operation.OperationNumber)
-            .Where(group => group.Count() > 1)
-            .Select(group => group.Key)
-            .ToHashSet();
-
-        foreach (var operation in plan.Operations)
+        foreach (var operation in snapshot.Operations)
         {
             if (operation.OperationNumber <= 0)
                 Add(operation.OperationNumber, SchedulePreparationErrorCode.InvalidOperationNumber);
-            if (duplicateNumbers.Contains(operation.OperationNumber))
-                Add(operation.OperationNumber, SchedulePreparationErrorCode.DuplicateOperationNumber);
             if (operation.SetupTimeMinutes < 0 || operation.TimePerPieceMinutes < 0)
                 Add(operation.OperationNumber, SchedulePreparationErrorCode.InvalidOperationDuration);
 
+            // The snapshot froze the routing, not the shop floor: a work center it
+            // names can since have been deactivated or removed, and that is a real
+            // problem the planner has to be told about.
             if (!centerById.TryGetValue(operation.WorkCenterId, out var center))
-            {
                 Add(operation.OperationNumber, SchedulePreparationErrorCode.MissingWorkCenter, operation.WorkCenterId.ToString());
-            }
             else if (!center.IsActive)
-            {
                 Add(operation.OperationNumber, SchedulePreparationErrorCode.InactiveWorkCenter, center.Code);
-            }
             else if (center.ParallelCapacity is < 1 or > Validation.WorkCenterValidator.MaxCapacity)
-            {
                 Add(operation.OperationNumber, SchedulePreparationErrorCode.InvalidWorkCenterCapacity, center.Code);
-            }
-
-            if (plan.LotSize > 0 && operation.SetupTimeMinutes >= 0 && operation.TimePerPieceMinutes >= 0)
-            {
-                try
-                {
-                    _ = ToSeconds(operation.SetupTimeMinutes, operation.TimePerPieceMinutes, plan.LotSize);
-                }
-                catch (OverflowException)
-                {
-                    Add(operation.OperationNumber, SchedulePreparationErrorCode.InvalidOperationDuration);
-                }
-            }
         }
 
-        return errors.Distinct().ToList();
+        return errors;
     }
 
     /// <summary>Projects an engine result into the page's Gantt rows, job table and KPI cards.</summary>
     public static ScheduleResult BuildView(
         SchedulingResult result,
         SchedulingContext context,
-        IReadOnlyDictionary<int, WorkPlan> planById,
+        IReadOnlyDictionary<int, JobOrigin> originById,
         int minutesPerWorkingDay)
     {
         // Stable colour per job (by plan number), shared between the Gantt and the table.
@@ -164,7 +178,7 @@ public static class ScheduleMapper
         {
             var bars = result.Schedule.OnWorkCenter(machine.WorkCenterId)
                 .Select(o => new GanttBar(
-                    o.JobId, planById[o.JobId].PlanNumber, colorByJob[o.JobId],
+                    o.JobId, originById[o.JobId].Reference, colorByJob[o.JobId],
                     o.StepNumber, o.StartSeconds, o.EndSeconds, lateJobs.Contains(o.JobId)))
                 .ToList();
             if (bars.Count > 0)
@@ -174,7 +188,7 @@ public static class ScheduleMapper
         var jobRows = result.Schedule.Jobs
             .OrderBy(j => j.Reference)
             .Select(j => new JobRow(
-                j.JobId, j.Reference, planById[j.JobId].PartName, colorByJob[j.JobId],
+                j.JobId, j.Reference, originById[j.JobId].PartName, colorByJob[j.JobId],
                 j.DueSeconds, j.CompletionSeconds, j.LatenessSeconds, j.IsLate))
             .ToList();
 

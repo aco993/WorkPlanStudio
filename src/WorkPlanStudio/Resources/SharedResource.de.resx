@@ -291,4 +291,31 @@
   <data name="Sched_Ai_FailureUnavailable" xml:space="preserve"><value>Anbieter nicht verfügbar</value></data>
   <data name="Sched_RuleEquivalent" xml:space="preserve"><value>Mit diesen Zielterminen ergibt sich dieselbe Reihenfolge wie: {0}</value></data>
   <data name="Common_Loading" xml:space="preserve"><value>Wird geladen…</value></data>
+  <data name="Orders_Title" xml:space="preserve"><value>Fertigungsaufträge</value></data>
+  <data name="Orders_Subtitle" xml:space="preserve"><value>Was tatsächlich eingeplant wird. Beim Freigeben wird der Arbeitsplan eingefroren.</value></data>
+  <data name="Orders_New" xml:space="preserve"><value>Neuer Auftrag</value></data>
+  <data name="Orders_NewTitle" xml:space="preserve"><value>Neuer Fertigungsauftrag</value></data>
+  <data name="Orders_Empty" xml:space="preserve"><value>Noch keine Fertigungsaufträge. Legen Sie einen aus einem freigegebenen Arbeitsplan an.</value></data>
+  <data name="Orders_Number" xml:space="preserve"><value>Auftragsnr.</value></data>
+  <data name="Orders_Routing" xml:space="preserve"><value>Arbeitsplan</value></data>
+  <data name="Orders_Quantity" xml:space="preserve"><value>Menge</value></data>
+  <data name="Orders_Release" xml:space="preserve"><value>Freigabe</value></data>
+  <data name="Orders_Due" xml:space="preserve"><value>Termin</value></data>
+  <data name="Orders_Cancel" xml:space="preserve"><value>Auftrag stornieren</value></data>
+  <data name="Orders_Frozen" xml:space="preserve"><value>eingefroren</value></data>
+  <data name="Orders_SnapshotTooltip" xml:space="preserve"><value>Dieser Auftrag enthält eine Kopie des Arbeitsplans zum Zeitpunkt der Freigabe.</value></data>
+  <data name="Orders_StatusDraft" xml:space="preserve"><value>Entwurf</value></data>
+  <data name="Orders_StatusReleased" xml:space="preserve"><value>Freigegeben</value></data>
+  <data name="Orders_StatusCancelled" xml:space="preserve"><value>Storniert</value></data>
+  <data name="Orders_ImmutabilityNote" xml:space="preserve"><value>Änderungen am Arbeitsplan wirken sich nicht auf bereits freigegebene Aufträge aus — jeder trägt den Plan seiner Freigabe.</value></data>
+  <data name="Nav_Orders" xml:space="preserve"><value>Fertigungsaufträge</value></data>
+  <data name="Val_QuantityRange" xml:space="preserve"><value>Muss zwischen {0} und {1} liegen.</value></data>
+  <data name="Val_PriorityRange" xml:space="preserve"><value>Muss zwischen {0} und {1} liegen.</value></data>
+  <data name="Val_DueBeforeRelease" xml:space="preserve"><value>Der Termin muss nach der Freigabe liegen.</value></data>
+  <data name="Val_OrderNumberTaken" xml:space="preserve"><value>Diese Auftragsnummer ist bereits vergeben.</value></data>
+  <data name="Val_OrderNotDraft" xml:space="preserve"><value>Nur ein Entwurf kann geändert werden.</value></data>
+  <data name="Val_WorkPlanMissing" xml:space="preserve"><value>Bitte einen Arbeitsplan wählen.</value></data>
+  <data name="Val_OrderPlanHasNoOperations" xml:space="preserve"><value>Dieser Arbeitsplan hat keine Arbeitsgänge zum Einfrieren.</value></data>
+  <data name="Error_ActionFailed" xml:space="preserve"><value>Die Aktion konnte nicht ausgeführt werden. Bitte erneut versuchen.</value></data>
+  <data name="Field_Priority" xml:space="preserve"><value>Priorität</value></data>
 </root>
