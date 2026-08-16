@@ -1,0 +1,100 @@
+name: Quality
+
+# Style and documentation gates. The repo ships a detailed .editorconfig and a
+# lot of cross-referencing Markdown; neither was enforced, so both could drift
+# silently. Kept out of ci.yml so a formatting failure is distinguishable at a
+# glance from a test failure.
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  quality:
+    name: Formatting + documentation integrity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', 'Directory.Packages.props') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      - name: Verify formatting
+        run: dotnet format WorkPlanStudio.slnx --verify-no-changes --severity warn
+
+      # Every relative Markdown link must resolve. The docs cross-reference ADRs,
+      # workflows and source files heavily, and a rename silently breaks them -
+      # a dead link in the README is the first thing a reader hits.
+      - name: Verify documentation links
+        run: |
+          python3 - <<'PY'
+          import os, re, sys, urllib.parse
+
+          link = re.compile(r'\[[^\]]*\]\(([^)]+)\)')
+          broken = []
+
+          for root, dirs, files in os.walk('.'):
+              dirs[:] = [d for d in dirs if d not in {'.git', 'bin', 'obj', 'node_modules'}]
+              for name in files:
+                  if not name.endswith('.md'):
+                      continue
+                  path = os.path.join(root, name)
+                  with open(path, encoding='utf-8') as handle:
+                      text = handle.read()
+
+                  for target in link.findall(text):
+                      target = target.split(' ')[0].strip()
+                      if not target or target.startswith(('http://', 'https://', 'mailto:', '#')):
+                          continue
+                      target = urllib.parse.unquote(target.split('#')[0])
+                      if not target:
+                          continue
+                      resolved = os.path.normpath(os.path.join(root, target))
+                      if not os.path.exists(resolved):
+                          broken.append(f'{path} -> {target}')
+
+          if broken:
+              print('Broken relative links:')
+              for entry in sorted(broken):
+                  print('  ' + entry)
+              sys.exit(1)
+
+          print('All relative Markdown links resolve.')
+          PY
+
+      # The two resource files drift silently: a missing key does not throw, it
+      # renders the key name. The parity assertions live in LocalizationTests,
+      # which the CI workflow runs - this is only a fast pre-check that both
+      # files are well-formed XML before the slower suite starts.
+      - name: Verify resource files parse
+        run: |
+          python3 - <<'PY'
+          import sys, xml.etree.ElementTree as ET
+
+          for path in ('src/WorkPlanStudio/Resources/SharedResource.resx',
+                       'src/WorkPlanStudio/Resources/SharedResource.de.resx'):
+              try:
+                  count = len(ET.parse(path).getroot().findall('data'))
+              except ET.ParseError as error:
+                  print(f'{path}: {error}')
+                  sys.exit(1)
+              print(f'{path}: {count} entries')
+          PY
