@@ -14,7 +14,7 @@ browser and no `wasm-tools` workload.
 ```mermaid
 graph TD
     E2E["🌐 <b>E2E</b> — Playwright · 11 tests<br/>real Chromium, persistence reload/reset, keyboard, mobile and localization"]
-    WEB["🧩 <b>Data + Boundary + Component</b> — xUnit/bUnit · 65 tests<br/>real SQLite, validation, mapper, localization, pages &amp; assistant"]
+    WEB["🧩 <b>Data + Boundary + Component</b> — xUnit/bUnit · 67 tests<br/>real SQLite, validation, mapper, localization, pages &amp; assistant"]
     UNIT["⚙️ <b>Unit + Property + Optimality</b> — xUnit/CsCheck · 135 tests<br/>the engine, limits, invariants, brute-force optimality &amp; design rules"]
 
     E2E --> WEB --> UNIT
@@ -29,9 +29,9 @@ graph TD
 
 | Layer | Project | Tests | Guards | Needs WASM? | Runtime |
 | --- | --- | --: | --- | :---: | --- |
-| Engine + property + architecture | `tests/WorkPlanStudio.Scheduling.Tests` | 90 | determinism, feasibility, rules, scoring, bounded search, overflow, cancellation, explanations and a dependency-free core | no | ~3 s |
-| Data + mapper + component + assistant | `tests/WorkPlanStudio.Web.Tests` | 54 | real SQLite constraints/CRUD/reload/recovery failures, all-or-nothing mapper, localized component states, modal semantics and stubbed AI transport | yes¹ | ~12 s |
-| End-to-end | `tests/WorkPlanStudio.E2E` | 10 | real Chromium: schedule changes, determinism, language + `html lang`, invalid input, save→hard reload, confirmed reset, modal Escape/focus return and mobile drawer | browser² | ~2 min |
+| Engine + property + architecture | `tests/WorkPlanStudio.Scheduling.Tests` | 135 | determinism, feasibility, rules, scoring, bounded search, overflow, cancellation, explanations and a dependency-free core | no | ~9 s |
+| Data + mapper + component + assistant | `tests/WorkPlanStudio.Web.Tests` | 67 | real SQLite constraints/CRUD/reload/recovery failures, all-or-nothing mapper, localized component states, modal semantics and stubbed AI transport | yes¹ | ~14 s |
+| End-to-end | `tests/WorkPlanStudio.E2E` | 11 | real Chromium: schedule changes, determinism, language + `html lang`, invalid input, save→hard reload, confirmed reset, modal Escape/focus return and mobile drawer | browser² | ~1.5 min |
 
 ¹ These reference the Blazor app assembly, so building them compiles the app (hence `wasm-tools`). The tests themselves run on a normal host.
 ² Needs a Chromium download (`playwright install`) and the app running; no `wasm-tools` if you serve a pre-published build.

@@ -2,6 +2,7 @@ using System.Globalization;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Microsoft.JSInterop;
 using WorkPlanStudio;
 using WorkPlanStudio.Data;
@@ -18,6 +19,13 @@ builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.
 // as the .resx files (WorkPlanStudio.Resources), so the resource base name
 // matches the embedded resource name exactly.
 builder.Services.AddLocalization();
+
+// EF logs every command it executes at Information, and the browser console is
+// the only sink here - a published build was printing all of its DDL and every
+// query on load. Keep that for local debugging, drop it in a release build.
+#if !DEBUG
+builder.Logging.SetMinimumLevel(LogLevel.Warning);
+#endif
 
 // EF Core + SQLite, running entirely in the browser.
 var databaseOptions = new BrowserDatabaseOptions("/data/workplan.db", SchemaVersion: 4);

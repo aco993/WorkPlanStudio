@@ -45,6 +45,27 @@ internal sealed class PassThroughLocalizer<T> : IStringLocalizer<T>
     public IEnumerable<LocalizedString> GetAllStrings(bool includeParentCultures) => [];
 }
 
+/// <summary>
+/// Locates the repository from the test binary, for the handful of tests that
+/// assert on sources rather than on a render.
+/// </summary>
+internal static class RepoFiles
+{
+    public static string Root { get; } = Find();
+
+    public static string AppWwwroot => Path.Join(Root, "src", "WorkPlanStudio", "wwwroot");
+
+    private static string Find()
+    {
+        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+        while (directory is not null && !Directory.Exists(Path.Join(directory.FullName, "src")))
+            directory = directory.Parent;
+
+        return directory?.FullName
+            ?? throw new InvalidOperationException("repository root not found above " + AppContext.BaseDirectory);
+    }
+}
+
 /// <summary>Hand-built <see cref="ScheduleResult"/>s for component tests.</summary>
 internal static class Sample
 {
