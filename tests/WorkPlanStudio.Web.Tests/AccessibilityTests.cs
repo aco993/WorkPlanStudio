@@ -120,7 +120,7 @@ public sealed class AccessibilityTests : BunitContext
     [Fact]
     public void Every_busy_indicator_is_exposed_as_a_status()
     {
-        var componentsRoot = Path.Join(RepositoryRoot(), "src", "WorkPlanStudio");
+        var componentsRoot = Path.Join(RepoFiles.Root, "src", "WorkPlanStudio");
 
         // A bare spinning div is invisible to a screen reader: it needs a status
         // role, hidden decoration, and text to announce.
@@ -137,15 +137,5 @@ public sealed class AccessibilityTests : BunitContext
         Assert.True(
             offenders.Length == 0,
             "busy indicators without a status role: " + string.Join(" | ", offenders));
-    }
-
-    private static string RepositoryRoot()
-    {
-        var directory = new DirectoryInfo(AppContext.BaseDirectory);
-        while (directory is not null && !Directory.Exists(Path.Join(directory.FullName, "src")))
-            directory = directory.Parent;
-
-        Assert.NotNull(directory);
-        return directory!.FullName;
     }
 }
