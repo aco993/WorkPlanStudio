@@ -122,7 +122,7 @@ The repository applies the following engineering practices:
 - **Strict builds** — nullable reference types, .NET analyzers and **warnings treated as errors** (`Directory.Build.props`).
 - **Central Package Management** — every NuGet version in one [`Directory.Packages.props`](Directory.Packages.props).
 - **Consistent style** — a comprehensive [`.editorconfig`](.editorconfig) and line-ending normalisation via [`.gitattributes`](.gitattributes).
-- **Layered tests + coverage** — 211 tests across three test projects, including real-SQLite persistence, property-based invariants, brute-force optimality checks, adversarial algorithm cases, accessibility semantics, localization parity, components, browser reload/reset and mobile flows; the engine measures 96.37 % line and 89.05 % branch coverage.
+- **Layered tests + coverage** — 213 tests across three test projects, including real-SQLite persistence, property-based invariants, brute-force optimality checks, adversarial algorithm cases, accessibility semantics, localization parity, components, browser reload/reset and mobile flows; the engine measures 96.37 % line and 89.05 % branch coverage.
 - **Architecture enforced by a test** — the engine cannot accrue a Blazor / EF / JS dependency.
 - **Decisions recorded** — see the [Architecture Decision Records](docs/adr).
 - **Dependency hygiene** — [Dependabot](.github/dependabot.yml) keeps NuGet and GitHub Actions current.

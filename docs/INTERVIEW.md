@@ -391,7 +391,7 @@ penalty. The result is mapped back into Gantt rows and KPI cards.
 **"What's your test strategy?"**
 Four layers, weighted by where the risk is. 135 engine tests on a plain runner —
 unit, property-based invariants via CsCheck, brute-force optimality, and
-adversarial cases chosen to break a plausible-but-wrong implementation. 65 web
+adversarial cases chosen to break a plausible-but-wrong implementation. 67 web
 tests including a real SQLite database on a normal host, EF→domain mapping,
 accessibility semantics and localization parity. bUnit component tests for the page with a faked service.
 Playwright end-to-end through a real browser. The pyramid is deliberate: the
@@ -436,7 +436,7 @@ approached it, so the knob was decorative.
 | --- | --- |
 | Engine library | ~1 340 lines |
 | Blazor app | ~3 950 lines |
-| Tests | 211 tests (135 engine / 65 web / 11 E2E) |
+| Tests | 213 tests (135 engine / 67 web / 11 E2E) |
 | Engine coverage | 96.4 % line, 89.1 % branch |
 | Search gap to optimum | 0.2 % mean, 19/20 solved exactly |
 | Schedule runtime | ~10 ms at 8 jobs, ~533 ms at 100 |

@@ -13,9 +13,9 @@ Browser und ohne die `wasm-tools`-Workload.
 
 ```mermaid
 graph TD
-    E2E["🌐 <b>E2E</b> — Playwright · 10 Tests<br/>Chromium, Reload/Reset, Tastatur, Mobile und Sprache"]
-    WEB["🧩 <b>Daten + Grenze + Komponenten</b> — xUnit/bUnit · 54 Tests<br/>echtes SQLite, Validierung, Mapping, UI &amp; Assistent"]
-    UNIT["⚙️ <b>Unit + Property + Architektur</b> — xUnit/CsCheck · 90 Tests<br/>Engine, Limits, Invarianten &amp; Designregeln"]
+    E2E["🌐 <b>E2E</b> — Playwright · 11 Tests<br/>Chromium, Reload/Reset, Tastatur, Mobile und Sprache"]
+    WEB["🧩 <b>Daten + Grenze + Komponenten</b> — xUnit/bUnit · 67 Tests<br/>echtes SQLite, Validierung, Mapping, UI &amp; Assistent"]
+    UNIT["⚙️ <b>Unit + Property + Architektur</b> — xUnit/CsCheck · 135 Tests<br/>Engine, Limits, Invarianten &amp; Designregeln"]
 
     E2E --> WEB --> UNIT
 
@@ -29,9 +29,9 @@ graph TD
 
 | Schicht | Projekt | Tests | Sichert | WASM nötig? | Laufzeit |
 | --- | --- | --: | --- | :---: | --- |
-| Engine + Property + Architektur | `tests/WorkPlanStudio.Scheduling.Tests` | 90 | Determinismus, Zulässigkeit, Regeln, Limits, Overflow, Cancellation, Erklärungen und die reine Architekturgrenze | nein | ~3 s |
-| Daten + Mapping + Komponenten + Assistent | `tests/WorkPlanStudio.Web.Tests` | 54 | echtes SQLite, CRUD/Constraints/Recovery, vollständiges Routing-Mapping, UI-Zustände, Accessibility und gestubbter KI-Transport | ja¹ | ~12 s |
-| End-to-End | `tests/WorkPlanStudio.E2E` | 10 | Chromium: Planung, Determinismus, Sprache/`html lang`, ungültige Eingaben, Save→Reload, Reset, Modal-Tastatur/Fokus und Mobile Drawer | Browser² | ~2 min |
+| Engine + Property + Architektur | `tests/WorkPlanStudio.Scheduling.Tests` | 135 | Determinismus, Zulässigkeit, Regeln, Limits, Overflow, Cancellation, Erklärungen und die reine Architekturgrenze | nein | ~9 s |
+| Daten + Mapping + Komponenten + Assistent | `tests/WorkPlanStudio.Web.Tests` | 67 | echtes SQLite, CRUD/Constraints/Recovery, vollständiges Routing-Mapping, UI-Zustände, Accessibility und gestubbter KI-Transport | ja¹ | ~14 s |
+| End-to-End | `tests/WorkPlanStudio.E2E` | 11 | Chromium: Planung, Determinismus, Sprache/`html lang`, ungültige Eingaben, Save→Reload, Reset, Modal-Tastatur/Fokus und Mobile Drawer | Browser² | ~1,5 min |
 
 ¹ Diese referenzieren das Blazor-App-Assembly, daher kompiliert ihr Build die App (also `wasm-tools`). Die Tests selbst laufen auf einem normalen Host.
 ² Braucht einen Chromium-Download (`playwright install`) und die laufende App; kein `wasm-tools`, wenn ein vorab veröffentlichter Build ausgeliefert wird.
