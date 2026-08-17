@@ -213,7 +213,7 @@
   <data name="Nav_Scheduling" xml:space="preserve"><value>Scheduling</value></data>
 
   <data name="Sched_Title" xml:space="preserve"><value>Production Scheduling</value></data>
-  <data name="Sched_Subtitle" xml:space="preserve"><value>Finite-capacity schedule for released work plans, with target dates and tardiness KPIs.</value></data>
+  <data name="Sched_Subtitle" xml:space="preserve"><value>Finite-capacity schedule for released production orders, with target dates and tardiness KPIs.</value></data>
   <data name="Sched_Generate" xml:space="preserve"><value>Generate schedule</value></data>
   <data name="Sched_Generating" xml:space="preserve"><value>Scheduling…</value></data>
   <data name="Sched_Parameters" xml:space="preserve"><value>Parameters</value></data>
@@ -251,8 +251,8 @@
   <data name="Sched_Late" xml:space="preserve"><value>Late</value></data>
   <data name="Sched_OnTime" xml:space="preserve"><value>On time</value></data>
   <data name="Sched_DayShort" xml:space="preserve"><value>D</value></data>
-  <data name="Sched_Empty" xml:space="preserve"><value>No released work plans to schedule. Set a plan's status to “Released” to include it.</value></data>
-  <data name="Sched_RejectedTitle" xml:space="preserve"><value>Some released plans were not scheduled</value></data>
+  <data name="Sched_Empty" xml:space="preserve"><value>Nothing to schedule. Release a production order to include it.</value></data>
+  <data name="Sched_RejectedTitle" xml:space="preserve"><value>Some released orders were not scheduled</value></data>
   <data name="Sched_RejectedBody" xml:space="preserve"><value>Fix the complete routing before generating a complete schedule.</value></data>
   <data name="Sched_Error_InvalidPlan" xml:space="preserve"><value>required plan data is invalid</value></data>
   <data name="Sched_Error_InvalidLotSize" xml:space="preserve"><value>lot size is invalid</value></data>

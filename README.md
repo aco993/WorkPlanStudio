@@ -43,7 +43,7 @@ This means the app demonstrates a full data layer — `DbContext`, relationships
 
 ## Production scheduling
 
-The **Scheduling** page turns the released work plans into a finite-capacity production schedule — the most algorithm-heavy part of the project. It lives in its own dependency-free library (`src/WorkPlanStudio.Scheduling`) so the whole engine can be unit-tested on a plain .NET runner, without Blazor or the WebAssembly toolchain.
+The **Scheduling** page turns the released production orders into a finite-capacity production schedule — the most algorithm-heavy part of the project. It lives in its own dependency-free library (`src/WorkPlanStudio.Scheduling`) so the whole engine can be unit-tested on a plain .NET runner, without Blazor or the WebAssembly toolchain.
 
 1. **Target dates ("meta").** A released order carries its own customer due date, so the default rule is simply to use it. Where no customer date applies, a target can still be derived by Total Work Content (TWK), Number of Operations (NOP), Equal Slack (SLK) or Constant Allowance (CON).
 1a. **Shop constraints.** Work centers may declare a repeating availability calendar (a day shift is one window in a 24-hour period) and a sequence-dependent change-over matrix between operation families. Both default to "no constraint".
@@ -69,7 +69,7 @@ The Scheduling page reacting to a **single parameter change** — loosening vs. 
 | --- | --- |
 | ![On-time schedule](docs/schedule-ontime.png) | ![Late schedule](docs/schedule-late.png) |
 
-The sample data ships **seven released plans** competing for the same machines, so the dispatch rule and seed visibly change the result too — not just the target dates.
+The sample data ships **seven released orders** competing for the same machines, so the dispatch rule and seed visibly change the result too — not just the target dates.
 
 
 ## Tech stack

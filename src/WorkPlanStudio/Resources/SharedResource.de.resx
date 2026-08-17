@@ -213,7 +213,7 @@
   <data name="Nav_Scheduling" xml:space="preserve"><value>Planung</value></data>
 
   <data name="Sched_Title" xml:space="preserve"><value>Produktionsplanung</value></data>
-  <data name="Sched_Subtitle" xml:space="preserve"><value>Kapazitätsbeschränkte Terminierung freigegebener Arbeitspläne, mit Zielterminen und Verspätungs-Kennzahlen.</value></data>
+  <data name="Sched_Subtitle" xml:space="preserve"><value>Kapazitätsbeschränkte Terminierung freigegebener Fertigungsaufträge, mit Zielterminen und Verspätungs-Kennzahlen.</value></data>
   <data name="Sched_Generate" xml:space="preserve"><value>Plan erzeugen</value></data>
   <data name="Sched_Generating" xml:space="preserve"><value>Wird geplant…</value></data>
   <data name="Sched_Parameters" xml:space="preserve"><value>Parameter</value></data>
@@ -251,8 +251,8 @@
   <data name="Sched_Late" xml:space="preserve"><value>Verspätet</value></data>
   <data name="Sched_OnTime" xml:space="preserve"><value>Termintreu</value></data>
   <data name="Sched_DayShort" xml:space="preserve"><value>T</value></data>
-  <data name="Sched_Empty" xml:space="preserve"><value>Keine freigegebenen Arbeitspläne. Setzen Sie den Status eines Plans auf „Freigegeben“.</value></data>
-  <data name="Sched_RejectedTitle" xml:space="preserve"><value>Einige freigegebene Pläne wurden nicht eingeplant</value></data>
+  <data name="Sched_Empty" xml:space="preserve"><value>Nichts zu terminieren. Geben Sie einen Fertigungsauftrag frei.</value></data>
+  <data name="Sched_RejectedTitle" xml:space="preserve"><value>Einige freigegebene Aufträge wurden nicht eingeplant</value></data>
   <data name="Sched_RejectedBody" xml:space="preserve"><value>Korrigieren Sie den vollständigen Arbeitsablauf, bevor Sie einen vollständigen Plan erzeugen.</value></data>
   <data name="Sched_Error_InvalidPlan" xml:space="preserve"><value>erforderliche Plandaten sind ungültig</value></data>
   <data name="Sched_Error_InvalidLotSize" xml:space="preserve"><value>die Losgröße ist ungültig</value></data>
