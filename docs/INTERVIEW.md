@@ -20,7 +20,7 @@ bar, turn it, mill the keyway, grind, inspect. Each **operation** runs on a
 a per-piece run time. Multiply out by lot size and a work center's hourly rate
 and you get time and cost for the batch.
 
-The second half is the interesting one: released work plans are turned into a
+The second half is the interesting one: released production orders are turned into a
 **finite-capacity production schedule**. Jobs compete for the same machines, so
 something has to decide who goes first. The app assigns each job a target date,
 sequences the work, and reports makespan, tardiness, on-time rate and machine
@@ -376,7 +376,7 @@ would destroy the property that makes this one distinctive.
 
 **"Walk me through what happens when I click Generate."**
 The page projects its form into an immutable `SchedulingParameters`. The service
-loads released work plans and active work centers, and `ScheduleMapper` converts
+loads released orders and active work centers, and `ScheduleMapper` converts
 them into engine inputs — this is the only place `decimal` minutes become integer
 seconds, with banker's rounding. `DueDateAssigner` gives each job a target.
 `PriorityOrdering` turns the dispatch rule into an initial job sequence. The

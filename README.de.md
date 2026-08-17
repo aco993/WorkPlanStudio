@@ -42,7 +42,7 @@ Damit demonstriert die App eine vollständige Datenschicht — `DbContext`, Bezi
 
 ## Produktionsplanung
 
-Die Seite **Planung** verwandelt die freigegebenen Arbeitspläne in einen kapazitätsbeschränkten Produktionsplan — der algorithmisch anspruchsvollste Teil des Projekts. Er liegt in einer eigenen, abhängigkeitsfreien Bibliothek (`src/WorkPlanStudio.Scheduling`), sodass die gesamte Engine auf einem normalen .NET-Runner unit-getestet werden kann — ohne Blazor oder die WebAssembly-Toolchain.
+Die Seite **Planung** verwandelt die freigegebenen Fertigungsaufträge in einen kapazitätsbeschränkten Produktionsplan — der algorithmisch anspruchsvollste Teil des Projekts. Er liegt in einer eigenen, abhängigkeitsfreien Bibliothek (`src/WorkPlanStudio.Scheduling`), sodass die gesamte Engine auf einem normalen .NET-Runner unit-getestet werden kann — ohne Blazor oder die WebAssembly-Toolchain.
 
 1. **Zieltermine („Meta").** Jeder Demo-Auftrag erhält einen Termin nach TWK, NOP, SLK oder CON. Kundenspezifische Auftragstermine bleiben bis zu einem echten `ProductionOrder`-Modell bewusst außerhalb des Scopes.
 2. **Dispatch-Planung.** Ein kapazitätsbeschränkter List-Scheduler platziert die Arbeitsgänge jedes Auftrags auf dem frühesten freien Slot ihres Arbeitsplatzes, unter Beachtung von Arbeitsgang-Reihenfolge und Maschinenkapazität. Sechs Prioritätsregeln entscheiden, wer auf einer umkämpften Maschine zuerst drankommt: FIFO, SPT, LPT, EDD, Critical Ratio und WSPT.
@@ -65,7 +65,7 @@ Die Planungsseite reagiert auf eine **einzige Parameter-Änderung** — lockere 
 | --- | --- |
 | ![Termintreuer Plan](docs/schedule-ontime.png) | ![Verspäteter Plan](docs/schedule-late.png) |
 
-Die Beispieldaten liefern **sieben freigegebene Pläne**, die um dieselben Maschinen konkurrieren — daher verändern auch Prioritätsregel und Seed das Ergebnis sichtbar, nicht nur die Zieltermine.
+Die Beispieldaten liefern **sieben freigegebene Aufträge**, die um dieselben Maschinen konkurrieren — daher verändern auch Prioritätsregel und Seed das Ergebnis sichtbar, nicht nur die Zieltermine.
 
 ## Technologie-Stack
 
