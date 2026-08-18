@@ -43,7 +43,7 @@ jobs:
           restore-keys: nuget-${{ runner.os }}-
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@v4
         with:
           languages: csharp
           build-mode: manual
@@ -72,6 +72,6 @@ jobs:
         run: dotnet build WorkPlanStudio.slnx -c Release
 
       - name: Analyze
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@v4
         with:
           category: /language:csharp
