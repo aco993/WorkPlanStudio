@@ -1,11 +1,16 @@
 @page "/schedule"
 @using System.Globalization
+@using WorkPlanStudio.Services.Chat
+@using WorkPlanStudio.WorkingTime
 @implements IDisposable
 @inject IStringLocalizer<SharedResource> L
 @inject IProductionScheduleService Scheduler
 @inject ScheduleAssistant Assistant
+@inject ScheduleChat Chat
+@inject PlantSettingsService PlantSettings
 @inject ILogger<Schedule> Logger
 @inject IAssistantConfig AssistantConfig
+@inject IJSRuntime JS
 
 <PageTitle>@L["Sched_Title"] · WorkPlan Studio</PageTitle>
 
@@ -294,6 +299,58 @@
                             <p class="assistant-note">@_narration.Note</p>
                         }
                     }
+
+                    <div class="chat" role="region" aria-labelledby="chat-title">
+                        <h3 id="chat-title" class="chat-title">@L["Chat_Title"]</h3>
+                        <p class="chat-intro muted">@L["Chat_Intro"]</p>
+
+                        @if (Chat.Turns.Count > 0)
+                        {
+                            <ol class="chat-thread" aria-live="polite">
+                                @foreach (var turn in Chat.Turns)
+                                {
+                                    <li class="chat-turn @(turn.Role == ChatRole.User ? "user" : "assistant")">
+                                        <div class="chat-bubble">@turn.Text</div>
+                                        @if (turn.Role == ChatRole.Assistant)
+                                        {
+                                            <span class="chat-source pill @(turn.Source == NarrationSource.Ai ? "ai" : "off")">@turn.SourceLabel</span>
+                                        }
+                                        @if (turn.Note is not null)
+                                        {
+                                            <p class="assistant-note chat-note">@turn.Note</p>
+                                        }
+                                    </li>
+                                }
+                            </ol>
+                        }
+
+                        @if (_chatBusy)
+                        {
+                            <div class="chat-busy" role="status"><span class="spinner" aria-hidden="true"></span><span>@L["Chat_Thinking"]</span></div>
+                        }
+                        @if (_chatError is not null)
+                        {
+                            <div class="form-banner error" role="alert">@_chatError</div>
+                        }
+
+                        <div class="chat-suggestions">
+                            @foreach (var suggestion in Chat.Suggestions)
+                            {
+                                <button type="button" class="chip" disabled="@_chatBusy" @onclick="() => AskAsync(suggestion)">@suggestion</button>
+                            }
+                        </div>
+
+                        <form class="chat-input" @onsubmit="SubmitQuestionAsync" @onsubmit:preventDefault>
+                            <label class="sr-only" for="chat-question">@L["Chat_Title"]</label>
+                            <input id="chat-question" class="input" autocomplete="off" placeholder="@L["Chat_Placeholder"]"
+                                   disabled="@_chatBusy" @bind="_question" @bind:event="oninput" />
+                            <button type="submit" class="btn btn-primary" disabled="@(_chatBusy || string.IsNullOrWhiteSpace(_question))">@L["Chat_Send"]</button>
+                            @if (Chat.Turns.Count > 0)
+                            {
+                                <button type="button" class="btn btn-ghost" disabled="@_chatBusy" @onclick="ClearChat">@L["Chat_Clear"]</button>
+                            }
+                        </form>
+                    </div>
                 </div>
             </section>
         }
@@ -308,6 +365,14 @@
                 <span>@L["Sched_Ai_EnableLabel"]</span>
             </label>
             <label class="field wide">
+                <span>@L["Sched_Ai_Provider"]</span>
+                <select class="input" @bind="_aiForm.Provider" @bind:after="ProviderChanged">
+                    <option value="@AssistantProvider.OpenAiCompatible">@L["Provider_OpenAiCompatible"]</option>
+                    <option value="@AssistantProvider.Anthropic">@L["Provider_Anthropic"]</option>
+                    <option value="@AssistantProvider.Gemini">@L["Provider_Gemini"]</option>
+                </select>
+            </label>
+            <label class="field wide">
                 <span>@L["Sched_Ai_Endpoint"]</span>
                 <input class="input" @bind="_aiForm.Endpoint" @bind:event="oninput" />
             </label>
@@ -320,6 +385,7 @@
                 <input class="input" type="password" autocomplete="off" @bind="_aiForm.ApiKey" @bind:event="oninput" />
             </label>
             <p class="assistant-privacy wide">@L["Sched_Ai_Privacy"]</p>
+            <p class="assistant-privacy wide">@L["Sched_Ai_CorsNote"]</p>
             @if (_aiSettingsError is not null)
             {
                 <div class="form-banner error wide" role="alert">@_aiSettingsError</div>
@@ -347,6 +413,12 @@
     private bool _showAiSettings;
     private string? _aiSettingsError;
 
+    // ----- chat state -----
+    private string _question = "";
+    private bool _chatBusy;
+    private string? _chatError;
+    private bool _scrollChat;
+
     protected override async Task OnInitializedAsync()
     {
         _aiEnabled = await Assistant.IsAiEnabledAsync();
@@ -362,11 +434,14 @@
 
         try
         {
-            _result = await Scheduler.GenerateAsync(_form.ToParameters(), _lifetimeCancellation.Token);
+            var parameters = _form.ToParameters();
+            _result = await Scheduler.GenerateAsync(parameters, _lifetimeCancellation.Token);
 
             // Instant, offline, deterministic explanation of the run just produced.
             if (_result.Explanation is not null)
                 _narration = await Assistant.ExplainAsync(_result.Explanation);
+
+            await ResetChatAsync(parameters);
         }
         catch (OperationCanceledException)
         {
@@ -400,6 +475,77 @@
         }
     }
 
+    /// <summary>Points the conversation at the run just produced; an old conversation would describe an old schedule.</summary>
+    private async Task ResetChatAsync(SchedulingParameters parameters)
+    {
+        _chatError = null;
+        if (_result is not { HasData: true, Horizon: { } horizon })
+        {
+            Chat.Reset(null);
+            return;
+        }
+
+        var settings = await PlantSettings.GetAsync(_lifetimeCancellation.Token);
+        var rules = settings.ToRules();
+        var holidays = GermanHolidays.Between(
+            DateOnly.FromDateTime(horizon),
+            DateOnly.FromDateTime(horizon.AddSeconds(_result.MakespanSeconds)),
+            rules.State, rules.IncludePartialHolidays);
+        Chat.Reset(new ScheduleChatContext(_result, parameters, rules, holidays));
+    }
+
+    private Task SubmitQuestionAsync() => AskAsync(_question);
+
+    private async Task AskAsync(string question)
+    {
+        if (_chatBusy || string.IsNullOrWhiteSpace(question))
+            return;
+
+        _chatBusy = true;
+        _chatError = null;
+        _question = "";
+        StateHasChanged();
+        try
+        {
+            await Chat.AskAsync(question, _lifetimeCancellation.Token);
+            _scrollChat = true;
+        }
+        catch (OperationCanceledException)
+        {
+            // page is going away
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(exception, "Chat question failed");
+            _chatError = L["Error_ScheduleFailed"];
+        }
+        finally
+        {
+            _chatBusy = false;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!_scrollChat)
+            return;
+        _scrollChat = false;
+        try
+        {
+            await JS.InvokeVoidAsync("workplanChat.scrollToEnd");
+        }
+        catch (JSException)
+        {
+            // cosmetic; the answer is on the page either way
+        }
+    }
+
+    private void ClearChat()
+    {
+        Chat.Reset(Chat.Context);
+        _chatError = null;
+    }
+
     private string PreparationError(SchedulePreparationErrorCode code) =>
         L[$"Sched_Error_{code}"];
 
@@ -407,6 +553,8 @@
     {
         var settings = await AssistantConfig.LoadAsync();
         _aiForm.Enabled = settings.Enabled;
+        _aiForm.Provider = settings.Provider;
+        _aiForm.PreviousProvider = settings.Provider;
         _aiForm.Endpoint = settings.Endpoint;
         _aiForm.Model = settings.Model;
         _aiForm.ApiKey = settings.ApiKey;
@@ -414,11 +562,23 @@
         _showAiSettings = true;
     }
 
+    /// <summary>Switching provider fills in that provider's endpoint and model unless the user typed their own.</summary>
+    private void ProviderChanged()
+    {
+        var previous = _aiForm.PreviousProvider;
+        if (string.IsNullOrWhiteSpace(_aiForm.Endpoint) || _aiForm.Endpoint == AssistantSettings.DefaultEndpoint(previous))
+            _aiForm.Endpoint = AssistantSettings.DefaultEndpoint(_aiForm.Provider);
+        if (string.IsNullOrWhiteSpace(_aiForm.Model) || _aiForm.Model == AssistantSettings.DefaultModel(previous))
+            _aiForm.Model = AssistantSettings.DefaultModel(_aiForm.Provider);
+        _aiForm.PreviousProvider = _aiForm.Provider;
+    }
+
     private async Task SaveAiSettingsAsync()
     {
         var settings = new AssistantSettings
         {
             Enabled = _aiForm.Enabled,
+            Provider = _aiForm.Provider,
             Endpoint = _aiForm.Endpoint.Trim(),
             Model = _aiForm.Model.Trim(),
             ApiKey = _aiForm.ApiKey.Trim()
@@ -608,8 +768,10 @@
     private sealed class AiForm
     {
         public bool Enabled { get; set; }
-        public string Endpoint { get; set; } = "https://api.openai.com/v1";
-        public string Model { get; set; } = "gpt-4o-mini";
+        public AssistantProvider Provider { get; set; } = AssistantProvider.OpenAiCompatible;
+        public AssistantProvider PreviousProvider { get; set; } = AssistantProvider.OpenAiCompatible;
+        public string Endpoint { get; set; } = AssistantSettings.DefaultEndpoint(AssistantProvider.OpenAiCompatible);
+        public string Model { get; set; } = AssistantSettings.DefaultModel(AssistantProvider.OpenAiCompatible);
         public string ApiKey { get; set; } = "";
     }
 

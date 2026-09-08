@@ -59,6 +59,8 @@ builder.Services.AddScoped<IProductionScheduleService, ProductionScheduleService
 builder.Services.AddScoped<RuleBasedNarrator>();
 builder.Services.AddScoped<IAssistantConfig, AssistantSettingsService>();
 builder.Services.AddScoped<ScheduleAssistant>();
+builder.Services.AddScoped<WorkPlanStudio.Services.Chat.OfflineScheduleAnswerer>();
+builder.Services.AddScoped<WorkPlanStudio.Services.Chat.ScheduleChat>();
 
 var host = builder.Build();
 

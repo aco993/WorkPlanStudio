@@ -260,7 +260,10 @@ public static class ScheduleMapper
             result.Schedule.MakespanSeconds, minutesPerWorkingDay, result.LocalSearchSteps)
         {
             Horizon = horizon,
-            TotalPausedSeconds = result.Schedule.Operations.Sum(o => o.PausedSeconds)
+            TotalPausedSeconds = result.Schedule.Operations.Sum(o => o.PausedSeconds),
+            UtilizationByWorkCenter = context.Machines.Values
+                .Where(m => e.UtilizationByWorkCenter.ContainsKey(m.WorkCenterId))
+                .ToDictionary(m => m.Name, m => e.UtilizationByWorkCenter[m.WorkCenterId])
         };
     }
 

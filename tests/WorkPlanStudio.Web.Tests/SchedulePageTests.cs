@@ -2,6 +2,7 @@ using Bunit;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Localization;
 using WorkPlanStudio.Resources;
+using WorkPlanStudio.Services.Chat;
 using SchedulePage = WorkPlanStudio.Pages.Schedule;   // disambiguate from Scheduling.Schedule
 
 namespace WorkPlanStudio.Web.Tests;
@@ -27,7 +28,113 @@ public class SchedulePageTests : BunitContext
         Services.AddSingleton<IAssistantConfig>(_assistantConfig);
         Services.AddSingleton(new HttpClient());
         Services.AddSingleton<ScheduleAssistant>();
+
+        // The conversation over the run: on-device answerer + façade, and the
+        // plant settings it reads the rules from (a real temp database; the
+        // samples without a horizon never touch it).
+        JSInterop.Mode = JSRuntimeMode.Loose;
+        Services.AddSingleton<OfflineScheduleAnswerer>();
+        Services.AddSingleton<ScheduleChat>();
+        Services.AddSingleton(new PlantSettingsService(_files.CreateDatabase("schedule-page.db", new FakeStorage())));
         return fake;
+    }
+
+    private readonly TempDatabaseFiles _files = new();
+
+    protected override void Dispose(bool disposing)
+    {
+        base.Dispose(disposing);
+        if (disposing)
+            _files.Dispose();
+    }
+
+    // ----- chat -----
+
+    [Fact]
+    public void The_chat_offers_suggestions_and_answers_a_clicked_one_on_device()
+    {
+        Arrange(Sample.OnTime() with { Horizon = new DateTime(2026, 6, 1, 6, 0, 0) });
+        var cut = Render<SchedulePage>();
+        cut.WaitForAssertion(() => Assert.NotEmpty(cut.FindAll(".chat-suggestions .chip")));
+        Assert.Empty(cut.FindAll(".chat-turn"));
+
+        cut.Find(".chat-suggestions .chip").Click();   // "Which work center is the bottleneck?"
+
+        cut.WaitForAssertion(() => Assert.Equal(2, cut.FindAll(".chat-turn").Count));
+        Assert.Contains("Chat_Suggest_Bottleneck", cut.Find(".chat-turn.user .chat-bubble").TextContent);
+        Assert.StartsWith("Chat_Bottleneck", cut.Find(".chat-turn.assistant .chat-bubble").TextContent);
+        Assert.Equal("Chat_SourceOffline", cut.Find(".chat-turn.assistant .chat-source").TextContent);
+        Assert.NotEmpty(cut.FindAll(".chat-input .btn-ghost"));   // "clear" appears once there is a thread
+    }
+
+    [Fact]
+    public void A_typed_question_is_submitted_and_the_box_is_cleared()
+    {
+        Arrange(Sample.OnTime() with { Horizon = new DateTime(2026, 6, 1, 6, 0, 0) });
+        var cut = Render<SchedulePage>();
+        cut.WaitForAssertion(() => Assert.NotEmpty(cut.FindAll("#chat-question")));
+
+        cut.Find("#chat-question").Input("how is WP-2 doing?");
+        cut.Find(".chat-input").Submit();
+
+        cut.WaitForAssertion(() => Assert.Equal(2, cut.FindAll(".chat-turn").Count));
+        Assert.StartsWith("Chat_Order", cut.Find(".chat-turn.assistant .chat-bubble").TextContent);
+        Assert.Contains("CNC-200", cut.Find(".chat-turn.assistant .chat-bubble").TextContent);   // WP-2's only step
+        Assert.Equal("", cut.Find("#chat-question").GetAttribute("value") ?? "");
+    }
+
+    [Fact]
+    public void Clearing_the_conversation_removes_the_thread_and_regenerating_starts_fresh()
+    {
+        var fake = Arrange(Sample.OnTime() with { Horizon = new DateTime(2026, 6, 1, 6, 0, 0) });
+        var cut = Render<SchedulePage>();
+        cut.WaitForAssertion(() => Assert.NotEmpty(cut.FindAll(".chat-suggestions .chip")));
+        cut.Find(".chat-suggestions .chip").Click();
+        cut.WaitForAssertion(() => Assert.Equal(2, cut.FindAll(".chat-turn").Count));
+
+        cut.Find(".chat-input .btn-ghost").Click();
+        cut.WaitForAssertion(() => Assert.Empty(cut.FindAll(".chat-turn")));
+
+        cut.Find(".chat-suggestions .chip").Click();
+        cut.WaitForAssertion(() => Assert.Equal(2, cut.FindAll(".chat-turn").Count));
+        var callsBefore = fake.Calls;
+        cut.Find(".page-head .btn-primary").Click();    // a new run resets the conversation
+        cut.WaitForAssertion(() => Assert.True(fake.Calls > callsBefore));
+        cut.WaitForAssertion(() => Assert.Empty(cut.FindAll(".chat-turn")));
+    }
+
+    [Fact]
+    public void Without_a_schedule_the_chat_says_there_is_nothing_to_talk_about()
+    {
+        Arrange(ScheduleResult.Empty(480));
+        var cut = Render<SchedulePage>();
+
+        cut.WaitForAssertion(() => Assert.Single(cut.FindAll(".empty-state")));
+        Assert.Empty(cut.FindAll(".chat"));   // the assistant card only exists with data
+    }
+
+    [Fact]
+    public void The_settings_dialog_switches_endpoint_and_model_with_the_provider()
+    {
+        Arrange(Sample.OnTime());
+        var cut = Render<SchedulePage>();
+        cut.WaitForAssertion(() => Assert.NotEmpty(cut.FindAll(".assistant-card .icon-btn")));
+
+        cut.Find(".assistant-card .icon-btn").Click();
+        cut.WaitForAssertion(() => Assert.NotEmpty(cut.FindAll(".modal-card select")));
+        cut.Find(".modal-card select").Change("Anthropic");
+
+        var inputs = cut.FindAll(".modal-card input.input");
+        Assert.Equal(AssistantSettings.DefaultEndpoint(AssistantProvider.Anthropic), inputs[0].GetAttribute("value"));
+        Assert.Equal(AssistantSettings.DefaultModel(AssistantProvider.Anthropic), inputs[1].GetAttribute("value"));
+
+        // A hand-typed model survives the next provider switch.
+        cut.Find(".modal-card input.input:nth-of-type(1)");
+        inputs[1].Input("my-model");
+        cut.Find(".modal-card select").Change("Gemini");
+        inputs = cut.FindAll(".modal-card input.input");
+        Assert.Equal(AssistantSettings.DefaultEndpoint(AssistantProvider.Gemini), inputs[0].GetAttribute("value"));
+        Assert.Equal("my-model", inputs[1].GetAttribute("value"));
     }
 
     [Fact]

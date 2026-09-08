@@ -141,6 +141,15 @@ window.workplanFocusTrap = {
 
 // The skip link: Blazor intercepts same-document links, so the jump to <main>
 // is explicit - focus it (tabindex="-1") and scroll it into view.
+// The chat thread is a bounded scroll box; a new answer is scrolled into view
+// so the newest turn is what the reader sees.
+window.workplanChat = {
+    scrollToEnd: function () {
+        const thread = document.querySelector('.chat-thread');
+        if (thread) { thread.scrollTop = thread.scrollHeight; }
+    }
+};
+
 window.workplanSkip = {
     toContent: function () {
         const main = document.getElementById('main');

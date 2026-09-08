@@ -38,6 +38,9 @@ public sealed record ScheduleResult(
     /// <summary>Total seconds all operations spent paused across breaks.</summary>
     public long TotalPausedSeconds { get; init; }
 
+    /// <summary>Utilisation per Gantt lane, keyed by the work-center display name, 0..1.</summary>
+    public IReadOnlyDictionary<string, double> UtilizationByWorkCenter { get; init; } = new Dictionary<string, double>();
+
     /// <summary>The result shown when there is nothing to schedule.</summary>
     public static ScheduleResult Empty(int minutesPerWorkingDay) =>
         new(false, new ScheduleKpis(0, 1, 0, 0, 0, 0), [], [], 0, minutesPerWorkingDay, 0);
