@@ -53,7 +53,7 @@ public sealed class ScheduleAssistant
 
         try
         {
-            var ai = new OpenAiScheduleNarrator(_http, settings);
+            var ai = new AiScheduleNarrator(Chat.ChatProviders.Create(_http, settings));
             return await ai.NarrateAsync(explanation, cancellationToken);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -62,7 +62,7 @@ public sealed class ScheduleAssistant
         }
         catch (Exception ex) when (
             ex is HttpRequestException or OperationCanceledException or JsonException
-               or InvalidOperationException or NotSupportedException or UriFormatException)
+               or InvalidOperationException or NotSupportedException or UriFormatException or ArgumentException)
         {
             var fallback = await _ruleBased.NarrateAsync(explanation, cancellationToken);
             return fallback with { Note = _l["Sched_Ai_Fallback", FailureLabel(ex)] };
