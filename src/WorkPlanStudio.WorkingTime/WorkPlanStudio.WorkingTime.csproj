@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Working-time model: shift patterns, German public holidays per state and the
+    Arbeitszeitgesetz (ArbZG) rules that turn a shift plan into the capacity a
+    work center really has. Pure: no Blazor, no EF, no JS, no clock. It references
+    only the scheduling engine, so a timeline can be handed to the scheduler as a
+    repeating calendar plus blackouts without the app re-mapping the types.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\WorkPlanStudio.Scheduling\WorkPlanStudio.Scheduling.csproj" />
+  </ItemGroup>
+
+</Project>

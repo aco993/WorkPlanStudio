@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Unit and property tests for the working-time model: holidays per state, the
+    ArbZG cuts, the weekly pattern and its hand-over to the scheduling engine.
+    Pure .NET, no WebAssembly workload.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>WorkPlanStudio.WorkingTime.Tests</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+    <Using Include="WorkPlanStudio.WorkingTime" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit.v3.mtp-v2" />
+    <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" />
+    <PackageReference Include="CsCheck" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\WorkPlanStudio.WorkingTime\WorkPlanStudio.WorkingTime.csproj" />
+  </ItemGroup>
+
+</Project>
