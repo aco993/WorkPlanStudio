@@ -1,8 +1,13 @@
 name: Deploy to GitHub Pages
 
-# Builds the Blazor WebAssembly app and publishes it as a static site to GitHub Pages.
-# The app runs entirely in the browser (EF Core + SQLite compiled to WebAssembly),
-# so no server or backend is required.
+# Builds the Blazor WebAssembly app and publishes it as a static site to GitHub
+# Pages. The app runs entirely in the browser (EF Core + SQLite compiled to
+# WebAssembly), so no server or backend is required.
+#
+# The deployment is gated on every suite: the three unit/component projects
+# (with their coverage gates) and the Playwright run (E2E, axe, visual). The
+# coverage numbers measured here become the badge JSON the README links to,
+# served from the site itself under /badges/.
 
 on:
   push:
@@ -20,31 +25,73 @@ concurrency:
   group: pages
   cancel-in-progress: true
 
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
 jobs:
-  # Gate the deployment on the engine's unit tests. Pure .NET, so no wasm-tools.
   test:
+    name: Unit, property, data & component tests
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-      - name: Setup .NET 10
+      - uses: actions/checkout@v7
+
+      - name: Setup .NET
         uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: 10.0.x
+          global-json-file: global.json
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v6
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', 'Directory.Packages.props') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      - name: Install WebAssembly tools
+        run: dotnet workload install wasm-tools
+
       - name: Test scheduling engine
-        run: dotnet test tests/WorkPlanStudio.Scheduling.Tests/WorkPlanStudio.Scheduling.Tests.csproj -c Release
+        run: >
+          dotnet test tests/WorkPlanStudio.Scheduling.Tests/WorkPlanStudio.Scheduling.Tests.csproj -c Release
+          --coverage --coverage-output-format cobertura --coverage-output engine.cobertura.xml
+
+      - name: Test working-time library
+        run: >
+          dotnet test tests/WorkPlanStudio.WorkingTime.Tests/WorkPlanStudio.WorkingTime.Tests.csproj -c Release
+          --coverage --coverage-output-format cobertura --coverage-output workingtime.cobertura.xml
+
+      - name: Test data, mapper, assistant & components
+        run: >
+          dotnet test tests/WorkPlanStudio.Web.Tests/WorkPlanStudio.Web.Tests.csproj -c Release
+          --coverage --coverage-output-format cobertura --coverage-output web.cobertura.xml
+
+      - name: Coverage gates + badges
+        run: |
+          python3 .github/scripts/coverage_gate.py "$(find tests/WorkPlanStudio.Scheduling.Tests -name engine.cobertura.xml | head -1)" WorkPlanStudio.Scheduling=90 --badge badges
+          python3 .github/scripts/coverage_gate.py "$(find tests/WorkPlanStudio.WorkingTime.Tests -name workingtime.cobertura.xml | head -1)" WorkPlanStudio.WorkingTime=90 --badge badges
+          python3 .github/scripts/coverage_gate.py "$(find tests/WorkPlanStudio.Web.Tests -name web.cobertura.xml | head -1)" WorkPlanStudio=65 --badge badges
+
+      - name: Upload badge data
+        uses: actions/upload-artifact@v7
+        with:
+          name: badges
+          path: badges
+
+  e2e:
+    name: Browser tests
+    uses: ./.github/workflows/e2e.yml
 
   build:
-    needs: test
+    needs: [test, e2e]
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v7
+      - uses: actions/checkout@v7
 
-      - name: Setup .NET 10
+      - name: Setup .NET
         uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: 10.0.x
+          global-json-file: global.json
 
       - name: Install WebAssembly tools (native SQLite relink)
         run: dotnet workload install wasm-tools
@@ -64,6 +111,12 @@ jobs:
       # Stop GitHub Pages' Jekyll from ignoring the _framework folder.
       - name: Add .nojekyll
         run: touch release/wwwroot/.nojekyll
+
+      - name: Add coverage badges to the site
+        uses: actions/download-artifact@v7
+        with:
+          name: badges
+          path: release/wwwroot/badges
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v5
