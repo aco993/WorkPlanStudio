@@ -31,7 +31,9 @@ public static class ScheduleEvaluator
         double onTimeRate = jobCount == 0 ? 1.0 : (double)(jobCount - lateJobs) / jobCount;
         double averageFlow = jobCount == 0 ? 0.0 : (double)totalFlow / jobCount;
 
-        // Utilisation: busy ÷ (capacity × makespan) for each work center used.
+        // Utilisation: busy ÷ (capacity × open time up to the makespan) for each
+        // work center used. Open time is the calendar's, so a one-shift machine
+        // that ran every hour it was staffed reads 100 %, not 33 %.
         var busyByWorkCenter = new Dictionary<int, long>();
         foreach (var op in schedule.Operations)
             busyByWorkCenter[op.WorkCenterId] =
@@ -40,8 +42,11 @@ public static class ScheduleEvaluator
         var utilization = new Dictionary<int, double>(busyByWorkCenter.Count);
         foreach (var (workCenterId, busy) in busyByWorkCenter)
         {
-            double available = (double)context.CapacityOf(workCenterId) * makespan;
-            utilization[workCenterId] = available <= 0 ? 0.0 : busy / available;
+            long open = context.Machines.TryGetValue(workCenterId, out var machine)
+                ? machine.OpenSecondsWithin(makespan)
+                : makespan;
+            double available = (double)context.CapacityOf(workCenterId) * open;
+            utilization[workCenterId] = available <= 0 ? 0.0 : Math.Min(1.0, busy / available);
         }
 
         // Average in a fixed key order so the result is bit-stable.

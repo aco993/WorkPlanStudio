@@ -1,0 +1,464 @@
+@page "/working-time"
+@using System.Globalization
+@inject IStringLocalizer<SharedResource> L
+@inject PlantSettingsService Settings
+@inject WorkCenterService Centers
+@inject ILogger<WorkingTimePage> Logger
+
+<PageTitle>@L["WorkingTime_Title"] · WorkPlan Studio</PageTitle>
+
+<div class="page-head">
+    <div>
+        <h1>@L["WorkingTime_Title"]</h1>
+        <p class="page-sub">@L["WorkingTime_Subtitle"]</p>
+    </div>
+</div>
+
+@if (_loading)
+{
+    <div class="loading-row" role="status"><span class="spinner" aria-hidden="true"></span><span class="sr-only">@L["Common_Loading"]</span></div>
+}
+else
+{
+    @if (_error is not null)
+    {
+        <div class="form-banner error" role="alert">@_error</div>
+    }
+    @if (_saved)
+    {
+        <div class="form-banner success" role="status">@L["WorkingTime_Saved"]</div>
+    }
+
+    <div class="wt-layout">
+        <section class="card wt-rules">
+            <div class="card-head"><h2>@L["WorkingTime_PlantRules"]</h2></div>
+            <div class="card-body">
+                <div class="form-grid">
+                    <label class="field wide">
+                        <span>@L["WorkingTime_State"]</span>
+                        <select id="wt-state" class="input" @bind="_form.State" @bind:after="Recompute">
+                            @foreach (var state in GermanStates.All)
+                            {
+                                <option value="@state">@state.Name() (@state)</option>
+                            }
+                        </select>
+                    </label>
+                    <label class="field check wide">
+                        <input type="checkbox" @bind="_form.IncludePartialHolidays" @bind:after="Recompute" />
+                        <span>@L["WorkingTime_IncludePartial"]</span>
+                    </label>
+                    <label class="field check wide">
+                        <input type="checkbox" @bind="_form.AllowExtendedDay" @bind:after="Recompute" />
+                        <span>@L["WorkingTime_AllowExtendedDay"]</span>
+                    </label>
+                    <label class="field check wide">
+                        <input type="checkbox" @bind="_form.AllowExtendedNight" @bind:after="Recompute" />
+                        <span>@L["WorkingTime_AllowExtendedNight"]</span>
+                    </label>
+                    <label class="field check wide">
+                        <input id="wt-sunday" type="checkbox" @bind="_form.SundayWorkAllowed" @bind:after="Recompute" />
+                        <span>@L["WorkingTime_SundayWork"]</span>
+                    </label>
+                    <label class="field check wide">
+                        <input type="checkbox" @bind="_form.HolidayWorkAllowed" @bind:after="Recompute" />
+                        <span>@L["WorkingTime_HolidayWork"]</span>
+                    </label>
+                    <label class="field">
+                        <span>@L["WorkingTime_BoundaryShift"]</span>
+                        <span class="input-unit">
+                            <input class="input num" type="number" min="0" max="6" @bind="_form.SundayBoundaryShiftHours" @bind:event="oninput" @bind:after="Recompute" />
+                            <span>@L["WorkingTime_Hours"]</span>
+                        </span>
+                        @if (_formErrors.TryGetValue("SundayBoundaryShiftHours", out var shiftError))
+                        {
+                            <span class="field-error">@shiftError</span>
+                        }
+                    </label>
+                    <label class="field">
+                        <span>@L["WorkingTime_MinimumRest"]</span>
+                        <span class="input-unit">
+                            <input class="input num" type="number" min="10" max="11" @bind="_form.MinimumRestHours" @bind:event="oninput" @bind:after="Recompute" />
+                            <span>@L["WorkingTime_Hours"]</span>
+                        </span>
+                        @if (_formErrors.TryGetValue("MinimumRestHours", out var restError))
+                        {
+                            <span class="field-error">@restError</span>
+                        }
+                    </label>
+                </div>
+                <div class="head-actions wt-actions">
+                    <button class="btn btn-primary" @onclick="SaveAsync" disabled="@_saving">@L["Common_Save"]</button>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="card-head">
+                <h2>@L["WorkingTime_Preview"]</h2>
+                <label class="field inline">
+                    <span class="sr-only">@L["WorkingTime_PreviewFor"]</span>
+                    <select id="wt-pattern" class="input mini" @bind="_previewKey" @bind:after="Recompute">
+                        @foreach (var pattern in ShiftPatterns.Presets)
+                        {
+                            <option value="@pattern.Key">@L[$"Shift_{pattern.Key}"]</option>
+                        }
+                    </select>
+                </label>
+            </div>
+            <div class="card-body">
+                @if (_preview is not null)
+                {
+                    <WeekStrip Timeline="_preview" />
+                    <ul class="legend legend-inline">
+                        @foreach (var kind in new[] { SegmentKind.Working, SegmentKind.Break, SegmentKind.OffShift, SegmentKind.Rest, SegmentKind.Sunday })
+                        {
+                            <li><span class="week-swatch seg-@kind.ToString().ToLowerInvariant()"></span>@L[$"Segment_{kind}"]</li>
+                        }
+                    </ul>
+                    <p class="wt-summary">
+                        <strong>@string.Format(L["WorkingTime_WeeklyHours"], Hours(_preview.WeeklyWorkingSeconds))</strong>
+                        @if (!_preview.Pattern.IsContinuous)
+                        {
+                            <span> · @string.Format(L["WorkingTime_FreeSundays"], _preview.FreeSundaysPerYear)</span>
+                        }
+                    </p>
+                    @if (_preview.ViolatesFreeSundays)
+                    {
+                        <p class="assistant-note">@string.Format(L["WorkingTime_FreeSundaysViolation"], _preview.Rules.MinimumFreeSundaysPerYear, _preview.FreeSundaysPerYear)</p>
+                    }
+
+                    <h3 class="about-sub">@L["WorkingTime_RulesApplied"]</h3>
+                    @if (_preview.Applications.Count == 0)
+                    {
+                        <p class="muted small-text">@L["WorkingTime_NoRules"]</p>
+                    }
+                    else
+                    {
+                        <ul class="assistant-lines wt-applications">
+                            @foreach (var group in GroupedApplications(_preview))
+                            {
+                                <li class="assistant-line tone-info">
+                                    <span class="assistant-dot"></span>
+                                    <span><span class="pill law">@group.Sample.LegalReference</span> @Describe(group.Sample, group.Days)</span>
+                                </li>
+                            }
+                        </ul>
+                    }
+                }
+            </div>
+        </section>
+    </div>
+
+    <div class="wt-layout">
+        <section class="card">
+            <div class="card-head"><h2>@L["WorkingTime_Catalog"]</h2></div>
+            <div class="card-body">
+                <dl class="rule-list">
+                    @foreach (var rule in WorkingTimeRules.Catalog)
+                    {
+                        <div class="rule">
+                            <dt><span class="pill law">@rule.LegalReference</span> @L[$"Rule_{rule.Id}_Title"]</dt>
+                            <dd>@L[$"Rule_{rule.Id}_Text"]</dd>
+                        </div>
+                    }
+                </dl>
+            </div>
+        </section>
+
+        <section class="card no-pad">
+            <div class="card-head pad">
+                <h2>@string.Format(L["WorkingTime_Holidays"], _holidayYear)</h2>
+                <span class="muted gantt-legend-note">@L["WorkingTime_HolidaysNote"]</span>
+            </div>
+            <table class="data-table">
+                <caption class="sr-only">@string.Format(L["WorkingTime_Holidays"], _holidayYear)</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">@L["Orders_Due"]</th>
+                        <th scope="col">@L["Field_Name"]</th>
+                        <th scope="col">@L["Field_Status"]</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var holiday in _holidays)
+                    {
+                        <tr>
+                            <td class="mono">@holiday.Date.ToString("ddd d. MMM", Culture)</td>
+                            <td>@L[$"Holiday_{holiday.Key}"]</td>
+                            <td><span class="pill @(holiday.Scope == HolidayScope.Nationwide ? "ok" : "off")">@L[$"HolidayScope_{holiday.Scope}"]</span></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </section>
+    </div>
+
+    <section class="card no-pad">
+        <div class="card-head pad">
+            <div>
+                <h2>@L["WorkingTime_Absences"]</h2>
+                <p class="page-sub">@L["WorkingTime_AbsencesNote"]</p>
+            </div>
+            <button class="btn btn-outline" @onclick="NewAbsence">
+                <span class="btn-plus">+</span> @L["WorkingTime_AddAbsence"]
+            </button>
+        </div>
+        @if (_absences.Count == 0)
+        {
+            <div class="empty-state small"><p>@L["WorkingTime_AbsencesEmpty"]</p></div>
+        }
+        else
+        {
+            <table class="data-table">
+                <caption class="sr-only">@L["WorkingTime_Absences"]</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">@L["Field_WorkCenter"]</th>
+                        <th scope="col">@L["WorkingTime_AbsenceFrom"]</th>
+                        <th scope="col">@L["WorkingTime_AbsenceTo"]</th>
+                        <th scope="col">@L["WorkingTime_AbsenceKind"]</th>
+                        <th scope="col">@L["WorkingTime_AbsenceLabel"]</th>
+                        <th scope="col" class="actions-col">@L["Common_Actions"]</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var absence in _absences)
+                    {
+                        <tr>
+                            <td><span class="mono">@absence.WorkCenter?.Code</span> <span class="muted">@absence.WorkCenter?.Name</span></td>
+                            <td>@absence.Start.ToString("g", Culture)</td>
+                            <td>@absence.End.ToString("g", Culture)</td>
+                            <td>@L[$"Absence_{absence.Kind}"]</td>
+                            <td>@absence.Label</td>
+                            <td class="actions-col">
+                                <button class="icon-btn danger" aria-label="@L["Common_Delete"]" title="@L["Common_Delete"]" @onclick="() => RemoveAbsenceAsync(absence.Id)">
+                                    <svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" /></svg>
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </section>
+}
+
+<Modal @bind-Visible="_showAbsence" Title="@L["WorkingTime_AddAbsence"]">
+    <ChildContent>
+        <div class="form-grid">
+            <label class="field wide">
+                <span>@L["Field_WorkCenter"]</span>
+                <select id="abs-center" class="input" @bind="_newAbsence.WorkCenterId">
+                    <option value="0">—</option>
+                    @foreach (var center in _centers)
+                    {
+                        <option value="@center.Id">@center.Code — @center.Name</option>
+                    }
+                </select>
+                @if (_absenceErrors.TryGetValue("WorkCenterId", out var centerError))
+                {
+                    <span class="field-error">@centerError</span>
+                }
+            </label>
+            <label class="field">
+                <span>@L["WorkingTime_AbsenceFrom"]</span>
+                <input id="abs-from" class="input" type="datetime-local" @bind="_newAbsence.Start" />
+            </label>
+            <label class="field">
+                <span>@L["WorkingTime_AbsenceTo"]</span>
+                <input id="abs-to" class="input @(_absenceErrors.ContainsKey("End") ? "error" : null)" type="datetime-local" @bind="_newAbsence.End" />
+                @if (_absenceErrors.TryGetValue("End", out var endError))
+                {
+                    <span class="field-error">@endError</span>
+                }
+            </label>
+            <label class="field">
+                <span>@L["WorkingTime_AbsenceKind"]</span>
+                <select class="input" @bind="_newAbsence.Kind">
+                    @foreach (var kind in Enum.GetValues<AbsenceKind>())
+                    {
+                        <option value="@kind">@L[$"Absence_{kind}"]</option>
+                    }
+                </select>
+            </label>
+            <label class="field">
+                <span>@L["WorkingTime_AbsenceLabel"]</span>
+                <input id="abs-label" class="input" maxlength="80" @bind="_newAbsence.Label" @bind:event="oninput" />
+            </label>
+        </div>
+    </ChildContent>
+    <Footer>
+        <button class="btn btn-ghost" @onclick="() => _showAbsence = false">@L["Common_Cancel"]</button>
+        <button class="btn btn-primary" @onclick="SaveAbsenceAsync" disabled="@_saving">@L["Common_Save"]</button>
+    </Footer>
+</Modal>
+
+@code {
+    private bool _loading = true;
+    private bool _saving;
+    private bool _saved;
+    private string? _error;
+    private readonly Dictionary<string, string> _formErrors = new();
+
+    private PlantSettings _form = new();
+    private List<WorkCenter> _centers = [];
+    private List<WorkCenterAbsence> _absences = [];
+
+    private string _previewKey = ShiftPatterns.OneShift.Key;
+    private WorkingTimeline? _preview;
+    private IReadOnlyList<PublicHoliday> _holidays = [];
+    private int _holidayYear = 2026;
+
+    private bool _showAbsence;
+    private WorkCenterAbsence _newAbsence = new();
+    private readonly Dictionary<string, string> _absenceErrors = new();
+
+    private static CultureInfo Culture => CultureInfo.CurrentUICulture;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _form = (await Settings.GetAsync()).Clone();
+        _centers = await Centers.GetAllAsync();
+        _absences = await Centers.GetAbsencesAsync();
+        _previewKey = _centers.FirstOrDefault(c => c.ShiftPatternKey != ShiftPatterns.Continuous.Key)?.ShiftPatternKey ?? ShiftPatterns.OneShift.Key;
+        Recompute();
+        _loading = false;
+    }
+
+    /// <summary>Re-derives the preview and the holiday table from the form as it stands — live, before saving.</summary>
+    private void Recompute()
+    {
+        _saved = false;
+        _formErrors.Clear();
+        foreach (var issue in PlantSettingsValidator.Validate(_form))
+            _formErrors.TryAdd(issue.Field, L[issue.MessageKey, issue.Arguments]);
+        if (_formErrors.Count > 0)
+            return;
+
+        var rules = _form.ToRules();
+        var pattern = ShiftPatterns.ByKey(_previewKey) ?? ShiftPatterns.OneShift;
+        // The preview shows the repeating weekly pattern only, so the date range
+        // is immaterial; a fixed week keeps the render deterministic.
+        var weekStart = new DateTime(2026, 1, 5);
+        _preview = WorkingTimelineBuilder.Build(pattern, rules, [], weekStart, weekStart.AddDays(7));
+        _holidays = GermanHolidays.ForYear(_holidayYear, rules.State, rules.IncludePartialHolidays);
+    }
+
+    private async Task SaveAsync()
+    {
+        _saving = true;
+        _error = null;
+        try
+        {
+            var result = await Settings.SaveAsync(_form);
+            if (result.IsSuccess)
+            {
+                _saved = true;
+                return;
+            }
+
+            foreach (var issue in result.ValidationIssues ?? [])
+                _formErrors.TryAdd(issue.Field, L[issue.MessageKey, issue.Arguments]);
+            if (_formErrors.Count == 0)
+                _error = L["Error_SaveFailed"];
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(exception, "Saving plant settings failed");
+            _error = L["Error_SaveFailed"];
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private void NewAbsence()
+    {
+        var today = DateTime.Today;
+        _newAbsence = new WorkCenterAbsence
+        {
+            WorkCenterId = _centers.FirstOrDefault()?.Id ?? 0,
+            Start = today.AddDays(1).AddHours(7),
+            End = today.AddDays(1).AddHours(15),
+            Kind = AbsenceKind.Maintenance
+        };
+        _absenceErrors.Clear();
+        _showAbsence = true;
+    }
+
+    private async Task SaveAbsenceAsync()
+    {
+        _absenceErrors.Clear();
+        _error = null;
+        _saving = true;
+        try
+        {
+            var result = await Centers.AddAbsenceAsync(_newAbsence);
+            if (result.IsSuccess)
+            {
+                _showAbsence = false;
+                _absences = await Centers.GetAbsencesAsync();
+                return;
+            }
+
+            foreach (var issue in result.ValidationIssues ?? [])
+                _absenceErrors.TryAdd(issue.Field, L[issue.MessageKey, issue.Arguments]);
+            if (_absenceErrors.Count == 0)
+                _error = L["Error_SaveFailed"];
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private async Task RemoveAbsenceAsync(int id)
+    {
+        _error = null;
+        var result = await Centers.RemoveAbsenceAsync(id);
+        if (!result.IsSuccess)
+            _error = L["Error_ActionFailed"];
+        _absences = await Centers.GetAbsencesAsync();
+    }
+
+    private static string Hours(long seconds) => Format.Hours(seconds / 60m);
+
+    /// <summary>
+    /// The same cut on several days reads as one line — "early, Mon–Fri" — rather
+    /// than five. Grouped by rule, shift and the values before/after.
+    /// </summary>
+    private static IEnumerable<(RuleApplication Sample, IReadOnlyList<DayOfWeek> Days)> GroupedApplications(WorkingTimeline timeline) =>
+        timeline.Applications
+            .GroupBy(a => (a.Rule, a.ShiftKey, a.Before, a.After))
+            .Select(g => (g.First(), (IReadOnlyList<DayOfWeek>)g.Select(a => a.Day).Distinct().OrderBy(Order).ToList()))
+            .OrderBy(g => Order(g.Item2[0]))
+            .ThenBy(g => g.Item1.Rule);
+
+    private static int Order(DayOfWeek day) => day == DayOfWeek.Sunday ? 7 : (int)day;
+
+    private string Describe(RuleApplication application, IReadOnlyList<DayOfWeek> days) =>
+        L[$"Applied_{application.Rule}", L.ShiftName(application.ShiftKey), DayRange(days), Span(application.Before), Span(application.After)];
+
+    /// <summary>"Monday" / "Mon–Fri" / "Mon, Wed, Fri" — consecutive days collapse into a range.</summary>
+    private static string DayRange(IReadOnlyList<DayOfWeek> days)
+    {
+        var format = Culture.DateTimeFormat;
+        if (days.Count == 1)
+            return format.GetDayName(days[0]);
+
+        bool consecutive = days.Select(Order).Zip(days.Skip(1).Select(Order), (a, b) => b - a).All(d => d == 1);
+        return consecutive
+            ? $"{format.GetAbbreviatedDayName(days[0])}–{format.GetAbbreviatedDayName(days[^1])}"
+            : string.Join(", ", days.Select(format.GetAbbreviatedDayName));
+    }
+
+    private static string Span(TimeSpan value)
+    {
+        if (value < TimeSpan.FromHours(1))
+            return $"{value.Minutes} min";
+        return value.TotalMinutes % 60 == 0
+            ? $"{(int)value.TotalHours} h"
+            : $"{(int)value.TotalHours} h {value.Minutes:00} min";
+    }
+}

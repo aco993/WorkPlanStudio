@@ -14,6 +14,9 @@ public sealed class SchedulePage
         _baseUrl = baseUrl;
     }
 
+    /// <summary>The underlying page, for checks the page object does not wrap.</summary>
+    public IPage Page => _page;
+
     public ILocator Heading => _page.Locator(".page-head h1");
     public ILocator KpiCards => _page.Locator(".stat-card");
     public ILocator GanttBars => _page.Locator(".gantt-bar");
@@ -29,7 +32,7 @@ public sealed class SchedulePage
     }
 
     // Parameter fields, in DOM order: 1 dispatch rule, 2 target-date rule,
-    // 3 (conditional) factor, 4 multi-start, 5 local search, 6 seed, 7 minutes/day.
+    // 3 (conditional) factor, 4 multi-start, 5 local search, 6 seed.
     public Task SetDispatchRuleAsync(string enumName) =>
         _page.Locator(".param-grid label:nth-of-type(1) select").SelectOptionAsync(new SelectOptionValue { Value = enumName });
 

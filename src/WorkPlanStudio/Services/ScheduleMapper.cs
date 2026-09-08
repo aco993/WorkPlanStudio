@@ -1,5 +1,6 @@
 using WorkPlanStudio.Models;
 using WorkPlanStudio.Scheduling;
+using WorkPlanStudio.WorkingTime;
 
 namespace WorkPlanStudio.Services;
 
@@ -30,7 +31,15 @@ public static class ScheduleMapper
     }
 
     /// <summary>The mapped scheduling input plus a lookup back to what produced each job.</summary>
-    public sealed record Input(SchedulingContext Context, IReadOnlyDictionary<int, JobOrigin> OriginById);
+    /// <param name="Context">The engine input.</param>
+    /// <param name="OriginById">Order reference and part name per job id.</param>
+    /// <param name="Horizon">The wall-clock moment of second 0.</param>
+    /// <param name="TimelineByWorkCenter">The annotated working-time timeline per work center, for the Gantt shading.</param>
+    public sealed record Input(
+        SchedulingContext Context,
+        IReadOnlyDictionary<int, JobOrigin> OriginById,
+        DateTime Horizon,
+        IReadOnlyDictionary<int, WorkingTimeline> TimelineByWorkCenter);
 
     /// <summary>What a scheduled job came from, for labelling the Gantt and the table.</summary>
     public sealed record JobOrigin(string Reference, string PartName);
@@ -54,16 +63,13 @@ public static class ScheduleMapper
     public static SchedulePreparationResult BuildInputFromOrders(
         IEnumerable<ProductionOrder> releasedOrders,
         IEnumerable<WorkCenter> centers,
-        SchedulingParameters parameters)
+        SchedulingParameters parameters,
+        ShopCalendar? shopCalendar = null)
     {
         var orderList = releasedOrders as IReadOnlyList<ProductionOrder> ?? releasedOrders.ToList();
         var centerList = centers as IReadOnlyList<WorkCenter> ?? centers.ToList();
         var centerById = centerList.ToDictionary(center => center.Id);
-
-        var machines = centerList
-            .Where(c => c.IsActive && c.ParallelCapacity is >= 1 and <= Validation.WorkCenterValidator.MaxCapacity)
-            .Select(c => new MachineCapacity(c.Id, $"{c.Code} — {c.Name}", c.ParallelCapacity))
-            .ToList();
+        var calendar = shopCalendar ?? ShopCalendar.Unconstrained;
 
         var jobs = new List<ProductionJob>();
         var originById = new Dictionary<int, JobOrigin>();
@@ -91,7 +97,25 @@ public static class ScheduleMapper
             decoded.Add((order, snapshot));
         }
 
-        long horizon = decoded.Count == 0 ? 0 : decoded.Min(d => d.Order.ReleaseUtc).Ticks;
+        if (decoded.Count == 0)
+            return new SchedulePreparationResult(null, errors);
+
+        var horizon = decoded.Min(d => d.Order.ReleaseUtc);
+        long horizonTicks = horizon.Ticks;
+
+        // The working-time calendar of every active work center, built once per
+        // run from the plant rules, the center's shift pattern and its absences.
+        var timelines = new Dictionary<int, WorkingTimeline>();
+        var machines = new List<MachineCapacity>();
+        foreach (var center in centerList.Where(c => c.IsActive && c.ParallelCapacity is >= 1 and <= Validation.WorkCenterValidator.MaxCapacity))
+        {
+            var timeline = calendar.TimelineFor(center.Id, horizon);
+            timelines[center.Id] = timeline;
+            machines.Add(timeline.ToMachineCalendar(horizon)
+                .ApplyTo(new MachineCapacity(center.Id, $"{center.Code} — {center.Name}", center.ParallelCapacity)));
+        }
+
+        var machineById = machines.ToDictionary(m => m.WorkCenterId);
 
         foreach (var (order, snapshot) in decoded)
         {
@@ -103,12 +127,29 @@ public static class ScheduleMapper
                     ToSeconds(o.SetupTimeMinutes, o.TimePerPieceMinutes, order.Quantity)))
                 .ToList();
 
+            // An operation longer than the longest shift (breaks bridged) can never
+            // be placed. Reported here as a rejected order rather than thrown from
+            // the engine's context constructor.
+            var tooLong = snapshot.Operations
+                .OrderBy(o => o.OperationNumber)
+                .Select((o, i) => (Operation: o, Step: steps[i]))
+                .Where(pair => pair.Step.DurationSeconds > machineById[pair.Step.WorkCenterId].LongestPlacementSeconds)
+                .ToList();
+            if (tooLong.Count > 0)
+            {
+                errors.AddRange(tooLong.Select(pair => new SchedulePreparationIssue(
+                    order.Id, order.OrderNumber, pair.Operation.OperationNumber,
+                    SchedulePreparationErrorCode.OperationExceedsShiftWindow,
+                    centerById[pair.Step.WorkCenterId].Code)));
+                continue;
+            }
+
             jobs.Add(new ProductionJob
             {
                 Id = order.Id,
                 Reference = order.OrderNumber,
-                ReleaseSeconds = ToOffsetSeconds(order.ReleaseUtc, horizon),
-                ExplicitDueSeconds = ToOffsetSeconds(order.DueUtc, horizon),
+                ReleaseSeconds = ToOffsetSeconds(order.ReleaseUtc, horizonTicks),
+                ExplicitDueSeconds = ToOffsetSeconds(order.DueUtc, horizonTicks),
                 Weight = Math.Clamp(order.Priority, 1, 5),
                 Steps = steps
             });
@@ -117,7 +158,7 @@ public static class ScheduleMapper
 
         var input = jobs.Count == 0
             ? null
-            : new Input(new SchedulingContext(jobs, machines, parameters), originById);
+            : new Input(new SchedulingContext(jobs, machines, parameters), originById, horizon, timelines);
 
         return new SchedulePreparationResult(input, errors);
     }
@@ -163,7 +204,20 @@ public static class ScheduleMapper
         SchedulingResult result,
         SchedulingContext context,
         IReadOnlyDictionary<int, JobOrigin> originById,
-        int minutesPerWorkingDay)
+        int minutesPerWorkingDay) =>
+        BuildView(result, context, originById, minutesPerWorkingDay, null, null);
+
+    /// <summary>
+    /// Projects an engine result into the page's Gantt rows, job table and KPI
+    /// cards, shading each lane with the time its work center was closed.
+    /// </summary>
+    public static ScheduleResult BuildView(
+        SchedulingResult result,
+        SchedulingContext context,
+        IReadOnlyDictionary<int, JobOrigin> originById,
+        int minutesPerWorkingDay,
+        DateTime? horizon,
+        IReadOnlyDictionary<int, WorkingTimeline>? timelines)
     {
         // Stable colour per job (by plan number), shared between the Gantt and the table.
         var colorByJob = result.Schedule.Jobs
@@ -172,6 +226,7 @@ public static class ScheduleMapper
             .ToDictionary(t => t.JobId, t => t.Color);
 
         var lateJobs = result.Schedule.Jobs.Where(j => j.IsLate).Select(j => j.JobId).ToHashSet();
+        long makespan = result.Schedule.MakespanSeconds;
 
         var rows = new List<GanttRow>();
         foreach (var machine in context.Machines.Values)
@@ -179,10 +234,14 @@ public static class ScheduleMapper
             var bars = result.Schedule.OnWorkCenter(machine.WorkCenterId)
                 .Select(o => new GanttBar(
                     o.JobId, originById[o.JobId].Reference, colorByJob[o.JobId],
-                    o.StepNumber, o.StartSeconds, o.EndSeconds, lateJobs.Contains(o.JobId)))
+                    o.StepNumber, o.StartSeconds, o.EndSeconds, lateJobs.Contains(o.JobId))
+                {
+                    PausedSeconds = o.PausedSeconds,
+                    SetupSeconds = o.SetupSeconds
+                })
                 .ToList();
             if (bars.Count > 0)
-                rows.Add(new GanttRow(machine.Name, bars));
+                rows.Add(new GanttRow(machine.Name, bars, ClosedSegments(machine.WorkCenterId, horizon, makespan, timelines)));
         }
 
         var jobRows = result.Schedule.Jobs
@@ -198,6 +257,27 @@ public static class ScheduleMapper
             e.AverageUtilization, e.LateJobCount, e.JobCount);
 
         return new ScheduleResult(true, kpis, rows, jobRows,
-            result.Schedule.MakespanSeconds, minutesPerWorkingDay, result.LocalSearchSteps);
+            result.Schedule.MakespanSeconds, minutesPerWorkingDay, result.LocalSearchSteps)
+        {
+            Horizon = horizon,
+            TotalPausedSeconds = result.Schedule.Operations.Sum(o => o.PausedSeconds)
+        };
+    }
+
+    /// <summary>The closed stretches of one work center between the horizon and the makespan.</summary>
+    private static IReadOnlyList<GanttClosedSegment> ClosedSegments(
+        int workCenterId, DateTime? horizon, long makespan, IReadOnlyDictionary<int, WorkingTimeline>? timelines)
+    {
+        if (horizon is null || timelines is null || makespan <= 0 || !timelines.TryGetValue(workCenterId, out var timeline))
+            return [];
+
+        return timeline.Segments(horizon.Value, horizon.Value.AddSeconds(makespan))
+            .Where(s => s.Kind != SegmentKind.Working)
+            .Select(s => new GanttClosedSegment(
+                (long)(s.Start - horizon.Value).TotalSeconds,
+                (long)(s.End - horizon.Value).TotalSeconds,
+                s.Kind,
+                s.Label))
+            .ToList();
     }
 }

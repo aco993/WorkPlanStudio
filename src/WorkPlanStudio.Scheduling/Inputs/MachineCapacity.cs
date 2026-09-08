@@ -125,6 +125,78 @@ public sealed record MachineCapacity(int WorkCenterId, string Name, int Parallel
         }
     }
 
+    /// <summary>
+    /// Seconds this work center is open between second 0 and <paramref name="untilSeconds"/>:
+    /// the calendar windows that fall inside the range, minus the blackouts that
+    /// fall inside those windows. The whole range when unconstrained.
+    /// </summary>
+    /// <remarks>
+    /// This is what utilisation should divide by. Dividing by the makespan
+    /// instead reports a machine that ran flat out through every shift it had as
+    /// 30 % busy, because the nights and the weekend count against it.
+    /// </remarks>
+    public long OpenSecondsWithin(long untilSeconds)
+    {
+        if (untilSeconds <= 0)
+            return 0;
+
+        long open;
+        if (AvailabilityWindows.Count == 0)
+        {
+            open = untilSeconds;
+        }
+        else
+        {
+            // Walk the periods that overlap [0, until) on the phase-shifted axis.
+            open = 0;
+            long shiftedEnd = untilSeconds + CalendarPhaseSeconds;
+            for (long cycle = CalendarPhaseSeconds / CalendarPeriodSeconds * CalendarPeriodSeconds; cycle < shiftedEnd; cycle += CalendarPeriodSeconds)
+            {
+                foreach (var window in AvailabilityWindows)
+                {
+                    long start = Math.Max(cycle + window.StartSeconds, CalendarPhaseSeconds);
+                    long end = Math.Min(cycle + window.EndSeconds, shiftedEnd);
+                    if (end > start)
+                        open += end - start;
+                }
+            }
+        }
+
+        foreach (var blackout in Blackouts)
+        {
+            if (blackout.StartSeconds >= untilSeconds)
+                break;
+            open -= OpenSecondsBetween(blackout.StartSeconds, Math.Min(blackout.EndSeconds, untilSeconds));
+        }
+
+        return Math.Max(0, open);
+    }
+
+    /// <summary>Seconds of calendar windows inside <c>[from, to)</c>, ignoring blackouts.</summary>
+    private long OpenSecondsBetween(long from, long to)
+    {
+        if (to <= from)
+            return 0;
+        if (AvailabilityWindows.Count == 0)
+            return to - from;
+
+        long open = 0;
+        long shiftedFrom = from + CalendarPhaseSeconds;
+        long shiftedTo = to + CalendarPhaseSeconds;
+        for (long cycle = shiftedFrom / CalendarPeriodSeconds * CalendarPeriodSeconds; cycle < shiftedTo; cycle += CalendarPeriodSeconds)
+        {
+            foreach (var window in AvailabilityWindows)
+            {
+                long start = Math.Max(cycle + window.StartSeconds, shiftedFrom);
+                long end = Math.Min(cycle + window.EndSeconds, shiftedTo);
+                if (end > start)
+                    open += end - start;
+            }
+        }
+
+        return open;
+    }
+
     /// <summary>The worst change-over cost into <paramref name="family"/>, used for feasibility checks.</summary>
     internal long WorstSetupInto(string family) => SetupDurations.Count == 0
         ? 0

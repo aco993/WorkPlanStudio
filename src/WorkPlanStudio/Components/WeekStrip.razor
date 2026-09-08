@@ -1,0 +1,79 @@
+@using System.Globalization
+@inject IStringLocalizer<SharedResource> L
+
+@*
+    One week of a working-time pattern as seven horizontal strips, one per
+    weekday, coloured by segment kind. Pure rendering: the timeline is computed
+    elsewhere, so this component has no state and no services beyond the
+    localizer. Widths are percentages of a day, written invariant-culture.
+*@
+<div class="week-strip" role="img" aria-label="@L["WorkingTime_Preview"]">
+    @for (int day = 0; day < 7; day++)
+    {
+        var dayStart = day * DaySeconds;
+        var pieces = Pieces(dayStart);
+        <div class="week-row">
+            <span class="week-day">@Culture.DateTimeFormat.GetAbbreviatedDayName((DayOfWeek)((day + 1) % 7))</span>
+            <div class="week-track">
+                @foreach (var piece in pieces)
+                {
+                    <span class="week-seg seg-@piece.Kind.ToString().ToLowerInvariant()"
+                          style="left:@Pct(piece.StartSeconds - dayStart)%;width:@Pct(piece.DurationSeconds)%"
+                          title="@Title(piece)"></span>
+                }
+            </div>
+        </div>
+    }
+    <div class="week-axis">
+        <span></span>
+        <div class="week-track">
+            @for (int hour = 0; hour <= 24; hour += 6)
+            {
+                <span class="week-tick" style="left:@Pct(hour * 3600L)%">@hour:00</span>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private const long DaySeconds = 24 * 3600;
+
+    /// <summary>The timeline whose weekly pattern is drawn.</summary>
+    [Parameter, EditorRequired] public WorkingTimeline Timeline { get; set; } = default!;
+
+    private static CultureInfo Culture => CultureInfo.CurrentUICulture;
+
+    private static string Pct(long seconds) =>
+        (seconds * 100.0 / DaySeconds).ToString("0.###", CultureInfo.InvariantCulture);
+
+    private IEnumerable<WeekWindow> Pieces(long dayStart)
+    {
+        long dayEnd = dayStart + DaySeconds;
+        var all = Timeline.WeekWindows.Concat(Timeline.WeekGaps);
+        foreach (var piece in all.OrderBy(p => p.StartSeconds))
+        {
+            if (piece.EndSeconds <= dayStart || piece.StartSeconds >= dayEnd)
+                continue;
+            yield return piece with
+            {
+                StartSeconds = Math.Max(piece.StartSeconds, dayStart),
+                EndSeconds = Math.Min(piece.EndSeconds, dayEnd)
+            };
+        }
+
+        // A continuous pattern has no windows at all: draw the whole day as work.
+        if (Timeline.WeekWindows.Count == 0 && Timeline.Pattern.IsContinuous)
+            yield return new WeekWindow(dayStart, dayEnd, SegmentKind.Working, "", DayOfWeek.Monday);
+    }
+
+    private string Title(WeekWindow piece)
+    {
+        var kind = L[$"Segment_{piece.Kind}"];
+        var from = TimeSpan.FromSeconds(piece.StartSeconds % DaySeconds);
+        var to = TimeSpan.FromSeconds(piece.EndSeconds % DaySeconds);
+        var span = $"{from:hh\\:mm}–{(to == TimeSpan.Zero ? "24:00" : to.ToString(@"hh\:mm"))}";
+        return string.IsNullOrEmpty(piece.Label) || piece.Kind == SegmentKind.Sunday
+            ? $"{kind} · {span}"
+            : $"{kind} · {L.ShiftName(piece.Label)} · {span}";
+    }
+}

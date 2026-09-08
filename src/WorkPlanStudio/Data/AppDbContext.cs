@@ -15,6 +15,8 @@ public class AppDbContext : DbContext
     public DbSet<Operation> Operations => Set<Operation>();
     public DbSet<WorkCenter> WorkCenters => Set<WorkCenter>();
     public DbSet<ProductionOrder> ProductionOrders => Set<ProductionOrder>();
+    public DbSet<WorkCenterAbsence> WorkCenterAbsences => Set<WorkCenterAbsence>();
+    public DbSet<PlantSettings> PlantSettings => Set<PlantSettings>();
 
     protected override void OnModelCreating(ModelBuilder model)
     {
@@ -24,6 +26,7 @@ public class AppDbContext : DbContext
             e.Property(x => x.Name).HasMaxLength(100).IsRequired();
             e.Property(x => x.CostCenter).HasMaxLength(20);
             e.Property(x => x.HourlyRate).HasColumnType("decimal(10,2)");
+            e.Property(x => x.ShiftPatternKey).HasMaxLength(40).IsRequired();
             e.HasIndex(x => x.Code).IsUnique();
             e.ToTable(table =>
             {
@@ -32,6 +35,34 @@ public class AppDbContext : DbContext
                 table.HasCheckConstraint("CK_WorkCenter_Code", "length(trim(Code)) BETWEEN 1 AND 20");
                 table.HasCheckConstraint("CK_WorkCenter_Name", "length(trim(Name)) BETWEEN 1 AND 100");
                 table.HasCheckConstraint("CK_WorkCenter_CostCenter", "length(CostCenter) <= 20");
+                table.HasCheckConstraint("CK_WorkCenter_ShiftPattern", "length(trim(ShiftPatternKey)) BETWEEN 1 AND 40");
+            });
+
+            e.HasMany(x => x.Absences)
+             .WithOne(a => a.WorkCenter!)
+             .HasForeignKey(a => a.WorkCenterId)
+             .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        model.Entity<WorkCenterAbsence>(e =>
+        {
+            e.Property(x => x.Label).HasMaxLength(80);
+            e.HasIndex(x => new { x.WorkCenterId, x.Start });
+            e.ToTable(table =>
+            {
+                table.HasCheckConstraint("CK_Absence_Range", "\"End\" > \"Start\"");
+                table.HasCheckConstraint("CK_Absence_Kind", "Kind >= 0 AND Kind <= 3");
+            });
+        });
+
+        model.Entity<PlantSettings>(e =>
+        {
+            e.Property(x => x.State).HasMaxLength(2).IsRequired();
+            e.ToTable(table =>
+            {
+                table.HasCheckConstraint("CK_PlantSettings_Singleton", "Id = 1");
+                table.HasCheckConstraint("CK_PlantSettings_SundayShift", "SundayBoundaryShiftHours BETWEEN 0 AND 6");
+                table.HasCheckConstraint("CK_PlantSettings_Rest", "MinimumRestHours BETWEEN 10 AND 11");
             });
         });
 

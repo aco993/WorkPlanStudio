@@ -11,7 +11,10 @@ public enum SchedulePreparationErrorCode
     InvalidOperationDuration,
     MissingWorkCenter,
     InactiveWorkCenter,
-    InvalidWorkCenterCapacity
+    InvalidWorkCenterCapacity,
+
+    /// <summary>The operation is longer than the work center's longest shift, breaks bridged; it can never be placed.</summary>
+    OperationExceedsShiftWindow
 }
 
 /// <summary>A structured mapper diagnostic; UI text is localized from <see cref="Code"/>.</summary>

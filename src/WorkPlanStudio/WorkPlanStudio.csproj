@@ -27,6 +27,7 @@
        unit tested without the WebAssembly toolchain. -->
   <ItemGroup>
     <ProjectReference Include="..\WorkPlanStudio.Scheduling\WorkPlanStudio.Scheduling.csproj" />
+    <ProjectReference Include="..\WorkPlanStudio.WorkingTime\WorkPlanStudio.WorkingTime.csproj" />
   </ItemGroup>
 
 </Project>

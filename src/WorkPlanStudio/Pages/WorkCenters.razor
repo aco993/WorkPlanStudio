@@ -39,6 +39,7 @@ else
                     <th scope="col">@L["Field_CostCenter"]</th>
                     <th scope="col" class="num">@L["Field_HourlyRate"]</th>
                     <th scope="col" class="num">@L["Field_Capacity"]</th>
+                    <th scope="col">@L["Field_ShiftPattern"]</th>
                     <th scope="col">@L["Field_Status"]</th>
                     <th scope="col" class="num">@L["Field_Operations"]</th>
                     <th scope="col" class="actions-col">@L["Common_Actions"]</th>
@@ -54,6 +55,7 @@ else
                         <td><span class="muted">@wc.CostCenter</span></td>
                         <td class="num">@Format.Number(wc.HourlyRate)</td>
                         <td class="num">@wc.ParallelCapacity</td>
+                        <td><span class="muted">@ShiftLabel(wc.ShiftPatternKey)</span></td>
                         <td>
                             <span class="pill @(wc.IsActive ? "ok" : "off")">
                                 @(wc.IsActive ? L["Common_Active"] : L["Common_Inactive"])
@@ -123,6 +125,20 @@ else
                 <span id="wc-capacity-error" class="field-error">@capacityError</span>
             }
         </label>
+        <label class="field wide">
+            <span>@L["Field_ShiftPattern"]</span>
+            <select id="wc-shift" class="input" @bind="_editing.ShiftPatternKey">
+                @foreach (var pattern in ShiftPatterns.Presets)
+                {
+                    <option value="@pattern.Key">@L[$"Shift_{pattern.Key}"]</option>
+                }
+            </select>
+            @if (_formErrors.TryGetValue("ShiftPatternKey", out var shiftError))
+            {
+                <span class="field-error">@shiftError</span>
+            }
+            <span class="field-hint">@L["WorkingTime_Subtitle"]</span>
+        </label>
         <label class="field check">
             <input type="checkbox" @bind="_editing.IsActive" />
             <span>@L["Common_Active"]</span>
@@ -169,6 +185,10 @@ else
         _loading = false;
     }
 
+    // The preset label without its clock times, for the table.
+    private string ShiftLabel(string key) =>
+        L[$"Shift_{key}"].Value.Split(" · ")[0];
+
     private void New()
     {
         _editing = new WorkCenter { IsActive = true, ParallelCapacity = 1 };
@@ -186,6 +206,7 @@ else
             CostCenter = wc.CostCenter,
             HourlyRate = wc.HourlyRate,
             ParallelCapacity = wc.ParallelCapacity,
+            ShiftPatternKey = wc.ShiftPatternKey,
             IsActive = wc.IsActive
         };
         _formErrors.Clear();

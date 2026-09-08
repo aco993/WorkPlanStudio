@@ -318,4 +318,108 @@
   <data name="Val_OrderPlanHasNoOperations" xml:space="preserve"><value>That work plan has no operations to freeze.</value></data>
   <data name="Error_ActionFailed" xml:space="preserve"><value>That action could not be completed. Please try again.</value></data>
   <data name="Field_Priority" xml:space="preserve"><value>Priority</value></data>
+  <data name="Nav_WorkingTime" xml:space="preserve"><value>Working time</value></data>
+  <data name="Field_ShiftPattern" xml:space="preserve"><value>Shift pattern</value></data>
+  <data name="Shift_continuous" xml:space="preserve"><value>Continuous · 24/7, unattended</value></data>
+  <data name="Shift_one-shift" xml:space="preserve"><value>One shift · 07:00–15:30, Mon–Fri</value></data>
+  <data name="Shift_two-shift" xml:space="preserve"><value>Two shifts · 06:00–22:00, Mon–Fri</value></data>
+  <data name="Shift_three-shift" xml:space="preserve"><value>Three shifts · around the clock, Mon–Fri</value></data>
+  <data name="Val_ShiftPatternUnknown" xml:space="preserve"><value>Choose one of the shift patterns.</value></data>
+  <data name="Val_StateInvalid" xml:space="preserve"><value>Choose a federal state.</value></data>
+  <data name="Val_Range" xml:space="preserve"><value>Must be between {0} and {1}.</value></data>
+  <data name="Val_AbsenceEndBeforeStart" xml:space="preserve"><value>The absence must end after it starts.</value></data>
+  <data name="Val_AbsenceTooLong" xml:space="preserve"><value>An absence may span at most one year.</value></data>
+  <data name="Sched_Error_OperationExceedsShiftWindow" xml:space="preserve"><value>operation is longer than the work center's longest shift and can never be placed</value></data>
+  <data name="Sched_Paused" xml:space="preserve"><value>paused</value></data>
+  <data name="Sched_Setup" xml:space="preserve"><value>change-over</value></data>
+  <data name="Sched_ClosedLegend" xml:space="preserve"><value>Shaded: work center closed — hover for the reason</value></data>
+  <data name="Sched_TotalPaused" xml:space="preserve"><value>{0} paused across breaks</value></data>
+  <data name="Segment_Working" xml:space="preserve"><value>Working</value></data>
+  <data name="Segment_Break" xml:space="preserve"><value>Break (§ 4 ArbZG)</value></data>
+  <data name="Segment_OffShift" xml:space="preserve"><value>Off shift</value></data>
+  <data name="Segment_Rest" xml:space="preserve"><value>Rest period (§ 5 ArbZG)</value></data>
+  <data name="Segment_Sunday" xml:space="preserve"><value>Sunday rest (§ 9 ArbZG)</value></data>
+  <data name="Segment_Holiday" xml:space="preserve"><value>Public holiday (§ 9 ArbZG)</value></data>
+  <data name="Segment_Absence" xml:space="preserve"><value>Absence</value></data>
+  <data name="WorkingTime_Title" xml:space="preserve"><value>Working Time &amp; Labour Law</value></data>
+  <data name="WorkingTime_Subtitle" xml:space="preserve"><value>The Arbeitszeitgesetz rules that shape every work center's capacity. Each rule is a parameter, and each cut it makes is explained.</value></data>
+  <data name="WorkingTime_PlantRules" xml:space="preserve"><value>Plant rules</value></data>
+  <data name="WorkingTime_State" xml:space="preserve"><value>Federal state (public holidays)</value></data>
+  <data name="WorkingTime_IncludePartial" xml:space="preserve"><value>Also observe holidays that apply only in parts of the state</value></data>
+  <data name="WorkingTime_AllowExtendedDay" xml:space="preserve"><value>Use the 10-hour day (§ 3 s. 2 — averaged back to 8 h within 24 weeks)</value></data>
+  <data name="WorkingTime_AllowExtendedNight" xml:space="preserve"><value>Use the 10-hour night shift (§ 6 (2) — averaged within one month)</value></data>
+  <data name="WorkingTime_SundayWork" xml:space="preserve"><value>Sunday work permitted (§ 10 exception, e.g. continuous process)</value></data>
+  <data name="WorkingTime_HolidayWork" xml:space="preserve"><value>Holiday work permitted (§ 10 exception)</value></data>
+  <data name="WorkingTime_BoundaryShift" xml:space="preserve"><value>Sunday rest window shifted by (§ 9 (2), multi-shift plants)</value></data>
+  <data name="WorkingTime_MinimumRest" xml:space="preserve"><value>Rest between two working days (§ 5)</value></data>
+  <data name="WorkingTime_Hours" xml:space="preserve"><value>h</value></data>
+  <data name="WorkingTime_Saved" xml:space="preserve"><value>Plant rules saved. The next schedule run uses them.</value></data>
+  <data name="WorkingTime_Holidays" xml:space="preserve"><value>Public holidays {0}</value></data>
+  <data name="WorkingTime_HolidaysNote" xml:space="preserve"><value>Computed for the selected state; movable feasts derive from Easter.</value></data>
+  <data name="WorkingTime_Preview" xml:space="preserve"><value>Weekly pattern</value></data>
+  <data name="WorkingTime_PreviewFor" xml:space="preserve"><value>Shift pattern to preview</value></data>
+  <data name="WorkingTime_WeeklyHours" xml:space="preserve"><value>{0} working hours per week</value></data>
+  <data name="WorkingTime_FreeSundays" xml:space="preserve"><value>{0} free Sundays a year</value></data>
+  <data name="WorkingTime_FreeSundaysViolation" xml:space="preserve"><value>§ 11 ArbZG: at least {0} Sundays a year must stay free — this pattern leaves {1}.</value></data>
+  <data name="WorkingTime_RulesApplied" xml:space="preserve"><value>How the rules shaped this pattern</value></data>
+  <data name="WorkingTime_NoRules" xml:space="preserve"><value>No rule had to cut this pattern.</value></data>
+  <data name="WorkingTime_Catalog" xml:space="preserve"><value>The rules</value></data>
+  <data name="WorkingTime_Absences" xml:space="preserve"><value>Absences</value></data>
+  <data name="WorkingTime_AbsencesNote" xml:space="preserve"><value>One-off closures on top of the shift pattern: leave, maintenance, breakdowns. The scheduler routes around them.</value></data>
+  <data name="WorkingTime_AbsencesEmpty" xml:space="preserve"><value>No absences recorded.</value></data>
+  <data name="WorkingTime_AddAbsence" xml:space="preserve"><value>Add absence</value></data>
+  <data name="WorkingTime_AbsenceFrom" xml:space="preserve"><value>From</value></data>
+  <data name="WorkingTime_AbsenceTo" xml:space="preserve"><value>To</value></data>
+  <data name="WorkingTime_AbsenceKind" xml:space="preserve"><value>Kind</value></data>
+  <data name="WorkingTime_AbsenceLabel" xml:space="preserve"><value>Label</value></data>
+  <data name="Absence_Vacation" xml:space="preserve"><value>Leave</value></data>
+  <data name="Absence_Maintenance" xml:space="preserve"><value>Maintenance</value></data>
+  <data name="Absence_Unplanned" xml:space="preserve"><value>Unplanned</value></data>
+  <data name="Absence_Other" xml:space="preserve"><value>Other</value></data>
+  <data name="Rule_MaxDailyWorkingTime_Title" xml:space="preserve"><value>Daily working time</value></data>
+  <data name="Rule_MaxDailyWorkingTime_Text" xml:space="preserve"><value>A working day is capped at 8 hours. It may reach 10 hours if the average over 24 weeks (six months) comes back to 8. A shift longer than that is cut.</value></data>
+  <data name="Rule_Breaks_Title" xml:space="preserve"><value>Breaks</value></data>
+  <data name="Rule_Breaks_Text" xml:space="preserve"><value>More than 6 hours of work owe 30 minutes of break, more than 9 hours owe 45, in pieces of at least 15 minutes — and never more than 6 hours in a row without one. Breaks are carved out of the shift; a running operation pauses and resumes.</value></data>
+  <data name="Rule_RestPeriod_Title" xml:space="preserve"><value>Rest period</value></data>
+  <data name="Rule_RestPeriod_Text" xml:space="preserve"><value>Between two working days a crew gets 11 uninterrupted hours of rest (10 in a few named sectors). A shift that would start too soon after the crew's previous one is delayed.</value></data>
+  <data name="Rule_NightWork_Title" xml:space="preserve"><value>Night work</value></data>
+  <data name="Rule_NightWork_Text" xml:space="preserve"><value>A shift with more than 2 hours between 23:00 and 06:00 is night work and is capped at 8 hours (10 with monthly averaging), even where the day cap is 10.</value></data>
+  <data name="Rule_SundayRest_Title" xml:space="preserve"><value>Sunday rest</value></data>
+  <data name="Rule_SundayRest_Text" xml:space="preserve"><value>No work from 00:00 to 24:00 on Sundays unless a § 10 exception applies. Multi-shift plants may move that window by up to 6 hours.</value></data>
+  <data name="Rule_HolidayRest_Title" xml:space="preserve"><value>Public holidays</value></data>
+  <data name="Rule_HolidayRest_Text" xml:space="preserve"><value>The same ban applies to public holidays. Which days those are is set by the federal state — nine apply everywhere, the rest differ.</value></data>
+  <data name="Rule_FreeSundays_Title" xml:space="preserve"><value>Free Sundays</value></data>
+  <data name="Rule_FreeSundays_Text" xml:space="preserve"><value>Even where Sunday work is permitted, at least 15 Sundays a year must stay free. A pattern that staffs every Sunday is reported.</value></data>
+  <data name="Applied_MaxDailyWorkingTime" xml:space="preserve"><value>{0} on {1}: working time cut from {2} to {3}.</value></data>
+  <data name="Applied_Breaks" xml:space="preserve"><value>{0} on {1}: {3} of break carved out of a {2} shift.</value></data>
+  <data name="Applied_RestPeriod" xml:space="preserve"><value>{0} on {1}: start delayed — only {2} of rest since the crew's previous shift, {3} required.</value></data>
+  <data name="Applied_NightWork" xml:space="preserve"><value>{0} on {1}: night work, cut from {2} to {3}.</value></data>
+  <data name="Applied_SundayRest" xml:space="preserve"><value>{0} on {1}: {2} shift cut to {3} for the Sunday rest.</value></data>
+  <data name="Applied_HolidayRest" xml:space="preserve"><value>{0} on {1}: closed for a public holiday.</value></data>
+  <data name="Applied_FreeSundays" xml:space="preserve"><value>{0} on {1}: staffs every Sunday.</value></data>
+  <data name="Holiday_NewYear" xml:space="preserve"><value>New Year's Day</value></data>
+  <data name="Holiday_Epiphany" xml:space="preserve"><value>Epiphany</value></data>
+  <data name="Holiday_WomensDay" xml:space="preserve"><value>International Women's Day</value></data>
+  <data name="Holiday_GoodFriday" xml:space="preserve"><value>Good Friday</value></data>
+  <data name="Holiday_EasterMonday" xml:space="preserve"><value>Easter Monday</value></data>
+  <data name="Holiday_LabourDay" xml:space="preserve"><value>Labour Day</value></data>
+  <data name="Holiday_AscensionDay" xml:space="preserve"><value>Ascension Day</value></data>
+  <data name="Holiday_WhitMonday" xml:space="preserve"><value>Whit Monday</value></data>
+  <data name="Holiday_CorpusChristi" xml:space="preserve"><value>Corpus Christi</value></data>
+  <data name="Holiday_AugsburgPeaceFestival" xml:space="preserve"><value>Augsburg Peace Festival</value></data>
+  <data name="Holiday_Assumption" xml:space="preserve"><value>Assumption Day</value></data>
+  <data name="Holiday_ChildrensDay" xml:space="preserve"><value>World Children's Day</value></data>
+  <data name="Holiday_GermanUnity" xml:space="preserve"><value>German Unity Day</value></data>
+  <data name="Holiday_ReformationDay" xml:space="preserve"><value>Reformation Day</value></data>
+  <data name="Holiday_AllSaints" xml:space="preserve"><value>All Saints' Day</value></data>
+  <data name="Holiday_RepentanceDay" xml:space="preserve"><value>Day of Repentance and Prayer</value></data>
+  <data name="Holiday_ChristmasDay" xml:space="preserve"><value>Christmas Day</value></data>
+  <data name="Holiday_BoxingDay" xml:space="preserve"><value>Boxing Day</value></data>
+  <data name="ShiftKey_day" xml:space="preserve"><value>Day shift</value></data>
+  <data name="ShiftKey_early" xml:space="preserve"><value>Early shift</value></data>
+  <data name="ShiftKey_late" xml:space="preserve"><value>Late shift</value></data>
+  <data name="ShiftKey_night" xml:space="preserve"><value>Night shift</value></data>
+  <data name="HolidayScope_Nationwide" xml:space="preserve"><value>nationwide</value></data>
+  <data name="HolidayScope_State" xml:space="preserve"><value>state</value></data>
+  <data name="HolidayScope_Partial" xml:space="preserve"><value>parts of the state</value></data>
 </root>
