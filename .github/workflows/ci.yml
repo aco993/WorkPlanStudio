@@ -1,10 +1,14 @@
 name: CI
 
 # Build and test on every pull request. Split into two jobs by what they need:
-#   • engine-tests — the pure scheduling library; no Blazor, no SQLite, no
-#     WebAssembly, so it runs in seconds and also measures code coverage.
-#   • web-tests    — the mapper and bUnit component tests; these reference the
-#     Blazor WASM app, so the job installs the wasm-tools workload to build it.
+#   • library-tests — the two pure libraries (scheduling engine, working time);
+#     no Blazor, no SQLite, no WebAssembly, so they run in seconds. Coverage is
+#     measured and gated per assembly.
+#   • web-tests     — data, mapper, assistant and bUnit component tests; these
+#     reference the Blazor WASM app, so the job installs the wasm-tools workload
+#     to build it. Coverage of the app assembly is measured and gated too.
+# The thresholds live in the coverage_gate.py calls below; the badges the
+# README shows are produced from the same numbers by the deploy workflow.
 
 on:
   push:
@@ -15,17 +19,21 @@ on:
 permissions:
   contents: read
 
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
 jobs:
-  engine-tests:
-    name: Engine tests + coverage
+  library-tests:
+    name: Engine + working-time tests (coverage gate)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
 
-      - name: Setup .NET 10
+      - name: Setup .NET
         uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: 10.0.x
+          global-json-file: global.json
 
       - name: Cache NuGet packages
         uses: actions/cache@v6
@@ -37,14 +45,24 @@ jobs:
       - name: Test scheduling engine (with coverage)
         run: >
           dotnet test tests/WorkPlanStudio.Scheduling.Tests/WorkPlanStudio.Scheduling.Tests.csproj -c Release
-          --coverage --coverage-output-format cobertura --coverage-output coverage.cobertura.xml
+          --coverage --coverage-output-format cobertura --coverage-output engine.cobertura.xml
+
+      - name: Test working-time library (with coverage)
+        run: >
+          dotnet test tests/WorkPlanStudio.WorkingTime.Tests/WorkPlanStudio.WorkingTime.Tests.csproj -c Release
+          --coverage --coverage-output-format cobertura --coverage-output workingtime.cobertura.xml
+
+      - name: Coverage gate (engine ≥ 90 % lines, working time ≥ 90 % lines)
+        run: |
+          python3 .github/scripts/coverage_gate.py "$(find tests/WorkPlanStudio.Scheduling.Tests -name engine.cobertura.xml | head -1)" WorkPlanStudio.Scheduling=90
+          python3 .github/scripts/coverage_gate.py "$(find tests/WorkPlanStudio.WorkingTime.Tests -name workingtime.cobertura.xml | head -1)" WorkPlanStudio.WorkingTime=90
 
       - name: Build coverage report
         if: always()
         run: |
           dotnet tool install --global dotnet-reportgenerator-globaltool
-          reportgenerator -reports:'**/coverage.cobertura.xml' -targetdir:coverage-report -reporttypes:'Html;TextSummary'
-          echo '### Engine code coverage' >> "$GITHUB_STEP_SUMMARY"
+          reportgenerator -reports:'tests/**/*.cobertura.xml' -targetdir:coverage-report -reporttypes:'Html;TextSummary' -assemblyfilters:'+WorkPlanStudio.Scheduling;+WorkPlanStudio.WorkingTime'
+          echo '### Library coverage report' >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
           cat coverage-report/Summary.txt >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
@@ -53,20 +71,20 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: coverage-report
+          name: coverage-report-libraries
           path: coverage-report
           if-no-files-found: ignore
 
   web-tests:
-    name: Mapper & component tests (bUnit)
+    name: Data, mapper, assistant & component tests (coverage gate)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
 
-      - name: Setup .NET 10
+      - name: Setup .NET
         uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: 10.0.x
+          global-json-file: global.json
 
       - name: Cache NuGet packages
         uses: actions/cache@v6
@@ -78,5 +96,28 @@ jobs:
       - name: Install WebAssembly tools (needed to build the referenced app)
         run: dotnet workload install wasm-tools
 
-      - name: Test mapper & components
-        run: dotnet test tests/WorkPlanStudio.Web.Tests/WorkPlanStudio.Web.Tests.csproj -c Release
+      - name: Test data, mapper, assistant & components (with coverage)
+        run: >
+          dotnet test tests/WorkPlanStudio.Web.Tests/WorkPlanStudio.Web.Tests.csproj -c Release
+          --coverage --coverage-output-format cobertura --coverage-output web.cobertura.xml
+
+      - name: Coverage gate (app ≥ 65 % lines)
+        run: python3 .github/scripts/coverage_gate.py "$(find tests/WorkPlanStudio.Web.Tests -name web.cobertura.xml | head -1)" WorkPlanStudio=65
+
+      - name: Build coverage report
+        if: always()
+        run: |
+          dotnet tool install --global dotnet-reportgenerator-globaltool
+          reportgenerator -reports:'tests/**/web.cobertura.xml' -targetdir:coverage-report -reporttypes:'Html;TextSummary' -assemblyfilters:'+WorkPlanStudio'
+          echo '### App coverage report' >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          cat coverage-report/Summary.txt >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-report-app
+          path: coverage-report
+          if-no-files-found: ignore

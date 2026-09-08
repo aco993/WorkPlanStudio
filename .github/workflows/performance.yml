@@ -1,0 +1,98 @@
+name: Performance
+
+# Two measurements, both published as artifacts and into the job summary:
+#   • benchmarks — BenchmarkDotNet over the two pure libraries (short job, so
+#     the numbers are indicative; run the full job locally for precision).
+#   • lighthouse — Lighthouse CI against the published site, served the way
+#     GitHub Pages serves it (static files, pre-compressed assets honoured).
+#     Accessibility, best practices and SEO are asserted; the performance
+#     score of a 30 MB WebAssembly runtime is reported, not gated.
+# Runs on main, weekly, and on demand — not on every pull request, where the
+# runner noise would say more than the code.
+
+on:
+  push:
+    branches: [ main ]
+  schedule:
+    - cron: '17 3 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  benchmarks:
+    name: BenchmarkDotNet (short job)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v6
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', 'Directory.Packages.props') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      - name: Run benchmarks
+        run: dotnet run -c Release --project tests/WorkPlanStudio.Benchmarks -- --filter '*' --job short --artifacts benchmark-results --exporters GitHub
+
+      - name: Summarise
+        run: |
+          echo '### Benchmarks (short job, indicative)' >> "$GITHUB_STEP_SUMMARY"
+          for f in benchmark-results/results/*-report-github.md; do cat "$f" >> "$GITHUB_STEP_SUMMARY"; echo >> "$GITHUB_STEP_SUMMARY"; done
+
+      - name: Upload results
+        uses: actions/upload-artifact@v7
+        with:
+          name: benchmark-results
+          path: benchmark-results/results
+
+  lighthouse:
+    name: Lighthouse CI on the published site
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Install WebAssembly tools
+        run: dotnet workload install wasm-tools
+
+      - name: Publish
+        run: dotnet publish src/WorkPlanStudio/WorkPlanStudio.csproj -c Release -o release
+
+      # Serve the published folder like a static host: SPA fallback, and the
+      # pre-compressed .br/.gz siblings served when the browser accepts them.
+      - name: Serve the published site
+        run: |
+          npx --yes http-server@14.1.1 release/wwwroot -p 8080 -P "http://localhost:8080?" --gzip --brotli -s &
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8080 > /dev/null; then echo "site is up"; exit 0; fi
+            sleep 1
+          done
+          echo "site did not start"; exit 1
+
+      - name: Lighthouse CI
+        uses: treosh/lighthouse-ci-action@v12
+        with:
+          configPath: .lighthouserc.json
+          uploadArtifacts: true
+          temporaryPublicStorage: false

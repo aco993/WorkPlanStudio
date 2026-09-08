@@ -1,29 +1,46 @@
 name: E2E
 
-# End-to-end tests: run the real app and drive it with Playwright (Chromium).
-# Heavier than the unit/component jobs (it builds + serves the WASM app and
-# downloads a browser), so it lives in its own workflow.
+# End-to-end, accessibility and visual-regression tests: run the real app and
+# drive it with Playwright (Chromium). Heavier than the unit/component jobs (it
+# builds + serves the WASM app and downloads a browser), so it lives in its own
+# workflow — and is also called by the deploy workflow as a gate.
+#
+# Visual baselines are per operating system (tests/WorkPlanStudio.E2E/visual-
+# baselines/<os>). On a runner without baselines the tests write them and pass;
+# the folder is uploaded as an artifact so they can be committed.
 
 on:
   push:
     branches: [ main ]
   pull_request:
   workflow_dispatch:
+  workflow_call:
 
 permissions:
   contents: read
 
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
 jobs:
   e2e:
-    name: Playwright end-to-end
+    name: Playwright end-to-end, axe, visual regression
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
 
-      - name: Setup .NET 10
+      - name: Setup .NET
         uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: 10.0.x
+          global-json-file: global.json
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v6
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', 'Directory.Packages.props') }}
+          restore-keys: nuget-${{ runner.os }}-
 
       - name: Install WebAssembly tools
         run: dotnet workload install wasm-tools
@@ -36,23 +53,31 @@ jobs:
 
       - name: Start the app
         run: |
-          nohup dotnet run --project src/WorkPlanStudio/WorkPlanStudio.csproj --launch-profile http > app.log 2>&1 &
+          nohup dotnet run --project src/WorkPlanStudio/WorkPlanStudio.csproj -c Release --launch-profile http > app.log 2>&1 &
           for i in $(seq 1 90); do
             if curl -sf http://localhost:5235 > /dev/null; then echo "app is up"; exit 0; fi
             sleep 2
           done
           echo "app did not start in time"; cat app.log; exit 1
 
-      - name: Run E2E tests
+      - name: Run E2E, accessibility and visual tests
         env:
           E2E_BASE_URL: http://localhost:5235
           E2E_ARTIFACTS: ${{ github.workspace }}/e2e-artifacts
         run: dotnet test tests/WorkPlanStudio.E2E/WorkPlanStudio.E2E.csproj -c Release --no-build
 
-      - name: Upload screenshots
+      - name: Upload screenshots and visual diffs
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: e2e-screenshots
+          name: e2e-artifacts
           path: e2e-artifacts
+          if-no-files-found: ignore
+
+      - name: Upload visual baselines (commit these after an intended change)
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: visual-baselines-${{ runner.os }}
+          path: tests/WorkPlanStudio.E2E/visual-baselines
           if-no-files-found: ignore
