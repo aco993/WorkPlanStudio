@@ -2,9 +2,11 @@
   <Folder Name="/src/">
     <Project Path="src/WorkPlanStudio/WorkPlanStudio.csproj" />
     <Project Path="src/WorkPlanStudio.Scheduling/WorkPlanStudio.Scheduling.csproj" />
+    <Project Path="src/WorkPlanStudio.WorkingTime/WorkPlanStudio.WorkingTime.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/WorkPlanStudio.Scheduling.Tests/WorkPlanStudio.Scheduling.Tests.csproj" />
+    <Project Path="tests/WorkPlanStudio.WorkingTime.Tests/WorkPlanStudio.WorkingTime.Tests.csproj" />
     <Project Path="tests/WorkPlanStudio.Web.Tests/WorkPlanStudio.Web.Tests.csproj" />
     <Project Path="tests/WorkPlanStudio.E2E/WorkPlanStudio.E2E.csproj" />
   </Folder>
