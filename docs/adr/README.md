@@ -20,3 +20,4 @@ the decision and its consequences, in the spirit of
 | [0011](0011-production-orders-own-routing-snapshots.md) | Schedule production orders that own an immutable routing snapshot | Accepted |
 | [0012](0012-working-time-as-capacity.md) | Model working time and German labour law as capacity, in a second pure library | Accepted |
 | [0013](0013-personas-through-the-real-authorization-pipeline.md) | Personas through the real authorization pipeline, without a backend | Accepted |
+| [0014](0014-schedule-chat-on-device-first-with-pluggable-models.md) | A conversation over the schedule: on-device answers first, models pluggable | Accepted |
