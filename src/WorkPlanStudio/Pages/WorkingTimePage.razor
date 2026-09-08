@@ -87,7 +87,14 @@ else
                     </label>
                 </div>
                 <div class="head-actions wt-actions">
-                    <button class="btn btn-primary" @onclick="SaveAsync" disabled="@_saving">@L["Common_Save"]</button>
+                    <AuthorizeView Policy="@Permissions.ManagePlantRules">
+                        <Authorized>
+                            <button class="btn btn-primary" @onclick="SaveAsync" disabled="@_saving">@L["Common_Save"]</button>
+                        </Authorized>
+                        <NotAuthorized>
+                            <ReadOnlyNotice Policy="@Permissions.ManagePlantRules" />
+                        </NotAuthorized>
+                    </AuthorizeView>
                 </div>
             </div>
         </section>
@@ -199,9 +206,11 @@ else
                 <h2>@L["WorkingTime_Absences"]</h2>
                 <p class="page-sub">@L["WorkingTime_AbsencesNote"]</p>
             </div>
-            <button class="btn btn-outline" @onclick="NewAbsence">
-                <span class="btn-plus">+</span> @L["WorkingTime_AddAbsence"]
-            </button>
+            <AuthorizeView Policy="@Permissions.ManageAbsences">
+                <button class="btn btn-outline" @onclick="NewAbsence">
+                    <span class="btn-plus">+</span> @L["WorkingTime_AddAbsence"]
+                </button>
+            </AuthorizeView>
         </div>
         @if (_absences.Count == 0)
         {
@@ -231,9 +240,11 @@ else
                             <td>@L[$"Absence_{absence.Kind}"]</td>
                             <td>@absence.Label</td>
                             <td class="actions-col">
-                                <button class="icon-btn danger" aria-label="@L["Common_Delete"]" title="@L["Common_Delete"]" @onclick="() => RemoveAbsenceAsync(absence.Id)">
-                                    <svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" /></svg>
-                                </button>
+                                <AuthorizeView Policy="@Permissions.ManageAbsences">
+                                    <button class="icon-btn danger" aria-label="@L["Common_Delete"]" title="@L["Common_Delete"]" @onclick="() => RemoveAbsenceAsync(absence.Id)">
+                                        <svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" /></svg>
+                                    </button>
+                                </AuthorizeView>
                             </td>
                         </tr>
                     }

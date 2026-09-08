@@ -10,6 +10,10 @@ WorkPlan Studio is a public static demo, not a multi-user production system. It 
 - Application code issues fixed EF-generated queries; it does not accept SQL from the user.
 - Storage incompatibility or corruption never silently reseeds over the old payload. The recovery screen supports export and an explicit two-step reset.
 
+## Personas are not access control
+
+The app offers three personas — planner, supervisor, guest — through the standard ASP.NET Core authorization pipeline (policies, `AuthorizeView`, a guard on every mutating service). The identity behind them is a persona chosen in the UI and stored in `localStorage`; its authentication type is `demo-persona`. Anyone can be the planner by choosing to, and the code enforcing the policies runs in the visitor's own browser. This demonstrates authorization plumbing and its seam for a real identity provider ([ADR 0013](adr/0013-personas-through-the-real-authorization-pipeline.md)); it protects nothing. Real access control needs a server that owns the data and re-checks every write with a verified identity.
+
 ## Optional BYOK narrator
 
 The core application and deterministic explanation work without AI. If enabled:

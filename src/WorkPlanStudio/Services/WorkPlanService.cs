@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using WorkPlanStudio.Data;
 using WorkPlanStudio.Models;
+using WorkPlanStudio.Services.Auth;
 using WorkPlanStudio.Validation;
 
 namespace WorkPlanStudio.Services;
@@ -9,8 +10,13 @@ namespace WorkPlanStudio.Services;
 public sealed class WorkPlanService
 {
     private readonly BrowserDatabase _db;
+    private readonly IPermissionGuard _guard;
 
-    public WorkPlanService(BrowserDatabase db) => _db = db;
+    public WorkPlanService(BrowserDatabase db, IPermissionGuard? guard = null)
+    {
+        _db = db;
+        _guard = guard ?? AllowAllGuard.Instance;
+    }
 
     public async Task<List<WorkPlan>> GetAllAsync(CancellationToken cancellationToken = default)
     {
@@ -51,6 +57,9 @@ public sealed class WorkPlanService
 
     public async Task<ApplicationResult<int>> CreateAsync(WorkPlan plan, CancellationToken cancellationToken = default)
     {
+        if (!await _guard.CanAsync(Permissions.ManageMasterData, cancellationToken))
+            return ApplicationResult<int>.Forbidden();
+
         ArgumentNullException.ThrowIfNull(plan);
         Normalize(plan);
         await using (var db = await _db.CreateContextAsync())
@@ -86,6 +95,9 @@ public sealed class WorkPlanService
 
     public async Task<ApplicationResult<int>> UpdateAsync(WorkPlan plan, CancellationToken cancellationToken = default)
     {
+        if (!await _guard.CanAsync(Permissions.ManageMasterData, cancellationToken))
+            return ApplicationResult<int>.Forbidden();
+
         ArgumentNullException.ThrowIfNull(plan);
         Normalize(plan);
         await using (var db = await _db.CreateContextAsync())
@@ -143,6 +155,9 @@ public sealed class WorkPlanService
 
     public async Task<ApplicationResult<int>> DeleteAsync(int id, CancellationToken cancellationToken = default)
     {
+        if (!await _guard.CanAsync(Permissions.ManageMasterData, cancellationToken))
+            return ApplicationResult<int>.Forbidden();
+
         await using (var db = await _db.CreateContextAsync())
         {
             var plan = await db.WorkPlans.FindAsync([id], cancellationToken);

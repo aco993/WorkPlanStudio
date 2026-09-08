@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using WorkPlanStudio.Data;
 using WorkPlanStudio.Models;
+using WorkPlanStudio.Services.Auth;
 using WorkPlanStudio.Validation;
 using WorkPlanStudio.WorkingTime;
 
@@ -10,8 +11,13 @@ namespace WorkPlanStudio.Services;
 public sealed class PlantSettingsService
 {
     private readonly BrowserDatabase _db;
+    private readonly IPermissionGuard _guard;
 
-    public PlantSettingsService(BrowserDatabase db) => _db = db;
+    public PlantSettingsService(BrowserDatabase db, IPermissionGuard? guard = null)
+    {
+        _db = db;
+        _guard = guard ?? AllowAllGuard.Instance;
+    }
 
     /// <summary>The stored settings, or the statutory defaults when the row is missing.</summary>
     public async Task<PlantSettings> GetAsync(CancellationToken cancellationToken = default)
@@ -23,6 +29,9 @@ public sealed class PlantSettingsService
 
     public async Task<ApplicationResult<PlantSettings>> SaveAsync(PlantSettings settings, CancellationToken cancellationToken = default)
     {
+        if (!await _guard.CanAsync(Permissions.ManagePlantRules, cancellationToken))
+            return ApplicationResult<PlantSettings>.Forbidden();
+
         ArgumentNullException.ThrowIfNull(settings);
 
         var issues = PlantSettingsValidator.Validate(settings);

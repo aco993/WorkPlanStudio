@@ -419,6 +419,17 @@
   <data name="ShiftKey_early" xml:space="preserve"><value>Early shift</value></data>
   <data name="ShiftKey_late" xml:space="preserve"><value>Late shift</value></data>
   <data name="ShiftKey_night" xml:space="preserve"><value>Night shift</value></data>
+  <data name="Persona_Title" xml:space="preserve"><value>Working as</value></data>
+  <data name="Persona_Switch" xml:space="preserve"><value>Switch persona</value></data>
+  <data name="Persona_Hint" xml:space="preserve"><value>Pick who you are. There is no login — the persona is remembered in this browser and decides what you may change.</value></data>
+  <data name="Role_Planner" xml:space="preserve"><value>Planner</value></data>
+  <data name="Role_Planner_Desc" xml:space="preserve"><value>Owns work plans, work centers, the plant rules and the sample data.</value></data>
+  <data name="Role_Supervisor" xml:space="preserve"><value>Supervisor</value></data>
+  <data name="Role_Supervisor_Desc" xml:space="preserve"><value>Runs the shop floor: releases and cancels orders, records absences. No master data.</value></data>
+  <data name="Role_Guest" xml:space="preserve"><value>Guest</value></data>
+  <data name="Role_Guest_Desc" xml:space="preserve"><value>Reads everything, changes nothing. Can still run schedules and use the assistant.</value></data>
+  <data name="ReadOnly_Notice" xml:space="preserve"><value>You are working as {0}. Changes here need {1} — switch persona in the top bar.</value></data>
+  <data name="Error_Forbidden" xml:space="preserve"><value>Your current persona may not do that. Switch persona in the top bar.</value></data>
   <data name="HolidayScope_Nationwide" xml:space="preserve"><value>nationwide</value></data>
   <data name="HolidayScope_State" xml:space="preserve"><value>state</value></data>
   <data name="HolidayScope_Partial" xml:space="preserve"><value>parts of the state</value></data>

@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using WorkPlanStudio.Data;
 using WorkPlanStudio.Models;
+using WorkPlanStudio.Services.Auth;
 using WorkPlanStudio.Validation;
 
 namespace WorkPlanStudio.Services;
@@ -9,8 +10,13 @@ namespace WorkPlanStudio.Services;
 public sealed class WorkCenterService
 {
     private readonly BrowserDatabase _db;
+    private readonly IPermissionGuard _guard;
 
-    public WorkCenterService(BrowserDatabase db) => _db = db;
+    public WorkCenterService(BrowserDatabase db, IPermissionGuard? guard = null)
+    {
+        _db = db;
+        _guard = guard ?? AllowAllGuard.Instance;
+    }
 
     public async Task<List<WorkCenter>> GetAllAsync(CancellationToken cancellationToken = default)
     {
@@ -46,6 +52,9 @@ public sealed class WorkCenterService
 
     public async Task<ApplicationResult<int>> SaveAsync(WorkCenter center, CancellationToken cancellationToken = default)
     {
+        if (!await _guard.CanAsync(Permissions.ManageMasterData, cancellationToken))
+            return ApplicationResult<int>.Forbidden();
+
         ArgumentNullException.ThrowIfNull(center);
         Normalize(center);
         var issues = WorkCenterValidator.Validate(center);
@@ -121,6 +130,9 @@ public sealed class WorkCenterService
     /// <summary>Deletes a work center, unless operations still reference it.</summary>
     public async Task<ApplicationResult<int>> DeleteAsync(int id, CancellationToken cancellationToken = default)
     {
+        if (!await _guard.CanAsync(Permissions.ManageMasterData, cancellationToken))
+            return ApplicationResult<int>.Forbidden();
+
         await using (var db = await _db.CreateContextAsync())
         {
             if (await db.Operations.AnyAsync(o => o.WorkCenterId == id, cancellationToken))
@@ -156,6 +168,9 @@ public sealed class WorkCenterService
 
     public async Task<ApplicationResult<int>> AddAbsenceAsync(WorkCenterAbsence absence, CancellationToken cancellationToken = default)
     {
+        if (!await _guard.CanAsync(Permissions.ManageAbsences, cancellationToken))
+            return ApplicationResult<int>.Forbidden();
+
         ArgumentNullException.ThrowIfNull(absence);
         absence.Label = absence.Label?.Trim() ?? "";
 
@@ -195,6 +210,9 @@ public sealed class WorkCenterService
 
     public async Task<ApplicationResult<int>> RemoveAbsenceAsync(int id, CancellationToken cancellationToken = default)
     {
+        if (!await _guard.CanAsync(Permissions.ManageAbsences, cancellationToken))
+            return ApplicationResult<int>.Forbidden();
+
         await using (var db = await _db.CreateContextAsync(cancellationToken))
         {
             var absence = await db.WorkCenterAbsences.FindAsync([id], cancellationToken);

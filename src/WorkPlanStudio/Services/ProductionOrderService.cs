@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using WorkPlanStudio.Data;
 using WorkPlanStudio.Models;
+using WorkPlanStudio.Services.Auth;
 using WorkPlanStudio.Validation;
 
 namespace WorkPlanStudio.Services;
@@ -12,8 +13,13 @@ namespace WorkPlanStudio.Services;
 public sealed class ProductionOrderService
 {
     private readonly BrowserDatabase _db;
+    private readonly IPermissionGuard _guard;
 
-    public ProductionOrderService(BrowserDatabase db) => _db = db;
+    public ProductionOrderService(BrowserDatabase db, IPermissionGuard? guard = null)
+    {
+        _db = db;
+        _guard = guard ?? AllowAllGuard.Instance;
+    }
 
     public async Task<List<ProductionOrder>> GetAllAsync(CancellationToken cancellationToken = default)
     {
@@ -63,6 +69,9 @@ public sealed class ProductionOrderService
         ProductionOrder order,
         CancellationToken cancellationToken = default)
     {
+        if (!await _guard.CanAsync(Permissions.ManageOrders, cancellationToken))
+            return ApplicationResult<ProductionOrder>.Forbidden();
+
         ArgumentNullException.ThrowIfNull(order);
 
         var issues = ProductionOrderValidator.Validate(order);
@@ -121,6 +130,9 @@ public sealed class ProductionOrderService
         int id,
         CancellationToken cancellationToken = default)
     {
+        if (!await _guard.CanAsync(Permissions.ManageOrders, cancellationToken))
+            return ApplicationResult<ProductionOrder>.Forbidden();
+
         await using var db = await _db.CreateContextAsync(cancellationToken);
 
         var order = await db.ProductionOrders.FirstOrDefaultAsync(o => o.Id == id, cancellationToken);
@@ -157,6 +169,9 @@ public sealed class ProductionOrderService
         int id,
         CancellationToken cancellationToken = default)
     {
+        if (!await _guard.CanAsync(Permissions.ManageOrders, cancellationToken))
+            return ApplicationResult<ProductionOrder>.Forbidden();
+
         await using var db = await _db.CreateContextAsync(cancellationToken);
 
         var order = await db.ProductionOrders.FirstOrDefaultAsync(o => o.Id == id, cancellationToken);
@@ -173,6 +188,9 @@ public sealed class ProductionOrderService
     /// <summary>Deletes an order outright. Only a draft may go, since it never reached the shop.</summary>
     public async Task<ApplicationResult<bool>> DeleteAsync(int id, CancellationToken cancellationToken = default)
     {
+        if (!await _guard.CanAsync(Permissions.ManageOrders, cancellationToken))
+            return ApplicationResult<bool>.Forbidden();
+
         await using var db = await _db.CreateContextAsync(cancellationToken);
 
         var order = await db.ProductionOrders.FirstOrDefaultAsync(o => o.Id == id, cancellationToken);

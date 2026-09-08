@@ -1,4 +1,5 @@
 using System.Globalization;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Microsoft.EntityFrameworkCore;
@@ -7,6 +8,7 @@ using Microsoft.JSInterop;
 using WorkPlanStudio;
 using WorkPlanStudio.Data;
 using WorkPlanStudio.Services;
+using WorkPlanStudio.Services.Auth;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
@@ -19,6 +21,16 @@ builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.
 // as the .resx files (WorkPlanStudio.Resources), so the resource base name
 // matches the embedded resource name exactly.
 builder.Services.AddLocalization();
+
+// Authorization: the standard pipeline (policies, AuthorizeView, IAuthorizationService)
+// fed by a persona chosen in the UI and remembered per browser. The service layer
+// asks the same policies before every write - see docs/adr/0013.
+builder.Services.AddAuthorizationCore(options => options.AddWorkspacePolicies());
+builder.Services.AddCascadingAuthenticationState();
+builder.Services.AddScoped<IPersonaStore, JsPersonaStore>();
+builder.Services.AddScoped<DemoAuthenticationStateProvider>();
+builder.Services.AddScoped<AuthenticationStateProvider>(sp => sp.GetRequiredService<DemoAuthenticationStateProvider>());
+builder.Services.AddScoped<IPermissionGuard, PermissionGuard>();
 
 // EF logs every command it executes at Information, and the browser console is
 // the only sink here - a published build was printing all of its DDL and every

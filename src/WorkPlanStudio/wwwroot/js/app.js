@@ -70,3 +70,14 @@ window.workplanDb = {
         URL.revokeObjectURL(url);
     }
 };
+
+// Closes a <details> menu from Blazor (after a choice, or on Escape) and returns
+// focus to its summary so keyboard users are not dropped on the page body.
+window.workplanMenu = {
+    close: function (details) {
+        if (!details) { return; }
+        details.removeAttribute('open');
+        const summary = details.querySelector('summary');
+        if (summary) { summary.focus(); }
+    }
+};

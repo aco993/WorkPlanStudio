@@ -7,9 +7,11 @@
 
 <div class="page-head">
     <h1>@L["WorkPlans_Title"]</h1>
-    <button class="btn btn-primary" @onclick='() => Nav.NavigateTo("work-plans/new")'>
-        <span class="btn-plus">+</span> @L["WorkPlans_New"]
-    </button>
+    <AuthorizeView Policy="@Permissions.ManageMasterData">
+        <button class="btn btn-primary" @onclick='() => Nav.NavigateTo("work-plans/new")'>
+            <span class="btn-plus">+</span> @L["WorkPlans_New"]
+        </button>
+    </AuthorizeView>
 </div>
 
 <div class="toolbar">
@@ -74,9 +76,11 @@ else
                             <button class="icon-btn" aria-label="@L["Common_Edit"]" title="@L["Common_Edit"]" @onclick="() => Open(p.Id)">
                                 <svg viewBox="0 0 24 24"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
                             </button>
-                            <button class="icon-btn danger" aria-label="@L["Common_Delete"]" title="@L["Common_Delete"]" @onclick="() => AskDelete(p)">
-                                <svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" /></svg>
-                            </button>
+                            <AuthorizeView Policy="@Permissions.ManageMasterData">
+                                <button class="icon-btn danger" aria-label="@L["Common_Delete"]" title="@L["Common_Delete"]" @onclick="() => AskDelete(p)">
+                                    <svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" /></svg>
+                                </button>
+                            </AuthorizeView>
                         </td>
                     </tr>
                 }

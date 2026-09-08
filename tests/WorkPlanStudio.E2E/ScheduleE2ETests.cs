@@ -285,6 +285,38 @@ public sealed class ScheduleE2ETests
     }
 
     [Fact]
+    public async Task Switching_persona_changes_what_the_pages_allow()
+    {
+        var context = await _fixture.Browser.NewContextAsync();
+        await using var _ = context;
+        var page = await context.NewPageAsync();
+        await page.GotoAsync($"{_fixture.BaseUrl}/work-centers");
+        var newCenter = page.GetByRole(AriaRole.Button, new() { Name = "New work center" });
+        await newCenter.WaitForAsync(new() { Timeout = 60_000 });   // a first visit is the planner
+
+        // Guest: the action disappears and a notice explains who could do it.
+        // (<summary> is not a button in the accessibility tree, so it is addressed by class.)
+        await page.Locator("summary.persona-summary").ClickAsync();
+        await page.GetByRole(AriaRole.Menuitemradio, new() { Name = "Guest" }).ClickAsync();
+        await newCenter.WaitForAsync(new() { State = WaitForSelectorState.Detached });
+        await page.GetByText("You are working as Guest").WaitForAsync();
+
+        // The persona survives a full reload …
+        await page.ReloadAsync();
+        await page.GetByRole(AriaRole.Heading, new() { Name = "Work Centers" }).WaitForAsync(new() { Timeout = 60_000 });
+        await page.GetByText("You are working as Guest").WaitForAsync();
+        Assert.Equal(0, await newCenter.CountAsync());
+
+        // … and a supervisor may release orders but still not edit master data.
+        await page.Locator("summary.persona-summary").ClickAsync();
+        await page.GetByRole(AriaRole.Menuitemradio, new() { Name = "Supervisor" }).ClickAsync();
+        await page.GetByText("You are working as Supervisor").WaitForAsync();
+        await page.GotoAsync($"{_fixture.BaseUrl}/production-orders");
+        await page.GetByRole(AriaRole.Button, new() { Name = "New order" }).WaitForAsync(new() { Timeout = 60_000 });
+        Assert.Equal(0, await page.GetByText("You are working as Supervisor").CountAsync());
+    }
+
+    [Fact]
     public async Task Mobile_drawer_navigation_keeps_the_core_flow_usable()
     {
         var context = await _fixture.Browser.NewContextAsync(new BrowserNewContextOptions
