@@ -68,9 +68,9 @@ jobs:
 
       - name: Coverage gates + badges
         run: |
-          python3 .github/scripts/coverage_gate.py "$(find tests/WorkPlanStudio.Scheduling.Tests -name engine.cobertura.xml | head -1)" WorkPlanStudio.Scheduling=90 --badge badges
-          python3 .github/scripts/coverage_gate.py "$(find tests/WorkPlanStudio.WorkingTime.Tests -name workingtime.cobertura.xml | head -1)" WorkPlanStudio.WorkingTime=90 --badge badges
-          python3 .github/scripts/coverage_gate.py "$(find tests/WorkPlanStudio.Web.Tests -name web.cobertura.xml | head -1)" WorkPlanStudio=65 --badge badges
+          python3 .github/scripts/coverage_gate.py TestResults/engine.cobertura.xml WorkPlanStudio.Scheduling=90 --badge badges
+          python3 .github/scripts/coverage_gate.py TestResults/workingtime.cobertura.xml WorkPlanStudio.WorkingTime=90 --badge badges
+          python3 .github/scripts/coverage_gate.py TestResults/web.cobertura.xml WorkPlanStudio=65 --badge badges
 
       - name: Upload badge data
         uses: actions/upload-artifact@v7

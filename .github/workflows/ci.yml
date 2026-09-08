@@ -42,6 +42,7 @@ jobs:
           key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', 'Directory.Packages.props') }}
           restore-keys: nuget-${{ runner.os }}-
 
+      # The collector writes a relative --coverage-output into ./TestResults of the working directory.
       - name: Test scheduling engine (with coverage)
         run: >
           dotnet test tests/WorkPlanStudio.Scheduling.Tests/WorkPlanStudio.Scheduling.Tests.csproj -c Release
@@ -54,14 +55,14 @@ jobs:
 
       - name: Coverage gate (engine ≥ 90 % lines, working time ≥ 90 % lines)
         run: |
-          python3 .github/scripts/coverage_gate.py "$(find tests/WorkPlanStudio.Scheduling.Tests -name engine.cobertura.xml | head -1)" WorkPlanStudio.Scheduling=90
-          python3 .github/scripts/coverage_gate.py "$(find tests/WorkPlanStudio.WorkingTime.Tests -name workingtime.cobertura.xml | head -1)" WorkPlanStudio.WorkingTime=90
+          python3 .github/scripts/coverage_gate.py TestResults/engine.cobertura.xml WorkPlanStudio.Scheduling=90
+          python3 .github/scripts/coverage_gate.py TestResults/workingtime.cobertura.xml WorkPlanStudio.WorkingTime=90
 
       - name: Build coverage report
         if: always()
         run: |
           dotnet tool install --global dotnet-reportgenerator-globaltool
-          reportgenerator -reports:'tests/**/*.cobertura.xml' -targetdir:coverage-report -reporttypes:'Html;TextSummary' -assemblyfilters:'+WorkPlanStudio.Scheduling;+WorkPlanStudio.WorkingTime'
+          reportgenerator -reports:'TestResults/*.cobertura.xml' -targetdir:coverage-report -reporttypes:'Html;TextSummary' -assemblyfilters:'+WorkPlanStudio.Scheduling;+WorkPlanStudio.WorkingTime'
           echo '### Library coverage report' >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
           cat coverage-report/Summary.txt >> "$GITHUB_STEP_SUMMARY"
@@ -102,13 +103,13 @@ jobs:
           --coverage --coverage-output-format cobertura --coverage-output web.cobertura.xml
 
       - name: Coverage gate (app ≥ 65 % lines)
-        run: python3 .github/scripts/coverage_gate.py "$(find tests/WorkPlanStudio.Web.Tests -name web.cobertura.xml | head -1)" WorkPlanStudio=65
+        run: python3 .github/scripts/coverage_gate.py TestResults/web.cobertura.xml WorkPlanStudio=65
 
       - name: Build coverage report
         if: always()
         run: |
           dotnet tool install --global dotnet-reportgenerator-globaltool
-          reportgenerator -reports:'tests/**/web.cobertura.xml' -targetdir:coverage-report -reporttypes:'Html;TextSummary' -assemblyfilters:'+WorkPlanStudio'
+          reportgenerator -reports:'TestResults/web.cobertura.xml' -targetdir:coverage-report -reporttypes:'Html;TextSummary' -assemblyfilters:'+WorkPlanStudio'
           echo '### App coverage report' >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
           cat coverage-report/Summary.txt >> "$GITHUB_STEP_SUMMARY"
