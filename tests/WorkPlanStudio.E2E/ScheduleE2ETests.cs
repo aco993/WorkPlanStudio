@@ -317,6 +317,61 @@ public sealed class ScheduleE2ETests
     }
 
     [Fact]
+    public async Task The_theme_toggle_switches_to_dark_and_survives_a_reload()
+    {
+        var context = await _fixture.Browser.NewContextAsync(new BrowserNewContextOptions { ColorScheme = ColorScheme.Light });
+        await using var _ = context;
+        var page = await context.NewPageAsync();
+        await page.GotoAsync($"{_fixture.BaseUrl}/");
+        await page.GetByRole(AriaRole.Heading, new() { Name = "Dashboard" }).WaitForAsync(new() { Timeout = 60_000 });
+        Assert.Equal("light", await page.EvaluateAsync<string>("() => document.documentElement.dataset.theme"));
+
+        var toggle = page.Locator(".theme-toggle");
+        await toggle.ClickAsync();   // system → light
+        await toggle.ClickAsync();   // light → dark
+        Assert.Equal("dark", await page.EvaluateAsync<string>("() => document.documentElement.dataset.theme"));
+
+        // The page background actually changed, not just an attribute.
+        var background = await page.EvaluateAsync<string>("() => getComputedStyle(document.body).backgroundColor");
+        Assert.Equal("rgb(15, 17, 23)", background);
+
+        await page.ReloadAsync();
+        await page.GetByRole(AriaRole.Heading, new() { Name = "Dashboard" }).WaitForAsync(new() { Timeout = 60_000 });
+        Assert.Equal("dark", await page.EvaluateAsync<string>("() => document.documentElement.dataset.theme"));
+    }
+
+    [Fact]
+    public async Task Keyboard_users_can_skip_to_the_content_and_tab_stays_inside_a_dialog()
+    {
+        var context = await _fixture.Browser.NewContextAsync();
+        await using var _ = context;
+        var page = await context.NewPageAsync();
+        await page.GotoAsync($"{_fixture.BaseUrl}/work-centers");
+        await page.GetByRole(AriaRole.Heading, new() { Name = "Work Centers" }).WaitForAsync(new() { Timeout = 60_000 });
+
+        // The skip link is the first element in the document. It is off-screen
+        // until focused, becomes visible on focus, and Enter moves focus to <main>.
+        // (Blazor's FocusOnNavigate parks focus on the heading after a route
+        // change, so the link is reached from the document start, as a keyboard
+        // user arriving from the address bar would.)
+        var skip = page.Locator(".skip-link");
+        Assert.True(await skip.EvaluateAsync<bool>("el => el.getBoundingClientRect().bottom < 0"), "skip link should be hidden until focused");
+        await skip.FocusAsync();
+        Assert.True(await skip.EvaluateAsync<bool>("el => el.getBoundingClientRect().top >= 0"), "skip link should be visible when focused");
+        Assert.Equal("Skip to content", await page.EvaluateAsync<string>("() => document.activeElement.textContent.trim()"));
+        await page.Keyboard.PressAsync("Enter");
+        Assert.Equal("main", await page.EvaluateAsync<string>("() => document.activeElement.id"));
+
+        // Inside a dialog, Tab wraps instead of escaping to the page behind.
+        await page.GetByRole(AriaRole.Button, new() { Name = "New work center" }).ClickAsync();
+        var dialog = page.GetByRole(AriaRole.Dialog, new() { Name = "New work center" });
+        await dialog.WaitForAsync();
+        for (int i = 0; i < 12; i++)
+            await page.Keyboard.PressAsync("Tab");
+        Assert.True(await page.EvaluateAsync<bool>("() => !!document.activeElement.closest('[role=dialog]')"), "focus escaped the dialog");
+    }
+
+    [Fact]
     public async Task Mobile_drawer_navigation_keeps_the_core_flow_usable()
     {
         var context = await _fixture.Browser.NewContextAsync(new BrowserNewContextOptions

@@ -430,6 +430,22 @@
   <data name="Role_Guest_Desc" xml:space="preserve"><value>Liest alles, ändert nichts. Kann trotzdem Planungsläufe starten und den Assistenten nutzen.</value></data>
   <data name="ReadOnly_Notice" xml:space="preserve"><value>Sie arbeiten als {0}. Änderungen hier erfordern {1} — Rolle in der Kopfzeile wechseln.</value></data>
   <data name="Error_Forbidden" xml:space="preserve"><value>Ihre aktuelle Rolle darf das nicht. Wechseln Sie die Rolle in der Kopfzeile.</value></data>
+  <data name="Skip_ToContent" xml:space="preserve"><value>Zum Inhalt springen</value></data>
+  <data name="Common_Date" xml:space="preserve"><value>Datum</value></data>
+  <data name="Theme_Toggle" xml:space="preserve"><value>Farbschema: {0}. Klicken zum Wechseln.</value></data>
+  <data name="Theme_system" xml:space="preserve"><value>folgt dem System</value></data>
+  <data name="Theme_light" xml:space="preserve"><value>hell</value></data>
+  <data name="Theme_dark" xml:space="preserve"><value>dunkel</value></data>
+  <data name="Dashboard_PlantTitle" xml:space="preserve"><value>Werk auf einen Blick</value></data>
+  <data name="Dashboard_PlantState" xml:space="preserve"><value>Bundesland</value></data>
+  <data name="Dashboard_NextHoliday" xml:space="preserve"><value>Nächster Feiertag</value></data>
+  <data name="Dashboard_StaffedCenters" xml:space="preserve"><value>Arbeitsplätze im Schichtbetrieb</value></data>
+  <data name="Dashboard_Persona" xml:space="preserve"><value>Angemeldet als</value></data>
+  <data name="Dashboard_ScheduleTitle" xml:space="preserve"><value>Planung auf einen Blick</value></data>
+  <data name="Dashboard_ScheduleNote" xml:space="preserve"><value>Soeben aus den freigegebenen Aufträgen mit den Standardparametern berechnet.</value></data>
+  <data name="Dashboard_OpenSchedule" xml:space="preserve"><value>Zur Planung</value></data>
+  <data name="Dashboard_ScheduleEmpty" xml:space="preserve"><value>Noch keine freigegebenen Aufträge zum Terminieren.</value></data>
+  <data name="Dashboard_LateOrders" xml:space="preserve"><value>verspätet</value></data>
   <data name="HolidayScope_Nationwide" xml:space="preserve"><value>bundesweit</value></data>
   <data name="HolidayScope_State" xml:space="preserve"><value>landesweit</value></data>
   <data name="HolidayScope_Partial" xml:space="preserve"><value>Teile des Landes</value></data>

@@ -4,6 +4,8 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#4f46e5" />
     <title>WorkPlan Studio</title>
     <base href="/" />
     <meta name="description" content="Manage manufacturing routings and generate a finite-capacity production schedule - entirely in the browser." />
@@ -53,11 +55,15 @@
 
 <body>
     <div id="app">
-        <svg class="loading-progress">
-            <circle r="40%" cx="50%" cy="50%" />
-            <circle r="40%" cx="50%" cy="50%" />
-        </svg>
-        <div class="loading-progress-text"></div>
+        <div class="boot" role="status" aria-live="polite">
+            <div class="boot-mark" aria-hidden="true">WP</div>
+            <svg class="loading-progress" aria-hidden="true">
+                <circle r="40%" cx="50%" cy="50%" />
+                <circle r="40%" cx="50%" cy="50%" />
+            </svg>
+            <div class="loading-progress-text"></div>
+            <p class="boot-note">WorkPlan Studio · loading the in-browser database</p>
+        </div>
     </div>
 
     <div id="blazor-error-ui">
