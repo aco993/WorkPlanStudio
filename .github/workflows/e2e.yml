@@ -16,6 +16,12 @@ on:
   workflow_dispatch:
   workflow_call:
 
+# A newer push to the same branch supersedes the run in flight; only the
+# latest state of a branch is worth a runner.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
