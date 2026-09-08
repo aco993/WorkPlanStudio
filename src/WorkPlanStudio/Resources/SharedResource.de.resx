@@ -265,7 +265,7 @@
   <data name="Sched_Error_InvalidWorkCenterCapacity" xml:space="preserve"><value>die Arbeitsplatzkapazität ist ungültig</value></data>
 
   <data name="Sched_Ai_Title" xml:space="preserve"><value>Planungs-Assistent</value></data>
-  <data name="Sched_Ai_Subtitle" xml:space="preserve"><value>Eine Erklärung des obigen Plans in einfacher Sprache — auf Ihrem Gerät berechnet.</value></data>
+  <data name="Sched_Ai_Subtitle" xml:space="preserve"><value>Eine Erklärung des obigen Plans in einfacher Sprache — und ein Gespräch darüber, auf Ihrem Gerät berechnet.</value></data>
   <data name="Sched_Ai_SourceRuleBased" xml:space="preserve"><value>Regelbasiert</value></data>
   <data name="Sched_Ai_AskAi" xml:space="preserve"><value>Mit KI verbessern</value></data>
   <data name="Sched_Ai_Thinking" xml:space="preserve"><value>Frage das Modell…</value></data>
@@ -281,7 +281,7 @@
   <data name="Sched_Ai_Fallback" xml:space="preserve"><value>KI nicht verfügbar ({0}) — es wird die regelbasierte Erklärung angezeigt.</value></data>
   <data name="Sched_Ai_SettingsTitle" xml:space="preserve"><value>Einstellungen KI-Assistent</value></data>
   <data name="Sched_Ai_EnableLabel" xml:space="preserve"><value>KI-Erklärungen aktivieren (eigener API-Schlüssel)</value></data>
-  <data name="Sched_Ai_Endpoint" xml:space="preserve"><value>API-Endpunkt (OpenAI-kompatibel)</value></data>
+  <data name="Sched_Ai_Endpoint" xml:space="preserve"><value>API-Endpunkt</value></data>
   <data name="Sched_Ai_Model" xml:space="preserve"><value>Modell</value></data>
   <data name="Sched_Ai_ApiKey" xml:space="preserve"><value>API-Schlüssel</value></data>
   <data name="Sched_Ai_Privacy" xml:space="preserve"><value>Ihr Schlüssel wird im localStorage des Browsers gespeichert, der kein sicherer Schlüsselspeicher ist, und an den geprüften Endpunkt gesendet. Nicht auf gemeinsam genutzten Computern verwenden. Eine Produktivversion sollte einen Backend-Proxy und serverseitige Geheimnisse nutzen.</value></data>
@@ -449,4 +449,49 @@
   <data name="HolidayScope_Nationwide" xml:space="preserve"><value>bundesweit</value></data>
   <data name="HolidayScope_State" xml:space="preserve"><value>landesweit</value></data>
   <data name="HolidayScope_Partial" xml:space="preserve"><value>Teile des Landes</value></data>
+  <data name="Chat_Title" xml:space="preserve"><value>Fragen zu diesem Plan</value></data>
+  <data name="Chat_Placeholder" xml:space="preserve"><value>Frage stellen — z. B. „Warum ist PO-1003 verspätet?" oder „Was wäre mit SPT?"</value></data>
+  <data name="Chat_Send" xml:space="preserve"><value>Fragen</value></data>
+  <data name="Chat_Clear" xml:space="preserve"><value>Verlauf löschen</value></data>
+  <data name="Chat_Thinking" xml:space="preserve"><value>Wird berechnet…</value></data>
+  <data name="Chat_SourceOffline" xml:space="preserve"><value>Auf dem Gerät</value></data>
+  <data name="Chat_Intro" xml:space="preserve"><value>Die Antworten werden aus dem Plan oben berechnet, auf Ihrem Gerät. Mit eigenem API-Schlüssel gehen dieselben Fakten an ein Modell Ihrer Wahl für eine Antwort im Gespräch.</value></data>
+  <data name="Chat_Suggest_Bottleneck" xml:space="preserve"><value>Welcher Arbeitsplatz ist der Engpass?</value></data>
+  <data name="Chat_Suggest_Late" xml:space="preserve"><value>Welche Aufträge sind verspätet, und warum?</value></data>
+  <data name="Chat_Suggest_Closed" xml:space="preserve"><value>Warum stehen die Maschinen zeitweise still?</value></data>
+  <data name="Chat_Suggest_WhatIf" xml:space="preserve"><value>Was wäre mit der Regel SPT?</value></data>
+  <data name="Chat_Suggest_Rules" xml:space="preserve"><value>Welche Arbeitszeitregeln gelten?</value></data>
+  <data name="Chat_Help" xml:space="preserve"><value>Ich beantworte Fragen zu diesem Plan: der Engpass, welche Aufträge verspätet sind und warum, der Stand eines Auftrags (nennen Sie ihn, z. B. PO-1003) oder eines Arbeitsplatzes (z. B. CNC-300), warum Maschinen stillstehen, welche Arbeitszeitregeln gelten und was sich mit einer anderen Prioritätsregel ändern würde („Was wäre mit SPT?").</value></data>
+  <data name="Chat_Unknown" xml:space="preserve"><value>Das habe ich nicht verstanden. Versuchen Sie eine der vorgeschlagenen Fragen oder nennen Sie einen Auftrag (PO-…) oder einen Arbeitsplatz (z. B. CNC-300).</value></data>
+  <data name="Chat_NoData" xml:space="preserve"><value>Es gibt noch keinen Plan — geben Sie einen Fertigungsauftrag frei und erzeugen Sie einen.</value></data>
+  <data name="Chat_Summary" xml:space="preserve"><value>{0} von {1} Aufträgen sind pünktlich. Der letzte Arbeitsgang endet nach {2}; die Gesamtverspätung beträgt {3}; die Arbeitsplätze sind im Schnitt zu {4} ihrer offenen Zeit ausgelastet.</value></data>
+  <data name="Chat_SummaryBottleneck" xml:space="preserve"><value>Am stärksten belastet ist {0} mit {1}.</value></data>
+  <data name="Chat_Bottleneck" xml:space="preserve"><value>{0} ist der Engpass: {1} Auslastung der offenen Zeit über {2} Arbeitsgänge, mit {3} geschlossener Zeit (Schichten, Pausen, Sonntage, Feiertage) im Plan. Entlastung — ein zweiter Platz, eine zusätzliche Schicht, Verlagerung auf einen anderen Arbeitsplatz — würde den Plan am stärksten verkürzen.</value></data>
+  <data name="Chat_NoneLate" xml:space="preserve"><value>Kein Auftrag ist verspätet — alle {0} halten ihren Zieltermin.</value></data>
+  <data name="Chat_Late" xml:space="preserve"><value>{0} von {1} Aufträgen sind verspätet:</value></data>
+  <data name="Chat_LateReasonQueue" xml:space="preserve"><value>wartete {0} in der Warteschlange, vor allem auf {1}</value></data>
+  <data name="Chat_LateReasonTight" xml:space="preserve"><value>sein Zieltermin ist enger als seine eigene Bearbeitungszeit</value></data>
+  <data name="Chat_LateRecommend" xml:space="preserve"><value>Berechneter Vorschlag: die Regel {0} würde die Gesamtverspätung von {1} auf {2} senken.</value></data>
+  <data name="Chat_Order" xml:space="preserve"><value>{0} ({1}): Ziel {2}, fertig {3} — {4}.</value></data>
+  <data name="Chat_OrderLate" xml:space="preserve"><value>verspätet um {0}</value></data>
+  <data name="Chat_OrderOnTime" xml:space="preserve"><value>pünktlich, mit {0} Reserve</value></data>
+  <data name="Chat_WorkCenter" xml:space="preserve"><value>{0} bearbeitet {1} Arbeitsgänge mit {2} Belegung — {3} der offenen Zeit.</value></data>
+  <data name="Chat_WorkCenterClosed" xml:space="preserve"><value>Geschlossen innerhalb des Plans: {0}.</value></data>
+  <data name="Chat_WorkCenterFree" xml:space="preserve"><value>Der letzte Arbeitsgang endet {0}.</value></data>
+  <data name="Chat_NoClosedTime" xml:space="preserve"><value>Kein Arbeitsplatz war während des Plans geschlossen — alle laufen rund um die Uhr.</value></data>
+  <data name="Chat_ClosedTime" xml:space="preserve"><value>Geschlossene Zeit über die {0} Arbeitsplätze, nach Grund:</value></data>
+  <data name="Chat_ClosedHolidays" xml:space="preserve"><value>Feiertage innerhalb des Plans: {0}.</value></data>
+  <data name="Chat_Compliance" xml:space="preserve"><value>Der Betrieb folgt dem Arbeitszeitgesetz für {0} ({1}): Sonntagsarbeit {2}, Feiertagsarbeit {3}, höchstens {4} h Arbeit pro Tag, {5} h Ruhezeit zwischen Arbeitstagen, Pausen von {6}/{7} min nach 6/9 h. Jede geschlossene Strecke im Gantt-Diagramm nennt die Regel dahinter.</value></data>
+  <data name="Chat_Permitted" xml:space="preserve"><value>zulässig</value></data>
+  <data name="Chat_Forbidden" xml:space="preserve"><value>verboten</value></data>
+  <data name="Chat_WhatIf" xml:space="preserve"><value>Mit {0} statt {1}: verspätete Aufträge {2} → {3}, Gesamtverspätung {4} → {5}, Durchlaufzeit {6} → {7}. {8}</value></data>
+  <data name="Chat_WhatIfSame" xml:space="preserve"><value>{0} ist bereits die aktuelle Prioritätsregel.</value></data>
+  <data name="Chat_WhatIfBetter" xml:space="preserve"><value>Das ist besser — in den Parametern auswählen und neu erzeugen.</value></data>
+  <data name="Chat_WhatIfWorse" xml:space="preserve"><value>Das ist schlechter; die aktuelle Regel behalten.</value></data>
+  <data name="Chat_WhatIfSameResult" xml:space="preserve"><value>Identisches Ergebnis — der Optimierer erreicht von beiden Regeln aus denselben Plan.</value></data>
+  <data name="Sched_Ai_Provider" xml:space="preserve"><value>Anbieter</value></data>
+  <data name="Provider_OpenAiCompatible" xml:space="preserve"><value>OpenAI-kompatibel (OpenAI, OpenRouter, Groq, Mistral, Ollama…)</value></data>
+  <data name="Provider_Anthropic" xml:space="preserve"><value>Anthropic (Claude)</value></data>
+  <data name="Provider_Gemini" xml:space="preserve"><value>Google Gemini</value></data>
+  <data name="Sched_Ai_CorsNote" xml:space="preserve"><value>Die Anfrage geht aus Ihrem Browser an den Endpunkt; der Anbieter muss Browser-Aufrufe (CORS) erlauben. OpenAI, Anthropic (mit seinem Direktzugriffs-Header, automatisch gesetzt), Gemini, OpenRouter und lokale Server tun das; manche Proxys nicht.</value></data>
 </root>

@@ -70,7 +70,7 @@ public sealed class SchedulePage
 
     public async Task SwitchToGermanAsync()
     {
-        await _page.GetByRole(AriaRole.Button, new() { Name = "DE" }).ClickAsync();
+        await _page.GetByRole(AriaRole.Button, new() { Name = "DE", Exact = true }).ClickAsync();
         await _page.WaitForSelectorAsync(".gantt, .empty-state", new() { Timeout = 60_000 });
     }
 

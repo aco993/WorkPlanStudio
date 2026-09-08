@@ -127,6 +127,38 @@ public sealed class ScheduleE2ETests
     }
 
     [Fact]
+    public async Task The_chat_answers_questions_about_the_schedule_in_english_and_german()
+    {
+        var (context, schedule) = await OpenAsync();
+        await using var _ = context;
+        var page = schedule.Page;
+
+        // A suggested question, answered on-device from the schedule on the page.
+        await page.Locator(".chat-suggestions .chip").First.ClickAsync();
+        await page.Locator(".chat-turn.assistant").First.WaitForAsync();
+        var answer = await page.Locator(".chat-turn.assistant .chat-bubble").First.InnerTextAsync();
+        Assert.Contains("bottleneck", answer);
+        Assert.Matches(@"[A-Z]{2,4}-\d+", answer);   // names a work center
+        Assert.Equal("On-device", await page.Locator(".chat-turn.assistant .chat-source").First.InnerTextAsync());
+
+        // A typed what-if actually re-runs the scheduler and compares.
+        await page.FillAsync("#chat-question", "what if I use SPT?");
+        await page.PressAsync("#chat-question", "Enter");
+        await page.Locator(".chat-turn.assistant").Nth(1).WaitForAsync();
+        var whatIf = await page.Locator(".chat-turn.assistant .chat-bubble").Nth(1).InnerTextAsync();
+        Assert.Contains("SPT", whatIf);
+        Assert.Contains("makespan", whatIf);
+
+        // Switching the language resets the run and the thread; the answer comes back in German.
+        await schedule.SwitchToGermanAsync();
+        await page.Locator(".chat-suggestions .chip").First.ClickAsync();
+        await page.Locator(".chat-turn.assistant").First.WaitForAsync();
+        var german = await page.Locator(".chat-turn.assistant .chat-bubble").First.InnerTextAsync();
+        Assert.Contains("Engpass", german);
+        Assert.Equal("Auf dem Gerät", await page.Locator(".chat-turn.assistant .chat-source").First.InnerTextAsync());
+    }
+
+    [Fact]
     public async Task The_page_can_be_switched_to_german()
     {
         var (context, schedule) = await OpenAsync();
