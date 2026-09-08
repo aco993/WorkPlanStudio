@@ -178,7 +178,7 @@
                     </div>
                 </div>
                 <div class="card-body">
-                    <div class="gantt">
+                    <div class="gantt" role="region" aria-label="@L["Sched_Gantt"]" tabindex="0">
                         @foreach (var row in _result.Rows)
                         {
                             <div class="gantt-row">
@@ -306,7 +306,7 @@
 
                         @if (Chat.Turns.Count > 0)
                         {
-                            <ol class="chat-thread" aria-live="polite">
+                            <ol class="chat-thread" aria-live="polite" aria-label="@L["Chat_Title"]" tabindex="0">
                                 @foreach (var turn in Chat.Turns)
                                 {
                                     <li class="chat-turn @(turn.Role == ChatRole.User ? "user" : "assistant")">

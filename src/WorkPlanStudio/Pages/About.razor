@@ -20,7 +20,7 @@
         <div class="card-body">
             <p class="lead">@L["About_Intro"]</p>
 
-            <h3 class="about-sub">@L["About_TechTitle"]</h3>
+            <h2 class="about-sub">@L["About_TechTitle"]</h2>
             <ul class="tech-list">
                 @foreach (var line in _tech)
                 {
@@ -41,7 +41,7 @@
         </div>
     </section>
 
-    <aside class="about-side">
+    <div class="about-side">
         <section class="card">
             <div class="card-head"><h2>@L["About_LanguageTitle"]</h2></div>
             <div class="card-body">
@@ -65,7 +65,7 @@
                 </AuthorizeView>
             </div>
         </section>
-    </aside>
+    </div>
 </div>
 
 <Modal @bind-Visible="_showReset" Title="@L["About_Reset"]">
