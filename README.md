@@ -4,7 +4,11 @@
 
 **English** · [Deutsch](README.de.md)
 
-[![CI](https://github.com/aco993/WorkPlanStudio/actions/workflows/ci.yml/badge.svg)](.github/workflows/ci.yml)
+[![CI](https://github.com/aco993/WorkPlanStudio/actions/workflows/ci.yml/badge.svg)](https://github.com/aco993/WorkPlanStudio/actions/workflows/ci.yml)
+[![E2E](https://github.com/aco993/WorkPlanStudio/actions/workflows/e2e.yml/badge.svg)](https://github.com/aco993/WorkPlanStudio/actions/workflows/e2e.yml)
+[![Quality](https://github.com/aco993/WorkPlanStudio/actions/workflows/quality.yml/badge.svg)](https://github.com/aco993/WorkPlanStudio/actions/workflows/quality.yml)
+[![CodeQL](https://github.com/aco993/WorkPlanStudio/actions/workflows/codeql.yml/badge.svg)](https://github.com/aco993/WorkPlanStudio/actions/workflows/codeql.yml)
+[![Deploy](https://github.com/aco993/WorkPlanStudio/actions/workflows/deploy.yml/badge.svg)](https://aco993.github.io/WorkPlanStudio/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 **WorkPlan Studio** is a small, self-contained portfolio application for managing **manufacturing routings** (work plans): the ordered list of operations needed to produce a part, the work centers those operations run on, and the resulting **time and cost** for a given lot size.
@@ -244,7 +248,7 @@ To enable it: push this repo to GitHub, then in **Settings → Pages** set **Sou
 ## Limitations and roadmap
 
 - The scheduler is a deterministic heuristic and does not prove a globally optimal schedule.
-- A released work plan currently acts as one demonstration job. Customer orders, calendars, routing-revision snapshots and order-specific due dates require a future `ProductionOrder` model.
+- Availability calendars repeat uniformly: no public holidays, absences or per-week variation yet (see [ADR 0010](docs/adr/0010-periodic-calendars-and-setup-families.md)).
 - Scheduling runs on the browser UI thread. The reproducible 250-job scenario completed in about 395 ms on the documented review machine but allocated roughly 243 MB; a Worker or backend is justified only after representative browser profiling.
 - The versioned SQLite payload supports safe recovery/reset, not cross-version migration or cloud synchronization.
 - One high transitive SQLite advisory is explicitly tracked and risk-assessed in [docs/SECURITY.md](docs/SECURITY.md); the repository does not claim zero vulnerabilities.

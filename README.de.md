@@ -4,7 +4,11 @@
 
 [English](README.md) · **Deutsch**
 
-[![CI](https://github.com/aco993/WorkPlanStudio/actions/workflows/ci.yml/badge.svg)](.github/workflows/ci.yml)
+[![CI](https://github.com/aco993/WorkPlanStudio/actions/workflows/ci.yml/badge.svg)](https://github.com/aco993/WorkPlanStudio/actions/workflows/ci.yml)
+[![E2E](https://github.com/aco993/WorkPlanStudio/actions/workflows/e2e.yml/badge.svg)](https://github.com/aco993/WorkPlanStudio/actions/workflows/e2e.yml)
+[![Quality](https://github.com/aco993/WorkPlanStudio/actions/workflows/quality.yml/badge.svg)](https://github.com/aco993/WorkPlanStudio/actions/workflows/quality.yml)
+[![CodeQL](https://github.com/aco993/WorkPlanStudio/actions/workflows/codeql.yml/badge.svg)](https://github.com/aco993/WorkPlanStudio/actions/workflows/codeql.yml)
+[![Deploy](https://github.com/aco993/WorkPlanStudio/actions/workflows/deploy.yml/badge.svg)](https://aco993.github.io/WorkPlanStudio/)
 [![Lizenz: MIT](https://img.shields.io/badge/Lizenz-MIT-green.svg)](LICENSE)
 
 **WorkPlan Studio** ist eine kompakte, eigenständige Portfolio-Anwendung zur Verwaltung von **Fertigungs-Arbeitsplänen** (Routings): die geordnete Folge der Arbeitsgänge zur Herstellung eines Teils, die Arbeitsplätze, auf denen diese laufen, sowie die daraus resultierende **Zeit und Kosten** für eine gegebene Losgröße.
@@ -44,7 +48,8 @@ Damit demonstriert die App eine vollständige Datenschicht — `DbContext`, Bezi
 
 Die Seite **Planung** verwandelt die freigegebenen Fertigungsaufträge in einen kapazitätsbeschränkten Produktionsplan — der algorithmisch anspruchsvollste Teil des Projekts. Er liegt in einer eigenen, abhängigkeitsfreien Bibliothek (`src/WorkPlanStudio.Scheduling`), sodass die gesamte Engine auf einem normalen .NET-Runner unit-getestet werden kann — ohne Blazor oder die WebAssembly-Toolchain.
 
-1. **Zieltermine („Meta").** Jeder Demo-Auftrag erhält einen Termin nach TWK, NOP, SLK oder CON. Kundenspezifische Auftragstermine bleiben bis zu einem echten `ProductionOrder`-Modell bewusst außerhalb des Scopes.
+1. **Zieltermine („Meta").** Ein freigegebener Fertigungsauftrag bringt seinen eigenen Kundentermin mit, daher ist die Standardregel schlicht, ihn zu verwenden. Wo kein Kundentermin gilt, kann ein Ziel weiterhin nach TWK, NOP, SLK oder CON abgeleitet werden.
+1a. **Werkstatt-Restriktionen.** Arbeitsplätze können einen sich wiederholenden Verfügbarkeitskalender (eine Tagschicht ist ein Fenster in einer 24-Stunden-Periode) und eine reihenfolgeabhängige Rüstmatrix zwischen Arbeitsgang-Familien deklarieren. Beides ist standardmäßig „keine Einschränkung".
 2. **Dispatch-Planung.** Ein kapazitätsbeschränkter List-Scheduler platziert die Arbeitsgänge jedes Auftrags auf dem frühesten freien Slot ihres Arbeitsplatzes, unter Beachtung von Arbeitsgang-Reihenfolge und Maschinenkapazität. Sechs Prioritätsregeln entscheiden, wer auf einer umkämpften Maschine zuerst drankommt: FIFO, SPT, LPT, EDD, Critical Ratio und WSPT.
 3. **Optimierung.** Eine seed-basierte Multi-Start-Suche, bei der jeder Neustart von einem Insertion-Nachbarschafts-Abstieg gefolgt wird; das Ergebnis ist nie schlechter als der reine Regel-Plan. Gegen vollständige Enumeration gemessen: 0,2 % mittlerer Abstand zum Optimum, 19 von 20 Instanzen exakt gelöst.
 4. **Bewertung.** Durchlaufzeit (Makespan), Gesamt-/Maximalverspätung, Termintreue und Arbeitsplatz-Auslastung werden zu einem einzigen Strafwert zusammengefasst, den die Suche minimiert.
@@ -99,7 +104,7 @@ Das Repository setzt folgende Entwicklungspraktiken um:
 - **Strikte Builds** — Nullable Reference Types, .NET-Analyzer und **Warnungen als Fehler** (`Directory.Build.props`).
 - **Central Package Management** — jede NuGet-Version in einer [`Directory.Packages.props`](Directory.Packages.props).
 - **Einheitlicher Stil** — eine umfassende [`.editorconfig`](.editorconfig) und Zeilenende-Normalisierung über [`.gitattributes`](.gitattributes).
-- **Geschichtete Tests + Abdeckung** — 177 Tests in drei Testprojekten, einschließlich echtem SQLite, Browser-Reload/Reset, Mobile-Flow, eigenschaftsbasierten Invarianten, Optimalitätsprüfung gegen vollständige Enumeration und EN/DE-Ressourcengleichheit; die Engine liegt bei 97,13 % Zeilen- und 89,10 % Zweigabdeckung.
+- **Geschichtete Tests + Abdeckung** — 213 Tests in drei Testprojekten, einschließlich echtem SQLite, Browser-Reload/Reset, Mobile-Flow, eigenschaftsbasierten Invarianten, Optimalitätsprüfung gegen vollständige Enumeration, adversarialen Algorithmus-Fällen, Barrierefreiheits-Semantik und EN/DE-Ressourcengleichheit; die Engine liegt bei 96,37 % Zeilen- und 89,05 % Zweigabdeckung.
 - **Architektur per Test erzwungen** — die Engine kann keine Blazor-/EF-/JS-Abhängigkeit ansammeln.
 - **Entscheidungen dokumentiert** — siehe die [Architecture Decision Records](docs/adr).
 - **Abhängigkeits-Hygiene** — [Dependabot](.github/dependabot.yml) hält NuGet und GitHub Actions aktuell.
