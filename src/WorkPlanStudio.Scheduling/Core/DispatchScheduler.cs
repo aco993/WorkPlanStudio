@@ -126,24 +126,43 @@ public sealed class DispatchScheduler : IScheduler
     /// <summary>
     /// Earliest instant at or after <paramref name="earliest"/> where a block of
     /// <paramref name="occupied"/> seconds fits wholly inside one availability
-    /// window of the repeating calendar.
+    /// window of the repeating calendar and touches no blackout.
     /// </summary>
     /// <remarks>
-    /// The calendar repeats, so this always finds a placement: the context has
-    /// already proved the block fits in some window, which means a fit exists in
-    /// the current period or the next one. That is why this returns a value
-    /// instead of failing - a throw here would abort an entire search rather than
-    /// rejecting one candidate order.
+    /// The calendar repeats and the blackout list is finite, so this always
+    /// terminates with a placement: each blackout can push the search forward at
+    /// most once, and past the last one the periodic fit stands. That is why this
+    /// returns a value instead of failing - a throw here would abort an entire
+    /// search rather than rejecting one candidate order.
     /// </remarks>
-    private static long FirstFittingStart(MachineCapacity machine, long earliest, long occupied)
+    internal static long FirstFittingStart(MachineCapacity machine, long earliest, long occupied)
+    {
+        long candidate = earliest;
+        while (true)
+        {
+            candidate = FirstPeriodicFit(machine, candidate, occupied);
+
+            var blocking = FirstBlackoutOverlapping(machine.Blackouts, candidate, candidate + occupied);
+            if (blocking is null)
+                return candidate;
+
+            // Blackouts are sorted, so resuming at this one's end can only move
+            // forward - the loop makes progress and ends once it is past them all.
+            candidate = blocking.EndSeconds;
+        }
+    }
+
+    private static long FirstPeriodicFit(MachineCapacity machine, long earliest, long occupied)
     {
         var windows = machine.AvailabilityWindows;
         if (windows.Count == 0)
             return earliest;
 
+        // Work on the calendar's own axis: shift by the phase, fit, shift back.
         long period = machine.CalendarPeriodSeconds;
-        long cycleStart = earliest / period * period;
-        long offset = earliest - cycleStart;
+        long shifted = earliest + machine.CalendarPhaseSeconds;
+        long cycleStart = shifted / period * period;
+        long offset = shifted - cycleStart;
 
         // At most two periods: either it fits in what is left of this one, or at
         // the first suitable window of the next.
@@ -153,7 +172,7 @@ public sealed class DispatchScheduler : IScheduler
             {
                 long candidate = Math.Max(offset, window.StartSeconds);
                 if (candidate < window.EndSeconds && occupied <= window.EndSeconds - candidate)
-                    return cycleStart + candidate;
+                    return cycleStart + candidate - machine.CalendarPhaseSeconds;
             }
 
             cycleStart += period;
@@ -163,6 +182,22 @@ public sealed class DispatchScheduler : IScheduler
         // Unreachable while the construction-time fit check holds.
         throw new InvalidOperationException(
             $"Work center {machine.WorkCenterId} has no calendar slot for a {occupied}s block.");
+    }
+
+    /// <summary>The first blackout (in order) that overlaps <c>[start, end)</c>, or null.</summary>
+    private static CapacityBlackout? FirstBlackoutOverlapping(IReadOnlyList<CapacityBlackout> blackouts, long start, long end)
+    {
+        // Binary search for the first blackout that ends after `start`; sorted and
+        // non-overlapping is a construction invariant of the context.
+        int lo = 0, hi = blackouts.Count;
+        while (lo < hi)
+        {
+            int mid = (lo + hi) >> 1;
+            if (blackouts[mid].EndSeconds <= start) lo = mid + 1;
+            else hi = mid;
+        }
+
+        return lo < blackouts.Count && blackouts[lo].Overlaps(start, end) ? blackouts[lo] : null;
     }
 
     private sealed class SlotState

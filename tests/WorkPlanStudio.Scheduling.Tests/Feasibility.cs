@@ -35,15 +35,19 @@ internal static class Feasibility
         }
 
         // Calendar: every placement sits wholly inside one availability window of
-        // the repeating period.
+        // the repeating period (on the calendar's own, phase-shifted axis) and
+        // touches no blackout.
         foreach (var op in schedule.Operations)
         {
             var machine = context.Machines[op.WorkCenterId];
+
+            Assert.DoesNotContain(machine.Blackouts, b => b.Overlaps(op.StartSeconds, op.EndSeconds));
+
             if (machine.AvailabilityWindows.Count == 0)
                 continue;
 
             long period = machine.CalendarPeriodSeconds;
-            long offsetStart = op.StartSeconds % period;
+            long offsetStart = (op.StartSeconds + machine.CalendarPhaseSeconds) % period;
             long offsetEnd = offsetStart + op.DurationSeconds;
 
             Assert.True(
