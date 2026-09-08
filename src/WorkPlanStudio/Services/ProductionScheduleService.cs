@@ -13,11 +13,13 @@ public sealed class ProductionScheduleService : IProductionScheduleService
 {
     private readonly ProductionOrderService _orders;
     private readonly WorkCenterService _centers;
+    private readonly PlantSettingsService _settings;
 
-    public ProductionScheduleService(ProductionOrderService orders, WorkCenterService centers)
+    public ProductionScheduleService(ProductionOrderService orders, WorkCenterService centers, PlantSettingsService settings)
     {
         _orders = orders;
         _centers = centers;
+        _settings = settings;
     }
 
     /// <inheritdoc />
@@ -31,8 +33,11 @@ public sealed class ProductionScheduleService : IProductionScheduleService
         // later edit cannot change work already on the shop floor.
         var orders = await _orders.GetSchedulableAsync(cancellationToken);
         var centers = await _centers.GetAllAsync(cancellationToken);
+        var absences = await _centers.GetAbsencesAsync(cancellationToken);
+        var settings = await _settings.GetAsync(cancellationToken);
+        var calendar = ShopCalendar.From(settings, centers, absences);
 
-        var preparation = ScheduleMapper.BuildInputFromOrders(orders, centers, parameters);
+        var preparation = ScheduleMapper.BuildInputFromOrders(orders, centers, parameters, calendar);
         if (preparation.Input is null)
             return ScheduleResult.Empty(parameters.MinutesPerWorkingDay) with
             {
@@ -41,7 +46,8 @@ public sealed class ProductionScheduleService : IProductionScheduleService
 
         var input = preparation.Input;
         var result = new SchedulingEngine().RunCancellable(input.Context, cancellationToken);
-        var view = ScheduleMapper.BuildView(result, input.Context, input.OriginById, parameters.MinutesPerWorkingDay);
+        var view = ScheduleMapper.BuildView(
+            result, input.Context, input.OriginById, parameters.MinutesPerWorkingDay, input.Horizon, input.TimelineByWorkCenter);
         return view with
         {
             Explanation = ScheduleExplainer.Explain(input.Context, result),

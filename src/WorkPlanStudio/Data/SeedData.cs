@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using WorkPlanStudio.Models;
+using WorkPlanStudio.WorkingTime;
 
 namespace WorkPlanStudio.Data;
 
@@ -15,15 +16,29 @@ public static class SeedData
         if (db.WorkCenters.Any())
             return;
 
-        var saw = new WorkCenter { Code = "SAW-10", Name = "Cut-off Saw", CostCenter = "CC-1000", HourlyRate = 42m };
-        var lathe = new WorkCenter { Code = "CNC-200", Name = "CNC Turning Center", CostCenter = "CC-2000", HourlyRate = 78m };
-        var mill = new WorkCenter { Code = "CNC-300", Name = "5-Axis Milling Center", CostCenter = "CC-2000", HourlyRate = 95m };
-        var drill = new WorkCenter { Code = "DRL-120", Name = "Column Drill", CostCenter = "CC-1500", HourlyRate = 38m };
-        var grind = new WorkCenter { Code = "GRD-400", Name = "Surface Grinder", CostCenter = "CC-3000", HourlyRate = 64m };
-        var insp = new WorkCenter { Code = "QC-900", Name = "Quality Inspection", CostCenter = "CC-9000", HourlyRate = 55m };
-        var asm = new WorkCenter { Code = "ASM-500", Name = "Manual Assembly", CostCenter = "CC-5000", HourlyRate = 48m };
+        // Staffing follows the machine: the expensive CNC centers run more shifts,
+        // manual stations one. The plant sits in North Rhine-Westphalia by default.
+        var saw = new WorkCenter { Code = "SAW-10", Name = "Cut-off Saw", CostCenter = "CC-1000", HourlyRate = 42m, ShiftPatternKey = ShiftPatterns.OneShift.Key };
+        var lathe = new WorkCenter { Code = "CNC-200", Name = "CNC Turning Center", CostCenter = "CC-2000", HourlyRate = 78m, ShiftPatternKey = ShiftPatterns.TwoShift.Key };
+        var mill = new WorkCenter { Code = "CNC-300", Name = "5-Axis Milling Center", CostCenter = "CC-2000", HourlyRate = 95m, ShiftPatternKey = ShiftPatterns.ThreeShift.Key };
+        var drill = new WorkCenter { Code = "DRL-120", Name = "Column Drill", CostCenter = "CC-1500", HourlyRate = 38m, ShiftPatternKey = ShiftPatterns.OneShift.Key };
+        var grind = new WorkCenter { Code = "GRD-400", Name = "Surface Grinder", CostCenter = "CC-3000", HourlyRate = 64m, ShiftPatternKey = ShiftPatterns.OneShift.Key };
+        var insp = new WorkCenter { Code = "QC-900", Name = "Quality Inspection", CostCenter = "CC-9000", HourlyRate = 55m, ShiftPatternKey = ShiftPatterns.OneShift.Key };
+        var asm = new WorkCenter { Code = "ASM-500", Name = "Manual Assembly", CostCenter = "CC-5000", HourlyRate = 48m, ShiftPatternKey = ShiftPatterns.TwoShift.Key };
 
         db.WorkCenters.AddRange(saw, lathe, mill, drill, grind, insp, asm);
+
+        db.PlantSettings.Add(new PlantSettings { ModifiedUtc = new DateTime(2026, 5, 20, 8, 0, 0, DateTimeKind.Utc) });
+
+        // A planned service on the grinder in the first week of the demo
+        // schedule, so the Gantt shows an absence next to the holiday.
+        grind.Absences.Add(new WorkCenterAbsence
+        {
+            Start = new DateTime(2026, 6, 2, 7, 0, 0),
+            End = new DateTime(2026, 6, 2, 15, 30, 0),
+            Kind = AbsenceKind.Maintenance,
+            Label = "Spindle service"
+        });
 
         db.WorkPlans.AddRange(
             new WorkPlan
@@ -191,18 +206,21 @@ public static class SeedData
         if (db.ProductionOrders.Any())
             return;
 
-        var horizon = new DateTime(2026, 6, 15, 6, 0, 0, DateTimeKind.Utc);
+        // Monday 1 June 2026, 06:00 — the week of Fronleichnam (Thursday 4 June),
+        // a holiday in the default state, so the calendar visibly shapes the plan.
+        var horizon = new DateTime(2026, 6, 1, 6, 0, 0, DateTimeKind.Utc);
 
-        // plan number -> (quantity, release offset in hours, due offset in hours, priority)
+        // plan number -> (quantity, release offset in hours, due offset in hours, priority).
+        // Due dates are in working days now that machines keep shift calendars.
         var terms = new Dictionary<string, (int Quantity, int ReleaseHours, int DueHours, int Priority)>
         {
-            ["WP-1001"] = (100, 0, 96, 3),
-            ["WP-1002"] = (250, 0, 120, 1),
-            ["WP-1003"] = (40, 8, 72, 5),
-            ["WP-1005"] = (80, 0, 108, 1),
-            ["WP-1006"] = (60, 16, 84, 4),
-            ["WP-1007"] = (200, 8, 132, 1),
-            ["WP-1008"] = (120, 24, 144, 2),
+            ["WP-1001"] = (100, 0, 7 * 24, 3),
+            ["WP-1002"] = (250, 0, 9 * 24, 1),
+            ["WP-1003"] = (40, 24, 5 * 24, 5),
+            ["WP-1005"] = (80, 0, 8 * 24, 1),
+            ["WP-1006"] = (60, 48, 6 * 24, 4),
+            ["WP-1007"] = (200, 24, 10 * 24, 1),
+            ["WP-1008"] = (120, 72, 12 * 24, 2),
         };
 
         int sequence = 1001;

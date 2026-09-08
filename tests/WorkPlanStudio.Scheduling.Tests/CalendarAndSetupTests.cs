@@ -212,14 +212,30 @@ public class CalendarAndSetupTests
     }
 
     [Fact]
-    public void Utilisation_counts_busy_time_not_pauses()
+    public void Utilisation_divides_busy_time_by_open_time_not_by_the_makespan()
     {
         var context = Context(RuleOnly(DispatchRule.Fifo), [ShiftWithBreak(1)], Job(1, Step(10, 1, 5 * Hour)));
 
         var result = new SchedulingEngine().Run(context);
 
-        // busy 5 h over a makespan of 13.5 h
-        Assert.Equal(5.0 / 13.5, result.Evaluation.UtilizationByWorkCenter[1], precision: 9);
+        // busy 5 h; open time up to the 13:30 makespan is 08:00–12:00 + 12:30–13:30 = 5 h
+        Assert.Equal(1.0, result.Evaluation.UtilizationByWorkCenter[1], precision: 9);
+    }
+
+    [Fact]
+    public void Open_time_respects_phase_and_blackouts()
+    {
+        // 08–16 shift, phase 10 h (second 0 = 10:00): open 0–6 h, closed 6–22 h, open 22–30 h.
+        var machine = DayShift(1) with
+        {
+            CalendarPhaseSeconds = 10 * Hour,
+            Blackouts = [new CapacityBlackout(2 * Hour, 3 * Hour, "m"), new CapacityBlackout(8 * Hour, 9 * Hour, "closed anyway")]
+        };
+
+        Assert.Equal(6 * Hour, machine.OpenSecondsWithin(8 * Hour) + Hour);   // 6 h minus the 1 h blackout
+        Assert.Equal(5 * Hour + 2 * Hour, machine.OpenSecondsWithin(24 * Hour));  // + 22–24 h
+        Assert.Equal(0, machine.OpenSecondsWithin(0));
+        Assert.Equal(Day, Machine(2).OpenSecondsWithin(Day));
     }
 
     // ----- blackouts -----

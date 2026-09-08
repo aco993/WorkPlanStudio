@@ -93,10 +93,6 @@
                     <span>@L["Sched_Seed"]</span>
                     <input class="input num" type="number" @bind="_form.Seed" @bind:event="oninput" />
                 </label>
-                <label class="field">
-                    <span>@L["Sched_MinutesPerDay"]</span>
-                    <input class="input num" type="number" min="1" max="1440" @bind="_form.MinutesPerWorkingDay" @bind:event="oninput" />
-                </label>
             </div>
         </div>
     </section>
@@ -166,7 +162,14 @@
                         {
                             <span class="gantt-legend"><span class="gantt-legend-swatch late"></span>@L["Sched_Late"]</span>
                         }
-                        <span class="muted gantt-legend-note">@L["Sched_DayShort"] = @_form.MinutesPerWorkingDay min</span>
+                        @if (_result.Rows.Any(r => r.Closed.Count > 0))
+                        {
+                            <span class="muted gantt-legend-note"><span class="gantt-legend-swatch closed"></span>@L["Sched_ClosedLegend"]</span>
+                        }
+                        @if (_result.TotalPausedSeconds > 0)
+                        {
+                            <span class="muted gantt-legend-note">@string.Format(L["Sched_TotalPaused"], Hours(_result.TotalPausedSeconds))</span>
+                        }
                     </div>
                 </div>
                 <div class="card-body">
@@ -176,7 +179,13 @@
                             <div class="gantt-row">
                                 <div class="gantt-label" title="@row.WorkCenterName">@row.WorkCenterName</div>
                                 <div class="gantt-track">
-                                    @foreach (var d in DayBoundaries())
+                                    @foreach (var closed in row.Closed)
+                                    {
+                                        <div class="gantt-closed closed-@closed.Kind.ToString().ToLowerInvariant()"
+                                             style="left:@Pct(closed.StartSeconds)%;width:@Pct(closed.DurationSeconds)%"
+                                             title="@ClosedTitle(closed)"></div>
+                                    }
+                                    @foreach (var d in AxisTicks())
                                     {
                                         <div class="gantt-grid" style="left:@Pct(d)%"></div>
                                     }
@@ -194,9 +203,9 @@
                         <div class="gantt-axis">
                             <div class="gantt-label"></div>
                             <div class="gantt-track">
-                                @foreach (var d in DayBoundaries())
+                                @foreach (var d in AxisTicks())
                                 {
-                                    <span class="gantt-tick" style="left:@Pct(d)%">@DayLabel(d)</span>
+                                    <span class="gantt-tick" style="left:@Pct(d)%">@AxisLabel(d)</span>
                                 }
                             </div>
                         </div>
@@ -427,7 +436,8 @@
     }
 
     // ----- display helpers (CSS numbers MUST be invariant; text uses UI culture) -----
-    private long DayLengthSeconds => Math.Max(1, _form.MinutesPerWorkingDay) * 60L;
+    private const long HourSeconds = 3600;
+    private const long DaySeconds = 24 * HourSeconds;
 
     private string Pct(long seconds)
     {
@@ -443,33 +453,91 @@
         return Math.Max(0.6, pct).ToString("0.###", CultureInfo.InvariantCulture);
     }
 
-    private static string BarCss(GanttBar bar) =>
-        bar.IsLate ? $"gantt-bar job-color-{bar.ColorIndex} late" : $"gantt-bar job-color-{bar.ColorIndex}";
+    private static string BarCss(GanttBar bar)
+    {
+        var css = $"gantt-bar job-color-{bar.ColorIndex}";
+        if (bar.IsLate) css += " late";
+        if (bar.PausedSeconds > 0) css += " paused";
+        return css;
+    }
 
     private string BarTitle(GanttBar bar)
     {
         var title = $"{bar.JobReference} · {L["Field_OperationNo"]} {bar.StepNumber} · {Hours(bar.DurationSeconds)}";
+        if (bar.SetupSeconds > 0) title += $" · {L["Sched_Setup"]} {Hours(bar.SetupSeconds)}";
+        if (bar.PausedSeconds > 0) title += $" · {L["Sched_Paused"]} {Hours(bar.PausedSeconds)}";
+        if (_result?.Horizon is { } horizon)
+            title += $" · {Stamp(horizon.AddSeconds(bar.StartSeconds))} – {Stamp(horizon.AddSeconds(bar.EndSeconds))}";
         return bar.IsLate ? $"{title} · {L["Sched_Late"]}" : title;
     }
 
-    private IEnumerable<long> DayBoundaries()
+    private string ClosedTitle(GanttClosedSegment closed)
+    {
+        var kind = L[$"Segment_{closed.Kind}"];
+        var label = closed.Kind switch
+        {
+            SegmentKind.Holiday or SegmentKind.Absence => L.HolidayLabel(closed.Label),
+            SegmentKind.Break or SegmentKind.Rest => L.ShiftName(closed.Label),
+            _ => ""
+        };
+        var text = string.IsNullOrEmpty(label) ? kind.Value : $"{kind} · {label}";
+        if (_result?.Horizon is { } horizon)
+            text += $" · {Stamp(horizon.AddSeconds(closed.StartSeconds))} – {Stamp(horizon.AddSeconds(closed.EndSeconds))}";
+        return text;
+    }
+
+    /// <summary>
+    /// Axis ticks in seconds from the horizon: every 6 h for a short schedule,
+    /// every midnight for up to a fortnight, every few days beyond. Anchored to
+    /// real midnights when a horizon is known.
+    /// </summary>
+    private IEnumerable<long> AxisTicks()
     {
         long makespan = _result?.MakespanSeconds ?? 0;
-        for (long t = DayLengthSeconds; t < makespan; t += DayLengthSeconds)
+        if (makespan <= 0)
+            yield break;
+
+        long step = makespan <= 36 * HourSeconds ? 6 * HourSeconds
+                  : makespan <= 15 * DaySeconds ? DaySeconds
+                  : DaySeconds * (long)Math.Ceiling(makespan / (14.0 * DaySeconds));
+
+        long first = step;
+        if (_result?.Horizon is { } horizon)
+        {
+            // Snap to the next boundary of `step` in wall-clock time.
+            long offset = (long)horizon.TimeOfDay.TotalSeconds;
+            first = step - offset % step;
+            if (first == step && offset != 0) first = step - offset;
+            if (first <= 0) first += step;
+        }
+
+        for (long t = first; t < makespan; t += step)
             yield return t;
+    }
+
+    private string AxisLabel(long seconds)
+    {
+        if (_result?.Horizon is not { } horizon)
+            return Hours(seconds);
+
+        var moment = horizon.AddSeconds(seconds);
+        return moment.TimeOfDay == TimeSpan.Zero
+            ? moment.ToString("ddd d.M.", CultureInfo.CurrentUICulture)
+            : moment.ToString("HH:mm", CultureInfo.CurrentUICulture);
     }
 
     private string Hours(long seconds) => Format.Hours(seconds / 60m);
 
-    private string DayLabel(long seconds) => $"{L["Sched_DayShort"]}{seconds / DayLengthSeconds + 1}";
+    private static string Stamp(DateTime moment) => moment.ToString("ddd d.M. HH:mm", CultureInfo.CurrentUICulture);
 
     private string DayTime(long seconds)
     {
-        long day = seconds / DayLengthSeconds + 1;
-        long within = seconds % DayLengthSeconds;
-        long hh = within / 3600;
-        long mm = within % 3600 / 60;
-        return $"{L["Sched_DayShort"]}{day} {hh:00}:{mm:00}";
+        if (_result?.Horizon is { } horizon)
+            return Stamp(horizon.AddSeconds(seconds));
+
+        long day = seconds / DaySeconds + 1;
+        long within = seconds % DaySeconds;
+        return $"{L["Sched_DayShort"]}{day} {within / 3600:00}:{within % 3600 / 60:00}";
     }
 
     private string Lateness(long seconds)
@@ -521,7 +589,6 @@
         public int MultiStartRuns { get; set; } = 8;
         public int LocalSearchMaxSteps { get; set; } = 2000;
         public int Seed { get; set; } = 20260616;
-        public int MinutesPerWorkingDay { get; set; } = 480;
 
         public SchedulingParameters ToParameters() => new()
         {
@@ -533,8 +600,7 @@
             ConstantAllowanceSeconds = ConMinutes * 60L,
             MultiStartRuns = MultiStartRuns,
             LocalSearchMaxSteps = LocalSearchMaxSteps,
-            Seed = Seed,
-            MinutesPerWorkingDay = MinutesPerWorkingDay
+            Seed = Seed
         };
     }
 

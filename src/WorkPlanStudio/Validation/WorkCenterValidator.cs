@@ -21,6 +21,30 @@ public static class WorkCenterValidator
             issues.Add(new(nameof(center.HourlyRate), "Val_HourlyRateRange", 0, MaxHourlyRate));
         if (center.ParallelCapacity < MinCapacity || center.ParallelCapacity > MaxCapacity)
             issues.Add(new(nameof(center.ParallelCapacity), "Val_CapacityRange", MinCapacity, MaxCapacity));
+        if (WorkingTime.ShiftPatterns.ByKey(center.ShiftPatternKey) is null)
+            issues.Add(new(nameof(center.ShiftPatternKey), "Val_ShiftPatternUnknown"));
+
+        return issues;
+    }
+
+    public const int MaxAbsenceLabelLength = 80;
+
+    /// <summary>Business rules for a work-center absence.</summary>
+    public static IReadOnlyList<ValidationIssue> ValidateAbsence(WorkCenterAbsence absence)
+    {
+        ArgumentNullException.ThrowIfNull(absence);
+        var issues = new List<ValidationIssue>();
+
+        if (absence.WorkCenterId <= 0)
+            issues.Add(new(nameof(absence.WorkCenterId), "Val_Required"));
+        if (absence.End <= absence.Start)
+            issues.Add(new(nameof(absence.End), "Val_AbsenceEndBeforeStart"));
+        else if (absence.End - absence.Start > TimeSpan.FromDays(366))
+            issues.Add(new(nameof(absence.End), "Val_AbsenceTooLong"));
+        if (absence.Label?.Trim().Length > MaxAbsenceLabelLength)
+            issues.Add(new(nameof(absence.Label), "Val_MaxLength", MaxAbsenceLabelLength));
+        if (!Enum.IsDefined(absence.Kind))
+            issues.Add(new(nameof(absence.Kind), "Val_Required"));
 
         return issues;
     }

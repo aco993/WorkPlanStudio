@@ -28,7 +28,9 @@ builder.Logging.SetMinimumLevel(LogLevel.Warning);
 #endif
 
 // EF Core + SQLite, running entirely in the browser.
-var databaseOptions = new BrowserDatabaseOptions("/data/workplan.db", SchemaVersion: 4);
+// Schema 5: plant working-time settings, shift pattern per work center and
+// work-center absences (holidays and the ArbZG rules now shape capacity).
+var databaseOptions = new BrowserDatabaseOptions("/data/workplan.db", SchemaVersion: 5);
 builder.Services.AddSingleton(databaseOptions);
 builder.Services.AddDbContextFactory<AppDbContext>(options =>
     options.UseSqlite($"Data Source={databaseOptions.DatabasePath}"));
@@ -37,6 +39,7 @@ builder.Services.AddSingleton<BrowserDatabase>();
 builder.Services.AddScoped<WorkPlanService>();
 builder.Services.AddScoped<WorkCenterService>();
 builder.Services.AddScoped<ProductionOrderService>();
+builder.Services.AddScoped<PlantSettingsService>();
 builder.Services.AddScoped<IProductionScheduleService, ProductionScheduleService>();
 
 // Schedule assistant: an always-on rule-based narrator plus an optional,

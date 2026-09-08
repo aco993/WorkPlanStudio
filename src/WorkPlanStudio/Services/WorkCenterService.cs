@@ -81,6 +81,7 @@ public sealed class WorkCenterService
                 existing.CostCenter = center.CostCenter;
                 existing.HourlyRate = center.HourlyRate;
                 existing.ParallelCapacity = center.ParallelCapacity;
+                existing.ShiftPatternKey = center.ShiftPatternKey;
                 existing.IsActive = center.IsActive;
             }
 
@@ -139,10 +140,82 @@ public sealed class WorkCenterService
             : ApplicationResult<int>.PersistenceFailed();
     }
 
+    // ----- absences -----
+
+    /// <summary>Every absence, oldest first, with its work center loaded for display.</summary>
+    public async Task<List<WorkCenterAbsence>> GetAbsencesAsync(CancellationToken cancellationToken = default)
+    {
+        await using var db = await _db.CreateContextAsync(cancellationToken);
+        return await db.WorkCenterAbsences
+            .Include(a => a.WorkCenter)
+            .AsNoTracking()
+            .OrderBy(a => a.Start)
+            .ThenBy(a => a.WorkCenterId)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<ApplicationResult<int>> AddAbsenceAsync(WorkCenterAbsence absence, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(absence);
+        absence.Label = absence.Label?.Trim() ?? "";
+
+        var issues = WorkCenterValidator.ValidateAbsence(absence);
+        if (issues.Count > 0)
+            return ApplicationResult<int>.Validation(issues);
+
+        await using (var db = await _db.CreateContextAsync(cancellationToken))
+        {
+            if (!await db.WorkCenters.AnyAsync(c => c.Id == absence.WorkCenterId, cancellationToken))
+                return ApplicationResult<int>.NotFound();
+
+            db.WorkCenterAbsences.Add(new WorkCenterAbsence
+            {
+                WorkCenterId = absence.WorkCenterId,
+                Start = absence.Start,
+                End = absence.End,
+                Kind = absence.Kind,
+                Label = absence.Label
+            });
+
+            try
+            {
+                await db.SaveChangesAsync(cancellationToken);
+            }
+            catch (DbUpdateException)
+            {
+                return ApplicationResult<int>.PersistenceFailed();
+            }
+        }
+
+        var persisted = await _db.PersistAsync(cancellationToken);
+        return persisted.IsSuccess
+            ? ApplicationResult<int>.Success(absence.WorkCenterId)
+            : ApplicationResult<int>.PersistenceFailed();
+    }
+
+    public async Task<ApplicationResult<int>> RemoveAbsenceAsync(int id, CancellationToken cancellationToken = default)
+    {
+        await using (var db = await _db.CreateContextAsync(cancellationToken))
+        {
+            var absence = await db.WorkCenterAbsences.FindAsync([id], cancellationToken);
+            if (absence is null)
+                return ApplicationResult<int>.NotFound();
+
+            db.WorkCenterAbsences.Remove(absence);
+            await db.SaveChangesAsync(cancellationToken);
+        }
+
+        var persisted = await _db.PersistAsync(cancellationToken);
+        return persisted.IsSuccess
+            ? ApplicationResult<int>.Success(id)
+            : ApplicationResult<int>.PersistenceFailed();
+    }
+
     private static void Normalize(WorkCenter center)
     {
         center.Code = center.Code?.Trim() ?? "";
         center.Name = center.Name?.Trim() ?? "";
         center.CostCenter = center.CostCenter?.Trim() ?? "";
+        center.ShiftPatternKey = center.ShiftPatternKey?.Trim() ?? "";
     }
 }

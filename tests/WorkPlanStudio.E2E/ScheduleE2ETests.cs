@@ -238,6 +238,53 @@ public sealed class ScheduleE2ETests
     }
 
     [Fact]
+    public async Task The_gantt_shades_closed_time_with_a_reason_and_the_axis_shows_dates()
+    {
+        var (context, schedule) = await OpenAsync();
+        await using var _ = context;
+
+        // The seed plant sits in NW and the horizon is the week of Fronleichnam:
+        // the holiday, a Sunday, a break and the grinder's service all show.
+        var page = schedule.Page;
+        await page.Locator(".gantt-closed.closed-holiday").First.WaitForAsync();
+        Assert.Contains("Corpus Christi", await page.Locator(".gantt-closed.closed-holiday").First.GetAttributeAsync("title") ?? "");
+        Assert.True(await page.Locator(".gantt-closed.closed-sunday").CountAsync() > 0, "expected Sunday shading");
+        Assert.True(await page.Locator(".gantt-closed.closed-break").CountAsync() > 0, "expected break shading");
+        Assert.Contains("Spindle service", await page.Locator(".gantt-closed.closed-absence").First.GetAttributeAsync("title") ?? "");
+        Assert.True(await page.Locator(".gantt-bar.paused").CountAsync() > 0, "expected an operation paused across a break");
+
+        var ticks = await page.Locator(".gantt-tick").AllInnerTextsAsync();
+        Assert.Contains(ticks, t => t.Contains("Thu 4.6.", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task Changing_the_state_changes_the_holidays_and_the_schedule()
+    {
+        var context = await _fixture.Browser.NewContextAsync();
+        await using var _ = context;
+        var page = await context.NewPageAsync();
+        await page.GotoAsync($"{_fixture.BaseUrl}/working-time");
+        await page.GetByRole(AriaRole.Heading, new() { Name = "Working Time & Labour Law" }).WaitForAsync(new() { Timeout = 60_000 });
+
+        // NW today: Corpus Christi is in the table; Berlin: it is not, Women's Day is.
+        await page.GetByText("Corpus Christi").First.WaitForAsync();
+        await page.Locator("#wt-state").SelectOptionAsync("BE");
+        await page.GetByText("International Women's Day").WaitForAsync();
+        Assert.Equal(0, await page.GetByText("Corpus Christi").CountAsync());
+
+        // The live preview explains the cuts the rules make.
+        Assert.Contains("of break carved out of", await page.Locator(".wt-applications").InnerTextAsync());
+
+        await page.GetByRole(AriaRole.Button, new() { Name = "Save" }).ClickAsync();
+        await page.GetByText("Plant rules saved").WaitForAsync();
+
+        // Berlin has no holiday on Thursday 4 June, so the schedule no longer shades one.
+        var schedule = new SchedulePage(page, _fixture.BaseUrl);
+        await schedule.GotoAsync();
+        Assert.Equal(0, await page.Locator(".gantt-closed.closed-holiday").CountAsync());
+    }
+
+    [Fact]
     public async Task Mobile_drawer_navigation_keeps_the_core_flow_usable()
     {
         var context = await _fixture.Browser.NewContextAsync(new BrowserNewContextOptions

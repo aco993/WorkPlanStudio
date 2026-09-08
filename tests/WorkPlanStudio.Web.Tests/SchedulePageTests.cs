@@ -101,6 +101,43 @@ public class SchedulePageTests : BunitContext
     }
 
     [Fact]
+    public void Closed_time_is_shaded_and_the_axis_shows_real_dates_when_a_horizon_is_known()
+    {
+        var horizon = new DateTime(2026, 6, 1, 6, 0, 0);
+        var onTime = Sample.OnTime();
+        var result = onTime with
+        {
+            Horizon = horizon,
+            MakespanSeconds = 40 * 3600,
+            TotalPausedSeconds = 1800,
+            Rows =
+            [
+                new GanttRow("SAW-10 — Cut-off Saw",
+                    [new GanttBar(1, "WP-1", 0, 1, 0, 6 * 3600, IsLate: false) { PausedSeconds = 1800 }],
+                    [
+                        new GanttClosedSegment(4 * 3600, 4 * 3600 + 1800, WorkingTime.SegmentKind.Break, "day"),
+                        new GanttClosedSegment(18 * 3600, 42 * 3600, WorkingTime.SegmentKind.Holiday, "CorpusChristi")
+                    ])
+            ]
+        };
+        Arrange(result);
+
+        var cut = Render<SchedulePage>();
+
+        cut.WaitForAssertion(() => Assert.Equal(2, cut.FindAll(".gantt-closed").Count));
+        Assert.Single(cut.FindAll(".gantt-closed.closed-holiday"));
+        Assert.Contains("Holiday_CorpusChristi", cut.Find(".gantt-closed.closed-holiday").GetAttribute("title"));
+        Assert.Single(cut.FindAll(".gantt-bar.paused"));
+        Assert.Contains("Sched_ClosedLegend", cut.Markup);
+        Assert.Contains("Sched_TotalPaused", cut.Markup);
+
+        // axis ticks fall on midnight and are labelled with the date
+        var ticks = cut.FindAll(".gantt-tick");
+        Assert.NotEmpty(ticks);
+        Assert.Contains(ticks, t => t.TextContent.Contains("2.6.", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void Explicit_due_dates_are_offered_now_that_orders_carry_one()
     {
         Arrange(Sample.OnTime());

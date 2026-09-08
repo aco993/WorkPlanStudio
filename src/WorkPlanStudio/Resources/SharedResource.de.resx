@@ -318,4 +318,108 @@
   <data name="Val_OrderPlanHasNoOperations" xml:space="preserve"><value>Dieser Arbeitsplan hat keine Arbeitsgänge zum Einfrieren.</value></data>
   <data name="Error_ActionFailed" xml:space="preserve"><value>Die Aktion konnte nicht ausgeführt werden. Bitte erneut versuchen.</value></data>
   <data name="Field_Priority" xml:space="preserve"><value>Priorität</value></data>
+  <data name="Nav_WorkingTime" xml:space="preserve"><value>Arbeitszeit</value></data>
+  <data name="Field_ShiftPattern" xml:space="preserve"><value>Schichtmodell</value></data>
+  <data name="Shift_continuous" xml:space="preserve"><value>Durchgehend · 24/7, unbesetzt</value></data>
+  <data name="Shift_one-shift" xml:space="preserve"><value>Einschicht · 07:00–15:30, Mo–Fr</value></data>
+  <data name="Shift_two-shift" xml:space="preserve"><value>Zweischicht · 06:00–22:00, Mo–Fr</value></data>
+  <data name="Shift_three-shift" xml:space="preserve"><value>Dreischicht · rund um die Uhr, Mo–Fr</value></data>
+  <data name="Val_ShiftPatternUnknown" xml:space="preserve"><value>Wählen Sie eines der Schichtmodelle.</value></data>
+  <data name="Val_StateInvalid" xml:space="preserve"><value>Wählen Sie ein Bundesland.</value></data>
+  <data name="Val_Range" xml:space="preserve"><value>Muss zwischen {0} und {1} liegen.</value></data>
+  <data name="Val_AbsenceEndBeforeStart" xml:space="preserve"><value>Die Abwesenheit muss nach ihrem Beginn enden.</value></data>
+  <data name="Val_AbsenceTooLong" xml:space="preserve"><value>Eine Abwesenheit darf höchstens ein Jahr umfassen.</value></data>
+  <data name="Sched_Error_OperationExceedsShiftWindow" xml:space="preserve"><value>Arbeitsgang ist länger als die längste Schicht des Arbeitsplatzes und kann nie eingeplant werden</value></data>
+  <data name="Sched_Paused" xml:space="preserve"><value>unterbrochen</value></data>
+  <data name="Sched_Setup" xml:space="preserve"><value>Rüsten</value></data>
+  <data name="Sched_ClosedLegend" xml:space="preserve"><value>Schraffiert: Arbeitsplatz geschlossen — Grund per Mauszeiger</value></data>
+  <data name="Sched_TotalPaused" xml:space="preserve"><value>{0} Unterbrechung durch Pausen</value></data>
+  <data name="Segment_Working" xml:space="preserve"><value>Arbeitszeit</value></data>
+  <data name="Segment_Break" xml:space="preserve"><value>Pause (§ 4 ArbZG)</value></data>
+  <data name="Segment_OffShift" xml:space="preserve"><value>Schichtfrei</value></data>
+  <data name="Segment_Rest" xml:space="preserve"><value>Ruhezeit (§ 5 ArbZG)</value></data>
+  <data name="Segment_Sunday" xml:space="preserve"><value>Sonntagsruhe (§ 9 ArbZG)</value></data>
+  <data name="Segment_Holiday" xml:space="preserve"><value>Feiertag (§ 9 ArbZG)</value></data>
+  <data name="Segment_Absence" xml:space="preserve"><value>Abwesenheit</value></data>
+  <data name="WorkingTime_Title" xml:space="preserve"><value>Arbeitszeit &amp; Arbeitsrecht</value></data>
+  <data name="WorkingTime_Subtitle" xml:space="preserve"><value>Die Regeln des Arbeitszeitgesetzes, die die Kapazität jedes Arbeitsplatzes formen. Jede Regel ist ein Parameter, und jeder Eingriff wird erklärt.</value></data>
+  <data name="WorkingTime_PlantRules" xml:space="preserve"><value>Betriebsregeln</value></data>
+  <data name="WorkingTime_State" xml:space="preserve"><value>Bundesland (Feiertage)</value></data>
+  <data name="WorkingTime_IncludePartial" xml:space="preserve"><value>Auch Feiertage beachten, die nur in Teilen des Landes gelten</value></data>
+  <data name="WorkingTime_AllowExtendedDay" xml:space="preserve"><value>10-Stunden-Tag nutzen (§ 3 S. 2 — Ausgleich auf 8 h innerhalb von 24 Wochen)</value></data>
+  <data name="WorkingTime_AllowExtendedNight" xml:space="preserve"><value>10-Stunden-Nachtschicht nutzen (§ 6 Abs. 2 — Ausgleich innerhalb eines Monats)</value></data>
+  <data name="WorkingTime_SundayWork" xml:space="preserve"><value>Sonntagsarbeit zulässig (Ausnahme nach § 10, z. B. kontinuierlicher Prozess)</value></data>
+  <data name="WorkingTime_HolidayWork" xml:space="preserve"><value>Feiertagsarbeit zulässig (Ausnahme nach § 10)</value></data>
+  <data name="WorkingTime_BoundaryShift" xml:space="preserve"><value>Sonntagsruhe verschoben um (§ 9 Abs. 2, Mehrschichtbetriebe)</value></data>
+  <data name="WorkingTime_MinimumRest" xml:space="preserve"><value>Ruhezeit zwischen zwei Arbeitstagen (§ 5)</value></data>
+  <data name="WorkingTime_Hours" xml:space="preserve"><value>h</value></data>
+  <data name="WorkingTime_Saved" xml:space="preserve"><value>Betriebsregeln gespeichert. Der nächste Planungslauf verwendet sie.</value></data>
+  <data name="WorkingTime_Holidays" xml:space="preserve"><value>Gesetzliche Feiertage {0}</value></data>
+  <data name="WorkingTime_HolidaysNote" xml:space="preserve"><value>Für das gewählte Bundesland berechnet; bewegliche Feiertage leiten sich aus Ostern ab.</value></data>
+  <data name="WorkingTime_Preview" xml:space="preserve"><value>Wochenmuster</value></data>
+  <data name="WorkingTime_PreviewFor" xml:space="preserve"><value>Schichtmodell für die Vorschau</value></data>
+  <data name="WorkingTime_WeeklyHours" xml:space="preserve"><value>{0} Arbeitsstunden pro Woche</value></data>
+  <data name="WorkingTime_FreeSundays" xml:space="preserve"><value>{0} freie Sonntage im Jahr</value></data>
+  <data name="WorkingTime_FreeSundaysViolation" xml:space="preserve"><value>§ 11 ArbZG: mindestens {0} Sonntage im Jahr müssen frei bleiben — dieses Modell lässt {1}.</value></data>
+  <data name="WorkingTime_RulesApplied" xml:space="preserve"><value>So haben die Regeln dieses Modell geformt</value></data>
+  <data name="WorkingTime_NoRules" xml:space="preserve"><value>Keine Regel musste in dieses Modell eingreifen.</value></data>
+  <data name="WorkingTime_Catalog" xml:space="preserve"><value>Die Regeln</value></data>
+  <data name="WorkingTime_Absences" xml:space="preserve"><value>Abwesenheiten</value></data>
+  <data name="WorkingTime_AbsencesNote" xml:space="preserve"><value>Einmalige Schließungen zusätzlich zum Schichtmodell: Urlaub, Wartung, Ausfälle. Die Planung plant um sie herum.</value></data>
+  <data name="WorkingTime_AbsencesEmpty" xml:space="preserve"><value>Keine Abwesenheiten erfasst.</value></data>
+  <data name="WorkingTime_AddAbsence" xml:space="preserve"><value>Abwesenheit hinzufügen</value></data>
+  <data name="WorkingTime_AbsenceFrom" xml:space="preserve"><value>Von</value></data>
+  <data name="WorkingTime_AbsenceTo" xml:space="preserve"><value>Bis</value></data>
+  <data name="WorkingTime_AbsenceKind" xml:space="preserve"><value>Art</value></data>
+  <data name="WorkingTime_AbsenceLabel" xml:space="preserve"><value>Bezeichnung</value></data>
+  <data name="Absence_Vacation" xml:space="preserve"><value>Urlaub</value></data>
+  <data name="Absence_Maintenance" xml:space="preserve"><value>Wartung</value></data>
+  <data name="Absence_Unplanned" xml:space="preserve"><value>Ungeplant</value></data>
+  <data name="Absence_Other" xml:space="preserve"><value>Sonstiges</value></data>
+  <data name="Rule_MaxDailyWorkingTime_Title" xml:space="preserve"><value>Tägliche Arbeitszeit</value></data>
+  <data name="Rule_MaxDailyWorkingTime_Text" xml:space="preserve"><value>Ein Arbeitstag ist auf 8 Stunden begrenzt. Er darf 10 Stunden erreichen, wenn der Durchschnitt über 24 Wochen (sechs Monate) wieder bei 8 liegt. Eine längere Schicht wird gekürzt.</value></data>
+  <data name="Rule_Breaks_Title" xml:space="preserve"><value>Ruhepausen</value></data>
+  <data name="Rule_Breaks_Text" xml:space="preserve"><value>Mehr als 6 Stunden Arbeit erfordern 30 Minuten Pause, mehr als 9 Stunden 45 Minuten, in Abschnitten von mindestens 15 Minuten — und nie mehr als 6 Stunden am Stück ohne Pause. Pausen werden aus der Schicht herausgeschnitten; ein laufender Arbeitsgang pausiert und läuft weiter.</value></data>
+  <data name="Rule_RestPeriod_Title" xml:space="preserve"><value>Ruhezeit</value></data>
+  <data name="Rule_RestPeriod_Text" xml:space="preserve"><value>Zwischen zwei Arbeitstagen hat eine Schichtbesatzung 11 Stunden ununterbrochene Ruhezeit (10 in einigen benannten Branchen). Eine Schicht, die zu früh nach der vorherigen derselben Besatzung beginnen würde, wird verschoben.</value></data>
+  <data name="Rule_NightWork_Title" xml:space="preserve"><value>Nachtarbeit</value></data>
+  <data name="Rule_NightWork_Text" xml:space="preserve"><value>Eine Schicht mit mehr als 2 Stunden zwischen 23:00 und 06:00 ist Nachtarbeit und auf 8 Stunden begrenzt (10 mit monatlichem Ausgleich), auch wenn tagsüber 10 gelten.</value></data>
+  <data name="Rule_SundayRest_Title" xml:space="preserve"><value>Sonntagsruhe</value></data>
+  <data name="Rule_SundayRest_Text" xml:space="preserve"><value>Keine Arbeit von 0 bis 24 Uhr an Sonntagen, sofern keine Ausnahme nach § 10 greift. Mehrschichtbetriebe dürfen dieses Fenster um bis zu 6 Stunden verschieben.</value></data>
+  <data name="Rule_HolidayRest_Title" xml:space="preserve"><value>Feiertage</value></data>
+  <data name="Rule_HolidayRest_Text" xml:space="preserve"><value>Dasselbe Verbot gilt an gesetzlichen Feiertagen. Welche das sind, bestimmt das Bundesland — neun gelten überall, die übrigen unterscheiden sich.</value></data>
+  <data name="Rule_FreeSundays_Title" xml:space="preserve"><value>Freie Sonntage</value></data>
+  <data name="Rule_FreeSundays_Text" xml:space="preserve"><value>Auch wo Sonntagsarbeit zulässig ist, müssen mindestens 15 Sonntage im Jahr frei bleiben. Ein Modell, das jeden Sonntag besetzt, wird gemeldet.</value></data>
+  <data name="Applied_MaxDailyWorkingTime" xml:space="preserve"><value>{0} am {1}: Arbeitszeit von {2} auf {3} gekürzt.</value></data>
+  <data name="Applied_Breaks" xml:space="preserve"><value>{0} am {1}: {3} Pause aus einer Schicht von {2} herausgeschnitten.</value></data>
+  <data name="Applied_RestPeriod" xml:space="preserve"><value>{0} am {1}: Beginn verschoben — nur {2} Ruhezeit seit der vorherigen Schicht der Besatzung, {3} erforderlich.</value></data>
+  <data name="Applied_NightWork" xml:space="preserve"><value>{0} am {1}: Nachtarbeit, von {2} auf {3} gekürzt.</value></data>
+  <data name="Applied_SundayRest" xml:space="preserve"><value>{0} am {1}: Schicht von {2} auf {3} gekürzt wegen Sonntagsruhe.</value></data>
+  <data name="Applied_HolidayRest" xml:space="preserve"><value>{0} am {1}: geschlossen wegen Feiertag.</value></data>
+  <data name="Applied_FreeSundays" xml:space="preserve"><value>{0} am {1}: jeden Sonntag besetzt.</value></data>
+  <data name="Holiday_NewYear" xml:space="preserve"><value>Neujahr</value></data>
+  <data name="Holiday_Epiphany" xml:space="preserve"><value>Heilige Drei Könige</value></data>
+  <data name="Holiday_WomensDay" xml:space="preserve"><value>Internationaler Frauentag</value></data>
+  <data name="Holiday_GoodFriday" xml:space="preserve"><value>Karfreitag</value></data>
+  <data name="Holiday_EasterMonday" xml:space="preserve"><value>Ostermontag</value></data>
+  <data name="Holiday_LabourDay" xml:space="preserve"><value>Tag der Arbeit</value></data>
+  <data name="Holiday_AscensionDay" xml:space="preserve"><value>Christi Himmelfahrt</value></data>
+  <data name="Holiday_WhitMonday" xml:space="preserve"><value>Pfingstmontag</value></data>
+  <data name="Holiday_CorpusChristi" xml:space="preserve"><value>Fronleichnam</value></data>
+  <data name="Holiday_AugsburgPeaceFestival" xml:space="preserve"><value>Augsburger Friedensfest</value></data>
+  <data name="Holiday_Assumption" xml:space="preserve"><value>Mariä Himmelfahrt</value></data>
+  <data name="Holiday_ChildrensDay" xml:space="preserve"><value>Weltkindertag</value></data>
+  <data name="Holiday_GermanUnity" xml:space="preserve"><value>Tag der Deutschen Einheit</value></data>
+  <data name="Holiday_ReformationDay" xml:space="preserve"><value>Reformationstag</value></data>
+  <data name="Holiday_AllSaints" xml:space="preserve"><value>Allerheiligen</value></data>
+  <data name="Holiday_RepentanceDay" xml:space="preserve"><value>Buß- und Bettag</value></data>
+  <data name="Holiday_ChristmasDay" xml:space="preserve"><value>1. Weihnachtstag</value></data>
+  <data name="Holiday_BoxingDay" xml:space="preserve"><value>2. Weihnachtstag</value></data>
+  <data name="ShiftKey_day" xml:space="preserve"><value>Tagschicht</value></data>
+  <data name="ShiftKey_early" xml:space="preserve"><value>Frühschicht</value></data>
+  <data name="ShiftKey_late" xml:space="preserve"><value>Spätschicht</value></data>
+  <data name="ShiftKey_night" xml:space="preserve"><value>Nachtschicht</value></data>
+  <data name="HolidayScope_Nationwide" xml:space="preserve"><value>bundesweit</value></data>
+  <data name="HolidayScope_State" xml:space="preserve"><value>landesweit</value></data>
+  <data name="HolidayScope_Partial" xml:space="preserve"><value>Teile des Landes</value></data>
 </root>
