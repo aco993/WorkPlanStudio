@@ -26,9 +26,19 @@ public sealed record ScheduledOperation(
     /// </summary>
     public long SetupSeconds { get; init; }
 
-    /// <summary>Total occupied time, setup included.</summary>
+    /// <summary>
+    /// Time inside this placement during which the work center was closed and the
+    /// operation waited — a crew break the job paused across. Zero unless the
+    /// work center allows bridging (<see cref="MachineCapacity.MaxBridgeableGapSeconds"/>).
+    /// </summary>
+    public long PausedSeconds { get; init; }
+
+    /// <summary>Total elapsed time from start to end, setup and pauses included.</summary>
     public long DurationSeconds => EndSeconds - StartSeconds;
 
-    /// <summary>Time spent actually processing, excluding change-over.</summary>
-    public long ProcessingSeconds => DurationSeconds - SetupSeconds;
+    /// <summary>Time the work center was actually occupied: setup plus processing.</summary>
+    public long BusySeconds => DurationSeconds - PausedSeconds;
+
+    /// <summary>Time spent actually processing, excluding change-over and pauses.</summary>
+    public long ProcessingSeconds => BusySeconds - SetupSeconds;
 }

@@ -42,12 +42,14 @@ public class PropertyTests
         from baseline in GenContext
         from phases in Gen.Int[0, 3599].Array[baseline.Machines.Count]
         from blackoutStarts in Gen.Int[0, 40].Array[baseline.Machines.Count].Array[0, 3]
-        select Constrain(baseline, phases, blackoutStarts);
+        from bridges in Gen.Int[0, 1].Array[baseline.Machines.Count]
+        select Constrain(baseline, phases, blackoutStarts, bridges);
 
-    private static SchedulingContext Constrain(SchedulingContext baseline, int[] phases, int[][] blackoutStartsPerRound)
+    private static SchedulingContext Constrain(SchedulingContext baseline, int[] phases, int[][] blackoutStartsPerRound, int[] bridges)
     {
         // One-hour period, open [0, 900) and [1800, 3600) — two windows, each big
-        // enough for the largest step, with a closed gap between them.
+        // enough for the largest step, with a closed gap between them. Half the
+        // machines may bridge the 900 s gap, half may not.
         var machines = baseline.Machines.Values
             .OrderBy(m => m.WorkCenterId)
             .Select((m, i) => m with
@@ -55,6 +57,7 @@ public class PropertyTests
                 AvailabilityWindows = [new CapacityWindow(0, 900), new CapacityWindow(1800, 3600)],
                 CalendarPeriodSeconds = 3600,
                 CalendarPhaseSeconds = phases[i],
+                MaxBridgeableGapSeconds = bridges[i] == 1 ? 900 : 0,
                 Blackouts = blackoutStartsPerRound
                     .Select(round => round[i])
                     .Distinct()

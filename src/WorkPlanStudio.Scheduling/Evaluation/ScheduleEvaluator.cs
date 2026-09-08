@@ -35,7 +35,7 @@ public static class ScheduleEvaluator
         var busyByWorkCenter = new Dictionary<int, long>();
         foreach (var op in schedule.Operations)
             busyByWorkCenter[op.WorkCenterId] =
-                busyByWorkCenter.GetValueOrDefault(op.WorkCenterId) + op.DurationSeconds;
+                busyByWorkCenter.GetValueOrDefault(op.WorkCenterId) + op.BusySeconds;
 
         var utilization = new Dictionary<int, double>(busyByWorkCenter.Count);
         foreach (var (workCenterId, busy) in busyByWorkCenter)

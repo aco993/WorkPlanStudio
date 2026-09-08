@@ -75,7 +75,8 @@ public sealed class DispatchScheduler : IScheduler
                 operations.Add(new ScheduledOperation(
                     job.Id, step.StepNumber, step.WorkCenterId, placement.Slot, placement.Start, placement.End)
                 {
-                    SetupSeconds = placement.SetupSeconds
+                    SetupSeconds = placement.SetupSeconds,
+                    PausedSeconds = placement.PausedSeconds
                 });
             }
 
@@ -118,15 +119,18 @@ public sealed class DispatchScheduler : IScheduler
         long setup = context.SetupSecondsFor(machine.WorkCenterId, slots[slot].SetupFamily, step.SetupFamily);
         long occupied = setup + step.DurationSeconds;
         long earliest = Math.Max(jobReadyAt, slots[slot].FreeAt);
-        long start = FirstFittingStart(machine, earliest, occupied);
+        var (start, end) = FirstFit(machine, earliest, occupied);
 
-        return new Placement(slot, start, start + occupied, setup);
+        return new Placement(slot, start, end, setup, end - start - occupied);
     }
 
     /// <summary>
-    /// Earliest instant at or after <paramref name="earliest"/> where a block of
-    /// <paramref name="occupied"/> seconds fits wholly inside one availability
-    /// window of the repeating calendar and touches no blackout.
+    /// Earliest placement at or after <paramref name="earliest"/> for a block of
+    /// <paramref name="occupied"/> busy seconds: inside one availability window
+    /// of the repeating calendar — or a run of windows joined by gaps the work
+    /// center allows an operation to pause across — and touching no blackout.
+    /// Returns start and end; the end exceeds <c>start + occupied</c> by exactly
+    /// the pauses taken.
     /// </summary>
     /// <remarks>
     /// The calendar repeats and the blackout list is finite, so this always
@@ -135,16 +139,16 @@ public sealed class DispatchScheduler : IScheduler
     /// returns a value instead of failing - a throw here would abort an entire
     /// search rather than rejecting one candidate order.
     /// </remarks>
-    internal static long FirstFittingStart(MachineCapacity machine, long earliest, long occupied)
+    internal static (long Start, long End) FirstFit(MachineCapacity machine, long earliest, long occupied)
     {
         long candidate = earliest;
         while (true)
         {
-            candidate = FirstPeriodicFit(machine, candidate, occupied);
+            var (start, end) = FirstPeriodicFit(machine, candidate, occupied);
 
-            var blocking = FirstBlackoutOverlapping(machine.Blackouts, candidate, candidate + occupied);
+            var blocking = FirstBlackoutOverlapping(machine.Blackouts, start, end);
             if (blocking is null)
-                return candidate;
+                return (start, end);
 
             // Blackouts are sorted, so resuming at this one's end can only move
             // forward - the loop makes progress and ends once it is past them all.
@@ -152,31 +156,52 @@ public sealed class DispatchScheduler : IScheduler
         }
     }
 
-    private static long FirstPeriodicFit(MachineCapacity machine, long earliest, long occupied)
+    private static (long Start, long End) FirstPeriodicFit(MachineCapacity machine, long earliest, long occupied)
     {
         var windows = machine.AvailabilityWindows;
         if (windows.Count == 0)
-            return earliest;
+            return (earliest, earliest + occupied);
 
         // Work on the calendar's own axis: shift by the phase, fit, shift back.
         long period = machine.CalendarPeriodSeconds;
-        long shifted = earliest + machine.CalendarPhaseSeconds;
+        long phase = machine.CalendarPhaseSeconds;
+        long shifted = earliest + phase;
         long cycleStart = shifted / period * period;
-        long offset = shifted - cycleStart;
+        int count = windows.Count;
 
-        // At most two periods: either it fits in what is left of this one, or at
-        // the first suitable window of the next.
-        for (int pass = 0; pass < 2; pass++)
+        // Try every window start over three periods: the construction-time check
+        // guarantees a run long enough exists, so one starting within two periods
+        // of `earliest` must fit, and a run may itself span into a third.
+        for (int first = 0; first < count * 3; first++)
         {
-            foreach (var window in windows)
-            {
-                long candidate = Math.Max(offset, window.StartSeconds);
-                if (candidate < window.EndSeconds && occupied <= window.EndSeconds - candidate)
-                    return cycleStart + candidate - machine.CalendarPhaseSeconds;
-            }
+            long firstOffset = cycleStart + first / count * period;
+            var window = windows[first % count];
+            long start = Math.Max(shifted, firstOffset + window.StartSeconds);
+            long windowEnd = firstOffset + window.EndSeconds;
+            if (start >= windowEnd)
+                continue;
 
-            cycleStart += period;
-            offset = 0;
+            long remaining = occupied;
+            long cursor = start;
+            long previousEnd = windowEnd;
+            int next = first;
+            while (true)
+            {
+                long available = previousEnd - cursor;
+                if (remaining <= available)
+                    return (start - phase, cursor + remaining - phase);
+
+                remaining -= available;
+                next++;
+                long nextOffset = cycleStart + next / count * period;
+                var nextWindow = windows[next % count];
+                long nextStart = nextOffset + nextWindow.StartSeconds;
+                if (nextStart - previousEnd > machine.MaxBridgeableGapSeconds)
+                    break;   // the gap ends the run; try the next window as a start
+
+                cursor = nextStart;
+                previousEnd = nextOffset + nextWindow.EndSeconds;
+            }
         }
 
         // Unreachable while the construction-time fit check holds.
@@ -206,5 +231,5 @@ public sealed class DispatchScheduler : IScheduler
         public string? SetupFamily { get; set; }
     }
 
-    private readonly record struct Placement(int Slot, long Start, long End, long SetupSeconds);
+    private readonly record struct Placement(int Slot, long Start, long End, long SetupSeconds, long PausedSeconds);
 }
