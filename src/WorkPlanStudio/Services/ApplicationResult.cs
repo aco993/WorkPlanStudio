@@ -9,7 +9,10 @@ public enum ApplicationResultStatus
     NotFound,
     Conflict,
     PersistenceFailed,
-    Cancelled
+    Cancelled,
+
+    /// <summary>The current persona lacks the policy this action requires.</summary>
+    Forbidden
 }
 
 /// <summary>A small typed result for mutation boundaries; this is not a generic result framework.</summary>
@@ -31,4 +34,6 @@ public sealed record ApplicationResult<T>(
     public static ApplicationResult<T> NotFound() => new(ApplicationResultStatus.NotFound);
 
     public static ApplicationResult<T> PersistenceFailed() => new(ApplicationResultStatus.PersistenceFailed);
+
+    public static ApplicationResult<T> Forbidden() => new(ApplicationResultStatus.Forbidden);
 }

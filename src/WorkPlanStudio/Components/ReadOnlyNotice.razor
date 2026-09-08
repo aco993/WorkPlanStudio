@@ -1,0 +1,24 @@
+@inject IStringLocalizer<SharedResource> L
+@inject DemoAuthenticationStateProvider Auth
+
+@*
+    Shown where the current persona cannot act. It says what is hidden and
+    which persona could do it — the honest alternative to buttons that are
+    silently missing. Renders nothing when the policy is satisfied.
+*@
+<AuthorizeView Policy="@Policy">
+    <NotAuthorized>
+        <div class="readonly-notice" role="status">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></svg>
+            <span>@string.Format(L["ReadOnly_Notice"], L[$"Role_{Auth.CurrentRole}"], AllowedRoles)</span>
+        </div>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    /// <summary>The policy the page's actions need.</summary>
+    [Parameter, EditorRequired] public string Policy { get; set; } = "";
+
+    private string AllowedRoles =>
+        string.Join(" / ", Permissions.RolesFor[Policy].Select(r => L[$"Role_{r}"].Value));
+}

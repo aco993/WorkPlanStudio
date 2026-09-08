@@ -419,6 +419,17 @@
   <data name="ShiftKey_early" xml:space="preserve"><value>Frühschicht</value></data>
   <data name="ShiftKey_late" xml:space="preserve"><value>Spätschicht</value></data>
   <data name="ShiftKey_night" xml:space="preserve"><value>Nachtschicht</value></data>
+  <data name="Persona_Title" xml:space="preserve"><value>Angemeldet als</value></data>
+  <data name="Persona_Switch" xml:space="preserve"><value>Rolle wechseln</value></data>
+  <data name="Persona_Hint" xml:space="preserve"><value>Wählen Sie, wer Sie sind. Es gibt keinen Login — die Rolle wird in diesem Browser gemerkt und bestimmt, was Sie ändern dürfen.</value></data>
+  <data name="Role_Planner" xml:space="preserve"><value>Planer</value></data>
+  <data name="Role_Planner_Desc" xml:space="preserve"><value>Verantwortet Arbeitspläne, Arbeitsplätze, die Betriebsregeln und die Beispieldaten.</value></data>
+  <data name="Role_Supervisor" xml:space="preserve"><value>Meister</value></data>
+  <data name="Role_Supervisor_Desc" xml:space="preserve"><value>Führt die Werkstatt: gibt Aufträge frei und storniert sie, erfasst Abwesenheiten. Keine Stammdaten.</value></data>
+  <data name="Role_Guest" xml:space="preserve"><value>Gast</value></data>
+  <data name="Role_Guest_Desc" xml:space="preserve"><value>Liest alles, ändert nichts. Kann trotzdem Planungsläufe starten und den Assistenten nutzen.</value></data>
+  <data name="ReadOnly_Notice" xml:space="preserve"><value>Sie arbeiten als {0}. Änderungen hier erfordern {1} — Rolle in der Kopfzeile wechseln.</value></data>
+  <data name="Error_Forbidden" xml:space="preserve"><value>Ihre aktuelle Rolle darf das nicht. Wechseln Sie die Rolle in der Kopfzeile.</value></data>
   <data name="HolidayScope_Nationwide" xml:space="preserve"><value>bundesweit</value></data>
   <data name="HolidayScope_State" xml:space="preserve"><value>landesweit</value></data>
   <data name="HolidayScope_Partial" xml:space="preserve"><value>Teile des Landes</value></data>

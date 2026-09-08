@@ -11,10 +11,14 @@
         <h1>@L["Orders_Title"]</h1>
         <p class="page-sub">@L["Orders_Subtitle"]</p>
     </div>
-    <button class="btn btn-primary" @onclick="New">
-        <span class="btn-plus">+</span> @L["Orders_New"]
-    </button>
+    <AuthorizeView Policy="@Permissions.ManageOrders">
+        <button class="btn btn-primary" @onclick="New">
+            <span class="btn-plus">+</span> @L["Orders_New"]
+        </button>
+    </AuthorizeView>
 </div>
+
+<ReadOnlyNotice Policy="@Permissions.ManageOrders" />
 
 @if (_error is not null)
 {
@@ -69,17 +73,19 @@ else
                         <td class="center">@order.Priority</td>
                         <td><span class="badge order-@order.Status.ToString().ToLowerInvariant()">@StatusLabel(order.Status)</span></td>
                         <td class="actions-col">
-                            @if (order.Status == ProductionOrderStatus.Draft)
-                            {
-                                <button class="btn btn-outline" @onclick="() => ReleaseAsync(order.Id)">@L["Orders_Release"]</button>
-                                <button class="icon-btn danger" aria-label="@L["Common_Delete"]" title="@L["Common_Delete"]" @onclick="() => DeleteAsync(order.Id)">
-                                    <svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" /></svg>
-                                </button>
-                            }
-                            else if (order.Status == ProductionOrderStatus.Released)
-                            {
-                                <button class="btn btn-ghost" @onclick="() => CancelAsync(order.Id)">@L["Orders_Cancel"]</button>
-                            }
+                            <AuthorizeView Policy="@Permissions.ManageOrders">
+                                @if (order.Status == ProductionOrderStatus.Draft)
+                                {
+                                    <button class="btn btn-outline" @onclick="() => ReleaseAsync(order.Id)">@L["Orders_Release"]</button>
+                                    <button class="icon-btn danger" aria-label="@L["Common_Delete"]" title="@L["Common_Delete"]" @onclick="() => DeleteAsync(order.Id)">
+                                        <svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" /></svg>
+                                    </button>
+                                }
+                                else if (order.Status == ProductionOrderStatus.Released)
+                                {
+                                    <button class="btn btn-ghost" @onclick="() => CancelAsync(order.Id)">@L["Orders_Cancel"]</button>
+                                }
+                            </AuthorizeView>
                         </td>
                     </tr>
                 }
@@ -257,7 +263,7 @@ else
             _formErrors[issue.Field] = L[issue.MessageKey, issue.Arguments];
 
         if (_formErrors.Count == 0)
-            _error = L["Error_ActionFailed"];
+            _error = result.Status == ApplicationResultStatus.Forbidden ? L["Error_Forbidden"] : L["Error_ActionFailed"];
 
         return false;
     }

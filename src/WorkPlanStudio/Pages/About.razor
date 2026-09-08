@@ -3,6 +3,7 @@
 @inject BrowserDatabase Db
 @inject NavigationManager Nav
 @inject ILogger<About> Logger
+@inject IPermissionGuard Guard
 
 <PageTitle>@L["Nav_About"] · WorkPlan Studio</PageTitle>
 
@@ -52,9 +53,16 @@
             <div class="card-head"><h2>@L["About_DataTitle"]</h2></div>
             <div class="card-body">
                 <p class="muted small-text">@L["About_DataNote"]</p>
-                <button class="btn btn-outline danger full" @onclick="() => _showReset = true">
-                    @L["About_Reset"]
-                </button>
+                <AuthorizeView Policy="@Permissions.ResetData">
+                    <Authorized>
+                        <button class="btn btn-outline danger full" @onclick="() => _showReset = true">
+                            @L["About_Reset"]
+                        </button>
+                    </Authorized>
+                    <NotAuthorized>
+                        <ReadOnlyNotice Policy="@Permissions.ResetData" />
+                    </NotAuthorized>
+                </AuthorizeView>
             </div>
         </section>
     </aside>
@@ -86,6 +94,13 @@
         _resetError = null;
         try
         {
+            // The button is hidden for other personas, but the check that counts is this one.
+            if (!await Guard.CanAsync(Permissions.ResetData))
+            {
+                _resetError = L["Error_Forbidden"];
+                return;
+            }
+
             var readiness = await Db.ResetAsync();
             if (!readiness.IsReady)
             {

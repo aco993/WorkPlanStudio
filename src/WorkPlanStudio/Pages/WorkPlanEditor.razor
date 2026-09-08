@@ -15,9 +15,13 @@
     </div>
     <div class="head-actions">
         <button class="btn btn-ghost" @onclick="Cancel">@L["Common_Cancel"]</button>
-        <button class="btn btn-primary" @onclick="SaveAsync" disabled="@_saving">@L["Common_Save"]</button>
+        <AuthorizeView Policy="@Permissions.ManageMasterData">
+            <button class="btn btn-primary" @onclick="SaveAsync" disabled="@_saving">@L["Common_Save"]</button>
+        </AuthorizeView>
     </div>
 </div>
+
+<ReadOnlyNotice Policy="@Permissions.ManageMasterData" />
 
 @if (_loading)
 {
@@ -272,6 +276,8 @@ else
             _saveError = L["Error_NotFound"];
         else if (result.Status == ApplicationResultStatus.PersistenceFailed)
             _saveError = L["Error_SaveFailed"];
+        else if (result.Status == ApplicationResultStatus.Forbidden)
+            _saveError = L["Error_Forbidden"];
     }
 
     private void Cancel() => Nav.NavigateTo("work-plans");

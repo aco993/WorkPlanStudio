@@ -24,6 +24,7 @@ public sealed class WorkingTimePageTests : BunitContext
 
         Services.AddSingleton<IStringLocalizer<SharedResource>>(new PassThroughLocalizer<SharedResource>());
         Services.AddSingleton(database);
+        Services.AddDemoAuthorization(WorkPlanStudio.Services.Auth.WorkspaceRole.Planner);
         Services.AddSingleton(new WorkCenterService(database));
         Services.AddSingleton(new PlantSettingsService(database));
         Services.AddSingleton<ILogger<WorkPlanStudio.Pages.WorkingTimePage>>(NullLogger<WorkPlanStudio.Pages.WorkingTimePage>.Instance);

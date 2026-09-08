@@ -13,6 +13,10 @@
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" PrivateAssets="all" />
 
+    <!-- The standard Blazor authorization pipeline (policies, AuthorizeView),
+         fed by a local demo identity - see docs/adr/0013. -->
+    <PackageReference Include="Microsoft.AspNetCore.Components.Authorization" />
+
     <!-- EF Core + SQLite. On WebAssembly the native SQLite engine is relinked
          into the app (requires the 'wasm-tools' workload), so the whole data
          layer runs in the browser with no backend. -->

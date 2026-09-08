@@ -1,0 +1,57 @@
+@implements IDisposable
+@inject IStringLocalizer<SharedResource> L
+@inject DemoAuthenticationStateProvider Auth
+
+@*
+    Who you are working as. A native <details> element gives the menu keyboard
+    support, Escape handling and an accessible expanded state for free; the
+    persona list explains what each may do, so switching is also a tour of the
+    permission model.
+*@
+<details class="persona" @ref="_details" @onkeydown="OnKeyDown">
+    <summary class="persona-summary" aria-label="@L["Persona_Title"]" title="@L["Persona_Title"]">
+        <span class="persona-avatar role-@Auth.CurrentRole.ToString().ToLowerInvariant()" aria-hidden="true">@Initial(Auth.CurrentRole)</span>
+        <span class="persona-name">@L[$"Role_{Auth.CurrentRole}"]</span>
+        <svg class="persona-caret" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+    </summary>
+    <div class="persona-panel" role="menu" aria-label="@L["Persona_Switch"]">
+        <p class="persona-hint">@L["Persona_Hint"]</p>
+        @foreach (var role in new[] { WorkspaceRole.Planner, WorkspaceRole.Supervisor, WorkspaceRole.Guest })
+        {
+            <button type="button" role="menuitemradio" aria-checked="@(role == Auth.CurrentRole ? "true" : "false")"
+                    class="persona-option @(role == Auth.CurrentRole ? "active" : null)"
+                    @onclick="() => SwitchAsync(role)">
+                <span class="persona-avatar role-@role.ToString().ToLowerInvariant()" aria-hidden="true">@Initial(role)</span>
+                <span class="persona-text">
+                    <span class="persona-role">@L[$"Role_{role}"]</span>
+                    <span class="persona-desc">@L[$"Role_{role}_Desc"]</span>
+                </span>
+            </button>
+        }
+    </div>
+</details>
+
+@code {
+    private ElementReference _details;
+
+    protected override void OnInitialized() => Auth.AuthenticationStateChanged += OnStateChanged;
+
+    private string Initial(WorkspaceRole role) => L[$"Role_{role}"].Value[..1];
+
+    private async Task SwitchAsync(WorkspaceRole role)
+    {
+        await Auth.SwitchAsync(role);
+        await CloseAsync();
+    }
+
+    // <details> has no built-in Escape; closing it here keeps the menu keyboard-complete.
+    private Task OnKeyDown(KeyboardEventArgs args) => args.Key == "Escape" ? CloseAsync() : Task.CompletedTask;
+
+    private Task CloseAsync() => JS.InvokeVoidAsync("workplanMenu.close", _details).AsTask();
+
+    private void OnStateChanged(Task<AuthenticationState> task) => InvokeAsync(StateHasChanged);
+
+    public void Dispose() => Auth.AuthenticationStateChanged -= OnStateChanged;
+
+    [Inject] private IJSRuntime JS { get; set; } = default!;
+}

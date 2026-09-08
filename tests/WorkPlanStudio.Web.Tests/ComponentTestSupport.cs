@@ -105,3 +105,47 @@ internal static class Sample
             new ScheduleRecommendation(RecommendationKind.SwitchDispatchRule, DispatchRule.LongestProcessingTime, DispatchRule.ShortestProcessingTime, 300, 0))
     };
 }
+
+/// <summary>A persona store that never touches the browser.</summary>
+internal sealed class FakePersonaStore : WorkPlanStudio.Services.Auth.IPersonaStore
+{
+    public WorkPlanStudio.Services.Auth.WorkspaceRole? Stored { get; set; }
+
+    public ValueTask<WorkPlanStudio.Services.Auth.WorkspaceRole?> LoadAsync(CancellationToken cancellationToken = default) =>
+        ValueTask.FromResult(Stored);
+
+    public ValueTask SaveAsync(WorkPlanStudio.Services.Auth.WorkspaceRole role, CancellationToken cancellationToken = default)
+    {
+        Stored = role;
+        return ValueTask.CompletedTask;
+    }
+}
+
+internal static class AuthorizationTestSupport
+{
+    /// <summary>
+    /// Registers the real authorization pipeline (policies, AuthorizeView's
+    /// cascading state, the service guard) with a persona from a fake store, so
+    /// component tests exercise the same code the app runs.
+    /// </summary>
+    public static WorkPlanStudio.Services.Auth.DemoAuthenticationStateProvider AddDemoAuthorization(
+        this Microsoft.Extensions.DependencyInjection.IServiceCollection services,
+        WorkPlanStudio.Services.Auth.WorkspaceRole role)
+    {
+        var provider = new WorkPlanStudio.Services.Auth.DemoAuthenticationStateProvider(new FakePersonaStore { Stored = role });
+
+        // bUnit pre-registers placeholders that throw unless its own test doubles
+        // are used; the point here is to run the real pipeline, so they go.
+        Microsoft.Extensions.DependencyInjection.Extensions.ServiceCollectionDescriptorExtensions.RemoveAll<Microsoft.AspNetCore.Authorization.IAuthorizationService>(services);
+        Microsoft.Extensions.DependencyInjection.Extensions.ServiceCollectionDescriptorExtensions.RemoveAll<Microsoft.AspNetCore.Authorization.IAuthorizationPolicyProvider>(services);
+        Microsoft.Extensions.DependencyInjection.Extensions.ServiceCollectionDescriptorExtensions.RemoveAll<Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider>(services);
+
+        Microsoft.Extensions.DependencyInjection.AuthorizationServiceCollectionExtensions.AddAuthorizationCore(
+            services, options => WorkPlanStudio.Services.Auth.Permissions.AddWorkspacePolicies(options));
+        Microsoft.Extensions.DependencyInjection.CascadingAuthenticationStateServiceCollectionExtensions.AddCascadingAuthenticationState(services);
+        Microsoft.Extensions.DependencyInjection.ServiceCollectionServiceExtensions.AddSingleton(services, provider);
+        Microsoft.Extensions.DependencyInjection.ServiceCollectionServiceExtensions.AddSingleton<Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider>(services, provider);
+        Microsoft.Extensions.DependencyInjection.ServiceCollectionServiceExtensions.AddSingleton<WorkPlanStudio.Services.Auth.IPermissionGuard, WorkPlanStudio.Services.Auth.PermissionGuard>(services);
+        return provider;
+    }
+}
