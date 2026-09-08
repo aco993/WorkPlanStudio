@@ -25,6 +25,8 @@
     <PackageVersion Include="CsCheck" Version="4.8.0" />
     <PackageVersion Include="bunit" Version="2.10.3" />
     <PackageVersion Include="Microsoft.Playwright" Version="1.62.0" />
+    <PackageVersion Include="Deque.AxeCore.Playwright" Version="4.13.0" />
+    <PackageVersion Include="BenchmarkDotNet" Version="0.15.8" />
   </ItemGroup>
 
 </Project>
