@@ -35,12 +35,17 @@ localisation sit around it. Full picture: [README.md](README.md).
 | `src/WorkPlanStudio.Scheduling/Explain/` | the deterministic `ScheduleExplainer` (structured, language-neutral) |
 | `src/WorkPlanStudio/` | the Blazor app (Models, Data, Services, Pages, Layout, Resources, wwwroot) |
 | `src/WorkPlanStudio/Services/ScheduleMapper.cs` | the EF→engine boundary (the one `decimal`→seconds spot) |
-| `src/WorkPlanStudio/Services/Assistant/` | the schedule assistant: rule-based (default) + optional BYOK AI narrator ([docs](docs/AI-ASSISTANT.md)) |
+| `src/WorkPlanStudio.WorkingTime/` | the pure working-time library (shift patterns, ArbZG rules, holidays, `WorkingTimelineBuilder` → `MachineCalendar`) |
+| `src/WorkPlanStudio/Services/ShopCalendar.cs` | plant settings + work centers + absences → one timeline per work center |
+| `src/WorkPlanStudio/Services/Auth/` | personas: `DemoAuthenticationStateProvider`, `Permissions` (the policy table), `IPermissionGuard` |
+| `src/WorkPlanStudio/Services/Assistant/` | narration + `Chat/` (on-device answerer, `ScheduleChat` façade, `IChatProvider` with OpenAI-compatible, Anthropic and Gemini clients) ([docs](docs/AI-ASSISTANT.md)) |
 | `src/WorkPlanStudio/Pages/Schedule.razor` | the scheduling UI (parameters, Gantt, KPIs, assistant) |
-| `tests/WorkPlanStudio.Scheduling.Tests/` | engine unit + architecture tests |
-| `tests/WorkPlanStudio.Web.Tests/` | mapper + bUnit component tests |
-| `tests/WorkPlanStudio.E2E/` | Playwright end-to-end |
-| `docs/` | SCHEDULING.md, TESTING.md (both EN/DE), `adr/` |
+| `tests/WorkPlanStudio.Scheduling.Tests/` | engine unit, property, optimality, architecture, budget tests |
+| `tests/WorkPlanStudio.WorkingTime.Tests/` | holidays, rules, timeline invariants, budgets |
+| `tests/WorkPlanStudio.Web.Tests/` | SQLite, mapper, authorization, bUnit, assistant + chat |
+| `tests/WorkPlanStudio.E2E/` | Playwright flows, axe accessibility, visual baselines (`visual-baselines/<os>/`) |
+| `tests/WorkPlanStudio.Benchmarks/` | BenchmarkDotNet |
+| `docs/` | ARCHITECTURE, SCHEDULING, TESTING (EN/DE), AI-ASSISTANT, PERFORMANCE, SECURITY, `adr/` |
 
 ## Build, run, test
 
@@ -53,6 +58,7 @@ dotnet run --project src/WorkPlanStudio/WorkPlanStudio.csproj
 
 # Fast tests (no browser, no WASM)
 dotnet test tests/WorkPlanStudio.Scheduling.Tests/WorkPlanStudio.Scheduling.Tests.csproj
+dotnet test tests/WorkPlanStudio.WorkingTime.Tests/WorkPlanStudio.WorkingTime.Tests.csproj
 dotnet test tests/WorkPlanStudio.Web.Tests/WorkPlanStudio.Web.Tests.csproj
 
 # Build everything
@@ -77,10 +83,22 @@ E2E (Playwright) needs the app running + a browser — see [docs/TESTING.md](doc
 - …the **EF model or seed data** → bump `SchemaVersion` in `Data/BrowserDatabase.cs`
   so stored databases are re-seeded.
 - …a **UI string** → update both `.resx` files.
+- …a **working-time rule** → it is a parameter in `WorkingTimeRules` with an entry
+  in its `Catalog` (legal reference) and a `Rule_*_Title/Text` pair in both `.resx`
+  files; add a test in `WorkingTimelineBuilderTests`.
+- …the **chat's questions** → one regex + one answer method in
+  `OfflineScheduleAnswerer`, `Chat_*` keys in both `.resx` files, a case in
+  `ScheduleChatTests`. Models only rephrase; never let them compute.
+- …anything **visible** → run the browser suite; axe must stay at zero
+  violations, and refresh the visual baselines with `VISUAL_UPDATE=1` on purpose.
+- …a **mutating service method** → it takes the `IPermissionGuard` check first
+  and returns `Forbidden`; add the policy to `Permissions` if it is a new kind
+  of action.
 - …a **dependency** → edit `Directory.Packages.props`.
 
 ## Out of scope on purpose
 
-Backward scheduling, a working-day calendar and per-work-center machine counts are
-documented as future extensions (see `docs/SCHEDULING.md` §10 and the ADRs). Don't
-add them unless asked.
+Backward scheduling, gap back-filling and a backend are documented as future
+extensions (see `docs/SCHEDULING.md` §10 and the ADRs). Personas are not
+security and the chat's recogniser is keyword-based by design. Don't change
+these unless asked.

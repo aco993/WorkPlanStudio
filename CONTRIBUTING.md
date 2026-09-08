@@ -16,20 +16,25 @@ dotnet run --project src/WorkPlanStudio/WorkPlanStudio.csproj
 
 # Run the fast tests (no browser, no WASM)
 dotnet test tests/WorkPlanStudio.Scheduling.Tests/WorkPlanStudio.Scheduling.Tests.csproj
+dotnet test tests/WorkPlanStudio.WorkingTime.Tests/WorkPlanStudio.WorkingTime.Tests.csproj
 dotnet test tests/WorkPlanStudio.Web.Tests/WorkPlanStudio.Web.Tests.csproj
 ```
 
-The Playwright end-to-end tests are described in [`docs/TESTING.md`](docs/TESTING.md).
+The browser suite (Playwright flows, axe accessibility scans, visual baselines) is described in [`docs/TESTING.md`](docs/TESTING.md). A visible change must keep axe at zero violations; refresh the visual baselines with `VISUAL_UPDATE=1` when the change is intended.
 
 ## How the code is organised
 
 - `src/WorkPlanStudio.Scheduling` — the **pure** scheduling engine. It must not
   reference Blazor, EF Core, JS interop or WebAssembly; an architecture test
   enforces this. Keep new algorithm code here and unit-test it directly.
+- `src/WorkPlanStudio.WorkingTime` — the **pure** working-time library: shift
+  patterns, the ArbZG rules as parameters, holidays, and the timeline that
+  becomes a machine calendar. Same boundary rule as the engine.
 - `src/WorkPlanStudio` — the Blazor app. The `ScheduleMapper` is the boundary that
   turns EF entities into engine inputs (and the one place `decimal` becomes
-  integer seconds).
-- `tests/` — engine tests, mapper + bUnit component tests, and Playwright E2E.
+  integer seconds); `ShopCalendar` turns plant settings into calendars.
+- `tests/` — engine, working-time, web (SQLite, mapper, authorization, bUnit,
+  assistant), the browser suite, and the benchmarks.
 
 ## Conventions
 

@@ -54,7 +54,7 @@ relinked into `dotnet.native.wasm` and the database is stored through JS interop
 If the algorithm lived next to that code, every test of the interesting logic
 would need the `wasm-tools` toolchain and a browser.
 
-**What it bought:** the engine's 108 tests run on a plain .NET host in about two
+**What it bought:** the engine's 153 tests run on a plain .NET host in about three
 seconds. That speed is *why* it was affordable to write a test that brute-forces
 every one of `n!` job orders — the test that caught the search being 27 % off
 optimal. A slow test suite would never have had that test in it.
@@ -323,19 +323,20 @@ confidence; being caught hiding one reads as the opposite.
 1. **Optimality is only verified to 8 jobs.** Past that, the engine is a descent
    with no known bound. A real answer needs an LP/CP relaxation for a lower
    bound.
-2. **The calendar is periodic and uniform.** Availability windows repeat over a
-   fixed period, so "08:00–16:00 every day" works but "closed on public holidays"
-   and "Friday is a half day" do not. Exceptions to the pattern would need a real
-   calendar model.
+2. **Calendars are weekly patterns plus dated exceptions.** Shifts, breaks,
+   rest, Sundays, public holidays and absences are modelled; a per-week
+   variation ("Friday is a half day in summer") would need a pattern per date
+   range, which the builder does not have yet.
 3. **No gap back-filling.** A job's operations are placed in sequence without
    inserting later work into earlier idle windows. Fixing it would break the
    "the order determines the schedule" property the search depends on — that's
    why it hasn't been.
 4. **`localStorage` caps the database at a few MB.** Fine for the demo; the app
    warns when a write doesn't fit rather than losing it silently.
-5. **Single user, no auth.** No server, so nothing to authenticate against. This
-   is a scope decision, not an oversight — but it means the project shows nothing
-   about authn/authz.
+5. **Personas are plumbing, not security.** The real authorization pipeline
+   runs, but the identity is chosen in the UI and everything executes in the
+   visitor's browser. It shows the seam for a real identity provider and
+   nothing about protecting data.
 6. **The dispatch-rule selector is now more teaching device than lever.** A good
    optimiser makes the starting rule largely irrelevant; different rules converge
    on the same schedule unless you switch the search off. Correct behaviour, but
@@ -436,10 +437,10 @@ approached it, so the knob was decorative.
 | --- | --- |
 | Engine library | ~1 340 lines |
 | Blazor app | ~3 950 lines |
-| Tests | 213 tests (135 engine / 67 web / 11 E2E) |
-| Engine coverage | 96.4 % line, 89.1 % branch |
+| Tests | 452 tests (153 engine / 95 working time / 161 web / 43 browser incl. axe + visual) |
+| Coverage (gated) | engine 96.0 % / 89.5 %, working time 94.0 % / 89.4 %, app 69.3 % / 63.1 % (line / branch) |
 | Search gap to optimum | 0.2 % mean, 19/20 solved exactly |
-| Schedule runtime | ~10 ms at 8 jobs, ~533 ms at 100 |
+| Schedule runtime | 57 µs for one dispatch of 100 jobs; 281 ms (1 GB allocated) for the optimiser on them |
 | Dead Bootstrap removed | 8.4 MB, 44 files |
 | Stored DB before/after the WAL fix | 4 096 → 36 864 bytes |
 
