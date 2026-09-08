@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text;
 using WorkPlanStudio.Resources;
+using WorkPlanStudio.Services.Chat;
 
 namespace WorkPlanStudio.Web.Tests;
 
@@ -93,7 +94,7 @@ public class ScheduleAssistantTests
     public async Task Ai_narrator_sends_the_facts_and_returns_the_model_lines()
     {
         var stub = new StubHttpMessageHandler(HttpStatusCode.OK, ValidChatJson);
-        var narrator = new OpenAiScheduleNarrator(new HttpClient(stub), Configured(), language: "en");
+        var narrator = new AiScheduleNarrator(ChatProviders.Create(new HttpClient(stub), Configured()), language: "en");
 
         var result = await narrator.NarrateAsync(SampleExplanation(), Ct);
 
@@ -112,7 +113,7 @@ public class ScheduleAssistantTests
     public async Task Ai_narrator_throws_on_an_http_error()
     {
         var stub = new StubHttpMessageHandler(HttpStatusCode.InternalServerError, "{}");
-        var narrator = new OpenAiScheduleNarrator(new HttpClient(stub), Configured(), language: "en");
+        var narrator = new AiScheduleNarrator(ChatProviders.Create(new HttpClient(stub), Configured()), language: "en");
 
         await Assert.ThrowsAsync<HttpRequestException>(() => narrator.NarrateAsync(SampleExplanation(), Ct));
     }
