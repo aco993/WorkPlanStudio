@@ -53,6 +53,21 @@ public sealed class SchedulingContext
                 previousEnd = window.EndSeconds;
             }
 
+            if (m.CalendarPhaseSeconds < 0 ||
+                (m.AvailabilityWindows.Count > 0 && m.CalendarPhaseSeconds >= m.CalendarPeriodSeconds) ||
+                (m.AvailabilityWindows.Count == 0 && m.CalendarPhaseSeconds != 0))
+                throw new ArgumentException(
+                    $"Work center {m.WorkCenterId} calendar phase {m.CalendarPhaseSeconds}s must lie inside [0, period).");
+
+            long previousBlackoutEnd = -1;
+            foreach (var blackout in m.Blackouts)
+            {
+                blackout.Validate();
+                if (blackout.StartSeconds < previousBlackoutEnd)
+                    throw new ArgumentException($"Work center {m.WorkCenterId} blackouts must be sorted and non-overlapping.");
+                previousBlackoutEnd = blackout.EndSeconds;
+            }
+
             foreach (var setup in m.SetupDurations)
             {
                 setup.Validate();

@@ -49,6 +49,25 @@ public sealed record MachineCapacity(int WorkCenterId, string Name, int Parallel
     /// </summary>
     public long CalendarPeriodSeconds { get; init; }
 
+    /// <summary>
+    /// Where in the repeating period the engine's second 0 falls, in
+    /// <c>[0, CalendarPeriodSeconds)</c>. Defaults to 0.
+    /// </summary>
+    /// <remarks>
+    /// A weekly pattern is naturally written from Monday 00:00, but the planning
+    /// horizon rarely starts on a Monday at midnight. Rather than forcing every
+    /// caller to rotate its windows, the calendar declares the phase and the
+    /// dispatcher shifts the axis before looking for a fit. A Wednesday-morning
+    /// horizon on a weekly calendar is <c>2 days + 8 hours</c>.
+    /// </remarks>
+    public long CalendarPhaseSeconds { get; init; }
+
+    /// <summary>
+    /// Absolute closed intervals layered on top of the repeating calendar, sorted
+    /// and non-overlapping. Empty by default. See <see cref="CapacityBlackout"/>.
+    /// </summary>
+    public IReadOnlyList<CapacityBlackout> Blackouts { get; init; } = [];
+
     /// <summary>Setup matrix entries. A transition that is not listed costs nothing.</summary>
     public IReadOnlyList<SetupDuration> SetupDurations { get; init; } = [];
 

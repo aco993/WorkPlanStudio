@@ -27,6 +27,42 @@ public sealed record CapacityWindow(long StartSeconds, long EndSeconds)
 }
 
 /// <summary>
+/// An absolute closed interval <c>[start, end)</c> during which a work center
+/// cannot process work, layered on top of its repeating calendar: a public
+/// holiday, a maintenance stop, a crew on leave.
+/// <para>
+/// The repeating calendar (<see cref="MachineCapacity.AvailabilityWindows"/>)
+/// expresses the <i>pattern</i> — a day shift, a five-day week. Blackouts are
+/// the <i>exceptions</i> to that pattern, and unlike the pattern they are finite:
+/// a schedule that runs past the last blackout is simply unconstrained by
+/// exceptions from then on. Callers decide how far ahead to materialise them.
+/// </para>
+/// <para>
+/// <paramref name="Tag"/> is an opaque label the caller can use to explain the
+/// gap in a UI ("Fronleichnam", "Wartung"); the engine never interprets it.
+/// </para>
+/// </summary>
+public sealed record CapacityBlackout(long StartSeconds, long EndSeconds, string Tag)
+{
+    /// <summary>Length of the blackout in seconds.</summary>
+    public long DurationSeconds => EndSeconds - StartSeconds;
+
+    /// <summary>Throws unless the interval is ordered, non-negative and tagged.</summary>
+    public void Validate()
+    {
+        if (StartSeconds < 0 || EndSeconds <= StartSeconds)
+            throw new ArgumentOutOfRangeException(
+                nameof(EndSeconds),
+                $"Blackout [{StartSeconds}, {EndSeconds}) must be a positive interval starting at or after 0.");
+        if (string.IsNullOrWhiteSpace(Tag) || Tag.Length > 80)
+            throw new ArgumentOutOfRangeException(nameof(Tag), "A blackout needs a tag of at most 80 characters.");
+    }
+
+    /// <summary>True when <c>[start, end)</c> shares at least one second with this blackout.</summary>
+    public bool Overlaps(long start, long end) => start < EndSeconds && StartSeconds < end;
+}
+
+/// <summary>
 /// Sequence-dependent setup time: how long a work center needs to change over
 /// from one operation family to another. A missing transition costs nothing, and
 /// running the same family twice in a row costs nothing.

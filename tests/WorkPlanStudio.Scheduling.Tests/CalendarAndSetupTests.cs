@@ -108,6 +108,137 @@ public class CalendarAndSetupTests
             Context(RuleOnly(DispatchRule.Fifo), [broken], Job(1, Step(10, 1, Hour))));
     }
 
+    // ----- calendar phase -----
+
+    [Fact]
+    public void The_phase_shifts_where_the_pattern_falls_on_the_engine_axis()
+    {
+        // Same 08:00–16:00 pattern, but second 0 of the horizon is 10:00 in the
+        // calendar (phase = 10 h): the window that is open "now" runs 0..6 h.
+        var shifted = DayShift(1) with { CalendarPhaseSeconds = 10 * Hour };
+        var context = Context(RuleOnly(DispatchRule.Fifo), [shifted],
+            Job(1, Step(10, 1, 5 * Hour)),
+            Job(2, Step(10, 1, 5 * Hour)));
+
+        var schedule = new DispatchScheduler().Run(context, [0, 1], DueDateAssigner.Assign(context));
+        var first = schedule.Operations.Single(o => o.JobId == 1);
+        var second = schedule.Operations.Single(o => o.JobId == 2);
+
+        Assert.Equal(0, first.StartSeconds);                       // 10:00 calendar time
+        Assert.Equal(Day - 2 * Hour, second.StartSeconds);         // next 08:00 = 22 h later
+        Feasibility.AssertFeasible(schedule, context);
+    }
+
+    [Fact]
+    public void A_phase_outside_the_period_is_rejected()
+    {
+        var broken = DayShift(1) with { CalendarPhaseSeconds = Day };
+
+        Assert.Throws<ArgumentException>(() =>
+            Context(RuleOnly(DispatchRule.Fifo), [broken], Job(1, Step(10, 1, Hour))));
+    }
+
+    [Fact]
+    public void A_phase_without_a_calendar_is_rejected()
+    {
+        var broken = Machine(1) with { CalendarPhaseSeconds = Hour };
+
+        Assert.Throws<ArgumentException>(() =>
+            Context(RuleOnly(DispatchRule.Fifo), [broken], Job(1, Step(10, 1, Hour))));
+    }
+
+    // ----- blackouts -----
+
+    [Fact]
+    public void Work_is_pushed_past_a_blackout_that_it_would_overlap()
+    {
+        // Continuous machine, but closed for maintenance [2 h, 5 h). A 2-hour job
+        // at 0 fits before it; a 2-hour job at 2 would overlap and moves to 5.
+        var machine = Machine(1) with { Blackouts = [new CapacityBlackout(2 * Hour, 5 * Hour, "maintenance")] };
+        var context = Context(RuleOnly(DispatchRule.Fifo), [machine],
+            Job(1, Step(10, 1, 2 * Hour)),
+            Job(2, Step(10, 1, 2 * Hour)));
+
+        var schedule = new DispatchScheduler().Run(context, [0, 1], DueDateAssigner.Assign(context));
+
+        Assert.Equal(0, schedule.Operations.Single(o => o.JobId == 1).StartSeconds);
+        Assert.Equal(5 * Hour, schedule.Operations.Single(o => o.JobId == 2).StartSeconds);
+        Feasibility.AssertFeasible(schedule, context);
+    }
+
+    [Fact]
+    public void A_blackout_on_a_shift_calendar_skips_the_whole_day()
+    {
+        // Day shift 08–16, and the first day is a public holiday [0, 24 h): the
+        // job lands on day two's shift, not on the holiday's window.
+        var holiday = DayShift(1) with { Blackouts = [new CapacityBlackout(0, Day, "holiday")] };
+        var context = Context(RuleOnly(DispatchRule.Fifo), [holiday], Job(1, Step(10, 1, Hour)));
+
+        var op = new DispatchScheduler().Run(context, [0], DueDateAssigner.Assign(context)).Operations.Single();
+
+        Assert.Equal(Day + 8 * Hour, op.StartSeconds);
+        Feasibility.AssertFeasible(new Schedule([op], []), context);
+    }
+
+    [Fact]
+    public void Consecutive_blackouts_are_all_skipped()
+    {
+        var machine = Machine(1) with
+        {
+            Blackouts =
+            [
+                new CapacityBlackout(Hour, 2 * Hour, "a"),
+                new CapacityBlackout(2 * Hour, 4 * Hour, "b"),
+                new CapacityBlackout(5 * Hour, 6 * Hour, "c")
+            ]
+        };
+        var context = Context(RuleOnly(DispatchRule.Fifo), [machine], Job(1, Step(10, 1, 90 * 60)));
+
+        var op = new DispatchScheduler().Run(context, [0], DueDateAssigner.Assign(context)).Operations.Single();
+
+        // 90 min: does not fit before 1 h, nor in [4 h, 5 h); first fit is 6 h.
+        Assert.Equal(6 * Hour, op.StartSeconds);
+    }
+
+    [Fact]
+    public void Blackouts_must_be_sorted_and_non_overlapping()
+    {
+        var unsorted = Machine(1) with
+        {
+            Blackouts = [new CapacityBlackout(3 * Hour, 4 * Hour, "b"), new CapacityBlackout(Hour, 2 * Hour, "a")]
+        };
+        var overlapping = Machine(1) with
+        {
+            Blackouts = [new CapacityBlackout(Hour, 3 * Hour, "a"), new CapacityBlackout(2 * Hour, 4 * Hour, "b")]
+        };
+        var untagged = Machine(1) with { Blackouts = [new CapacityBlackout(Hour, 3 * Hour, " ")] };
+
+        Assert.Throws<ArgumentException>(() => Context(RuleOnly(DispatchRule.Fifo), [unsorted], Job(1, Step(10, 1, Hour))));
+        Assert.Throws<ArgumentException>(() => Context(RuleOnly(DispatchRule.Fifo), [overlapping], Job(1, Step(10, 1, Hour))));
+        Assert.Throws<ArgumentOutOfRangeException>(() => Context(RuleOnly(DispatchRule.Fifo), [untagged], Job(1, Step(10, 1, Hour))));
+    }
+
+    [Fact]
+    public void Blackouts_and_phase_stay_deterministic_and_feasible_under_search()
+    {
+        SchedulingContext Build() => Context(
+            new SchedulingParameters { DispatchRule = DispatchRule.EarliestDueDate, Seed = 99, MultiStartRuns = 4, LocalSearchMaxSteps = 200 },
+            [
+                DayShift(1) with { CalendarPhaseSeconds = 3 * Hour, Blackouts = [new CapacityBlackout(Day, 2 * Day, "holiday")] },
+                Machine(2, capacity: 2) with { Blackouts = [new CapacityBlackout(4 * Hour, 6 * Hour, "maintenance")] }
+            ],
+            Job(1, Step(10, 1, 2 * Hour), Step(20, 2, 3 * Hour)),
+            Job(2, Step(10, 2, 4 * Hour), Step(20, 1, 2 * Hour)),
+            Job(3, Step(10, 1, 3 * Hour), Step(20, 2, Hour)),
+            Job(4, Step(10, 2, 2 * Hour), Step(20, 1, 4 * Hour)));
+
+        var a = new SchedulingEngine().Run(Build());
+        var b = new SchedulingEngine().Run(Build());
+
+        Assert.Equal(a.Schedule.Signature(), b.Schedule.Signature());
+        Feasibility.AssertFeasible(a.Schedule, Build());
+    }
+
     // ----- sequence-dependent setup -----
 
     private static MachineCapacity WithChangeover(int id, long seconds, int capacity = 1) =>

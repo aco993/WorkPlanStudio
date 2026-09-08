@@ -33,6 +33,40 @@ public class PropertyTests
          from duration in Gen.Int[1, 600]
          select (workCenter, duration)).Array[1, 4];
 
+    /// <summary>
+    /// The same problems, but every work center also carries a repeating calendar
+    /// with a random phase and a random list of blackouts. Windows are at least
+    /// 900 s wide and steps at most 600 s, so every instance is constructible.
+    /// </summary>
+    private static readonly Gen<SchedulingContext> GenConstrainedContext =
+        from baseline in GenContext
+        from phases in Gen.Int[0, 3599].Array[baseline.Machines.Count]
+        from blackoutStarts in Gen.Int[0, 40].Array[baseline.Machines.Count].Array[0, 3]
+        select Constrain(baseline, phases, blackoutStarts);
+
+    private static SchedulingContext Constrain(SchedulingContext baseline, int[] phases, int[][] blackoutStartsPerRound)
+    {
+        // One-hour period, open [0, 900) and [1800, 3600) — two windows, each big
+        // enough for the largest step, with a closed gap between them.
+        var machines = baseline.Machines.Values
+            .OrderBy(m => m.WorkCenterId)
+            .Select((m, i) => m with
+            {
+                AvailabilityWindows = [new CapacityWindow(0, 900), new CapacityWindow(1800, 3600)],
+                CalendarPeriodSeconds = 3600,
+                CalendarPhaseSeconds = phases[i],
+                Blackouts = blackoutStartsPerRound
+                    .Select(round => round[i])
+                    .Distinct()
+                    .OrderBy(start => start)
+                    .Select(start => new CapacityBlackout(start * 1000L, start * 1000L + 700, $"b{start}"))
+                    .ToList()
+            })
+            .ToList();
+
+        return new SchedulingContext(baseline.Jobs, machines, baseline.Parameters);
+    }
+
     private static SchedulingContext Build(
         int machineCount, int[] capacities, (int WorkCenter, int Duration)[][] jobsRaw,
         int ruleIndex, int dueIndex, double flowFactor, int multiStart, int localSearch, int seed)
@@ -103,6 +137,15 @@ public class PropertyTests
                             "two operations overlapped on the same machine slot");
                 }
             }
+        });
+
+    [Fact]
+    public void Calendars_phases_and_blackouts_are_respected_by_every_schedule() =>
+        GenConstrainedContext.Sample(ctx =>
+        {
+            var result = new SchedulingEngine().Run(ctx);
+            Feasibility.AssertFeasible(result.Schedule, ctx);
+            Assert.Equal(result.Schedule.Signature(), new SchedulingEngine().Run(ctx).Schedule.Signature());
         });
 
     [Fact]
