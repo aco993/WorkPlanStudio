@@ -299,7 +299,7 @@ a:hover { text-decoration: underline; }
 .badge.status-archived { background: var(--amber-soft); color: var(--amber); }
 .pill { display: inline-flex; padding: .15rem .55rem; border-radius: 100px; font-size: .74rem; font-weight: 600; }
 .pill.ok { background: var(--green-soft); color: var(--green); }
-.pill.off { background: var(--surface-2); color: var(--text-soft); }
+.pill.off { background: var(--surface-2); color: var(--text-muted); }
 
 /* ----- Toolbar (search + filter) ----- */
 .toolbar { display: flex; gap: .8rem; margin-bottom: 1.1rem; flex-wrap: wrap; }
@@ -415,6 +415,7 @@ select.input { cursor: pointer; }
 
 /* Gantt chart */
 .gantt { display: flex; flex-direction: column; gap: 6px; overflow-x: auto; }
+.gantt:focus-visible, .chat-thread:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; border-radius: var(--radius-sm); }
 .gantt-row { display: flex; align-items: center; gap: .8rem; }
 .gantt-label { width: 150px; flex-shrink: 0; font-size: .8rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .gantt-track { position: relative; flex: 1; height: 26px; background: var(--surface-2); border-radius: 6px; min-width: 340px; }
@@ -435,13 +436,13 @@ select.input { cursor: pointer; }
 
 /* Job colour palette (shared by Gantt bars and the table dots) */
 .job-color-0 { background: #4f46e5; }
-.job-color-1 { background: #0891b2; }
-.job-color-2 { background: #16a34a; }
-.job-color-3 { background: #d97706; }
-.job-color-4 { background: #db2777; }
+.job-color-1 { background: #0e7490; }
+.job-color-2 { background: #15803d; }
+.job-color-3 { background: #b45309; }
+.job-color-4 { background: #be185d; }
 .job-color-5 { background: #7c3aed; }
-.job-color-6 { background: #dc2626; }
-.job-color-7 { background: #0d9488; }
+.job-color-6 { background: #b91c1c; }
+.job-color-7 { background: #0f766e; }
 .color-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: .55rem; vertical-align: middle; }
 
 .pill.ontime { background: var(--green-soft); color: var(--green); }
