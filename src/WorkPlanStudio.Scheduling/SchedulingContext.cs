@@ -53,6 +53,9 @@ public sealed class SchedulingContext
                 previousEnd = window.EndSeconds;
             }
 
+            if (m.MaxBridgeableGapSeconds < 0 || (m.AvailabilityWindows.Count > 0 && m.MaxBridgeableGapSeconds >= m.CalendarPeriodSeconds))
+                throw new ArgumentException($"Work center {m.WorkCenterId} bridgeable gap must lie inside [0, period).");
+
             if (m.CalendarPhaseSeconds < 0 ||
                 (m.AvailabilityWindows.Count > 0 && m.CalendarPhaseSeconds >= m.CalendarPeriodSeconds) ||
                 (m.AvailabilityWindows.Count == 0 && m.CalendarPhaseSeconds != 0))
@@ -101,20 +104,20 @@ public sealed class SchedulingContext
                 if (!byId.TryGetValue(step.WorkCenterId, out var machine))
                     throw new ArgumentException($"Job {job.Id} step {step.StepNumber} references unknown work center {step.WorkCenterId}.");
 
-                // Operations are not preemptable, so a step must fit inside a
-                // single availability window - worst-case change-over included.
-                // Checked here rather than during dispatch: the search evaluates
-                // thousands of candidate orders, and an exception thrown from
-                // inside that loop would abort the whole run instead of reporting
-                // an input problem the caller can act on.
-                long longestWindow = machine.LongestWindowSeconds;
-                if (longestWindow != long.MaxValue)
+                // A step must fit inside one availability window, or one run of
+                // windows joined by bridgeable gaps - worst-case change-over
+                // included. Checked here rather than during dispatch: the search
+                // evaluates thousands of candidate orders, and an exception thrown
+                // from inside that loop would abort the whole run instead of
+                // reporting an input problem the caller can act on.
+                long longestPlacement = machine.LongestPlacementSeconds;
+                if (longestPlacement != long.MaxValue)
                 {
                     long needed = step.DurationSeconds + machine.WorstSetupInto(step.SetupFamily);
-                    if (needed > longestWindow)
+                    if (needed > longestPlacement)
                         throw new ArgumentException(
                             $"Job {job.Id} step {step.StepNumber} needs {needed}s including change-over, " +
-                            $"but the longest availability window of work center {step.WorkCenterId} is {longestWindow}s.");
+                            $"but the longest availability window of work center {step.WorkCenterId} is {longestPlacement}s.");
                 }
             }
 

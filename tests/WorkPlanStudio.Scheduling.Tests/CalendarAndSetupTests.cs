@@ -147,6 +147,81 @@ public class CalendarAndSetupTests
             Context(RuleOnly(DispatchRule.Fifo), [broken], Job(1, Step(10, 1, Hour))));
     }
 
+    // ----- bridging short gaps -----
+
+    /// <summary>08:00–12:00 and 12:30–16:00 with a bridgeable 30-minute break.</summary>
+    private static MachineCapacity ShiftWithBreak(int id, long bridge = 30 * 60) =>
+        Machine(id) with
+        {
+            AvailabilityWindows = [new CapacityWindow(8 * Hour, 12 * Hour), new CapacityWindow(12 * Hour + 30 * 60, 16 * Hour)],
+            CalendarPeriodSeconds = Day,
+            MaxBridgeableGapSeconds = bridge
+        };
+
+    [Fact]
+    public void An_operation_pauses_across_a_break_and_resumes_after_it()
+    {
+        // 5 h of work starting 08:00: 4 h before the break, 30 min pause, 1 h after.
+        var context = Context(RuleOnly(DispatchRule.Fifo), [ShiftWithBreak(1)], Job(1, Step(10, 1, 5 * Hour)));
+
+        var op = new DispatchScheduler().Run(context, [0], DueDateAssigner.Assign(context)).Operations.Single();
+
+        Assert.Equal(8 * Hour, op.StartSeconds);
+        Assert.Equal(13 * Hour + 30 * 60, op.EndSeconds);
+        Assert.Equal(30 * 60, op.PausedSeconds);
+        Assert.Equal(5 * Hour, op.ProcessingSeconds);
+        Feasibility.AssertFeasible(new Schedule([op], []), context);
+    }
+
+    [Fact]
+    public void The_shift_end_is_not_bridged_even_when_breaks_are()
+    {
+        // 7.5 h fits the whole day; a second 7.5 h job must wait for tomorrow,
+        // not pause overnight.
+        var context = Context(RuleOnly(DispatchRule.Fifo), [ShiftWithBreak(1)],
+            Job(1, Step(10, 1, 7 * Hour + 30 * 60)),
+            Job(2, Step(10, 1, 7 * Hour + 30 * 60)));
+
+        var schedule = new DispatchScheduler().Run(context, [0, 1], DueDateAssigner.Assign(context));
+        var second = schedule.Operations.Single(o => o.JobId == 2);
+
+        Assert.Equal(Day + 8 * Hour, second.StartSeconds);
+        Feasibility.AssertFeasible(schedule, context);
+    }
+
+    [Fact]
+    public void Without_bridging_the_same_operation_is_rejected()
+    {
+        var ex = Assert.Throws<ArgumentException>(() =>
+            Context(RuleOnly(DispatchRule.Fifo), [ShiftWithBreak(1, bridge: 0)], Job(1, Step(10, 1, 5 * Hour))));
+
+        Assert.Contains("longest availability window", ex.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_blackout_is_never_bridged()
+    {
+        // The break could be bridged, but a maintenance blackout covering it
+        // pushes the whole 5-hour operation to the next day.
+        var machine = ShiftWithBreak(1) with { Blackouts = [new CapacityBlackout(12 * Hour, 12 * Hour + 30 * 60, "maintenance")] };
+        var context = Context(RuleOnly(DispatchRule.Fifo), [machine], Job(1, Step(10, 1, 5 * Hour)));
+
+        var op = new DispatchScheduler().Run(context, [0], DueDateAssigner.Assign(context)).Operations.Single();
+
+        Assert.Equal(Day + 8 * Hour, op.StartSeconds);
+    }
+
+    [Fact]
+    public void Utilisation_counts_busy_time_not_pauses()
+    {
+        var context = Context(RuleOnly(DispatchRule.Fifo), [ShiftWithBreak(1)], Job(1, Step(10, 1, 5 * Hour)));
+
+        var result = new SchedulingEngine().Run(context);
+
+        // busy 5 h over a makespan of 13.5 h
+        Assert.Equal(5.0 / 13.5, result.Evaluation.UtilizationByWorkCenter[1], precision: 9);
+    }
+
     // ----- blackouts -----
 
     [Fact]

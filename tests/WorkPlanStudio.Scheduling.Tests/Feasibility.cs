@@ -44,16 +44,39 @@ internal static class Feasibility
             Assert.DoesNotContain(machine.Blackouts, b => b.Overlaps(op.StartSeconds, op.EndSeconds));
 
             if (machine.AvailabilityWindows.Count == 0)
+            {
+                Assert.Equal(0, op.PausedSeconds);
                 continue;
+            }
 
+            // Walk the calendar across the placement: busy time must sit inside
+            // windows, the closed gaps inside it must be bridgeable, and the
+            // pauses must add up to exactly the closed time.
             long period = machine.CalendarPeriodSeconds;
-            long offsetStart = (op.StartSeconds + machine.CalendarPhaseSeconds) % period;
-            long offsetEnd = offsetStart + op.DurationSeconds;
+            long shiftedStart = op.StartSeconds + machine.CalendarPhaseSeconds;
+            long shiftedEnd = op.EndSeconds + machine.CalendarPhaseSeconds;
+            long open = 0;
+            long cycle = shiftedStart / period * period;
+            long previousWindowEnd = long.MinValue;
+            for (; cycle < shiftedEnd; cycle += period)
+            {
+                foreach (var w in machine.AvailabilityWindows)
+                {
+                    long ws = cycle + w.StartSeconds, we = cycle + w.EndSeconds;
+                    long os = Math.Max(ws, shiftedStart), oe = Math.Min(we, shiftedEnd);
+                    if (oe <= os) continue;
+                    if (previousWindowEnd != long.MinValue && previousWindowEnd > shiftedStart)
+                        Assert.True(ws - previousWindowEnd <= machine.MaxBridgeableGapSeconds,
+                            $"Job {op.JobId} step {op.StepNumber} paused across a {ws - previousWindowEnd}s gap on work center {op.WorkCenterId}.");
+                    open += oe - os;
+                    previousWindowEnd = we;
+                }
+            }
 
-            Assert.True(
-                machine.AvailabilityWindows.Any(w => offsetStart >= w.StartSeconds && offsetEnd <= w.EndSeconds),
-                $"Job {op.JobId} step {op.StepNumber} runs [{op.StartSeconds}, {op.EndSeconds}) " +
-                $"outside work center {op.WorkCenterId}'s availability windows.");
+            Assert.True(open == op.BusySeconds,
+                $"Job {op.JobId} step {op.StepNumber} runs [{op.StartSeconds}, {op.EndSeconds}) with {open}s open " +
+                $"but {op.BusySeconds}s busy on work center {op.WorkCenterId}.");
+            Assert.Equal(op.DurationSeconds - open, op.PausedSeconds);
         }
 
         // Capacity, per work center: a sweep line over (start,end) intervals must
