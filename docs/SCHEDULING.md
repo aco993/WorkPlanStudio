@@ -220,7 +220,16 @@ mid-schedule or forces the caller to materialise a year of them; a period makes
 the calendar total without either. Windows live on the same abstract work-time
 axis as everything else, so no time zone or daylight-saving rule enters the core.
 
-An operation must fit **entirely inside one window** — there is no preemption.
+Three refinements arrived with the working-time library ([ADR 0012](adr/0012-working-time-as-capacity.md)):
+a **phase** shifts the pattern so a schedule may start on a Monday 06:00 rather
+than at the period origin; **blackouts** are dated closed intervals with a tag
+(a holiday, an absence, Sunday rest) that are never bridged; and a **bridgeable
+gap** lets an operation pause across a short gap — a break — and resume, which
+the result reports as paused seconds. Utilisation is measured against open
+time, not the makespan.
+
+An operation must fit **entirely inside one window** (or a run of windows joined
+by bridgeable gaps) — there is no preemption across anything longer.
 That is checked when the `SchedulingContext` is built, not during dispatch: the
 search evaluates thousands of candidate orders, and an exception thrown from
 inside that loop would abort the whole run rather than reporting an input problem
@@ -262,7 +271,7 @@ heuristic is measured against in `OptimalityTests`.
 - **Makespan** — when the last operation finishes.
 - **Tardiness** — per job `max(0, completion − due)`; reported as total and max.
 - **On-time rate** — fraction of jobs meeting their target.
-- **Utilisation** — busy ÷ (capacity × makespan) per work center, plus an average.
+- **Utilisation** — busy ÷ (capacity × open time) per work center, plus an average; closed time (shifts, breaks, Sundays, holidays, absences) does not count as idle.
 - **Penalty** (minimised by the search), computed in hours so the weights are
   intuitive:
 
@@ -310,8 +319,9 @@ Kept out of scope on purpose, to stay simple and provably correct:
 
 - **Per-work-center machine counts** — the app maps every work center to one slot,
   though the engine already supports `ParallelCapacity > 1` (and the tests use it).
-- **Sequence-dependent setup, lot-splitting, gap back-filling** — all natural next
-  steps, none required for a clear, well-tested baseline.
+- **Lot-splitting and gap back-filling** — natural next steps, none required for
+  a clear, well-tested baseline. (Sequence-dependent setup and calendars exist;
+  see §6a.)
 
 ---
 

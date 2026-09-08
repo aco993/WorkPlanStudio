@@ -14,16 +14,17 @@ WorkPlan Studio is a public static demo, not a multi-user production system. It 
 
 The app offers three personas — planner, supervisor, guest — through the standard ASP.NET Core authorization pipeline (policies, `AuthorizeView`, a guard on every mutating service). The identity behind them is a persona chosen in the UI and stored in `localStorage`; its authentication type is `demo-persona`. Anyone can be the planner by choosing to, and the code enforcing the policies runs in the visitor's own browser. This demonstrates authorization plumbing and its seam for a real identity provider ([ADR 0013](adr/0013-personas-through-the-real-authorization-pipeline.md)); it protects nothing. Real access control needs a server that owns the data and re-checks every write with a verified identity.
 
-## Optional BYOK narrator
+## Optional models (bring your own key)
 
-The core application and deterministic explanation work without AI. If enabled:
+The core application, the deterministic explanation and the on-device chat work without any model. If a provider is enabled:
 
 - the key is stored in browser `localStorage` and is never logged;
 - only an absolute HTTPS endpoint is accepted; HTTP is allowed only for loopback development;
-- user-info, query and fragment components are rejected to reduce accidental credential routing;
-- requests have a 15-second timeout and caller cancellation is propagated distinctly;
-- provider failures fall back to rule-based text without exposing raw exception messages;
-- only structured schedule facts are sent, not the SQLite database.
+- user-info, query and fragment components are rejected to reduce accidental credential routing; the key travels in the header each provider expects (`Authorization: Bearer`, `x-api-key`, `x-goog-api-key`), never in the URL;
+- calls go from the browser to the provider. Anthropic requires an explicit `anthropic-dangerous-direct-browser-access` header for that, which the client sends; the name is the warning, and it is why the key is the user's own and never shipped with the app;
+- requests have a 20-second budget and caller cancellation is propagated distinctly;
+- provider failures fall back to the on-device text without exposing raw exception messages;
+- only structured schedule facts, the conversation and the on-device answer are sent, not the SQLite database.
 
 A production design should put the provider behind a backend proxy, keep the key in server-side secret storage, enforce tenant authorization and add audit/rate controls.
 

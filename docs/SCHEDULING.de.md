@@ -162,8 +162,9 @@ zusammen:
 - **Verspätung** — je Auftrag `max(0, Fertigstellung − Termin)`; als Summe und
   Maximum ausgewiesen.
 - **Termintreue** — Anteil der Aufträge, die ihren Termin halten.
-- **Auslastung** — beschäftigt ÷ (Kapazität × Makespan) je genutztem Arbeitsplatz,
-  plus ein Durchschnitt.
+- **Auslastung** — beschäftigt ÷ (Kapazität × offene Zeit) je genutztem
+  Arbeitsplatz, plus ein Durchschnitt; geschlossene Zeit (Schichten, Pausen,
+  Sonntage, Feiertage, Abwesenheiten) zählt nicht als ungenutzt.
 - **Strafwert** (von der Suche minimiert), in Stunden berechnet, damit die Gewichte
   intuitiv sind:
 
@@ -217,8 +218,10 @@ Bewusst außerhalb des Umfangs gelassen, um einfach und beweisbar korrekt zu ble
 - **Maschinenanzahl je Arbeitsplatz** — die App bildet jeden Arbeitsplatz auf einen
   Slot ab, obwohl die Engine `ParallelCapacity > 1` bereits unterstützt (und die
   Tests es nutzen).
-- **Reihenfolgeabhängige Rüstzeiten, Losteilung, Lückenfüllung** — alles natürliche
-  nächste Schritte, keiner für eine klare, gut getestete Basis nötig.
+- **Losteilung und Lückenfüllung** — natürliche nächste Schritte, keiner für eine
+  klare, gut getestete Basis nötig. (Reihenfolgeabhängige Rüstzeiten und Kalender
+  gibt es; siehe [SCHEDULING.md §6a](SCHEDULING.md#6a-calendars-and-change-over)
+  und [ADR 0012](adr/0012-working-time-as-capacity.md).)
 
 ---
 
