@@ -74,16 +74,20 @@ jobs:
 
       - name: Upload screenshots and visual diffs
         if: always()
+        continue-on-error: true   # the gate is the check; a hiccup in the artifact service is not a failed build
         uses: actions/upload-artifact@v7
         with:
           name: e2e-artifacts
           path: e2e-artifacts
           if-no-files-found: ignore
+          retention-days: 14
 
       - name: Upload visual baselines (commit these after an intended change)
         if: always()
+        continue-on-error: true   # the gate is the check; a hiccup in the artifact service is not a failed build
         uses: actions/upload-artifact@v7
         with:
           name: visual-baselines-${{ runner.os }}
           path: tests/WorkPlanStudio.E2E/visual-baselines
           if-no-files-found: ignore
+          retention-days: 14

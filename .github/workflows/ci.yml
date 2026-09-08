@@ -76,11 +76,13 @@ jobs:
 
       - name: Upload coverage report
         if: always()
+        continue-on-error: true   # the gate is the check; a hiccup in the artifact service is not a failed build
         uses: actions/upload-artifact@v7
         with:
           name: coverage-report-libraries
           path: coverage-report
           if-no-files-found: ignore
+          retention-days: 14
 
   web-tests:
     name: Data, mapper, assistant & component tests (coverage gate)
@@ -123,8 +125,10 @@ jobs:
 
       - name: Upload coverage report
         if: always()
+        continue-on-error: true   # the gate is the check; a hiccup in the artifact service is not a failed build
         uses: actions/upload-artifact@v7
         with:
           name: coverage-report-app
           path: coverage-report
           if-no-files-found: ignore
+          retention-days: 14

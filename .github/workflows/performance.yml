@@ -58,10 +58,12 @@ jobs:
           for f in benchmark-results/results/*-report-github.md; do cat "$f" >> "$GITHUB_STEP_SUMMARY"; echo >> "$GITHUB_STEP_SUMMARY"; done
 
       - name: Upload results
+        continue-on-error: true   # the gate is the check; a hiccup in the artifact service is not a failed build
         uses: actions/upload-artifact@v7
         with:
           name: benchmark-results
           path: benchmark-results/results
+          retention-days: 14
 
   lighthouse:
     name: Lighthouse CI on the published site
