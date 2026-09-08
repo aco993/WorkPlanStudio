@@ -34,7 +34,11 @@
 @code {
     private ElementReference _details;
 
-    protected override void OnInitialized() => Auth.AuthenticationStateChanged += OnStateChanged;
+    protected override async Task OnInitializedAsync()
+    {
+        Auth.AuthenticationStateChanged += OnStateChanged;
+        await Auth.GetAuthenticationStateAsync();   // loads the stored persona before CurrentRole is read
+    }
 
     private string Initial(WorkspaceRole role) => L[$"Role_{role}"].Value[..1];
 

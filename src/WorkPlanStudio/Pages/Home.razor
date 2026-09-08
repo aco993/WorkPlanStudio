@@ -1,7 +1,12 @@
 @page "/"
+@using System.Globalization
+@implements IDisposable
 @inject IStringLocalizer<SharedResource> L
 @inject WorkPlanService Plans
 @inject WorkCenterService Centers
+@inject PlantSettingsService Settings
+@inject IProductionScheduleService Scheduler
+@inject DemoAuthenticationStateProvider Auth
 @inject NavigationManager Nav
 
 <PageTitle>WorkPlan Studio</PageTitle>
@@ -105,12 +110,87 @@ else
             </div>
         </section>
     </div>
+
+    <div class="dash-columns glance">
+        <section class="card glance-plant">
+            <div class="card-head"><h2>@L["Dashboard_PlantTitle"]</h2></div>
+            <div class="card-body">
+                <dl class="glance-list">
+                    <div>
+                        <dt>@L["Dashboard_PlantState"]</dt>
+                        <dd>@_state.Name() <span class="muted">(@_state)</span></dd>
+                    </div>
+                    <div>
+                        <dt>@L["Dashboard_NextHoliday"]</dt>
+                        <dd>
+                            @if (_nextHoliday is { } holiday)
+                            {
+                                @L[$"Holiday_{holiday.Key}"] <span class="muted">· @holiday.Date.ToString("ddd d. MMM", CultureInfo.CurrentUICulture)</span>
+                            }
+                            else
+                            {
+                                <span class="muted">—</span>
+                            }
+                        </dd>
+                    </div>
+                    <div>
+                        <dt>@L["Dashboard_StaffedCenters"]</dt>
+                        <dd>@_staffedCenters <span class="muted">/ @_workCenters</span></dd>
+                    </div>
+                    <div>
+                        <dt>@L["Dashboard_Persona"]</dt>
+                        <dd>@L[$"Role_{Auth.CurrentRole}"]</dd>
+                    </div>
+                </dl>
+                <p class="glance-foot" style="margin-top:1rem"><a class="link" href="working-time">@L["Nav_WorkingTime"] →</a></p>
+            </div>
+        </section>
+
+        <section class="card glance-schedule">
+            <div class="card-head"><h2>@L["Dashboard_ScheduleTitle"]</h2></div>
+            <div class="card-body">
+                @if (_schedule is null)
+                {
+                    <div class="loading-row" role="status"><span class="spinner" aria-hidden="true"></span><span class="sr-only">@L["Common_Loading"]</span></div>
+                }
+                else if (!_schedule.HasData)
+                {
+                    <p class="muted small-text">@L["Dashboard_ScheduleEmpty"]</p>
+                }
+                else
+                {
+                    <div class="glance-kpis">
+                        <div class="glance-kpi">
+                            <strong>@((_schedule.Kpis.OnTimeRate * 100).ToString("0")) %</strong>
+                            <span>@L["Sched_KpiOnTime"] · @(_schedule.Kpis.JobCount - _schedule.Kpis.LateJobCount)/@_schedule.Kpis.JobCount</span>
+                        </div>
+                        <div class="glance-kpi">
+                            <strong>@Format.Hours(_schedule.Kpis.MakespanSeconds / 60m)</strong>
+                            <span>@L["Sched_KpiMakespan"]</span>
+                        </div>
+                        <div class="glance-kpi @(_schedule.Kpis.LateJobCount > 0 ? "late" : null)">
+                            <strong>@_schedule.Kpis.LateJobCount</strong>
+                            <span>@L["Dashboard_LateOrders"]</span>
+                        </div>
+                    </div>
+                    <div class="glance-foot">
+                        <span class="muted">@L["Dashboard_ScheduleNote"]</span>
+                        <a class="btn btn-outline btn-sm" href="schedule">@L["Dashboard_OpenSchedule"]</a>
+                    </div>
+                }
+            </div>
+        </section>
+    </div>
 }
 
 @code {
     private bool _loading = true;
     private List<WorkPlan> _plans = new();
     private int _workCenters;
+    private int _staffedCenters;
+    private GermanState _state = GermanState.NW;
+    private PublicHoliday? _nextHoliday;
+    private ScheduleResult? _schedule;
 
     private readonly WorkPlanStatus[] _statuses =
     {
@@ -119,10 +199,30 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        Auth.AuthenticationStateChanged += OnPersonaChanged;
+        await Auth.GetAuthenticationStateAsync();   // loads the stored persona before CurrentRole is read
+
         _plans = await Plans.GetAllAsync();
-        _workCenters = (await Centers.GetAllAsync()).Count;
+        var centers = await Centers.GetAllAsync();
+        _workCenters = centers.Count;
+        _staffedCenters = centers.Count(c => c.ShiftPatternKey != ShiftPatterns.Continuous.Key);
+
+        var rules = (await Settings.GetAsync()).ToRules();
+        _state = rules.State;
+        // "Next" relative to the demo's planning horizon rather than the wall
+        // clock, so the dashboard reads the same on every visit and in every test.
+        var today = new DateOnly(2026, 6, 1);
+        _nextHoliday = GermanHolidays.Between(today, today.AddYears(1), rules.State, rules.IncludePartialHolidays).FirstOrDefault();
         _loading = false;
+
+        // The schedule is computed after the first render so the page is usable immediately.
+        StateHasChanged();
+        _schedule = await Scheduler.GenerateAsync(new SchedulingParameters { DueDateRule = DueDateRule.Explicit });   // the Scheduling page's defaults
     }
+
+    private void OnPersonaChanged(Task<AuthenticationState> task) => InvokeAsync(StateHasChanged);
+
+    public void Dispose() => Auth.AuthenticationStateChanged -= OnPersonaChanged;
 
     private int Count(WorkPlanStatus status) => _plans.Count(p => p.Status == status);
     private int TotalOperations => _plans.Sum(p => p.OperationCount);

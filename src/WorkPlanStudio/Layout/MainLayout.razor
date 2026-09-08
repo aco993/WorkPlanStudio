@@ -3,6 +3,9 @@
 @inject IStringLocalizer<SharedResource> L
 @inject NavigationManager Nav
 
+@* Blazor intercepts in-page links, so the jump to <main> is done explicitly. *@
+<a class="skip-link" href="#main" @onclick="SkipToContentAsync" @onclick:preventDefault="true">@L["Skip_ToContent"]</a>
+
 <div class="app-shell @(_navOpen ? "nav-open" : null)">
     <aside class="sidebar">
         <div class="brand">
@@ -25,10 +28,11 @@
             </button>
             <div class="topbar-spacer"></div>
             <PersonaMenu />
+            <ThemeToggle />
             <CultureSelector />
         </header>
 
-        <main class="page-body">
+        <main id="main" class="page-body" tabindex="-1">
             @Body
         </main>
     </div>
@@ -52,5 +56,9 @@
     private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
         => CloseNav();
 
+    private Task SkipToContentAsync() => JS.InvokeVoidAsync("workplanSkip.toContent").AsTask();
+
     public void Dispose() => Nav.LocationChanged -= OnLocationChanged;
+
+    [Inject] private IJSRuntime JS { get; set; } = default!;
 }
