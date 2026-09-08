@@ -27,6 +27,7 @@ def colour(percent: float) -> str:
 
 
 def main(argv: list[str]) -> int:
+    sys.stdout.reconfigure(encoding="utf-8")   # the table carries check marks; a cp1252 console must not crash it
     if len(argv) < 2:
         print(__doc__)
         return 2
