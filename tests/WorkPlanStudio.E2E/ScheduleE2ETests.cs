@@ -372,6 +372,41 @@ public sealed class ScheduleE2ETests
         Assert.Equal("dark", await page.EvaluateAsync<string>("() => document.documentElement.dataset.theme"));
     }
 
+    [Theory]
+    [InlineData("/", ".data-table", 1366)]
+    [InlineData("/", ".data-table", 1920)]
+    [InlineData("/schedule", ".gantt-track", 1920)]
+    [InlineData("/schedule", ".gantt-track", 2560)]
+    [InlineData("/work-plans", ".data-table", 2560)]
+    [InlineData("/working-time", ".week-track", 2560)]
+    public async Task A_wide_desktop_is_used_rather_than_left_empty(string route, string wideElement, int width)
+    {
+        // Regression guard for a 1240px cap that left a quarter of a 2560 screen
+        // empty. Data-dense pages must use the width they are given, from a
+        // laptop up; prose keeps its own reading measure, which is why this
+        // asserts on the shell and on one wide element per page, not every block.
+        await using var context = await _fixture.Browser.NewContextAsync(new BrowserNewContextOptions
+        {
+            ViewportSize = new ViewportSize { Width = width, Height = 1080 }
+        });
+        var page = await context.NewPageAsync();
+        await page.GotoAsync($"{_fixture.BaseUrl}{route}");
+        await page.WaitForSelectorAsync("main h1", new() { Timeout = 60_000 });
+        await page.WaitForSelectorAsync(wideElement, new() { Timeout = 60_000 });
+
+        var main = await page.Locator("main").BoundingBoxAsync();
+        var wide = await page.Locator(wideElement).First.BoundingBoxAsync();
+        double sidebar = await page.Locator(".sidebar").BoundingBoxAsync() is { } bar ? bar.Width : 0;
+        double available = width - sidebar;
+
+        Assert.True(main!.Width >= available * 0.95,
+            $"{route} at {width}px: the page body uses {main.Width:F0}px of {available:F0}px available next to the sidebar");
+        Assert.True(wide!.Width >= (width - sidebar) * 0.4,
+            $"{route} at {width}px: '{wideElement}' is only {wide.Width:F0}px wide");
+        Assert.False(await page.EvaluateAsync<bool>("() => document.documentElement.scrollWidth > document.documentElement.clientWidth"),
+            $"{route}: the page scrolls horizontally at {width}px");
+    }
+
     [Fact]
     public async Task Keyboard_users_can_skip_to_the_content_and_tab_stays_inside_a_dialog()
     {
