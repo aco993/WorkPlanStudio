@@ -16,7 +16,7 @@
 *.woff2 binary
 
 # GitHub linguist — keep the language stats focused on the app's own code,
-# not the vendored Bootstrap bundle or the docs.
-src/WorkPlanStudio/wwwroot/lib/** linguist-vendored
-docs/**                           linguist-documentation
-*.md                              linguist-documentation
+# not the docs. There is no vendored JavaScript to exclude: wwwroot holds five
+# hand-written files and nothing else.
+docs/** linguist-documentation
+*.md    linguist-documentation

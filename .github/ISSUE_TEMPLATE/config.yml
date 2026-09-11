@@ -1,0 +1,13 @@
+# Keeps security reports out of the public issue tracker, and points a reader
+# with a question at the documentation rather than at a bug report form.
+blank_issues_enabled: true
+contact_links:
+  - name: Report a security vulnerability
+    url: https://github.com/aco993/WorkPlanStudio/security/advisories/new
+    about: Report it privately here, not as a public issue. See SECURITY.md for what is in scope.
+  - name: How the scheduler works
+    url: https://github.com/aco993/WorkPlanStudio/blob/main/docs/SCHEDULING.md
+    about: The model, the dispatch rules, the optimiser and what it deliberately does not do.
+  - name: Why a decision was made
+    url: https://github.com/aco993/WorkPlanStudio/blob/main/docs/adr
+    about: The architecture decision records, including the trade-offs each one accepted.

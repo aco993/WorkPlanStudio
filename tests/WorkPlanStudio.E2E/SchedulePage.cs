@@ -43,35 +43,34 @@ public sealed class SchedulePage
             "Multi-Start-Läufe", "Lokale-Suche-Schritte", "Startwert", "Durchlaufzeit");
     }
 
-    private readonly IPage _page;
     private readonly string _baseUrl;
     private Vocabulary _words = Vocabulary.English;
 
     public SchedulePage(IPage page, string baseUrl)
     {
-        _page = page;
+        Page = page;
         _baseUrl = baseUrl;
     }
 
     /// <summary>The underlying page, for checks the page object does not wrap.</summary>
-    public IPage Page => _page;
+    public IPage Page { get; }
 
-    public ILocator Heading => _page.GetByRole(AriaRole.Heading, new() { Level = 1 });
-    public ILocator KpiCards => _page.Locator(".stat-card");
-    public ILocator GanttBars => _page.Locator(".gantt-bar");
-    public ILocator LateBars => _page.Locator(".gantt-bar.late");
-    public ILocator LatePills => _page.Locator(".pill.late");
-    public ILocator JobRows => _page.Locator(".data-table tbody tr");
+    public ILocator Heading => Page.GetByRole(AriaRole.Heading, new() { Level = 1 });
+    public ILocator KpiCards => Page.Locator(".stat-card");
+    public ILocator GanttBars => Page.Locator(".gantt-bar");
+    public ILocator LateBars => Page.Locator(".gantt-bar.late");
+    public ILocator LatePills => Page.Locator(".pill.late");
+    public ILocator JobRows => Page.Locator(".data-table tbody tr");
 
     /// <summary>The Generate button, which renames itself while the engine runs.</summary>
     private ILocator GenerateButton =>
-        _page.GetByRole(AriaRole.Button, new() { Name = _words.Generate, Exact = true });
+        Page.GetByRole(AriaRole.Button, new() { Name = _words.Generate, Exact = true });
 
     public async Task GotoAsync()
     {
-        await AppReady.GotoAsync(_page, $"{_baseUrl}/schedule");
+        await AppReady.GotoAsync(Page, $"{_baseUrl}/schedule");
         // wait for the WASM app to boot and the first schedule to render
-        await _page.WaitForSelectorAsync(".gantt, .empty-state", new() { Timeout = AppReady.BootTimeoutMilliseconds });
+        await Page.WaitForSelectorAsync(".gantt, .empty-state", new() { Timeout = AppReady.BootTimeoutMilliseconds });
     }
 
     public Task SetDispatchRuleAsync(string enumName) =>
@@ -114,8 +113,8 @@ public sealed class SchedulePage
 
     public async Task SwitchToGermanAsync()
     {
-        await _page.GetByRole(AriaRole.Button, new() { Name = "DE", Exact = true }).ClickAsync();
-        await _page.WaitForSelectorAsync(".gantt, .empty-state", new() { Timeout = AppReady.BootTimeoutMilliseconds });
+        await Page.GetByRole(AriaRole.Button, new() { Name = "DE", Exact = true }).ClickAsync();
+        await Page.WaitForSelectorAsync(".gantt, .empty-state", new() { Timeout = AppReady.BootTimeoutMilliseconds });
         _words = Vocabulary.German;
     }
 
@@ -125,19 +124,19 @@ public sealed class SchedulePage
     /// determinism assertion at a different number.
     /// </summary>
     public Task<string> MakespanTextAsync() =>
-        _page.Locator(".stat-card")
+        Page.Locator(".stat-card")
             .Filter(new LocatorFilterOptions { HasText = _words.Makespan })
             .Locator(".stat-value")
             .InnerTextAsync();
 
     public async Task<string> DocumentLanguageAsync() =>
-        await _page.Locator("html").GetAttributeAsync("lang") ?? "";
+        await Page.Locator("html").GetAttributeAsync("lang") ?? "";
 
     public async Task ScreenshotAsync(string fileName)
     {
         var dir = Environment.GetEnvironmentVariable("E2E_ARTIFACTS") ?? AppContext.BaseDirectory;
         Directory.CreateDirectory(dir);
-        await _page.ScreenshotAsync(new() { Path = Path.Combine(dir, fileName), FullPage = true });
+        await Page.ScreenshotAsync(new() { Path = Path.Combine(dir, fileName), FullPage = true });
     }
 
     /// <summary>
@@ -145,5 +144,5 @@ public sealed class SchedulePage
     /// text. Not exact: one label carries its unit in brackets
     /// ("Flow factor (× work)") and the unit is not what the test is naming.
     /// </summary>
-    private ILocator Field(string label) => _page.GetByLabel(label, new() { Exact = false });
+    private ILocator Field(string label) => Page.GetByLabel(label, new() { Exact = false });
 }

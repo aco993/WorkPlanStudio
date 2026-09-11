@@ -1,5 +1,12 @@
 # EditorConfig — https://editorconfig.org
 # Coding style for WorkPlan Studio. Enforced in IDEs and via `dotnet format`.
+#
+# The severity suffix is the whole story. The Quality workflow runs
+# `dotnet format --severity warn`, so a rule at `:warning` is enforced on every
+# pull request and a rule at `:suggestion` or `:silent` is documentation. Every
+# `:warning` rule below is one the existing code already satisfies — the config
+# asserts the conventions rather than describing an aspiration, and the two
+# places where the code and a preference disagree say so where they sit.
 root = true
 
 [*]
@@ -32,23 +39,23 @@ dotnet_separate_import_directive_groups = false
 csharp_style_namespace_declarations = file_scoped:warning
 
 # this. preferences — prefer the bare member
-dotnet_style_qualification_for_field = false:suggestion
-dotnet_style_qualification_for_property = false:suggestion
-dotnet_style_qualification_for_method = false:suggestion
-dotnet_style_qualification_for_event = false:suggestion
+dotnet_style_qualification_for_field = false:warning
+dotnet_style_qualification_for_property = false:warning
+dotnet_style_qualification_for_method = false:warning
+dotnet_style_qualification_for_event = false:warning
 
 # Language keywords over BCL type names (int over Int32)
 dotnet_style_predefined_type_for_locals_parameters_members = true:warning
 dotnet_style_predefined_type_for_member_access = true:warning
 
 # Expression-level preferences
-dotnet_style_object_initializer = true:suggestion
-dotnet_style_collection_initializer = true:suggestion
-dotnet_style_prefer_auto_properties = true:suggestion
-dotnet_style_null_propagation = true:suggestion
-dotnet_style_coalesce_expression = true:suggestion
+dotnet_style_object_initializer = true:warning
+dotnet_style_collection_initializer = true:warning
+dotnet_style_prefer_auto_properties = true:warning
+dotnet_style_null_propagation = true:warning
+dotnet_style_coalesce_expression = true:warning
 dotnet_style_prefer_conditional_expression_over_return = true:silent
-dotnet_style_readonly_field = true:suggestion
+dotnet_style_readonly_field = true:warning
 
 # var — prefer it when the type is apparent
 csharp_style_var_for_built_in_types = false:suggestion
@@ -59,20 +66,30 @@ csharp_style_var_elsewhere = false:suggestion
 csharp_style_expression_bodied_methods = when_on_single_line:suggestion
 csharp_style_expression_bodied_properties = true:suggestion
 csharp_style_expression_bodied_accessors = true:suggestion
-csharp_style_pattern_matching_over_is_with_cast_check = true:suggestion
-csharp_style_pattern_matching_over_as_with_null_check = true:suggestion
-csharp_style_prefer_switch_expression = true:suggestion
+csharp_style_pattern_matching_over_is_with_cast_check = true:warning
+csharp_style_pattern_matching_over_as_with_null_check = true:warning
+csharp_style_prefer_switch_expression = true:warning
+# Left at :suggestion: eight range checks in the validators are written
+# `x < Min || x > Max` rather than `x is < Min or > Max`, which reads better
+# with the two named limits either side. Promoting it would rewrite them.
 csharp_style_prefer_pattern_matching = true:suggestion
-csharp_style_throw_expression = true:suggestion
-csharp_style_prefer_index_operator = true:suggestion
-csharp_style_prefer_range_operator = true:suggestion
-csharp_prefer_simple_using_statement = true:suggestion
+csharp_style_throw_expression = true:warning
+csharp_style_prefer_index_operator = true:warning
+csharp_style_prefer_range_operator = true:warning
+csharp_prefer_simple_using_statement = true:warning
 csharp_style_prefer_primary_constructors = false:silent
 
 # Null checking
-csharp_style_conditional_delegate_call = true:suggestion
+csharp_style_conditional_delegate_call = true:warning
 
 # Braces & blocks
+#
+# Left at :silent, not promoted with the rest. The codebase deliberately writes
+# a single-statement guard without braces, and 31 of those bodies wrap onto a
+# second line, so even `when_multiline` would flag them — in `src/` and in three
+# test projects. Promoting this means reformatting those 31 sites first; it is a
+# change to the code, not to the config, and it does not belong in the same
+# commit as a severity bump.
 csharp_prefer_braces = true:silent
 csharp_new_line_before_open_brace = all
 csharp_new_line_before_else = true
@@ -90,9 +107,32 @@ csharp_using_directive_placement = outside_namespace:warning
 
 # ---------------------------------------------------------------------------
 # Naming conventions
+#
+# At :warning these are enforced by `dotnet format --severity warn`, which the
+# Quality workflow runs. Order matters: the more specific symbol groups are
+# declared first, because a symbol takes the first rule it matches, and every
+# private field also matches the plain private-field group.
 # ---------------------------------------------------------------------------
-# private fields → _camelCase
-dotnet_naming_rule.private_fields_underscore.severity = suggestion
+# private const and private static readonly fields → PascalCase.
+# They are shared, immutable values and read as members, not as state; the whole
+# codebase writes them that way (BrowserDatabase.SqliteHeader, the validators'
+# limits) and the underscore rule below must not claim them.
+dotnet_naming_rule.private_constants_pascal.severity = warning
+dotnet_naming_rule.private_constants_pascal.symbols = private_constants
+dotnet_naming_rule.private_constants_pascal.style = pascal_case
+dotnet_naming_symbols.private_constants.applicable_kinds = field
+dotnet_naming_symbols.private_constants.applicable_accessibilities = private
+dotnet_naming_symbols.private_constants.required_modifiers = const
+
+dotnet_naming_rule.private_static_readonly_pascal.severity = warning
+dotnet_naming_rule.private_static_readonly_pascal.symbols = private_static_readonly
+dotnet_naming_rule.private_static_readonly_pascal.style = pascal_case
+dotnet_naming_symbols.private_static_readonly.applicable_kinds = field
+dotnet_naming_symbols.private_static_readonly.applicable_accessibilities = private
+dotnet_naming_symbols.private_static_readonly.required_modifiers = static,readonly
+
+# every other private field → _camelCase
+dotnet_naming_rule.private_fields_underscore.severity = warning
 dotnet_naming_rule.private_fields_underscore.symbols = private_fields
 dotnet_naming_rule.private_fields_underscore.style = underscore_camel_case
 dotnet_naming_symbols.private_fields.applicable_kinds = field
@@ -101,7 +141,7 @@ dotnet_naming_style.underscore_camel_case.required_prefix = _
 dotnet_naming_style.underscore_camel_case.capitalization = camel_case
 
 # types & members → PascalCase
-dotnet_naming_rule.types_pascal.severity = suggestion
+dotnet_naming_rule.types_pascal.severity = warning
 dotnet_naming_rule.types_pascal.symbols = types_and_members
 dotnet_naming_rule.types_pascal.style = pascal_case
 dotnet_naming_symbols.types_and_members.applicable_kinds = class,struct,enum,property,method,event,namespace
