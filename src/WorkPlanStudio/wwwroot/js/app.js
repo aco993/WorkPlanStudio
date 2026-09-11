@@ -39,26 +39,64 @@ window.workplanSettings = {
 
 window.workplanDb = {
     storageKey: 'workplanstudio.db',
-    versionKey: 'workplanstudio.db.version',
+    // Only read, never written: the pre-atomic layout kept the version here.
+    legacyVersionKey: 'workplanstudio.db.version',
 
     // Returns { data, version } or null when nothing has been stored yet.
+    //
+    // The payload and its version used to be two separate setItem calls. If the
+    // second one hit the quota the data key held a current payload while the
+    // version key was gone, load() reported version 0, and the app parked the
+    // user on "unsupported schema" for a database that was perfectly fine - with
+    // reset, i.e. total data loss, as the only way out. One JSON value under one
+    // key makes the write atomic; the legacy two-key layout is still read so an
+    // existing browser keeps its data.
     load: function () {
-        const data = window.localStorage.getItem(this.storageKey);
-        if (data === null) {
+        const raw = window.localStorage.getItem(this.storageKey);
+        if (raw === null) {
             return null;
         }
-        const version = parseInt(window.localStorage.getItem(this.versionKey) || '0', 10);
-        return { data: data, version: version };
+        if (raw.length > 0 && raw[0] === '{') {
+            try {
+                const parsed = JSON.parse(raw);
+                if (parsed && typeof parsed.data === 'string' && Number.isInteger(parsed.version)) {
+                    return { data: parsed.data, version: parsed.version };
+                }
+            } catch {
+                // Fall through: treat it as the legacy Base64 layout.
+            }
+        }
+        const version = parseInt(window.localStorage.getItem(this.legacyVersionKey) || '0', 10);
+        return { data: raw, version: version };
     },
 
+    // Reports the outcome instead of throwing, so a full quota becomes a typed
+    // result the UI can explain rather than an opaque JSException.
     save: function (base64, version) {
-        window.localStorage.setItem(this.storageKey, base64);
-        window.localStorage.setItem(this.versionKey, String(version));
+        const payload = JSON.stringify({ data: base64, version: version });
+        try {
+            window.localStorage.setItem(this.storageKey, payload);
+        } catch (error) {
+            const quota = error && (error.name === 'QuotaExceededError'
+                || error.name === 'NS_ERROR_DOM_QUOTA_REACHED'
+                || error.code === 22 || error.code === 1014);
+            return { ok: false, reason: quota ? 'quota' : 'error', message: String(error && error.message || error) };
+        }
+
+        // Read back before declaring success: a storage layer that silently
+        // truncates must not be reported as a durable save.
+        const written = window.localStorage.getItem(this.storageKey);
+        if (written !== payload) {
+            return { ok: false, reason: 'error', message: 'the stored payload did not match what was written' };
+        }
+
+        window.localStorage.removeItem(this.legacyVersionKey);
+        return { ok: true };
     },
 
     clear: function () {
         window.localStorage.removeItem(this.storageKey);
-        window.localStorage.removeItem(this.versionKey);
+        window.localStorage.removeItem(this.legacyVersionKey);
     },
 
     export: function (base64, version) {
@@ -70,6 +108,30 @@ window.workplanDb = {
         link.download = 'workplanstudio-browser-database-v' + version + '.json';
         link.click();
         URL.revokeObjectURL(url);
+    },
+
+    // The other half of export, which the app shipped without: a file the user
+    // downloaded was previously readable by nothing at all.
+    pickImport: function () {
+        return new Promise((resolve) => {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'application/json,.json';
+            input.addEventListener('cancel', () => resolve(null));
+            input.addEventListener('change', async () => {
+                const file = input.files && input.files[0];
+                if (!file) { resolve(null); return; }
+                try {
+                    const parsed = JSON.parse(await file.text());
+                    resolve(parsed && typeof parsed.data === 'string' && Number.isInteger(parsed.version)
+                        ? { data: parsed.data, version: parsed.version }
+                        : { data: '', version: -1 });
+                } catch {
+                    resolve({ data: '', version: -1 });
+                }
+            });
+            input.click();
+        });
     }
 };
 
