@@ -1,4 +1,3 @@
-using System.Text.Json;
 using Microsoft.Extensions.Localization;
 using WorkPlanStudio.Resources;
 using WorkPlanStudio.Scheduling;
@@ -36,7 +35,8 @@ public sealed class ScheduleAssistant
         _ruleBased.NarrateAsync(explanation, cancellationToken);
 
     /// <summary>True when a usable BYOK AI provider is configured and enabled.</summary>
-    public async ValueTask<bool> IsAiEnabledAsync() => (await _config.LoadAsync()).IsConfigured;
+    public async ValueTask<bool> IsAiEnabledAsync(CancellationToken cancellationToken = default) =>
+        (await _config.LoadAsync(cancellationToken)).IsConfigured;
 
     /// <summary>
     /// AI narration when configured; otherwise — and on any AI error — the rule-based
@@ -47,7 +47,7 @@ public sealed class ScheduleAssistant
     {
         ArgumentNullException.ThrowIfNull(explanation);
 
-        var settings = await _config.LoadAsync();
+        var settings = await _config.LoadAsync(cancellationToken);
         if (!settings.IsConfigured)
             return await _ruleBased.NarrateAsync(explanation, cancellationToken);
 
@@ -60,10 +60,12 @@ public sealed class ScheduleAssistant
         {
             throw;
         }
-        catch (Exception ex) when (
-            ex is HttpRequestException or OperationCanceledException or JsonException
-               or InvalidOperationException or NotSupportedException or UriFormatException or ArgumentException)
+        catch (Exception ex)
         {
+            // Total by design: the narration is a nicety, the rule-based text is
+            // the product. A filter listing the exception types a third-party
+            // endpoint can produce is a list that is wrong exactly once — and the
+            // cost of being wrong is the whole page replaced by an error card.
             var fallback = await _ruleBased.NarrateAsync(explanation, cancellationToken);
             return fallback with { Note = _l["Sched_Ai_Fallback", FailureLabel(ex)] };
         }
@@ -71,8 +73,8 @@ public sealed class ScheduleAssistant
 
     private string FailureLabel(Exception exception) => exception switch
     {
-        OperationCanceledException => _l["Sched_Ai_FailureTimeout"],
-        JsonException or InvalidOperationException or NotSupportedException => _l["Sched_Ai_FailureResponse"],
-        _ => _l["Sched_Ai_FailureUnavailable"]
+        OperationCanceledException or TimeoutException => _l["Sched_Ai_FailureTimeout"],
+        HttpRequestException => _l["Sched_Ai_FailureUnavailable"],
+        _ => _l["Sched_Ai_FailureResponse"]
     };
 }
