@@ -9,25 +9,43 @@ window.blazorCulture = {
     set: (value) => window.localStorage['BlazorCulture'] = value
 };
 
+// The boot screen and the framework's error bar are painted before the .NET
+// runtime exists, so IStringLocalizer cannot reach them; they were the last
+// untranslated strings in the app. The remembered language is in localStorage
+// before anything renders, so the swap happens here, from `data-de` attributes
+// that keep both languages next to each other in index.html.
+(function localiseStaticChrome() {
+    const culture = window.localStorage['BlazorCulture'] || '';
+    if (!culture.startsWith('de')) { return; }
+    document.documentElement.lang = 'de';
+    document.querySelectorAll('[data-de]').forEach(el => el.textContent = el.getAttribute('data-de'));
+})();
+
 window.documentLanguage = {
     set: (value) => document.documentElement.lang = value
 };
 
+// Dialog focus. `close` deliberately takes no element: it is called from the
+// component's render loop *after* the dialog has been removed from the DOM (a
+// dialog closed by Cancel or Save never goes through the ✕ path), and an
+// ElementReference to a detached node is no longer resolvable. A stack of
+// { dialog, previous } pairs keeps the trap removable and the return target known
+// without needing the element back from .NET.
 window.workplanModal = {
-    previousFocus: new WeakMap(),
+    stack: [],
     open: function (dialog) {
-        this.previousFocus.set(dialog, document.activeElement);
+        this.stack.push({ dialog: dialog, previous: document.activeElement });
         const target = dialog.querySelector('input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), a[href]');
         (target || dialog).focus();
         window.workplanFocusTrap.install(dialog);
     },
-    close: function (dialog) {
-        window.workplanFocusTrap.remove(dialog);
-        const previous = this.previousFocus.get(dialog);
-        if (previous && document.contains(previous)) {
-            previous.focus();
+    close: function () {
+        const entry = this.stack.pop();
+        if (!entry) { return; }
+        window.workplanFocusTrap.remove(entry.dialog);
+        if (entry.previous && document.contains(entry.previous)) {
+            entry.previous.focus();
         }
-        this.previousFocus.delete(dialog);
     }
 };
 
@@ -147,6 +165,42 @@ window.workplanChat = {
     scrollToEnd: function () {
         const thread = document.querySelector('.chat-thread');
         if (thread) { thread.scrollTop = thread.scrollHeight; }
+    }
+};
+
+// The mobile navigation drawer. Focus follows it in; the layout sends focus back
+// to the hamburger on close.
+window.workplanNav = {
+    focusFirst: function () {
+        const link = document.querySelector('.app-shell.nav-open .sidebar .nav-link');
+        if (link) { link.focus(); }
+    }
+};
+
+// The Gantt chart's arrow-key navigation. The browser scrolls a scroll container
+// with the arrow keys, which fights the focus move the component is making, so the
+// default is cancelled here rather than with Blazor's @onkeydown:preventDefault —
+// that attribute is fixed per render, not per key, so it would also swallow Tab and
+// trap the reader inside the chart. Enter and Space are deliberately left alone:
+// they are the buttons' own activation.
+window.workplanGantt = {
+    keys: ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'],
+    install: function (chart) {
+        if (!chart || chart.dataset.keysBound === 'true') { return; }
+        chart.dataset.keysBound = 'true';
+        chart.addEventListener('keydown', (event) => {
+            if (this.keys.includes(event.key)) { event.preventDefault(); }
+        });
+    }
+};
+
+// Focus by id, for the Gantt chart's roving tabindex: the focused bar changes with
+// the arrow keys, and the bars are rendered inside a @foreach where an
+// ElementReference per bar would have to be kept in step with the list by hand.
+window.workplanFocus = {
+    byId: function (id) {
+        const element = document.getElementById(id);
+        if (element) { element.focus(); }
     }
 };
 
