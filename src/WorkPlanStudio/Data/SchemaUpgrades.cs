@@ -32,9 +32,9 @@ public static class SchemaUpgrades
     /// <c>Program.cs</c> so that adding a step and forgetting the bump is one
     /// edit, not two.
     /// </summary>
-    public const int CurrentVersion = 6;
+    public const int CurrentVersion = 7;
 
-    private static readonly int[] UpgradableFrom = [5];
+    private static readonly int[] UpgradableFrom = [5, 6];
 
     /// <summary>True when a payload stamped <paramref name="storedVersion"/> can still be rescued.</summary>
     public static bool CanUpgradeFrom(int storedVersion) => UpgradableFrom.Contains(storedVersion);
@@ -58,10 +58,12 @@ public static class SchemaUpgrades
     {
         ArgumentNullException.ThrowIfNull(factory);
 
-        if (storedVersion != 5)
-            throw new InvalidOperationException($"No upgrade step from schema version {storedVersion}.");
-
-        var legacy = await LegacyV5.ReadAsync(sourcePath, cancellationToken);
+        ILegacyPayload legacy = storedVersion switch
+        {
+            5 => await LegacyV5.ReadAsync(sourcePath, cancellationToken),
+            6 => await LegacyV6.ReadAsync(sourcePath, cancellationToken),
+            _ => throw new InvalidOperationException($"No upgrade step from schema version {storedVersion}.")
+        };
 
         if (File.Exists(targetPath))
             File.Delete(targetPath);
@@ -72,10 +74,42 @@ public static class SchemaUpgrades
     }
 
     /// <summary>
+    /// The statutory defaults a row written before a setting existed has to take
+    /// on. Named rather than inlined as literals because they are the answer to
+    /// "what did this plant mean before it could say?", and the safe answer is
+    /// always the one that claims no permission: 24 weeks (§ 3 s. 2), no § 5 (2)
+    /// sector, and a rota of one week — the reading under which a crew that works
+    /// Sundays works all of them.
+    /// </summary>
+    private static class DefaultsForUpgradedRows
+    {
+        public const int AveragingWindow = (int)WorkingTime.AveragingWindow.TwentyFourWeeks;
+        public const int RestExceptionSector = (int)WorkingTime.RestExceptionSector.None;
+        public const int SundayRotationWeeks = 1;
+
+        /// <summary>
+        /// A rest of ten hours stored before the sector column existed has no
+        /// sector behind it, so the new CHECK constraint would refuse the row and
+        /// take the whole upgrade with it. Eleven hours is the only reading that
+        /// keeps both the database and the statute: the shortening was a
+        /// permission the old schema could not qualify, and an unqualified
+        /// § 5 (2) is no permission at all. The planner takes it back on the page,
+        /// this time by naming the sector.
+        /// </summary>
+        public const int MinimumRestHours = 11;
+    }
+
+    /// <summary>One stored shape, able to write itself into the current schema.</summary>
+    private interface ILegacyPayload
+    {
+        Task WriteAsync(AppDbContext db, CancellationToken cancellationToken);
+    }
+
+    /// <summary>
     /// Everything schema 5 held, in the shape schema 5 held it. Frozen on
     /// purpose: it must keep describing the old database after the model moves on.
     /// </summary>
-    private sealed class LegacyV5
+    private sealed class LegacyV5 : ILegacyPayload
     {
         private readonly List<object?[]> _workCenters = [];
         private readonly List<object?[]> _absences = [];
@@ -134,12 +168,18 @@ public static class SchemaUpgrades
                     "INSERT INTO WorkCenterAbsences (Id, WorkCenterId, Start, \"End\", Kind, Label) VALUES ($0, $1, $2, $3, $4, $5)",
                     row);
 
+            // Schema 5 predates all three § settings, so they take the values a
+            // plant that never declared them is entitled to — see
+            // <see cref="DefaultsForUpgradedRows"/>.
             foreach (var row in _plantSettings)
                 await ExecuteAsync(connection, cancellationToken,
-                    "INSERT INTO PlantSettings (Id, State, IncludePartialHolidays, AllowExtendedDay, AllowExtendedNight, "
-                    + "SundayWorkAllowed, HolidayWorkAllowed, SundayBoundaryShiftHours, MinimumRestHours, ModifiedUtc) "
-                    + "VALUES ($0, $1, $2, $3, $4, $5, $6, $7, $8, $9)",
-                    row);
+                    "INSERT INTO PlantSettings (Id, State, IncludePartialHolidays, AllowExtendedDay, AveragingWindow, AllowExtendedNight, "
+                    + "SundayWorkAllowed, HolidayWorkAllowed, SundayRotationWeeks, SundayBoundaryShiftHours, "
+                    + "RestExceptionSector, MinimumRestHours, ModifiedUtc) "
+                    + "VALUES ($0, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)",
+                    row[0], row[1], row[2], row[3], DefaultsForUpgradedRows.AveragingWindow, row[4], row[5], row[6],
+                    DefaultsForUpgradedRows.SundayRotationWeeks, row[7], DefaultsForUpgradedRows.RestExceptionSector,
+                    DefaultsForUpgradedRows.MinimumRestHours, row[9]);
 
             foreach (var row in _workPlans)
                 await ExecuteAsync(connection, cancellationToken,
@@ -216,61 +256,162 @@ public static class SchemaUpgrades
             return byCode;
         }
 
-        private static async Task ReadInto(
-            DbConnection connection,
-            List<object?[]> rows,
-            int columns,
-            string sql,
-            CancellationToken cancellationToken)
-        {
-            await using var command = connection.CreateCommand();
-            command.CommandText = sql;
-            await using var reader = await command.ExecuteReaderAsync(cancellationToken);
-            while (await reader.ReadAsync(cancellationToken))
-            {
-                var values = new object?[columns];
-                for (int i = 0; i < columns; i++)
-                    values[i] = reader.IsDBNull(i) ? null : reader.GetValue(i);
-                rows.Add(values);
-            }
-        }
-
-        private static async Task ExecuteAsync(
-            DbConnection connection,
-            CancellationToken cancellationToken,
-            string sql,
-            params object?[] values)
-        {
-            await using var command = connection.CreateCommand();
-            command.CommandText = sql;
-            for (int i = 0; i < values.Length; i++)
-            {
-                var parameter = command.CreateParameter();
-                parameter.ParameterName = $"${i}";
-                parameter.Value = values[i] ?? DBNull.Value;
-                command.Parameters.Add(parameter);
-            }
-
-            await command.ExecuteNonQueryAsync(cancellationToken);
-        }
-
-        private static string? Text(object? value) =>
-            value is null ? null : Convert.ToString(value, CultureInfo.InvariantCulture);
-
-        /// <summary>
-        /// Schema 5 declared money and minutes as <c>decimal(10,2)</c>, which gives
-        /// SQLite NUMERIC affinity — so they are sitting in the old file as binary
-        /// doubles. Rendering them as text here is what moves them onto the TEXT
-        /// columns the new schema uses; the value does not change, only the way it
-        /// is stored stops being lossy from here on.
-        /// </summary>
-        private static string AsDecimalText(object? value) => value switch
-        {
-            null => "0",
-            double number => number.ToString("0.####################", CultureInfo.InvariantCulture),
-            long number => number.ToString(CultureInfo.InvariantCulture),
-            decimal number => number.ToString(CultureInfo.InvariantCulture),
-            _ => Convert.ToString(value, CultureInfo.InvariantCulture) ?? "0"
-        };
     }
+
+    /// <summary>
+    /// Everything schema 6 held, in the shape schema 6 held it: cost centres are
+    /// already master data and the order dates are already plant-local, so the
+    /// step is narrower than the one before it — three columns the settings row
+    /// did not have.
+    /// </summary>
+    private sealed class LegacyV6 : ILegacyPayload
+    {
+        private readonly List<object?[]> _costCenters = [];
+        private readonly List<object?[]> _workCenters = [];
+        private readonly List<object?[]> _absences = [];
+        private readonly List<object?[]> _plantSettings = [];
+        private readonly List<object?[]> _workPlans = [];
+        private readonly List<object?[]> _operations = [];
+        private readonly List<object?[]> _orders = [];
+        private readonly List<object?[]> _routingCenters = [];
+
+        public static async Task<LegacyV6> ReadAsync(string path, CancellationToken cancellationToken)
+        {
+            var legacy = new LegacyV6();
+            await using var connection = new SqliteConnection($"Data Source={path};Pooling=False");
+            await connection.OpenAsync(cancellationToken);
+
+            await ReadInto(connection, legacy._costCenters, 5,
+                "SELECT Id, Code, Name, Description, IsActive FROM CostCenters", cancellationToken);
+            await ReadInto(connection, legacy._workCenters, 8,
+                "SELECT Id, Code, Name, CostCenterId, HourlyRate, ParallelCapacity, ShiftPatternKey, IsActive FROM WorkCenters", cancellationToken);
+            await ReadInto(connection, legacy._absences, 6,
+                "SELECT Id, WorkCenterId, Start, \"End\", Kind, Label FROM WorkCenterAbsences", cancellationToken);
+            await ReadInto(connection, legacy._plantSettings, 10,
+                "SELECT Id, State, IncludePartialHolidays, AllowExtendedDay, AllowExtendedNight, SundayWorkAllowed, "
+                + "HolidayWorkAllowed, SundayBoundaryShiftHours, MinimumRestHours, ModifiedUtc FROM PlantSettings", cancellationToken);
+            await ReadInto(connection, legacy._workPlans, 9,
+                "SELECT Id, PlanNumber, PartNumber, PartName, Revision, Status, LotSize, CreatedUtc, ModifiedUtc FROM WorkPlans", cancellationToken);
+            await ReadInto(connection, legacy._operations, 8,
+                "SELECT Id, WorkPlanId, OperationNumber, Description, WorkCenterId, SetupTimeMinutes, TimePerPieceMinutes, Remarks FROM Operations", cancellationToken);
+            await ReadInto(connection, legacy._orders, 12,
+                "SELECT Id, OrderNumber, WorkPlanId, Quantity, ReleaseLocal, DueLocal, Priority, Status, RoutingRevision, "
+                + "RoutingSnapshotJson, CreatedUtc, ModifiedUtc FROM ProductionOrders", cancellationToken);
+            await ReadInto(connection, legacy._routingCenters, 2,
+                "SELECT ProductionOrderId, WorkCenterId FROM OrderRoutingCenters", cancellationToken);
+
+            return legacy;
+        }
+
+        public async Task WriteAsync(AppDbContext db, CancellationToken cancellationToken)
+        {
+            await db.Database.OpenConnectionAsync(cancellationToken);
+            var connection = db.Database.GetDbConnection();
+
+            foreach (var row in _costCenters)
+                await ExecuteAsync(connection, cancellationToken,
+                    "INSERT INTO CostCenters (Id, Code, Name, Description, IsActive) VALUES ($0, $1, $2, $3, $4)", row);
+
+            foreach (var row in _workCenters)
+                await ExecuteAsync(connection, cancellationToken,
+                    "INSERT INTO WorkCenters (Id, Code, Name, CostCenterId, HourlyRate, ParallelCapacity, ShiftPatternKey, IsActive) "
+                    + "VALUES ($0, $1, $2, $3, $4, $5, $6, $7)", row);
+
+            foreach (var row in _absences)
+                await ExecuteAsync(connection, cancellationToken,
+                    "INSERT INTO WorkCenterAbsences (Id, WorkCenterId, Start, \"End\", Kind, Label) VALUES ($0, $1, $2, $3, $4, $5)",
+                    row);
+
+            foreach (var row in _plantSettings)
+                await ExecuteAsync(connection, cancellationToken,
+                    "INSERT INTO PlantSettings (Id, State, IncludePartialHolidays, AllowExtendedDay, AveragingWindow, AllowExtendedNight, "
+                    + "SundayWorkAllowed, HolidayWorkAllowed, SundayRotationWeeks, SundayBoundaryShiftHours, "
+                    + "RestExceptionSector, MinimumRestHours, ModifiedUtc) "
+                    + "VALUES ($0, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)",
+                    row[0], row[1], row[2], row[3], DefaultsForUpgradedRows.AveragingWindow, row[4], row[5], row[6],
+                    DefaultsForUpgradedRows.SundayRotationWeeks, row[7], DefaultsForUpgradedRows.RestExceptionSector,
+                    DefaultsForUpgradedRows.MinimumRestHours, row[9]);
+
+            foreach (var row in _workPlans)
+                await ExecuteAsync(connection, cancellationToken,
+                    "INSERT INTO WorkPlans (Id, PlanNumber, PartNumber, PartName, Revision, Status, LotSize, CreatedUtc, ModifiedUtc) "
+                    + "VALUES ($0, $1, $2, $3, $4, $5, $6, $7, $8)", row);
+
+            foreach (var row in _operations)
+                await ExecuteAsync(connection, cancellationToken,
+                    "INSERT INTO Operations (Id, WorkPlanId, OperationNumber, Description, WorkCenterId, SetupTimeMinutes, TimePerPieceMinutes, Remarks) "
+                    + "VALUES ($0, $1, $2, $3, $4, $5, $6, $7)", row);
+
+            foreach (var row in _orders)
+                await ExecuteAsync(connection, cancellationToken,
+                    "INSERT INTO ProductionOrders (Id, OrderNumber, WorkPlanId, Quantity, ReleaseLocal, DueLocal, Priority, Status, "
+                    + "RoutingRevision, RoutingSnapshotJson, CreatedUtc, ModifiedUtc) "
+                    + "VALUES ($0, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)", row);
+
+            // Schema 6 already has the routing index, so it is copied rather than
+            // reconstructed from the snapshot blob: an order whose snapshot names
+            // a centre that has since been deleted must not gain a row here that
+            // schema 6 deliberately did not have.
+            foreach (var row in _routingCenters)
+                await ExecuteAsync(connection, cancellationToken,
+                    "INSERT OR IGNORE INTO OrderRoutingCenters (ProductionOrderId, WorkCenterId) VALUES ($0, $1)", row);
+        }
+    }
+
+    private static async Task ReadInto(
+        DbConnection connection,
+        List<object?[]> rows,
+        int columns,
+        string sql,
+        CancellationToken cancellationToken)
+    {
+        await using var command = connection.CreateCommand();
+        command.CommandText = sql;
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            var values = new object?[columns];
+            for (int i = 0; i < columns; i++)
+                values[i] = reader.IsDBNull(i) ? null : reader.GetValue(i);
+            rows.Add(values);
+        }
+    }
+
+    private static async Task ExecuteAsync(
+        DbConnection connection,
+        CancellationToken cancellationToken,
+        string sql,
+        params object?[] values)
+    {
+        await using var command = connection.CreateCommand();
+        command.CommandText = sql;
+        for (int i = 0; i < values.Length; i++)
+        {
+            var parameter = command.CreateParameter();
+            parameter.ParameterName = $"${i}";
+            parameter.Value = values[i] ?? DBNull.Value;
+            command.Parameters.Add(parameter);
+        }
+
+        await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    private static string? Text(object? value) =>
+        value is null ? null : Convert.ToString(value, CultureInfo.InvariantCulture);
+
+    /// <summary>
+    /// Schema 5 declared money and minutes as <c>decimal(10,2)</c>, which gives
+    /// SQLite NUMERIC affinity — so they are sitting in the old file as binary
+    /// doubles. Rendering them as text here is what moves them onto the TEXT
+    /// columns the new schema uses; the value does not change, only the way it
+    /// is stored stops being lossy from here on.
+    /// </summary>
+    private static string AsDecimalText(object? value) => value switch
+    {
+        null => "0",
+        double number => number.ToString("0.####################", CultureInfo.InvariantCulture),
+        long number => number.ToString(CultureInfo.InvariantCulture),
+        decimal number => number.ToString(CultureInfo.InvariantCulture),
+        _ => Convert.ToString(value, CultureInfo.InvariantCulture) ?? "0"
+    };
 }

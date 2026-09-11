@@ -570,4 +570,68 @@
   <data name="Account_PullBoundary" xml:space="preserve"><value>Fetching replaces the local copy with the server's. Local changes are not sent back: this is a one-way import, not a two-way sync.</value></data>
   <data name="Account_PullDone" xml:space="preserve"><value>Replaced the local copy with {0} cost centers, {1} work centers, {2} work plans and {3} production orders.</value></data>
   <data name="Account_PullFailed" xml:space="preserve"><value>The master data could not be fetched from the server.</value></data>
+  <data name="Rule_RestCompensation_Title" xml:space="preserve"><value>Compensating rest</value></data>
+  <data name="Rule_RestCompensation_Text" xml:space="preserve"><value>A rest shortened to 10 hours is reserved for hospitals and other institutions for treatment and care, catering and accommodation, transport undertakings, broadcasting, agriculture and animal husbandry — and even there only where every shortening is made good within a calendar month or four weeks by extending another rest to at least 12 hours.</value></data>
+  <data name="Rule_MultiShiftRequirement_Title" xml:space="preserve"><value>Multi-shift operation</value></data>
+  <data name="Rule_MultiShiftRequirement_Text" xml:space="preserve"><value>The start and end of the Sunday and holiday rest may be moved by up to six hours, forward or back — but only in multi-shift plants running a regular day and night shift. A pattern with only one of the two claims a permission § 9 (2) does not give it.</value></data>
+  <data name="Rule_ReplacementRestDay_Title" xml:space="preserve"><value>Replacement rest day</value></data>
+  <data name="Rule_ReplacementRestDay_Text" xml:space="preserve"><value>Sunday work earns a replacement rest day within a two-week period that includes the Sunday worked; work on a public holiday falling on a working day earns one within eight weeks. The permission to work those days brings the obligation with it.</value></data>
+  <data name="Applied_RestCompensation" xml:space="preserve"><value>{0} on {1}: rest shortened to {2}; the statute requires at least {3} here (§ 5 (2)).</value></data>
+  <data name="Applied_MultiShiftRequirement" xml:space="preserve"><value>{0}: the Sunday and holiday rest is moved by {2}, which § 9 (2) allows only in a multi-shift plant with a regular day and night shift.</value></data>
+  <data name="Applied_ReplacementRestDay" xml:space="preserve"><value>{0} on {1}: a replacement rest day is owed for it, within {3} (§ 11 (2), (3)).</value></data>
+  <data name="Wt_Days" xml:space="preserve"><value>{0} days</value></data>
+  <data name="Wt_Weeks" xml:space="preserve"><value>{0} weeks</value></data>
+  <data name="Wt_WeeksUnit" xml:space="preserve"><value>weeks</value></data>
+  <data name="Wt_AveragingWindow" xml:space="preserve"><value>Reference period for the average (§ 3 s. 2)</value></data>
+  <data name="Wt_Window_TwentyFourWeeks" xml:space="preserve"><value>24 weeks</value></data>
+  <data name="Wt_Window_SixCalendarMonths" xml:space="preserve"><value>Six calendar months</value></data>
+  <data name="Wt_RestSector" xml:space="preserve"><value>Sector under § 5 (2)</value></data>
+  <data name="Wt_Sector_None" xml:space="preserve"><value>None — the full 11 hours apply</value></data>
+  <data name="Wt_Sector_HealthCare" xml:space="preserve"><value>Hospitals, treatment and care</value></data>
+  <data name="Wt_Sector_Hospitality" xml:space="preserve"><value>Catering and accommodation</value></data>
+  <data name="Wt_Sector_Transport" xml:space="preserve"><value>Transport undertakings</value></data>
+  <data name="Wt_Sector_Broadcasting" xml:space="preserve"><value>Broadcasting</value></data>
+  <data name="Wt_Sector_Agriculture" xml:space="preserve"><value>Agriculture and animal husbandry</value></data>
+  <data name="Wt_RestNoSector" xml:space="preserve"><value>Outside the sectors § 5 (2) names there is no entitlement to shorten the rest, so 11 hours is the only value on offer.</value></data>
+  <data name="Wt_RestSectorOpened" xml:space="preserve"><value>A sector is declared, so the shortened rest of 10 hours is now on offer — and with it the duty to compensate.</value></data>
+  <data name="Wt_RestCompensationNote" xml:space="preserve"><value>Every rest shortened this way has to be made good within a calendar month or four weeks by extending another rest of the same crew to at least {0} (§ 5 (2)).</value></data>
+  <data name="Wt_SundayRotation" xml:space="preserve"><value>Length of the crew rota (§ 11 (1))</value></data>
+  <data name="Wt_SundayRotationHint" xml:space="preserve"><value>A rota of four weeks means each crew works every fourth Sunday; a rota of one week means the same crew works all of them.</value></data>
+  <data name="Wt_SundayRotationOpened" xml:space="preserve"><value>Sunday work is permitted, so the crew rota now decides how many Sundays stay free.</value></data>
+  <data name="Wt_OperatingDays" xml:space="preserve"><value>Operating days in this preview</value></data>
+  <data name="Wt_Days_AsDefined" xml:space="preserve"><value>As the pattern defines them</value></data>
+  <data name="Wt_Days_WithSaturday" xml:space="preserve"><value>Also on Saturdays</value></data>
+  <data name="Wt_Days_WithSunday" xml:space="preserve"><value>Also on Saturdays and Sundays</value></data>
+  <data name="Wt_PreviewPeriod" xml:space="preserve"><value>Preview period {0} – {1}</value></data>
+  <data name="Wt_Averaging" xml:space="preserve"><value>Averaging period</value></data>
+  <data name="Wt_AveragingNote" xml:space="preserve"><value>§ 3 s. 2 allows the ten-hour working day only while the average stays at eight hours per Werktag — Monday to Saturday — across the reference period. § 6 (2) asks the same of night work over four weeks. Both are computed from the pattern above.</value></data>
+  <data name="Wt_ColRule" xml:space="preserve"><value>Provision</value></data>
+  <data name="Wt_ColCrew" xml:space="preserve"><value>Crew</value></data>
+  <data name="Wt_ColAverage" xml:space="preserve"><value>Average per Werktag</value></data>
+  <data name="Wt_ColState" xml:space="preserve"><value>Status</value></data>
+  <data name="Wt_ColFirstBreach" xml:space="preserve"><value>First exceeded on</value></data>
+  <data name="Wt_ColCompensation" xml:space="preserve"><value>Days still to be compensated</value></data>
+  <data name="Wt_ColPeriod" xml:space="preserve"><value>Period measured</value></data>
+  <data name="Wt_AveragingKept" xml:space="preserve"><value>kept</value></data>
+  <data name="Wt_AveragingBreached" xml:space="preserve"><value>exceeded</value></data>
+  <data name="Wt_AveragingOf" xml:space="preserve"><value>{0} of at most {1}</value></data>
+  <data name="Wt_AveragingWerktage" xml:space="preserve"><value>over {0} Werktage</value></data>
+  <data name="Wt_AveragingMeasured" xml:space="preserve"><value>measured across the period</value></data>
+  <data name="Wt_AveragingProjected" xml:space="preserve"><value>projected from the repeating week</value></data>
+  <data name="Wt_AveragingNone" xml:space="preserve"><value>This pattern staffs nobody, so there is no working time to average.</value></data>
+  <data name="Wt_AveragingNotBreached" xml:space="preserve"><value>not in this period</value></data>
+  <data name="Wt_AnnounceAveraging" xml:space="preserve"><value>Averaging period: the highest average is {0} per Werktag, for crew {1} — {2}.</value></data>
+  <data name="Wt_SundayRest" xml:space="preserve"><value>Free Sundays (§ 11 (1))</value></data>
+  <data name="Wt_FreeSundays" xml:space="preserve"><value>{0} free Sundays in {1}; § 11 (1) requires at least {2}.</value></data>
+  <data name="Wt_SundayStatus_NotApplicable" xml:space="preserve"><value>§ 11 protects people, and this pattern staffs none.</value></data>
+  <data name="Wt_SundayStatus_Intact" xml:space="preserve"><value>No crew works a Sunday.</value></data>
+  <data name="Wt_SundayStatus_Rotated" xml:space="preserve"><value>The declared rota keeps enough Sundays free.</value></data>
+  <data name="Wt_SundayStatus_Breach" xml:space="preserve"><value>Too few Sundays stay free.</value></data>
+  <data name="Wt_WeekClosed" xml:space="preserve"><value>The rules leave this pattern no working time at all, so the work centre may not run.</value></data>
+  <data name="Wt_WeekClosedBy" xml:space="preserve"><value>Closed by {0}.</value></data>
+  <data name="Wt_WeekClosedUnattributed" xml:space="preserve"><value>No rule recorded itself as the cause.</value></data>
+  <data name="Wt_Val_RestNeedsSector" xml:space="preserve"><value>The shortened rest needs one of the sectors § 5 (2) names.</value></data>
+  <data name="Wt_Val_SectorInvalid" xml:space="preserve"><value>Choose one of the sectors § 5 (2) names.</value></data>
+  <data name="Wt_Val_AveragingWindowInvalid" xml:space="preserve"><value>Choose a reference period.</value></data>
+  <data name="Wt_Range" xml:space="preserve"><value>{0} – {1}</value></data>
 </root>

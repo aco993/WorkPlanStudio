@@ -177,7 +177,19 @@ public class WorkingTimeIntegrationTests
         var seeded = await service.GetAsync(cancellationToken);
         Assert.Equal("NW", seeded.State);   // the seed row
 
-        var saved = await service.SaveAsync(new PlantSettings { State = "by", SundayWorkAllowed = true, SundayBoundaryShiftHours = 6, MinimumRestHours = 10 }, cancellationToken);
+        // The ten-hour rest needs the § 5 (2) sector to go with it. This row used
+        // to name none, which is the permission-without-its-conditions the page
+        // no longer offers; the round trip is the same, the row is now lawful.
+        var saved = await service.SaveAsync(
+            new PlantSettings
+            {
+                State = "by",
+                SundayWorkAllowed = true,
+                SundayBoundaryShiftHours = 6,
+                RestExceptionSector = RestExceptionSector.HealthCare,
+                MinimumRestHours = 10
+            },
+            cancellationToken);
         Assert.True(saved.IsSuccess);
 
         var reloaded = await new PlantSettingsService(files.CreateDatabase("settings-2.db", storage)).GetAsync(cancellationToken);
@@ -185,6 +197,7 @@ public class WorkingTimeIntegrationTests
         Assert.True(reloaded.SundayWorkAllowed);
         Assert.Equal(GermanState.BY, reloaded.ToRules().State);
         Assert.Equal(TimeSpan.FromHours(6), reloaded.ToRules().SundayBoundaryShift);
+        Assert.Equal(RestExceptionSector.HealthCare, reloaded.RestExceptionSector);
         Assert.Equal(TimeSpan.FromHours(10), reloaded.ToRules().MinimumRest);
     }
 

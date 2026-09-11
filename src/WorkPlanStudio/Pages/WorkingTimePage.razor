@@ -1,5 +1,6 @@
 @page "/working-time"
 @using System.Globalization
+@using WorkPlanStudio.Validation
 @inject IStringLocalizer<SharedResource> L
 @inject PlantSettingsService Settings
 @inject WorkCenterService Centers
@@ -55,6 +56,19 @@ else
                         <input type="checkbox" @bind="_form.AllowExtendedNight" @bind:after="Recompute" />
                         <span>@L["WorkingTime_AllowExtendedNight"]</span>
                     </label>
+                    <label class="field wide">
+                        <span>@L["Wt_AveragingWindow"]</span>
+                        <select id="wt-window" class="input" @bind="_form.AveragingWindow" @bind:after="Recompute">
+                            @foreach (var window in Enum.GetValues<AveragingWindow>())
+                            {
+                                <option value="@window">@L.WindowName(window)</option>
+                            }
+                        </select>
+                        @if (_formErrors.TryGetValue(nameof(PlantSettings.AveragingWindow), out var windowError))
+                        {
+                            <span class="field-error">@windowError</span>
+                        }
+                    </label>
                     <label class="field check wide">
                         <input id="wt-sunday" type="checkbox" @bind="_form.SundayWorkAllowed" @bind:after="Recompute" />
                         <span>@L["WorkingTime_SundayWork"]</span>
@@ -74,18 +88,71 @@ else
                             <span class="field-error">@shiftError</span>
                         }
                     </label>
+                    @*
+                        § 11 (1) divides the year's Sundays by the rota, so the
+                        rota only means anything once Sunday work is permitted at
+                        all. It appears with that permission and is announced.
+                    *@
+                    @if (_form.SundayWorkAllowed)
+                    {
+                        <label class="field">
+                            <span>@L["Wt_SundayRotation"]</span>
+                            <span class="input-unit">
+                                <input id="wt-rotation" class="input num" type="number" inputmode="numeric" min="1" max="52"
+                                       aria-describedby="wt-rotation-hint"
+                                       @bind="_form.SundayRotationWeeks" @bind:after="Recompute" />
+                                <span>@L["Wt_WeeksUnit"]</span>
+                            </span>
+                            @if (_formErrors.TryGetValue(nameof(PlantSettings.SundayRotationWeeks), out var rotationError))
+                            {
+                                <span class="field-error">@rotationError</span>
+                            }
+                        </label>
+                        <p id="wt-rotation-hint" class="muted small-text wide">@L["Wt_SundayRotationHint"]</p>
+                    }
+
+                    <label class="field wide">
+                        <span>@L["Wt_RestSector"]</span>
+                        <select id="wt-sector" class="input" @bind="_form.RestExceptionSector" @bind:after="Recompute">
+                            @foreach (var sector in Enum.GetValues<RestExceptionSector>())
+                            {
+                                <option value="@sector">@L.SectorName(sector)</option>
+                            }
+                        </select>
+                        @if (_formErrors.TryGetValue(nameof(PlantSettings.RestExceptionSector), out var sectorError))
+                        {
+                            <span class="field-error">@sectorError</span>
+                        }
+                    </label>
                     <label class="field">
                         <span>@L["WorkingTime_MinimumRest"]</span>
-                        <span class="input-unit">
-                            <input class="input num" type="number" inputmode="numeric" min="10" max="11" @bind="_form.MinimumRestHours" @bind:after="Recompute" />
-                            <span>@L["WorkingTime_Hours"]</span>
-                        </span>
+                        @*
+                            Ten hours is not a number a plant may dial in; it is an
+                            entitlement of the sectors § 5 (2) names. So it is not
+                            an option here until one of them is declared — and the
+                            validator and a CHECK constraint say the same, because
+                            a control that is merely hidden still grants it.
+                        *@
+                        <select id="wt-rest" class="input" aria-describedby="wt-rest-note"
+                                @bind="_form.MinimumRestHours" @bind:after="Recompute">
+                            <option value="11">11 @L["WorkingTime_Hours"]</option>
+                            @if (_form.RestExceptionSector != RestExceptionSector.None)
+                            {
+                                <option value="10">10 @L["WorkingTime_Hours"]</option>
+                            }
+                        </select>
                         @if (_formErrors.TryGetValue("MinimumRestHours", out var restError))
                         {
                             <span class="field-error">@restError</span>
                         }
                     </label>
+                    <p id="wt-rest-note" class="muted small-text wide">
+                        @(_form.RestExceptionSector == RestExceptionSector.None
+                            ? L["Wt_RestNoSector"].Value
+                            : string.Format(Culture, L["Wt_RestCompensationNote"], Span(WorkingTimeRules.Statutory.CompensatingRest)))
+                    </p>
                 </div>
+                <p class="sr-only" role="status" aria-live="polite">@_ruleAnnouncement</p>
                 <div class="head-actions wt-actions">
                     <AuthorizeView Policy="@Permissions.ManagePlantRules">
                         <Authorized>
@@ -111,6 +178,15 @@ else
                         }
                     </select>
                 </label>
+                <label class="field inline">
+                    <span class="sr-only">@L["Wt_OperatingDays"]</span>
+                    <select id="wt-days" class="input mini" @bind="_previewDays" @bind:after="Recompute">
+                        @foreach (var days in Enum.GetValues<PreviewDays>())
+                        {
+                            <option value="@days">@L[$"Wt_Days_{days}"]</option>
+                        }
+                    </select>
+                </label>
             </div>
             <div class="card-body">
                 @if (_preview is not null)
@@ -124,14 +200,26 @@ else
                     </ul>
                     <p class="wt-summary">
                         <strong>@string.Format(L["WorkingTime_WeeklyHours"], Hours(_preview.WeeklyWorkingSeconds))</strong>
-                        @if (!_preview.Pattern.IsContinuous)
-                        {
-                            <span> · @string.Format(L["WorkingTime_FreeSundays"], _preview.FreeSundaysPerYear)</span>
-                        }
+                        <span> · @string.Format(Culture, L["Wt_PreviewPeriod"], Format.Date(_preview.From), Format.Date(_preview.To.AddDays(-1)))</span>
                     </p>
+
+                    <h3 class="about-sub">@L["Wt_SundayRest"]</h3>
+                    <ul class="assistant-lines">
+                        <li class="assistant-line @SundayTone">
+                            <span class="assistant-dot"></span>
+                            <span>
+                                <span class="pill law">@WorkingTimeText.LegalReference(WorkingTimeRuleId.FreeSundays)</span>
+                                @if (_preview.SundayRest != SundayRestStatus.NotApplicable)
+                                {
+                                    <span>@string.Format(Culture, L["Wt_FreeSundays"], _preview.FreeSundays(_holidayYear), _holidayYear, _preview.Rules.MinimumFreeSundaysPerYear) </span>
+                                }
+                                <span>@L[$"Wt_SundayStatus_{_preview.SundayRest}"]</span>
+                            </span>
+                        </li>
+                    </ul>
                     @if (_preview.ViolatesFreeSundays)
                     {
-                        <p class="assistant-note">@string.Format(L["WorkingTime_FreeSundaysViolation"], _preview.Rules.MinimumFreeSundaysPerYear, _preview.FreeSundaysPerYear)</p>
+                        <p class="assistant-note">@string.Format(L["WorkingTime_FreeSundaysViolation"], _preview.Rules.MinimumFreeSundaysPerYear, _preview.FreeSundays(_holidayYear))</p>
                     }
 
                     <h3 class="about-sub">@L["WorkingTime_RulesApplied"]</h3>
@@ -152,9 +240,65 @@ else
                         </ul>
                     }
                 }
+                <p class="sr-only" role="status" aria-live="polite">@_resultAnnouncement</p>
             </div>
         </section>
     </div>
+
+    <section class="card no-pad">
+        <div class="card-head pad">
+            <div>
+                <h2>@L["Wt_Averaging"]</h2>
+                <p class="page-sub">@L["Wt_AveragingNote"]</p>
+            </div>
+        </div>
+        @if (Averaging().Count == 0)
+        {
+            <div class="empty-state small"><p>@L["Wt_AveragingNone"]</p></div>
+        }
+        else
+        {
+            <TableScroll Label="@L["Wt_Averaging"]">
+                <table class="data-table">
+                    <caption class="sr-only">@L["Wt_Averaging"]</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col" class="sticky-col">@L["Wt_ColCrew"]</th>
+                            <th scope="col">@L["Wt_ColRule"]</th>
+                            <th scope="col">@L["Wt_ColAverage"]</th>
+                            <th scope="col">@L["Wt_ColState"]</th>
+                            <th scope="col">@L["Wt_ColFirstBreach"]</th>
+                            <th scope="col">@L["Wt_ColCompensation"]</th>
+                            <th scope="col">@L["Wt_ColPeriod"]</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in Averaging())
+                        {
+                            <tr @key="(row.Rule, row.Crew)">
+                                <td class="sticky-col">@L.ShiftName(row.Crew)</td>
+                                <td><span class="pill law">@WorkingTimeText.LegalReference(row.Rule)</span></td>
+                                <td class="mono">@string.Format(Culture, L["Wt_AveragingOf"], WorkingTimeText.WerktaeglichHours(row.AverageWerktaeglichHours), Span(row.Limit))</td>
+                                @*
+                                    The word carries the state, not the colour: a
+                                    planner reading this in print, or with a
+                                    colour-vision deficiency, gets the same answer.
+                                *@
+                                <td><span class="pill @(row.ExceedsAverage ? "late" : "ok")">@L[row.ExceedsAverage ? "Wt_AveragingBreached" : "Wt_AveragingKept"]</span></td>
+                                <td>@(row.FirstBreachDate is { } breach ? Format.Date(breach) : L["Wt_AveragingNotBreached"].Value)</td>
+                                <td>@(row.CompensationDaysOwed == 0 ? "0" : string.Format(Culture, L["Wt_Days"], row.CompensationDaysOwed))</td>
+                                <td>
+                                    @string.Format(Culture, L["Wt_Range"], Format.Date(row.WindowStart), Format.Date(row.WindowEnd))
+                                    <span class="muted"> · @string.Format(Culture, L["Wt_AveragingWerktage"], row.Werktage)</span>
+                                    <span class="muted"> · @L[row.Basis == AveragingBasis.MaterialisedRange ? "Wt_AveragingMeasured" : "Wt_AveragingProjected"]</span>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </TableScroll>
+        }
+    </section>
 
     <div class="wt-layout">
         <section class="card">
@@ -315,6 +459,32 @@ else
 </Modal>
 
 @code {
+    /// <summary>
+    /// How far the preview is materialised. Twenty-six weeks is the longer of the
+    /// two reference periods § 3 sentence 2 offers, so whichever the plant picked,
+    /// the werktäglich average below is <i>measured</i> over a real calendar —
+    /// holidays included — instead of being projected from the repeating week.
+    /// </summary>
+    private const int PreviewWeeks = 26;
+
+    /// <summary>
+    /// Whether the preview extends the pattern beyond the days it declares.
+    /// A plant that also runs Saturdays or Sundays is a different plan under
+    /// § 3 and § 11, and neither preset can express it; asking the question here
+    /// costs nothing and is the only way to see what those two sections do.
+    /// </summary>
+    private enum PreviewDays
+    {
+        /// <summary>The pattern exactly as it is stored.</summary>
+        AsDefined,
+
+        /// <summary>Saturday added. Still a Werktag, so it enters the § 3 divisor too.</summary>
+        WithSaturday,
+
+        /// <summary>Saturday and Sunday added. Sunday hours count towards the average without adding a Werktag to divide by.</summary>
+        WithSunday
+    }
+
     private bool _loading = true;
     private bool _saving;
     private bool _saved;
@@ -326,9 +496,15 @@ else
     private List<WorkCenterAbsence> _absences = [];
 
     private string _previewKey = ShiftPatterns.OneShift.Key;
+    private PreviewDays _previewDays = PreviewDays.AsDefined;
     private WorkingTimeline? _preview;
     private IReadOnlyList<PublicHoliday> _holidays = [];
     private int _holidayYear = 2026;
+
+    private string _ruleAnnouncement = "";
+    private string _resultAnnouncement = "";
+    private RestExceptionSector _lastSector;
+    private bool _lastSundayWork;
 
     private bool _showAbsence;
     private WorkCenterAbsence _newAbsence = new();
@@ -342,6 +518,8 @@ else
         _centers = await Centers.GetAllAsync();
         _absences = await Centers.GetAbsencesAsync();
         _previewKey = _centers.FirstOrDefault(c => c.ShiftPatternKey != ShiftPatterns.Continuous.Key)?.ShiftPatternKey ?? ShiftPatterns.OneShift.Key;
+        _lastSector = _form.RestExceptionSector;
+        _lastSundayWork = _form.SundayWorkAllowed;
         Recompute();
         _loading = false;
     }
@@ -350,6 +528,15 @@ else
     private void Recompute()
     {
         _saved = false;
+
+        // Declaring no § 5 (2) sector is declaring the § 5 (1) rest: the shortened
+        // value stops being on offer, so the form stops holding it. Not silent —
+        // the note under the control and the live region both say so.
+        if (_form.RestExceptionSector == RestExceptionSector.None)
+            _form.MinimumRestHours = 11;
+
+        AnnounceReveals();
+
         _formErrors.Clear();
         foreach (var issue in PlantSettingsValidator.Validate(_form))
             _formErrors.TryAdd(issue.Field, L[issue.MessageKey, issue.Arguments]);
@@ -357,13 +544,108 @@ else
             return;
 
         var rules = _form.ToRules();
-        var pattern = ShiftPatterns.ByKey(_previewKey) ?? ShiftPatterns.OneShift;
-        // The preview shows the repeating weekly pattern only, so the date range
-        // is immaterial; a fixed week keeps the render deterministic.
-        var weekStart = new DateTime(2026, 1, 5);
-        _preview = WorkingTimelineBuilder.Build(pattern, rules, [], weekStart, weekStart.AddDays(7));
+        // The pattern repeats weekly, but § 3 sentence 2, § 6 (2) and § 11 are
+        // duties about a period, and a period only exists on a calendar. The
+        // range starts on the first Monday of the year the holiday table shows,
+        // so both halves of the page talk about the same year and the render
+        // stays deterministic.
+        var weekStart = FirstMondayOf(_holidayYear);
+        _preview = WorkingTimelineBuilder.Build(pattern: PreviewPattern(), rules, [], weekStart, weekStart.AddDays(PreviewWeeks * 7));
         _holidays = GermanHolidays.ForYear(_holidayYear, rules.State, rules.IncludePartialHolidays);
+        _resultAnnouncement = Announce(_preview);
     }
+
+    /// <summary>The Monday on or after 1 January — where a weekly pattern's first full week begins.</summary>
+    private static DateTime FirstMondayOf(int year)
+    {
+        var first = new DateTime(year, 1, 1);
+        return first.AddDays((8 - (int)first.DayOfWeek) % 7);
+    }
+
+    /// <summary>
+    /// The preset, with the extra operating days the preview asks about folded
+    /// into every shift. A continuous pattern has no shifts to extend.
+    /// </summary>
+    private ShiftPattern PreviewPattern()
+    {
+        var pattern = ShiftPatterns.ByKey(_previewKey) ?? ShiftPatterns.OneShift;
+        var extra = _previewDays switch
+        {
+            PreviewDays.WithSaturday => WorkDays.Saturday,
+            PreviewDays.WithSunday => WorkDays.Saturday | WorkDays.Sunday,
+            _ => WorkDays.None
+        };
+
+        return extra == WorkDays.None || pattern.IsContinuous
+            ? pattern
+            : pattern with { Shifts = pattern.Shifts.Select(shift => shift with { Days = shift.Days | extra }).ToList() };
+    }
+
+    /// <summary>
+    /// A control that appears without a word is a control a screen-reader user
+    /// never learns about. Both of the conditional ones here say what they are
+    /// for at the moment the condition that reveals them changes.
+    /// </summary>
+    private void AnnounceReveals()
+    {
+        var announcements = new List<string>();
+
+        if (_form.RestExceptionSector != _lastSector)
+        {
+            _lastSector = _form.RestExceptionSector;
+            announcements.Add(_lastSector == RestExceptionSector.None ? L["Wt_RestNoSector"] : L["Wt_RestSectorOpened"]);
+        }
+
+        if (_form.SundayWorkAllowed != _lastSundayWork)
+        {
+            _lastSundayWork = _form.SundayWorkAllowed;
+            if (_lastSundayWork)
+                announcements.Add(L["Wt_SundayRotationOpened"]);
+        }
+
+        _ruleAnnouncement = string.Join(" ", announcements);
+    }
+
+    /// <summary>The per-crew averaging results, crew first so a plant reads its own rows together.</summary>
+    private IReadOnlyList<AveragingResult> Averaging() =>
+        _preview is null
+            ? []
+            : _preview.Compliance.Averaging.OrderBy(a => a.Crew, StringComparer.Ordinal).ThenBy(a => a.Rule).ToList();
+
+    /// <summary>
+    /// One sentence for the live region. The table is the record; what a
+    /// screen-reader user needs after changing a control is the worst number and
+    /// whether it is still lawful.
+    /// </summary>
+    private string Announce(WorkingTimeline preview)
+    {
+        if (preview.Capacity is WeekCapacity.Closed)
+            return L["Wt_WeekClosed"];
+
+        var worst = Averaging().OrderByDescending(a => a.AverageWerktaeglichHours).FirstOrDefault();
+        if (worst is null)
+            return L["Wt_AveragingNone"];
+
+        return string.Format(
+            Culture,
+            L["Wt_AnnounceAveraging"],
+            WorkingTimeText.WerktaeglichHours(worst.AverageWerktaeglichHours),
+            L.ShiftName(worst.Crew),
+            L[worst.ExceedsAverage ? "Wt_AveragingBreached" : "Wt_AveragingKept"]);
+    }
+
+    /// <summary>
+    /// Green where § 11 (1) is kept — whether because nobody works a Sunday or
+    /// because the declared rota leaves enough free — and amber where it is not.
+    /// The sentence beside the dot says which of the two it is; the colour only
+    /// repeats whether the plan is lawful.
+    /// </summary>
+    private string SundayTone => _preview?.SundayRest switch
+    {
+        SundayRestStatus.Intact or SundayRestStatus.Rotated => "tone-good",
+        SundayRestStatus.Breach => "tone-warning",
+        _ => "tone-info"
+    };
 
     private async Task SaveAsync()
     {
@@ -458,8 +740,19 @@ else
 
     private static int Order(DayOfWeek day) => day == DayOfWeek.Sunday ? 7 : (int)day;
 
-    private string Describe(RuleApplication application, IReadOnlyList<DayOfWeek> days) =>
-        L[$"Applied_{application.Rule}", L.ShiftName(application.ShiftKey), DayRange(days), Span(application.Before), Span(application.After)];
+    /// <summary>
+    /// § 11's two windows are deadlines, not durations: the statute says two
+    /// weeks and eight weeks, and the ordinary duration formatter would render
+    /// them as 336 h and 1 344 h. Every other rule's values really are durations.
+    /// </summary>
+    private string Describe(RuleApplication application, IReadOnlyList<DayOfWeek> days)
+    {
+        string after = application.Rule == WorkingTimeRuleId.ReplacementRestDay
+            ? L.Deadline(application.After)
+            : Span(application.After);
+
+        return L[$"Applied_{application.Rule}", L.ShiftName(application.ShiftKey), DayRange(days), Span(application.Before), after];
+    }
 
     /// <summary>"Monday" / "Mon–Fri" / "Mon, Wed, Fri" — consecutive days collapse into a range.</summary>
     private static string DayRange(IReadOnlyList<DayOfWeek> days)

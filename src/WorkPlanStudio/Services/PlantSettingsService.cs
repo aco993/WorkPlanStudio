@@ -3,7 +3,6 @@ using WorkPlanStudio.Data;
 using WorkPlanStudio.Models;
 using WorkPlanStudio.Services.Auth;
 using WorkPlanStudio.Validation;
-using WorkPlanStudio.WorkingTime;
 
 namespace WorkPlanStudio.Services;
 
@@ -52,34 +51,18 @@ public sealed class PlantSettingsService
                 existing.State = settings.State.Trim().ToUpperInvariant();
                 existing.IncludePartialHolidays = settings.IncludePartialHolidays;
                 existing.AllowExtendedDay = settings.AllowExtendedDay;
+                existing.AveragingWindow = settings.AveragingWindow;
                 existing.AllowExtendedNight = settings.AllowExtendedNight;
                 existing.SundayWorkAllowed = settings.SundayWorkAllowed;
                 existing.HolidayWorkAllowed = settings.HolidayWorkAllowed;
+                existing.SundayRotationWeeks = settings.SundayRotationWeeks;
                 existing.SundayBoundaryShiftHours = settings.SundayBoundaryShiftHours;
+                existing.RestExceptionSector = settings.RestExceptionSector;
                 existing.MinimumRestHours = settings.MinimumRestHours;
                 existing.ModifiedUtc = DateTime.UtcNow;
 
                 return ApplicationResult<Func<PlantSettings>>.Success(() => existing);
             },
             cancellationToken: cancellationToken);
-    }
-}
-
-/// <summary>Business rules for the plant settings.</summary>
-public static class PlantSettingsValidator
-{
-    public static IReadOnlyList<ValidationIssue> Validate(PlantSettings settings)
-    {
-        ArgumentNullException.ThrowIfNull(settings);
-        var issues = new List<ValidationIssue>();
-
-        if (!Enum.TryParse<GermanState>(settings.State?.Trim(), ignoreCase: true, out _))
-            issues.Add(new(nameof(settings.State), "Val_StateInvalid"));
-        if (settings.SundayBoundaryShiftHours is < 0 or > 6)
-            issues.Add(new(nameof(settings.SundayBoundaryShiftHours), "Val_Range", 0, 6));
-        if (settings.MinimumRestHours is < 10 or > 11)
-            issues.Add(new(nameof(settings.MinimumRestHours), "Val_Range", 10, 11));
-
-        return issues;
     }
 }
