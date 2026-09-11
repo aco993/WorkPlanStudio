@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using WorkPlanStudio.Models;
+using WorkPlanStudio.WorkingTime;
 
 namespace WorkPlanStudio.Data;
 
@@ -104,6 +105,18 @@ public class AppDbContext : DbContext
                 table.HasCheckConstraint("CK_PlantSettings_Singleton", "Id = 1");
                 table.HasCheckConstraint("CK_PlantSettings_SundayShift", "SundayBoundaryShiftHours BETWEEN 0 AND 6");
                 table.HasCheckConstraint("CK_PlantSettings_Rest", "MinimumRestHours BETWEEN 10 AND 11");
+
+                // § 5 (2) reserves the shortened rest for the sectors it names.
+                // The form only offers the choice once a sector is declared and
+                // the validator refuses it, but neither of those is in the way of
+                // an import or of a row written by the API, so the table says it
+                // too. The sector bound is pinned to the library's enum by a test.
+                table.HasCheckConstraint(
+                    "CK_PlantSettings_RestSector",
+                    $"MinimumRestHours = 11 OR RestExceptionSector <> {(int)RestExceptionSector.None}");
+                table.HasCheckConstraint("CK_PlantSettings_Sector", "RestExceptionSector BETWEEN 0 AND 5");
+                table.HasCheckConstraint("CK_PlantSettings_Averaging", "AveragingWindow BETWEEN 0 AND 1");
+                table.HasCheckConstraint("CK_PlantSettings_SundayRotation", "SundayRotationWeeks BETWEEN 1 AND 52");
             });
         });
 

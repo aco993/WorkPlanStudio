@@ -701,4 +701,70 @@
   <data name="Import_Preview_Truncated" xml:space="preserve"><value>Es werden die ersten {0} von {1} Zeilen angezeigt. Die Zahlen oben und der Download umfassen alle.</value></data>
   <data name="Import_Error_ReadFailed" xml:space="preserve"><value>Die Datei konnte nicht gelesen werden.</value></data>
   <data name="Import_Row_Why_Label" xml:space="preserve"><value>warum Zeile {0} abgelehnt wurde</value></data>
+  <data name="Rule_RestCompensation_Title" xml:space="preserve"><value>Ausgleichsruhezeit</value></data>
+  <data name="Rule_RestCompensation_Text" xml:space="preserve"><value>§ 5 Abs. 2 behält eine auf zehn Stunden verkürzte Ruhezeit Krankenhäusern und anderen Einrichtungen zur Behandlung und Pflege, Gaststätten und Beherbergungsbetrieben, Verkehrsbetrieben, dem Rundfunk sowie der Landwirtschaft und der Tierhaltung vorbehalten — und auch dort nur, wenn jede Verkürzung innerhalb eines Kalendermonats oder von vier Wochen durch Verlängerung einer anderen Ruhezeit auf mindestens zwölf Stunden ausgeglichen wird.</value></data>
+  <data name="Rule_MultiShiftRequirement_Title" xml:space="preserve"><value>Mehrschichtbetrieb</value></data>
+  <data name="Rule_MultiShiftRequirement_Text" xml:space="preserve"><value>Beginn und Ende der Sonn- und Feiertagsruhe dürfen um bis zu sechs Stunden vor- oder zurückverlegt werden — aber nur in mehrschichtigen Betrieben mit regelmäßiger Tag- und Nachtschicht. Ein Modell mit nur einer der beiden nimmt eine Befugnis in Anspruch, die § 9 Abs. 2 ihm nicht gibt.</value></data>
+  <data name="Rule_ReplacementRestDay_Title" xml:space="preserve"><value>Ersatzruhetag</value></data>
+  <data name="Rule_ReplacementRestDay_Text" xml:space="preserve"><value>§ 11 Abs. 3 verlangt für Sonntagsarbeit einen Ersatzruhetag innerhalb eines den Beschäftigungstag einschließenden Zeitraums von zwei Wochen; § 11 Abs. 2 verlangt für Arbeit an einem auf einen Werktag fallenden Feiertag einen innerhalb von acht Wochen. Die Erlaubnis, an diesen Tagen zu arbeiten, bringt die Pflicht mit sich.</value></data>
+  <data name="Applied_RestCompensation" xml:space="preserve"><value>{0} am {1}: Ruhezeit auf {2} verkürzt; das Gesetz verlangt hier mindestens {3} (§ 5 Abs. 2).</value></data>
+  <data name="Applied_MultiShiftRequirement" xml:space="preserve"><value>{0}: Die Sonn- und Feiertagsruhe ist um {2} verschoben — § 9 Abs. 2 lässt das nur im Mehrschichtbetrieb mit regelmäßiger Tag- und Nachtschicht zu.</value></data>
+  <data name="Applied_ReplacementRestDay" xml:space="preserve"><value>{0} am {1}: Dafür ist ein Ersatzruhetag innerhalb von {3} zu gewähren (§ 11 Abs. 2, 3).</value></data>
+  <data name="Wt_Days" xml:space="preserve"><value>{0} Tage</value></data>
+  <data name="Wt_Weeks" xml:space="preserve"><value>{0} Wochen</value></data>
+  <data name="Wt_WeeksUnit" xml:space="preserve"><value>Wochen</value></data>
+  <data name="Wt_AveragingWindow" xml:space="preserve"><value>Ausgleichszeitraum für den Durchschnitt (§ 3 S. 2)</value></data>
+  <data name="Wt_Window_TwentyFourWeeks" xml:space="preserve"><value>24 Wochen</value></data>
+  <data name="Wt_Window_SixCalendarMonths" xml:space="preserve"><value>Sechs Kalendermonate</value></data>
+  <data name="Wt_RestSector" xml:space="preserve"><value>Branche nach § 5 Abs. 2</value></data>
+  <data name="Wt_Sector_None" xml:space="preserve"><value>Keine — es bleibt bei elf Stunden</value></data>
+  <data name="Wt_Sector_HealthCare" xml:space="preserve"><value>Krankenhäuser, Behandlung und Pflege</value></data>
+  <data name="Wt_Sector_Hospitality" xml:space="preserve"><value>Gaststätten, Bewirtung und Beherbergung</value></data>
+  <data name="Wt_Sector_Transport" xml:space="preserve"><value>Verkehrsbetriebe</value></data>
+  <data name="Wt_Sector_Broadcasting" xml:space="preserve"><value>Rundfunk</value></data>
+  <data name="Wt_Sector_Agriculture" xml:space="preserve"><value>Landwirtschaft und Tierhaltung</value></data>
+  <data name="Wt_RestNoSector" xml:space="preserve"><value>Außerhalb der in § 5 Abs. 2 genannten Branchen besteht kein Anspruch auf eine Verkürzung der Ruhezeit; deshalb stehen nur elf Stunden zur Wahl.</value></data>
+  <data name="Wt_RestSectorOpened" xml:space="preserve"><value>Eine Branche ist angegeben: Die verkürzte Ruhezeit von zehn Stunden steht jetzt zur Wahl — und mit ihr die Ausgleichspflicht.</value></data>
+  <data name="Wt_RestCompensationNote" xml:space="preserve"><value>Jede so verkürzte Ruhezeit ist innerhalb eines Kalendermonats oder von vier Wochen durch Verlängerung einer anderen Ruhezeit derselben Besatzung auf mindestens {0} auszugleichen (§ 5 Abs. 2).</value></data>
+  <data name="Wt_SundayRotation" xml:space="preserve"><value>Länge des Schichtturnus (§ 11 Abs. 1)</value></data>
+  <data name="Wt_SundayRotationHint" xml:space="preserve"><value>Ein Turnus von vier Wochen heißt: Jede Besatzung arbeitet jeden vierten Sonntag. Ein Turnus von einer Woche heißt: dieselbe Besatzung arbeitet an allen.</value></data>
+  <data name="Wt_SundayRotationOpened" xml:space="preserve"><value>Sonntagsarbeit ist zugelassen; der Schichtturnus entscheidet jetzt, wie viele Sonntage frei bleiben.</value></data>
+  <data name="Wt_OperatingDays" xml:space="preserve"><value>Betriebstage in dieser Vorschau</value></data>
+  <data name="Wt_Days_AsDefined" xml:space="preserve"><value>Wie im Schichtmodell hinterlegt</value></data>
+  <data name="Wt_Days_WithSaturday" xml:space="preserve"><value>Zusätzlich samstags</value></data>
+  <data name="Wt_Days_WithSunday" xml:space="preserve"><value>Zusätzlich samstags und sonntags</value></data>
+  <data name="Wt_PreviewPeriod" xml:space="preserve"><value>Vorschauzeitraum {0} – {1}</value></data>
+  <data name="Wt_Averaging" xml:space="preserve"><value>Ausgleichszeitraum</value></data>
+  <data name="Wt_AveragingNote" xml:space="preserve"><value>§ 3 S. 2 erlaubt den Zehn-Stunden-Tag nur, solange im Ausgleichszeitraum „im Durchschnitt acht Stunden werktäglich“ — Montag bis Samstag — nicht überschritten werden. § 6 Abs. 2 verlangt dasselbe für Nachtarbeit, gerechnet über vier Wochen. Beides ist aus dem Modell oben berechnet.</value></data>
+  <data name="Wt_ColRule" xml:space="preserve"><value>Vorschrift</value></data>
+  <data name="Wt_ColCrew" xml:space="preserve"><value>Schichtbesatzung</value></data>
+  <data name="Wt_ColAverage" xml:space="preserve"><value>Durchschnitt werktäglich</value></data>
+  <data name="Wt_ColState" xml:space="preserve"><value>Stand</value></data>
+  <data name="Wt_ColFirstBreach" xml:space="preserve"><value>Erstmals überschritten am</value></data>
+  <data name="Wt_ColCompensation" xml:space="preserve"><value>Noch auszugleichende Tage</value></data>
+  <data name="Wt_ColPeriod" xml:space="preserve"><value>Gemessener Zeitraum</value></data>
+  <data name="Wt_AveragingKept" xml:space="preserve"><value>eingehalten</value></data>
+  <data name="Wt_AveragingBreached" xml:space="preserve"><value>überschritten</value></data>
+  <data name="Wt_AveragingOf" xml:space="preserve"><value>{0} von höchstens {1}</value></data>
+  <data name="Wt_AveragingWerktage" xml:space="preserve"><value>auf {0} Werktage</value></data>
+  <data name="Wt_AveragingMeasured" xml:space="preserve"><value>über den Zeitraum gemessen</value></data>
+  <data name="Wt_AveragingProjected" xml:space="preserve"><value>aus der sich wiederholenden Woche fortgeschrieben</value></data>
+  <data name="Wt_AveragingNone" xml:space="preserve"><value>Dieses Modell besetzt niemanden; es gibt keine Arbeitszeit zu mitteln.</value></data>
+  <data name="Wt_AveragingNotBreached" xml:space="preserve"><value>in diesem Zeitraum nicht</value></data>
+  <data name="Wt_AnnounceAveraging" xml:space="preserve"><value>Ausgleichszeitraum: Der höchste Durchschnitt beträgt {0} werktäglich, Besatzung {1} — {2}.</value></data>
+  <data name="Wt_SundayRest" xml:space="preserve"><value>Freie Sonntage (§ 11 Abs. 1)</value></data>
+  <data name="Wt_FreeSundays" xml:space="preserve"><value>{0} freie Sonntage im Jahr {1}; § 11 Abs. 1 verlangt mindestens {2}.</value></data>
+  <data name="Wt_SundayStatus_NotApplicable" xml:space="preserve"><value>§ 11 schützt Beschäftigte; dieses Modell besetzt keine.</value></data>
+  <data name="Wt_SundayStatus_Intact" xml:space="preserve"><value>Keine Besatzung arbeitet sonntags.</value></data>
+  <data name="Wt_SundayStatus_Rotated" xml:space="preserve"><value>Der angegebene Turnus lässt genug Sonntage frei.</value></data>
+  <data name="Wt_SundayStatus_Breach" xml:space="preserve"><value>Zu wenige Sonntage bleiben frei.</value></data>
+  <data name="Wt_WeekClosed" xml:space="preserve"><value>Die Regeln lassen diesem Modell keine Arbeitszeit übrig; der Arbeitsplatz darf nicht laufen.</value></data>
+  <data name="Wt_WeekClosedBy" xml:space="preserve"><value>Geschlossen durch {0}.</value></data>
+  <data name="Wt_WeekClosedUnattributed" xml:space="preserve"><value>Keine Regel hat sich als Ursache vermerkt.</value></data>
+  <data name="Wt_Val_RestNeedsSector" xml:space="preserve"><value>Die verkürzte Ruhezeit setzt eine der in § 5 Abs. 2 genannten Branchen voraus.</value></data>
+  <data name="Wt_Val_SectorInvalid" xml:space="preserve"><value>Wählen Sie eine der in § 5 Abs. 2 genannten Branchen.</value></data>
+  <data name="Wt_Val_AveragingWindowInvalid" xml:space="preserve"><value>Wählen Sie einen Ausgleichszeitraum.</value></data>
+  <data name="Wt_Range" xml:space="preserve"><value>{0} – {1}</value></data>
+  <data name="Holiday_EasterSunday" xml:space="preserve"><value>Ostersonntag</value></data>
+  <data name="Holiday_WhitSunday" xml:space="preserve"><value>Pfingstsonntag</value></data>
 </root>

@@ -70,6 +70,22 @@
             </tbody>
         </table>
     </div>
+
+    @*
+        A closed week draws as seven empty tracks, which looks exactly like a week
+        nobody has configured yet. It is not: the pattern was staffed and the rules
+        took all of it. The capacity carries the rules that did it, so the strip
+        can name them instead of leaving the planner to guess.
+    *@
+    @if (Timeline.Capacity is WeekCapacity.Closed closed)
+    {
+        <p class="assistant-note week-closed">
+            @L["Wt_WeekClosed"]
+            <span> @(closed.Causes.Count == 0
+                        ? L["Wt_WeekClosedUnattributed"].Value
+                        : string.Format(Culture, L["Wt_WeekClosedBy"], CauseNames(closed)))</span>
+        </p>
+    }
 </div>
 
 @code {
@@ -93,6 +109,16 @@
         var text = string.Join("; ", Pieces(dayStart).Select(Title));
         return string.IsNullOrEmpty(text) ? L["Ui_WeekDayClosed"].Value : text;
     }
+
+    /// <summary>
+    /// The rules that emptied the week, by title and section — "§ 9 ArbZG
+    /// Sonntagsruhe", not "SundayRest". Distinct because two shifts cut by the
+    /// same rule are one reason, not two.
+    /// </summary>
+    private string CauseNames(WeekCapacity.Closed closed) =>
+        string.Join(", ", closed.Causes
+            .Distinct()
+            .Select(cause => $"{WorkingTimeText.LegalReference(cause)} — {L.RuleTitle(cause)}"));
 
     private static string Pct(long seconds) =>
         (seconds * 100.0 / DaySeconds).ToString("0.###", CultureInfo.InvariantCulture);

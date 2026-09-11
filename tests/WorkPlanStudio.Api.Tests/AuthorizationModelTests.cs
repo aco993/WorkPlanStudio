@@ -49,11 +49,13 @@ public class AuthorizationModelTests
     [Fact]
     public void The_duplicated_plant_settings_bounds_match_the_application_source()
     {
-        // PlantSettingsValidator could not be linked into this assembly: it shares
-        // a file with the service that writes to browser storage. So it is copied,
-        // and the copy is checked against the original's source text here.
+        // PlantSettingsValidator now lives beside the other validators and is
+        // linked into this assembly, so PlantSettingsRules has become a copy of
+        // something reachable. Until the endpoint is switched over to it, the
+        // copy is still checked against the original's source text — only the
+        // file it is read from has moved.
         var source = File.ReadAllText(Path.Combine(
-            RepositoryRoot(), "src", "WorkPlanStudio", "Services", "PlantSettingsService.cs"));
+            RepositoryRoot(), "src", "WorkPlanStudio", "Validation", "PlantSettingsValidator.cs"));
 
         var sundayShift = RangeIn(source, "SundayBoundaryShiftHours");
         var rest = RangeIn(source, "MinimumRestHours");
