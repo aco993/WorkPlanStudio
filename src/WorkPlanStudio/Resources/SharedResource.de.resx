@@ -550,4 +550,121 @@
   <data name="Md_Priority_5" xml:space="preserve"><value>5 — Eilauftrag</value></data>
   <data name="Md_Storage_Import" xml:space="preserve"><value>Sicherung einspielen</value></data>
   <data name="Md_Storage_ImportFailed" xml:space="preserve"><value>Diese Datei konnte nicht als WorkPlan-Studio-Export gelesen werden.</value></data>
+  <data name="Import_Nav" xml:space="preserve"><value>Import</value></data>
+  <data name="Import_Title" xml:space="preserve"><value>Daten importieren</value></data>
+  <data name="Import_Subtitle" xml:space="preserve"><value>Stammdaten aus einer CSV-Datei einlesen. Es wird nichts geschrieben, bevor Sie gesehen haben, was sich ändern würde.</value></data>
+  <data name="Import_Kind_CostCenters" xml:space="preserve"><value>Kostenstellen</value></data>
+  <data name="Import_Kind_WorkCenters" xml:space="preserve"><value>Arbeitsplätze</value></data>
+  <data name="Import_Kind_WorkPlans" xml:space="preserve"><value>Arbeitspläne und Arbeitsgänge</value></data>
+  <data name="Import_Kind_Orders" xml:space="preserve"><value>Fertigungsaufträge</value></data>
+  <data name="Import_Kind_Label" xml:space="preserve"><value>Was enthält die Datei?</value></data>
+  <data name="Import_Samples" xml:space="preserve"><value>Beispieldateien</value></data>
+  <data name="Import_Samples_Hint" xml:space="preserve"><value>Jedes Beispiel zeigt die Spalten sowie die Zahlen- und Datumsformate, die diese Seite liest.</value></data>
+  <data name="Import_Sample_Download" xml:space="preserve"><value>Beispiel „{0}“ herunterladen</value></data>
+  <data name="Import_Drop_Label" xml:space="preserve"><value>CSV-Datei auswählen oder hierher ziehen</value></data>
+  <data name="Import_Drop_Hint" xml:space="preserve"><value>Bis {0} MB. UTF-8, UTF-16 oder Windows-1252; getrennt durch Komma, Semikolon oder Tabulator — wird automatisch erkannt.</value></data>
+  <data name="Import_Drop_Replace" xml:space="preserve"><value>Andere Datei wählen</value></data>
+  <data name="Import_File_Summary" xml:space="preserve"><value>{0} — {1} Datenzeilen, {2}, Trennzeichen „{3}“</value></data>
+  <data name="Import_Mapping_Title" xml:space="preserve"><value>Spalten</value></data>
+  <data name="Import_Mapping_Hint" xml:space="preserve"><value>Aus der Kopfzeile erraten. Korrigieren Sie, was nicht stimmt — die Zuordnung wird für diese Art von Datei gemerkt.</value></data>
+  <data name="Import_Mapping_None" xml:space="preserve"><value>— nicht importieren —</value></data>
+  <data name="Import_Mapping_Required" xml:space="preserve"><value>Pflichtfeld</value></data>
+  <data name="Import_Mapping_Missing" xml:space="preserve"><value>Diese Spalte ist ein Pflichtfeld und wurde nicht zugeordnet.</value></data>
+  <data name="Import_Mapping_Blocked" xml:space="preserve"><value>Ordnen Sie jedem Pflichtfeld eine Spalte zu, bevor die Datei geprüft wird.</value></data>
+  <data name="Import_Mapping_Column" xml:space="preserve"><value>Spalte {0}</value></data>
+  <data name="Import_Field_Code" xml:space="preserve"><value>Kennung</value></data>
+  <data name="Import_Field_Name" xml:space="preserve"><value>Bezeichnung</value></data>
+  <data name="Import_Field_Description" xml:space="preserve"><value>Beschreibung</value></data>
+  <data name="Import_Field_Active" xml:space="preserve"><value>Aktiv</value></data>
+  <data name="Import_Field_CostCenter" xml:space="preserve"><value>Kostenstelle</value></data>
+  <data name="Import_Field_HourlyRate" xml:space="preserve"><value>Stundensatz</value></data>
+  <data name="Import_Field_Capacity" xml:space="preserve"><value>Parallele Kapazität</value></data>
+  <data name="Import_Field_ShiftPattern" xml:space="preserve"><value>Schichtmodell</value></data>
+  <data name="Import_Field_PlanNumber" xml:space="preserve"><value>Plannummer</value></data>
+  <data name="Import_Field_PartNumber" xml:space="preserve"><value>Teilenummer</value></data>
+  <data name="Import_Field_PartName" xml:space="preserve"><value>Teilebezeichnung</value></data>
+  <data name="Import_Field_Revision" xml:space="preserve"><value>Änderungsstand</value></data>
+  <data name="Import_Field_Status" xml:space="preserve"><value>Status</value></data>
+  <data name="Import_Field_LotSize" xml:space="preserve"><value>Losgröße</value></data>
+  <data name="Import_Field_OperationNumber" xml:space="preserve"><value>Arbeitsgangnummer</value></data>
+  <data name="Import_Field_OperationDescription" xml:space="preserve"><value>Arbeitsgang</value></data>
+  <data name="Import_Field_WorkCenter" xml:space="preserve"><value>Arbeitsplatz</value></data>
+  <data name="Import_Field_SetupMinutes" xml:space="preserve"><value>Rüstzeit (Minuten)</value></data>
+  <data name="Import_Field_RunMinutes" xml:space="preserve"><value>Stückzeit (Minuten)</value></data>
+  <data name="Import_Field_Remarks" xml:space="preserve"><value>Bemerkung</value></data>
+  <data name="Import_Field_OrderNumber" xml:space="preserve"><value>Auftragsnummer</value></data>
+  <data name="Import_Field_Quantity" xml:space="preserve"><value>Menge</value></data>
+  <data name="Import_Field_Release" xml:space="preserve"><value>Freigabedatum</value></data>
+  <data name="Import_Field_Due" xml:space="preserve"><value>Liefertermin</value></data>
+  <data name="Import_Field_Priority" xml:space="preserve"><value>Priorität</value></data>
+  <data name="Import_Options_Title" xml:space="preserve"><value>Optionen</value></data>
+  <data name="Import_Option_Update" xml:space="preserve"><value>Vorhandene Zeilen aktualisieren</value></data>
+  <data name="Import_Option_UpdateHint" xml:space="preserve"><value>Aus: eine vorhandene Kennung bleibt unverändert und wird als übersprungen gezählt. An: sie wird überschrieben, und jede solche Zeile erscheint vorher als Warnung.</value></data>
+  <data name="Import_Option_CreateCostCenters" xml:space="preserve"><value>Kostenstellen anlegen, die in der Datei stehen, aber nicht vorhanden sind</value></data>
+  <data name="Import_Option_CreateCostCentersHint" xml:space="preserve"><value>Aus: ein Arbeitsplatz mit unbekannter Kostenstelle wird abgelehnt, denn das ist meistens ein Tippfehler.</value></data>
+  <data name="Import_Option_Separator" xml:space="preserve"><value>Trennzeichen</value></data>
+  <data name="Import_Separator_Detected" xml:space="preserve"><value>Erkannt: {0}</value></data>
+  <data name="Import_Action_DryRun" xml:space="preserve"><value>Datei prüfen</value></data>
+  <data name="Import_Action_Commit" xml:space="preserve"><value>Importieren</value></data>
+  <data name="Import_Action_Again" xml:space="preserve"><value>Neu beginnen</value></data>
+  <data name="Import_Progress_Reading" xml:space="preserve"><value>Datei wird gelesen: bisher {0} Zeilen.</value></data>
+  <data name="Import_Progress_Done" xml:space="preserve"><value>Probelauf fertig: {0} würden angelegt, {1} geändert, {2} übersprungen, {3} abgelehnt. Es wurde nichts geschrieben.</value></data>
+  <data name="Import_Busy" xml:space="preserve"><value>Wird verarbeitet</value></data>
+  <data name="Import_Preview_Title" xml:space="preserve"><value>Probelauf</value></data>
+  <data name="Import_Preview_Caption" xml:space="preserve"><value>Jede Zeile der Datei und was mit ihr geschehen würde</value></data>
+  <data name="Import_Preview_Nothing" xml:space="preserve"><value>Diese Datei würde nichts verändern.</value></data>
+  <data name="Import_Count_Create" xml:space="preserve"><value>anzulegen</value></data>
+  <data name="Import_Count_Update" xml:space="preserve"><value>zu ändern</value></data>
+  <data name="Import_Count_Skip" xml:space="preserve"><value>übersprungen</value></data>
+  <data name="Import_Count_Reject" xml:space="preserve"><value>abgelehnt</value></data>
+  <data name="Import_Row_Create" xml:space="preserve"><value>Anlegen</value></data>
+  <data name="Import_Row_Update" xml:space="preserve"><value>Ändern</value></data>
+  <data name="Import_Row_Skip" xml:space="preserve"><value>Überspringen</value></data>
+  <data name="Import_Row_Reject" xml:space="preserve"><value>Ablehnen</value></data>
+  <data name="Import_Col_Line" xml:space="preserve"><value>Zeile</value></data>
+  <data name="Import_Col_Action" xml:space="preserve"><value>Aktion</value></data>
+  <data name="Import_Col_Key" xml:space="preserve"><value>Schlüssel</value></data>
+  <data name="Import_Col_Detail" xml:space="preserve"><value>Detail</value></data>
+  <data name="Import_Col_Column" xml:space="preserve"><value>Spalte</value></data>
+  <data name="Import_Col_Reason" xml:space="preserve"><value>Grund</value></data>
+  <data name="Import_Row_Why" xml:space="preserve"><value>warum</value></data>
+  <data name="Import_Row_Back" xml:space="preserve"><value>zurück zu Zeile {0}</value></data>
+  <data name="Import_Rejected_Title" xml:space="preserve"><value>Abgelehnte Zeilen</value></data>
+  <data name="Import_Rejected_Caption" xml:space="preserve"><value>Zeilen, die nicht importiert werden können, mit Spalte und Grund</value></data>
+  <data name="Import_Rejected_Download" xml:space="preserve"><value>Abgelehnte Zeilen herunterladen</value></data>
+  <data name="Import_Warnings_Title" xml:space="preserve"><value>Warnungen</value></data>
+  <data name="Import_Warnings_Caption" xml:space="preserve"><value>Was dieser Import verändern oder annehmen würde</value></data>
+  <data name="Import_Storage_Note" xml:space="preserve"><value>Geschätzter Browser-Speicher nach diesem Import: {0} von {1} Zeichen.</value></data>
+  <data name="Import_Result" xml:space="preserve"><value>Importiert: {0} angelegt, {1} geändert, {2} übersprungen, {3} abgelehnt.</value></data>
+  <data name="Import_Result_CostCenters" xml:space="preserve"><value>Außerdem wurden {0} Kostenstellen angelegt.</value></data>
+  <data name="Import_Result_Failed" xml:space="preserve"><value>Es wurde nichts importiert. Die Datenbank ist unverändert.</value></data>
+  <data name="Import_Error_Empty" xml:space="preserve"><value>Die Datei ist leer oder enthält unter der Kopfzeile keine Zeilen.</value></data>
+  <data name="Import_Error_TooLarge" xml:space="preserve"><value>Die Datei ist größer als {0} MB. Die gesamte Datenbank liegt im Speicher dieses Browsers; eine Datei dieser Größe ließe sich auch nach dem Lesen nicht ablegen.</value></data>
+  <data name="Import_Error_NotText" xml:space="preserve"><value>Das ist keine Textdatei. Speichern Sie die Tabelle als CSV und versuchen Sie es erneut.</value></data>
+  <data name="Import_Error_RequiredColumn" xml:space="preserve"><value>{0} ist ein Pflichtfeld und hat keine Spalte.</value></data>
+  <data name="Import_Error_Quota" xml:space="preserve"><value>Dieser Import bräuchte etwa {0} Zeichen Browser-Speicher, das Limit liegt bei {1}. Es wurde nichts geschrieben.</value></data>
+  <data name="Import_Error_NothingToDo" xml:space="preserve"><value>Es gibt nichts zu importieren.</value></data>
+  <data name="Import_Error_Changed" xml:space="preserve"><value>Die Daten haben sich geändert, während der Probelauf angezeigt wurde; der Import wurde nicht ausgeführt. Prüfen Sie die Datei erneut.</value></data>
+  <data name="Import_Error_Constraint" xml:space="preserve"><value>Die Datenbank hat eine Zeile abgelehnt. Es wurde nichts importiert.</value></data>
+  <data name="Import_Parse_UnterminatedQuote" xml:space="preserve"><value>Zeile {0} öffnet ein Feld in Anführungszeichen, das nie geschlossen wird.</value></data>
+  <data name="Import_Parse_FieldTooLong" xml:space="preserve"><value>Zeile {0} enthält ein Feld mit mehr als {1} Zeichen.</value></data>
+  <data name="Import_Parse_TooManyColumns" xml:space="preserve"><value>Zeile {0} hat mehr als {1} Spalten.</value></data>
+  <data name="Import_Parse_TooManyRows" xml:space="preserve"><value>Die Datei hat mehr als {1} Zeilen (erreicht bei Zeile {0}).</value></data>
+  <data name="Import_Error_ColumnCount" xml:space="preserve"><value>Die Kopfzeile hat {0} Spalten, diese Zeile hat {1}.</value></data>
+  <data name="Import_Error_NotANumber" xml:space="preserve"><value>„{0}“ ist keine Zahl. Schreiben Sie 1234.56 oder 1234,56.</value></data>
+  <data name="Import_Error_NotAWholeNumber" xml:space="preserve"><value>„{0}“ ist keine ganze Zahl.</value></data>
+  <data name="Import_Error_NotABoolean" xml:space="preserve"><value>„{0}“ ist weder ja noch nein.</value></data>
+  <data name="Import_Error_NotADate" xml:space="preserve"><value>„{0}“ ist kein Datum, das diese Seite liest. Zulässig: {1}.</value></data>
+  <data name="Import_Error_UnknownStatus" xml:space="preserve"><value>„{0}“ ist kein Arbeitsplan-Status.</value></data>
+  <data name="Import_Error_DuplicateKey" xml:space="preserve"><value>„{0}“ steht bereits in dieser Datei, in Zeile {1}.</value></data>
+  <data name="Import_Error_DuplicateOperation" xml:space="preserve"><value>Arbeitsgang {0} kommt im Plan {1} zweimal vor.</value></data>
+  <data name="Import_Error_UnknownWorkCenter" xml:space="preserve"><value>Es gibt keinen Arbeitsplatz mit der Kennung „{0}“.</value></data>
+  <data name="Import_Error_UnknownCostCenter" xml:space="preserve"><value>Es gibt keine Kostenstelle mit der Kennung „{0}“. Aktivieren Sie oben die Option, um sie anzulegen.</value></data>
+  <data name="Import_Error_PlanHeaderConflict" xml:space="preserve"><value>Diese Zeile widerspricht Zeile {1} beim Plan {0}.</value></data>
+  <data name="Import_Warn_Overwrite" xml:space="preserve"><value>„{0}“ ist vorhanden und würde überschrieben.</value></data>
+  <data name="Import_Warn_NewCostCenter" xml:space="preserve"><value>Kostenstelle „{0}“ würde angelegt, mit der Kennung als Bezeichnung.</value></data>
+  <data name="Import_Warn_PlanHasOrders" xml:space="preserve"><value>Plan {0} hat {1} Fertigungsaufträge. Werden seine Arbeitsgänge ersetzt, ändert sich die Grundlage dieser Aufträge.</value></data>
+  <data name="Import_Preview_Truncated" xml:space="preserve"><value>Es werden die ersten {0} von {1} Zeilen angezeigt. Die Zahlen oben und der Download umfassen alle.</value></data>
+  <data name="Import_Error_ReadFailed" xml:space="preserve"><value>Die Datei konnte nicht gelesen werden.</value></data>
+  <data name="Import_Row_Why_Label" xml:space="preserve"><value>warum Zeile {0} abgelehnt wurde</value></data>
 </root>

@@ -1,0 +1,4 @@
+Code;Name;Cost center;Hourly rate;Parallel capacity;Shift pattern;Active
+GRD-100;Surface grinder;CC-5200;74,50;1;two-shift;yes
+DRL-200;Bench drill;CC-5100;41,00;2;one-shift;yes
+WSH-300;Parts washer;CC-5200;22,75;1;continuous;yes

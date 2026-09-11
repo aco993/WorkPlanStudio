@@ -550,4 +550,121 @@
   <data name="Md_Priority_5" xml:space="preserve"><value>5 — rush</value></data>
   <data name="Md_Storage_Import" xml:space="preserve"><value>Import a payload</value></data>
   <data name="Md_Storage_ImportFailed" xml:space="preserve"><value>That file could not be read as a WorkPlan Studio export.</value></data>
+  <data name="Import_Nav" xml:space="preserve"><value>Import</value></data>
+  <data name="Import_Title" xml:space="preserve"><value>Import data</value></data>
+  <data name="Import_Subtitle" xml:space="preserve"><value>Read master data from a CSV file. Nothing is written until you have seen what would change.</value></data>
+  <data name="Import_Kind_CostCenters" xml:space="preserve"><value>Cost centers</value></data>
+  <data name="Import_Kind_WorkCenters" xml:space="preserve"><value>Work centers</value></data>
+  <data name="Import_Kind_WorkPlans" xml:space="preserve"><value>Work plans and operations</value></data>
+  <data name="Import_Kind_Orders" xml:space="preserve"><value>Production orders</value></data>
+  <data name="Import_Kind_Label" xml:space="preserve"><value>What does the file contain?</value></data>
+  <data name="Import_Samples" xml:space="preserve"><value>Example files</value></data>
+  <data name="Import_Samples_Hint" xml:space="preserve"><value>Each example shows the columns and the exact number and date formats this page reads.</value></data>
+  <data name="Import_Sample_Download" xml:space="preserve"><value>Download the {0} example</value></data>
+  <data name="Import_Drop_Label" xml:space="preserve"><value>Choose a CSV file, or drop one here</value></data>
+  <data name="Import_Drop_Hint" xml:space="preserve"><value>Up to {0} MB. UTF-8, UTF-16 or Windows-1252; comma, semicolon or tab separated — all detected automatically.</value></data>
+  <data name="Import_Drop_Replace" xml:space="preserve"><value>Choose a different file</value></data>
+  <data name="Import_File_Summary" xml:space="preserve"><value>{0} — {1} data rows, {2}, separator “{3}”</value></data>
+  <data name="Import_Mapping_Title" xml:space="preserve"><value>Columns</value></data>
+  <data name="Import_Mapping_Hint" xml:space="preserve"><value>Matched from the header row. Correct anything that is wrong — the mapping is remembered for this kind of file.</value></data>
+  <data name="Import_Mapping_None" xml:space="preserve"><value>— not imported —</value></data>
+  <data name="Import_Mapping_Required" xml:space="preserve"><value>required</value></data>
+  <data name="Import_Mapping_Missing" xml:space="preserve"><value>This column is required and has not been matched.</value></data>
+  <data name="Import_Mapping_Blocked" xml:space="preserve"><value>Assign a column to every required field before checking the file.</value></data>
+  <data name="Import_Mapping_Column" xml:space="preserve"><value>Column {0}</value></data>
+  <data name="Import_Field_Code" xml:space="preserve"><value>Code</value></data>
+  <data name="Import_Field_Name" xml:space="preserve"><value>Name</value></data>
+  <data name="Import_Field_Description" xml:space="preserve"><value>Description</value></data>
+  <data name="Import_Field_Active" xml:space="preserve"><value>Active</value></data>
+  <data name="Import_Field_CostCenter" xml:space="preserve"><value>Cost center code</value></data>
+  <data name="Import_Field_HourlyRate" xml:space="preserve"><value>Hourly rate</value></data>
+  <data name="Import_Field_Capacity" xml:space="preserve"><value>Parallel capacity</value></data>
+  <data name="Import_Field_ShiftPattern" xml:space="preserve"><value>Shift pattern</value></data>
+  <data name="Import_Field_PlanNumber" xml:space="preserve"><value>Plan no.</value></data>
+  <data name="Import_Field_PartNumber" xml:space="preserve"><value>Part no.</value></data>
+  <data name="Import_Field_PartName" xml:space="preserve"><value>Part name</value></data>
+  <data name="Import_Field_Revision" xml:space="preserve"><value>Revision</value></data>
+  <data name="Import_Field_Status" xml:space="preserve"><value>Status</value></data>
+  <data name="Import_Field_LotSize" xml:space="preserve"><value>Lot size</value></data>
+  <data name="Import_Field_OperationNumber" xml:space="preserve"><value>Operation no.</value></data>
+  <data name="Import_Field_OperationDescription" xml:space="preserve"><value>Operation</value></data>
+  <data name="Import_Field_WorkCenter" xml:space="preserve"><value>Work center code</value></data>
+  <data name="Import_Field_SetupMinutes" xml:space="preserve"><value>Setup minutes</value></data>
+  <data name="Import_Field_RunMinutes" xml:space="preserve"><value>Minutes per piece</value></data>
+  <data name="Import_Field_Remarks" xml:space="preserve"><value>Remarks</value></data>
+  <data name="Import_Field_OrderNumber" xml:space="preserve"><value>Order no.</value></data>
+  <data name="Import_Field_Quantity" xml:space="preserve"><value>Quantity</value></data>
+  <data name="Import_Field_Release" xml:space="preserve"><value>Release date</value></data>
+  <data name="Import_Field_Due" xml:space="preserve"><value>Due date</value></data>
+  <data name="Import_Field_Priority" xml:space="preserve"><value>Priority</value></data>
+  <data name="Import_Options_Title" xml:space="preserve"><value>Options</value></data>
+  <data name="Import_Option_Update" xml:space="preserve"><value>Update rows that already exist</value></data>
+  <data name="Import_Option_UpdateHint" xml:space="preserve"><value>Off: an existing code is left alone and counted as skipped. On: it is overwritten, and every such row is listed as a warning first.</value></data>
+  <data name="Import_Option_CreateCostCenters" xml:space="preserve"><value>Create cost centers the file names but the app does not have</value></data>
+  <data name="Import_Option_CreateCostCentersHint" xml:space="preserve"><value>Off: a work center pointing at an unknown cost center is rejected, because that is usually a typo.</value></data>
+  <data name="Import_Option_Separator" xml:space="preserve"><value>Separator</value></data>
+  <data name="Import_Separator_Detected" xml:space="preserve"><value>Detected: {0}</value></data>
+  <data name="Import_Action_DryRun" xml:space="preserve"><value>Check the file</value></data>
+  <data name="Import_Action_Commit" xml:space="preserve"><value>Import</value></data>
+  <data name="Import_Action_Again" xml:space="preserve"><value>Start again</value></data>
+  <data name="Import_Progress_Reading" xml:space="preserve"><value>Reading the file: {0} rows so far.</value></data>
+  <data name="Import_Progress_Done" xml:space="preserve"><value>Dry run finished: {0} would be added, {1} changed, {2} skipped, {3} rejected. Nothing has been written.</value></data>
+  <data name="Import_Busy" xml:space="preserve"><value>Working</value></data>
+  <data name="Import_Preview_Title" xml:space="preserve"><value>Dry run</value></data>
+  <data name="Import_Preview_Caption" xml:space="preserve"><value>Every row of the file and what would happen to it</value></data>
+  <data name="Import_Preview_Nothing" xml:space="preserve"><value>This file would change nothing.</value></data>
+  <data name="Import_Count_Create" xml:space="preserve"><value>to add</value></data>
+  <data name="Import_Count_Update" xml:space="preserve"><value>to change</value></data>
+  <data name="Import_Count_Skip" xml:space="preserve"><value>skipped</value></data>
+  <data name="Import_Count_Reject" xml:space="preserve"><value>rejected</value></data>
+  <data name="Import_Row_Create" xml:space="preserve"><value>Add</value></data>
+  <data name="Import_Row_Update" xml:space="preserve"><value>Change</value></data>
+  <data name="Import_Row_Skip" xml:space="preserve"><value>Skip</value></data>
+  <data name="Import_Row_Reject" xml:space="preserve"><value>Reject</value></data>
+  <data name="Import_Col_Line" xml:space="preserve"><value>Line</value></data>
+  <data name="Import_Col_Action" xml:space="preserve"><value>Action</value></data>
+  <data name="Import_Col_Key" xml:space="preserve"><value>Key</value></data>
+  <data name="Import_Col_Detail" xml:space="preserve"><value>Detail</value></data>
+  <data name="Import_Col_Column" xml:space="preserve"><value>Column</value></data>
+  <data name="Import_Col_Reason" xml:space="preserve"><value>Reason</value></data>
+  <data name="Import_Row_Why" xml:space="preserve"><value>why</value></data>
+  <data name="Import_Row_Back" xml:space="preserve"><value>back to line {0}</value></data>
+  <data name="Import_Rejected_Title" xml:space="preserve"><value>Rejected rows</value></data>
+  <data name="Import_Rejected_Caption" xml:space="preserve"><value>Rows that cannot be imported, with the column and the reason</value></data>
+  <data name="Import_Rejected_Download" xml:space="preserve"><value>Download the rejected rows</value></data>
+  <data name="Import_Warnings_Title" xml:space="preserve"><value>Warnings</value></data>
+  <data name="Import_Warnings_Caption" xml:space="preserve"><value>Things this import would change or assume</value></data>
+  <data name="Import_Storage_Note" xml:space="preserve"><value>Estimated browser storage after this import: {0} of {1} characters.</value></data>
+  <data name="Import_Result" xml:space="preserve"><value>Imported: {0} added, {1} changed, {2} skipped, {3} rejected.</value></data>
+  <data name="Import_Result_CostCenters" xml:space="preserve"><value>{0} cost centers were created as well.</value></data>
+  <data name="Import_Result_Failed" xml:space="preserve"><value>Nothing was imported. The database is exactly as it was.</value></data>
+  <data name="Import_Error_Empty" xml:space="preserve"><value>The file is empty, or it has no rows below the header.</value></data>
+  <data name="Import_Error_TooLarge" xml:space="preserve"><value>The file is larger than {0} MB. The whole database lives in this browser's storage, so a file that size could not be stored even if it were read.</value></data>
+  <data name="Import_Error_NotText" xml:space="preserve"><value>This is not a text file. Save the sheet as CSV and try again.</value></data>
+  <data name="Import_Error_RequiredColumn" xml:space="preserve"><value>{0} is required and has no column.</value></data>
+  <data name="Import_Error_Quota" xml:space="preserve"><value>This import would need about {0} characters of browser storage, and the limit is {1}. Nothing was written.</value></data>
+  <data name="Import_Error_NothingToDo" xml:space="preserve"><value>There is nothing to import.</value></data>
+  <data name="Import_Error_Changed" xml:space="preserve"><value>The data changed while the dry run was on screen, so the import was not applied. Check the file again.</value></data>
+  <data name="Import_Error_Constraint" xml:space="preserve"><value>The database refused a row. Nothing was imported.</value></data>
+  <data name="Import_Parse_UnterminatedQuote" xml:space="preserve"><value>Line {0} opens a quoted field that is never closed.</value></data>
+  <data name="Import_Parse_FieldTooLong" xml:space="preserve"><value>Line {0} has a field longer than {1} characters.</value></data>
+  <data name="Import_Parse_TooManyColumns" xml:space="preserve"><value>Line {0} has more than {1} columns.</value></data>
+  <data name="Import_Parse_TooManyRows" xml:space="preserve"><value>The file has more than {1} rows (reached at line {0}).</value></data>
+  <data name="Import_Error_ColumnCount" xml:space="preserve"><value>The header has {0} columns and this row has {1}.</value></data>
+  <data name="Import_Error_NotANumber" xml:space="preserve"><value>“{0}” is not a number. Use 1234.56 or 1234,56.</value></data>
+  <data name="Import_Error_NotAWholeNumber" xml:space="preserve"><value>“{0}” is not a whole number.</value></data>
+  <data name="Import_Error_NotABoolean" xml:space="preserve"><value>“{0}” is not a yes or a no.</value></data>
+  <data name="Import_Error_NotADate" xml:space="preserve"><value>“{0}” is not a date this page reads. Accepted: {1}.</value></data>
+  <data name="Import_Error_UnknownStatus" xml:space="preserve"><value>“{0}” is not a work-plan status.</value></data>
+  <data name="Import_Error_DuplicateKey" xml:space="preserve"><value>“{0}” is already in this file, at line {1}.</value></data>
+  <data name="Import_Error_DuplicateOperation" xml:space="preserve"><value>Operation {0} appears twice in plan {1}.</value></data>
+  <data name="Import_Error_UnknownWorkCenter" xml:space="preserve"><value>There is no work center with the code “{0}”.</value></data>
+  <data name="Import_Error_UnknownCostCenter" xml:space="preserve"><value>There is no cost center with the code “{0}”. Tick the option above to create it.</value></data>
+  <data name="Import_Error_PlanHeaderConflict" xml:space="preserve"><value>This row disagrees with line {1} about plan {0}.</value></data>
+  <data name="Import_Warn_Overwrite" xml:space="preserve"><value>“{0}” exists and would be overwritten.</value></data>
+  <data name="Import_Warn_NewCostCenter" xml:space="preserve"><value>Cost center “{0}” would be created, with its code as its name.</value></data>
+  <data name="Import_Warn_PlanHasOrders" xml:space="preserve"><value>Plan {0} has {1} production orders. Replacing its operations changes what they were raised from.</value></data>
+  <data name="Import_Preview_Truncated" xml:space="preserve"><value>Showing the first {0} of {1} rows. The counts above and the downloadable report cover all of them.</value></data>
+  <data name="Import_Error_ReadFailed" xml:space="preserve"><value>The file could not be read.</value></data>
+  <data name="Import_Row_Why_Label" xml:space="preserve"><value>why line {0} was rejected</value></data>
 </root>
