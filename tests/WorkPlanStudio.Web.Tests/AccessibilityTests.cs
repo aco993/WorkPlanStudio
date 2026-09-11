@@ -52,6 +52,7 @@ public sealed class AccessibilityTests : BunitContext
         Services.AddSingleton(database);
         Services.AddDemoAuthorization(WorkPlanStudio.Services.Auth.WorkspaceRole.Planner);
         Services.AddSingleton(new WorkCenterService(database));
+        Services.AddSingleton(new CostCenterService(database));
         Services.AddSingleton(new WorkPlanService(database));
         return database;
     }

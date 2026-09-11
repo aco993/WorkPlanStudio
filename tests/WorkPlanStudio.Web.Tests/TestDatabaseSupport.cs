@@ -19,14 +19,22 @@ internal sealed class TempDatabaseFiles : IDisposable
 
     public TestDbContextFactory CreateFactory(string fileName) => new(Path.Join(_directory, fileName));
 
-    public BrowserDatabase CreateDatabase(string fileName, FakeStorage storage)
+    /// <summary>The directory the databases live in, for tests that need a second file.</summary>
+    public string Root => _directory;
+
+    public BrowserDatabase CreateDatabase(
+        string fileName,
+        FakeStorage storage,
+        int? schemaVersion = null,
+        WorkPlanStudio.Services.Auth.IPermissionGuard? guard = null)
     {
         var path = Path.Join(_directory, fileName);
         return new BrowserDatabase(
             new TestDbContextFactory(path),
             storage,
-            new BrowserDatabaseOptions(path, 3),
-            NullLogger<BrowserDatabase>.Instance);
+            new BrowserDatabaseOptions(path, schemaVersion ?? SchemaUpgrades.CurrentVersion),
+            NullLogger<BrowserDatabase>.Instance,
+            guard);
     }
 
     public void Dispose()
@@ -62,8 +70,13 @@ internal sealed class FakeStorage : IBrowserDatabaseStorage
 {
     public StoredDatabase? Stored { get; set; }
     public StoredDatabase? Exported { get; private set; }
+    public StoredDatabase? ToImport { get; set; }
     public bool ThrowOnLoad { get; set; }
     public bool ThrowOnSave { get; set; }
+
+    /// <summary>Reports a full quota as a result, the way the real storage does.</summary>
+    public bool QuotaExceeded { get; set; }
+
     public int SaveCalls { get; private set; }
     public int ClearCalls { get; private set; }
 
@@ -74,14 +87,19 @@ internal sealed class FakeStorage : IBrowserDatabaseStorage
         return ValueTask.FromResult(Stored);
     }
 
-    public ValueTask SaveAsync(StoredDatabase database, CancellationToken cancellationToken = default)
+    public ValueTask<StorageWriteResult> SaveAsync(StoredDatabase database, CancellationToken cancellationToken = default)
     {
         SaveCalls++;
         if (ThrowOnSave)
             throw new InvalidOperationException("simulated quota failure");
+        if (QuotaExceeded)
+            return ValueTask.FromResult(new StorageWriteResult(StorageWriteOutcome.QuotaExceeded, "simulated quota"));
         Stored = database;
-        return ValueTask.CompletedTask;
+        return ValueTask.FromResult(StorageWriteResult.Saved);
     }
+
+    public ValueTask<StoredDatabase?> PickImportAsync(CancellationToken cancellationToken = default) =>
+        ValueTask.FromResult(ToImport);
 
     public ValueTask ClearAsync(CancellationToken cancellationToken = default)
     {

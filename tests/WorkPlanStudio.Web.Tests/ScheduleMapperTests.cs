@@ -9,8 +9,18 @@ public class ScheduleMapperTests
     private static WorkCenter Center(int id, bool active = true) =>
         new() { Id = id, Code = $"WC-{id}", Name = $"Center {id}", IsActive = active };
 
+    // The work centre is attached, not just its id: RoutingSnapshot.Capture now
+    // refuses to freeze an empty lane label rather than writing one forever.
     private static Operation Op(int number, int workCenterId, decimal setup, decimal perPiece) =>
-        new() { OperationNumber = number, WorkCenterId = workCenterId, Description = $"Op {number}", SetupTimeMinutes = setup, TimePerPieceMinutes = perPiece };
+        new()
+        {
+            OperationNumber = number,
+            WorkCenterId = workCenterId,
+            WorkCenter = Center(workCenterId),
+            Description = $"Op {number}",
+            SetupTimeMinutes = setup,
+            TimePerPieceMinutes = perPiece
+        };
 
     private static WorkPlan Plan(int id, int lot, params Operation[] ops) =>
         new() { Id = id, PlanNumber = $"WP-{id}", PartName = $"Part {id}", Status = WorkPlanStatus.Released, LotSize = lot, Operations = ops.ToList() };
@@ -29,8 +39,8 @@ public class ScheduleMapperTests
             WorkPlanId = plan.Id,
             Quantity = quantity,
             Priority = priority,
-            ReleaseUtc = Horizon,
-            DueUtc = Horizon.AddHours(dueHours),
+            ReleaseLocal = Horizon,
+            DueLocal = Horizon.AddHours(dueHours),
             Status = ProductionOrderStatus.Released,
             RoutingSnapshotJson = RoutingSnapshot.Capture(plan).Serialize()
         };
@@ -83,7 +93,7 @@ public class ScheduleMapperTests
     {
         var early = Released(Plan(1, 1, Op(10, 1, 1m, 1m)), quantity: 1, dueHours: 48);
         var late = Released(Plan(2, 1, Op(10, 1, 1m, 1m)), quantity: 1, dueHours: 72);
-        late.ReleaseUtc = Horizon.AddHours(24);
+        late.ReleaseLocal = Horizon.AddHours(24);
 
         var input = ScheduleMapper.BuildInputFromOrders([early, late], [Center(1)], RuleOnly);
 

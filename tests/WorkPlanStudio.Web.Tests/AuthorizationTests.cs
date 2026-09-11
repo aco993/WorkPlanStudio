@@ -156,6 +156,7 @@ public sealed class AuthorizationTests : BunitContext
         Services.AddSingleton(database);
         Services.AddDemoAuthorization(role);
         Services.AddSingleton(sp => new WorkCenterService(database, sp.GetRequiredService<IPermissionGuard>()));
+        Services.AddSingleton(sp => new CostCenterService(database, sp.GetRequiredService<IPermissionGuard>()));
         Services.AddSingleton<ILogger<WorkPlanStudio.Pages.WorkCenters>>(NullLogger<WorkPlanStudio.Pages.WorkCenters>.Instance);
         return database;
     }
