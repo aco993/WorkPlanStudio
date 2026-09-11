@@ -20,6 +20,8 @@ public static class ProductionOrderValidator
             issues.Add(new(nameof(order.OrderNumber), "Val_Required"));
         else if (number.Length > 30)
             issues.Add(new(nameof(order.OrderNumber), "Val_MaxLength", 30));
+        else if (Text.HasControlCharacters(number))
+            issues.Add(new(nameof(order.OrderNumber), "Val_SingleLine"));
 
         if (order.WorkPlanId <= 0)
             issues.Add(new(nameof(order.WorkPlanId), "Val_Required"));
@@ -30,9 +32,15 @@ public static class ProductionOrderValidator
         if (order.Priority < MinPriority || order.Priority > MaxPriority)
             issues.Add(new(nameof(order.Priority), "Val_PriorityRange", MinPriority, MaxPriority));
 
+        if (!Enum.IsDefined(order.Status))
+            issues.Add(new(nameof(order.Status), "Val_StatusInvalid"));
+
+        if (order.RoutingRevision?.Trim().Length > 10)
+            issues.Add(new(nameof(order.RoutingRevision), "Val_MaxLength", 10));
+
         // A due date before the release is not a tight schedule, it is a typo.
-        if (order.DueUtc <= order.ReleaseUtc)
-            issues.Add(new(nameof(order.DueUtc), "Val_DueBeforeRelease"));
+        if (order.DueLocal <= order.ReleaseLocal)
+            issues.Add(new(nameof(order.DueLocal), "Val_DueBeforeRelease"));
 
         return issues;
     }

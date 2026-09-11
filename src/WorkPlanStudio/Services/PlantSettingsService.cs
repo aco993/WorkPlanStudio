@@ -38,39 +38,30 @@ public sealed class PlantSettingsService
         if (issues.Count > 0)
             return ApplicationResult<PlantSettings>.Validation(issues);
 
-        await using (var db = await _db.CreateContextAsync(cancellationToken))
-        {
-            var existing = await db.PlantSettings.FirstOrDefaultAsync(s => s.Id == PlantSettings.SingletonId, cancellationToken);
-            if (existing is null)
+        return await DatabaseMutation.RunAsync<PlantSettings>(
+            _db,
+            async (db, token) =>
             {
-                existing = new PlantSettings();
-                db.PlantSettings.Add(existing);
-            }
+                var existing = await db.PlantSettings.FirstOrDefaultAsync(s => s.Id == PlantSettings.SingletonId, token);
+                if (existing is null)
+                {
+                    existing = new PlantSettings();
+                    db.PlantSettings.Add(existing);
+                }
 
-            existing.State = settings.State.Trim().ToUpperInvariant();
-            existing.IncludePartialHolidays = settings.IncludePartialHolidays;
-            existing.AllowExtendedDay = settings.AllowExtendedDay;
-            existing.AllowExtendedNight = settings.AllowExtendedNight;
-            existing.SundayWorkAllowed = settings.SundayWorkAllowed;
-            existing.HolidayWorkAllowed = settings.HolidayWorkAllowed;
-            existing.SundayBoundaryShiftHours = settings.SundayBoundaryShiftHours;
-            existing.MinimumRestHours = settings.MinimumRestHours;
-            existing.ModifiedUtc = DateTime.UtcNow;
+                existing.State = settings.State.Trim().ToUpperInvariant();
+                existing.IncludePartialHolidays = settings.IncludePartialHolidays;
+                existing.AllowExtendedDay = settings.AllowExtendedDay;
+                existing.AllowExtendedNight = settings.AllowExtendedNight;
+                existing.SundayWorkAllowed = settings.SundayWorkAllowed;
+                existing.HolidayWorkAllowed = settings.HolidayWorkAllowed;
+                existing.SundayBoundaryShiftHours = settings.SundayBoundaryShiftHours;
+                existing.MinimumRestHours = settings.MinimumRestHours;
+                existing.ModifiedUtc = DateTime.UtcNow;
 
-            try
-            {
-                await db.SaveChangesAsync(cancellationToken);
-            }
-            catch (DbUpdateException)
-            {
-                return ApplicationResult<PlantSettings>.PersistenceFailed();
-            }
-        }
-
-        var persisted = await _db.PersistAsync(cancellationToken);
-        return persisted.IsSuccess
-            ? ApplicationResult<PlantSettings>.Success(settings)
-            : ApplicationResult<PlantSettings>.PersistenceFailed();
+                return ApplicationResult<Func<PlantSettings>>.Success(() => existing);
+            },
+            cancellationToken: cancellationToken);
     }
 }
 
