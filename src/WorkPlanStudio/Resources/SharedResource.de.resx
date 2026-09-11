@@ -767,4 +767,15 @@
   <data name="Wt_Range" xml:space="preserve"><value>{0} – {1}</value></data>
   <data name="Holiday_EasterSunday" xml:space="preserve"><value>Ostersonntag</value></data>
   <data name="Holiday_WhitSunday" xml:space="preserve"><value>Pfingstsonntag</value></data>
+  <data name="Ai_QuestionTooLong" xml:space="preserve"><value>Diese Frage ist länger als {0} Zeichen. Bitte kürzen — die Plandaten stehen ohnehin schon im Prompt, die Frage selbst darf kurz sein.</value></data>
+  <data name="Ai_UnknownOrder" xml:space="preserve"><value>{0} kommt in diesem Plan nicht vor. Eingeplant werden nur freigegebene Aufträge: bitte die Nummer prüfen oder den Auftrag freigeben und neu planen.</value></data>
+  <data name="Ai_AmbiguousOrder" xml:space="preserve"><value>{0} trifft in diesem Plan auf {1} Aufträge zu; ich kann nicht sagen, welcher gemeint ist. Auftragsnummern, die sich nur in der Groß- und Kleinschreibung unterscheiden, sind verschiedene Aufträge.</value></data>
+  <data name="Ai_UnknownWorkCenter" xml:space="preserve"><value>Den Arbeitsplatz {0} gibt es in diesem Plan nicht. Enthalten sind: {1}.</value></data>
+  <data name="Ai_AmbiguousWorkCenter" xml:space="preserve"><value>{0} trifft auf {1} Arbeitsplätze in diesem Plan zu; ich kann nicht sagen, welcher gemeint ist.</value></data>
+  <data name="Ai_BottleneckWithoutClosed" xml:space="preserve"><value>{0} ist der Engpass: {1} Auslastung der geöffneten Zeit über {2} Arbeitsgänge. Die geschlossene Zeit lässt sich keiner einzelnen Zeile im Diagramm zuordnen, deshalb nennt diese Antwort dafür keine Zahl.</value></data>
+  <data name="Ai_KeyStored" xml:space="preserve"><value>Für {0} ist in diesem Browser ein Schlüssel gespeichert. Feld leer lassen, um ihn zu behalten, oder einen neuen eingeben, um ihn zu ersetzen.</value></data>
+  <data name="Ai_KeyNone" xml:space="preserve"><value>Für diesen Anbieter ist noch kein Schlüssel gespeichert.</value></data>
+  <data name="Ai_KeyForget" xml:space="preserve"><value>Schlüssel löschen</value></data>
+  <data name="Ai_KeyForgotten" xml:space="preserve"><value>Der Schlüssel für {0} wurde aus diesem Browser entfernt.</value></data>
+  <data name="Ai_KeyRisk" xml:space="preserve"><value>Der Schlüssel liegt im Speicher dieses Browsers, und der ist kein Tresor: Jedes Skript auf dieser Seite und jede Browser-Erweiterung mit Zugriff darauf kann ihn lesen. Nur einen Schlüssel verwenden, den Sie widerrufen können, und auf gemeinsam genutzten Rechnern kein Modell aktivieren.</value></data>
 </root>

@@ -37,13 +37,34 @@ public sealed partial class OfflineScheduleAnswerer
             return new OfflineAnswer(_l["Chat_Help"], ChatIntent.Help);
 
         // Specific things first: an order or a work center named in the question.
+        // A reference that was recognised but cannot be resolved ends the search
+        // here. Falling through would hand the question to whichever general
+        // intent matched next — "Is PO-9999 on time?" contains "on time", so it
+        // used to be answered with a summary of the whole schedule, and the
+        // planner was never told that PO-9999 is not in it.
         var order = OrderReference().Match(q);
-        if (order.Success && context.FindOrder(order.Value) is { } job)
-            return new OfflineAnswer(DescribeOrder(context, job), ChatIntent.OrderStatus);
+        if (order.Success)
+        {
+            var orders = context.FindOrders(order.Value);
+            return orders.Count switch
+            {
+                1 => new OfflineAnswer(DescribeOrder(context, orders[0]), ChatIntent.OrderStatus),
+                0 => new OfflineAnswer(_l["Ai_UnknownOrder", order.Value], ChatIntent.UnknownReference),
+                _ => new OfflineAnswer(_l["Ai_AmbiguousOrder", order.Value, orders.Count], ChatIntent.UnknownReference)
+            };
+        }
 
         var center = WorkCenterCode().Match(q);
-        if (center.Success && context.FindWorkCenter(center.Value) is { } row)
-            return new OfflineAnswer(DescribeWorkCenter(context, row), ChatIntent.WorkCenterStatus);
+        if (center.Success)
+        {
+            var centers = context.FindWorkCenters(center.Value);
+            return centers.Count switch
+            {
+                1 => new OfflineAnswer(DescribeWorkCenter(context, centers[0]), ChatIntent.WorkCenterStatus),
+                0 => new OfflineAnswer(_l["Ai_UnknownWorkCenter", center.Value, Codes(context)], ChatIntent.UnknownReference),
+                _ => new OfflineAnswer(_l["Ai_AmbiguousWorkCenter", center.Value, centers.Count], ChatIntent.UnknownReference)
+            };
+        }
 
         if (RuleMentioned(lower) is { } rule)
             return new OfflineAnswer("", ChatIntent.WhatIfRule, rule);   // the façade runs it and phrases the comparison
@@ -101,9 +122,22 @@ public sealed partial class OfflineScheduleAnswerer
     {
         if (c.Schedule.Explanation?.Bottleneck is not { } b)
             return _l["Chat_NoData"];
-        var closed = c.FindWorkCenter(b.WorkCenterName.Split(' ')[0])?.Closed.Sum(x => x.DurationSeconds) ?? 0;
-        return _l["Chat_Bottleneck", b.WorkCenterName, Percent(b.Utilization), b.OperationCount, Hours(closed)];
+
+        // The closed hours must come from the lane the sentence names. The old
+        // lookup took the first token of the lane label and prefix-matched it, so
+        // with CNC-300 and CNC-3000 on the shop floor the figure could belong to
+        // the other machine. When the lane cannot be identified there is no
+        // figure to give, and the answer says less rather than something wrong.
+        var lane = c.FindLane(b.WorkCenterName);
+        return lane is null
+            ? _l["Ai_BottleneckWithoutClosed", b.WorkCenterName, Percent(b.Utilization), b.OperationCount]
+            : _l["Chat_Bottleneck", b.WorkCenterName, Percent(b.Utilization), b.OperationCount,
+                Hours(lane.Closed.Sum(x => x.DurationSeconds))];
     }
+
+    /// <summary>The work-centre codes in this schedule, so an unknown one can be answered with the real ones.</summary>
+    private static string Codes(ScheduleChatContext c) =>
+        string.Join(", ", c.Schedule.Rows.Select(r => ScheduleChatContext.CodeOf(r.WorkCenterName)));
 
     private string DescribeLate(ScheduleChatContext c)
     {

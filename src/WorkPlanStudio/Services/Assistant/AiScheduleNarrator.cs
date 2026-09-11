@@ -37,6 +37,12 @@ public sealed class AiScheduleNarrator : IScheduleNarrator
             [new ChatTurn(ChatRole.User, AssistantPrompt.BuildFacts(explanation))],
             cancellationToken);
 
+        // A provider behind this seam is meant to return an answer or throw. One
+        // that returns nothing would render an empty card, which reads as "the
+        // schedule has nothing to say"; a typed failure reaches the fallback.
+        if (string.IsNullOrWhiteSpace(content))
+            throw new InvalidOperationException("The AI provider returned an empty response.");
+
         var lines = content
             .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Select(line => new NarrationLine(StripBullet(line), FindingTone.Info))

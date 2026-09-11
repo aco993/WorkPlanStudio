@@ -5,23 +5,32 @@ namespace WorkPlanStudio.Services;
 // Minimal wire DTOs for the three provider APIs. A source-generated serializer
 // context is used (rather than reflection) so serialization keeps working under
 // the trimming that the Blazor WebAssembly publish applies.
+//
+// Every property that comes *back* from a provider is nullable, without
+// exception. A non-nullable reference type is a promise the compiler keeps
+// between our own types; System.Text.Json will happily assign null from a JSON
+// null, so `{"choices":[null]}` used to produce a NullReferenceException — the
+// one exception type the fallback did not catch, which broke the documented
+// promise that the chat always answers. Nullable here means the compiler forces
+// the null checks at every projection.
 
 // ----- OpenAI-compatible /chat/completions -----
 
 internal sealed record ChatMessage(
-    [property: JsonPropertyName("role")] string Role,
-    [property: JsonPropertyName("content")] string Content);
+    [property: JsonPropertyName("role")] string? Role,
+    [property: JsonPropertyName("content")] string? Content);
 
 internal sealed record ChatRequest(
     [property: JsonPropertyName("model")] string Model,
     [property: JsonPropertyName("messages")] IReadOnlyList<ChatMessage> Messages,
-    [property: JsonPropertyName("temperature")] double Temperature);
+    [property: JsonPropertyName("temperature")] double Temperature,
+    [property: JsonPropertyName("max_tokens")] int MaxTokens);
 
 internal sealed record ChatChoice(
-    [property: JsonPropertyName("message")] ChatMessage Message);
+    [property: JsonPropertyName("message")] ChatMessage? Message);
 
 internal sealed record ChatResponse(
-    [property: JsonPropertyName("choices")] IReadOnlyList<ChatChoice>? Choices);
+    [property: JsonPropertyName("choices")] IReadOnlyList<ChatChoice?>? Choices);
 
 // ----- Anthropic /v1/messages -----
 
@@ -36,31 +45,35 @@ internal sealed record AnthropicRequest(
     [property: JsonPropertyName("messages")] IReadOnlyList<AnthropicMessage> Messages);
 
 internal sealed record AnthropicContentBlock(
-    [property: JsonPropertyName("type")] string Type,
+    [property: JsonPropertyName("type")] string? Type,
     [property: JsonPropertyName("text")] string? Text);
 
 internal sealed record AnthropicResponse(
-    [property: JsonPropertyName("content")] IReadOnlyList<AnthropicContentBlock>? Content,
+    [property: JsonPropertyName("content")] IReadOnlyList<AnthropicContentBlock?>? Content,
     [property: JsonPropertyName("stop_reason")] string? StopReason);
 
 // ----- Gemini generateContent -----
 
 internal sealed record GeminiPart(
-    [property: JsonPropertyName("text")] string Text);
+    [property: JsonPropertyName("text")] string? Text);
 
 internal sealed record GeminiContent(
     [property: JsonPropertyName("role")] string? Role,
-    [property: JsonPropertyName("parts")] IReadOnlyList<GeminiPart> Parts);
+    [property: JsonPropertyName("parts")] IReadOnlyList<GeminiPart?>? Parts);
+
+internal sealed record GeminiGenerationConfig(
+    [property: JsonPropertyName("maxOutputTokens")] int MaxOutputTokens);
 
 internal sealed record GeminiRequest(
     [property: JsonPropertyName("system_instruction")] GeminiContent SystemInstruction,
-    [property: JsonPropertyName("contents")] IReadOnlyList<GeminiContent> Contents);
+    [property: JsonPropertyName("contents")] IReadOnlyList<GeminiContent> Contents,
+    [property: JsonPropertyName("generationConfig")] GeminiGenerationConfig GenerationConfig);
 
 internal sealed record GeminiCandidate(
     [property: JsonPropertyName("content")] GeminiContent? Content);
 
 internal sealed record GeminiResponse(
-    [property: JsonPropertyName("candidates")] IReadOnlyList<GeminiCandidate>? Candidates);
+    [property: JsonPropertyName("candidates")] IReadOnlyList<GeminiCandidate?>? Candidates);
 
 /// <summary>Trim-safe (de)serialization for the provider DTOs and the stored settings.</summary>
 [JsonSourceGenerationOptions(PropertyNameCaseInsensitive = true, DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull)]

@@ -767,4 +767,15 @@
   <data name="Wt_Range" xml:space="preserve"><value>{0} – {1}</value></data>
   <data name="Holiday_EasterSunday" xml:space="preserve"><value>Easter Sunday</value></data>
   <data name="Holiday_WhitSunday" xml:space="preserve"><value>Whit Sunday</value></data>
+  <data name="Ai_QuestionTooLong" xml:space="preserve"><value>That question is longer than {0} characters. Shorten it and ask again — the schedule facts are already in the prompt, so the question itself can be short.</value></data>
+  <data name="Ai_UnknownOrder" xml:space="preserve"><value>I cannot find {0} in this schedule. Only released orders are scheduled, so check the number, or release the order and generate again.</value></data>
+  <data name="Ai_AmbiguousOrder" xml:space="preserve"><value>{0} matches {1} orders in this schedule, so I cannot tell which one you mean. Order numbers that differ only in capitalisation are stored as different orders.</value></data>
+  <data name="Ai_UnknownWorkCenter" xml:space="preserve"><value>I cannot find work center {0} in this schedule. It contains: {1}.</value></data>
+  <data name="Ai_AmbiguousWorkCenter" xml:space="preserve"><value>{0} matches {1} work centers in this schedule, so I cannot tell which one you mean.</value></data>
+  <data name="Ai_BottleneckWithoutClosed" xml:space="preserve"><value>{0} is the bottleneck: {1} utilisation of its open time across {2} operations. Its closed time cannot be attributed to a single lane on the chart, so this answer quotes no figure for it.</value></data>
+  <data name="Ai_KeyStored" xml:space="preserve"><value>A key for {0} is stored in this browser. Leave this field empty to keep it, or type a new one to replace it.</value></data>
+  <data name="Ai_KeyNone" xml:space="preserve"><value>No key is stored for this provider yet.</value></data>
+  <data name="Ai_KeyForget" xml:space="preserve"><value>Forget this key</value></data>
+  <data name="Ai_KeyForgotten" xml:space="preserve"><value>The key for {0} was removed from this browser.</value></data>
+  <data name="Ai_KeyRisk" xml:space="preserve"><value>The key is kept in this browser's storage, which is not a vault: any script running on this page, and any browser extension with access to it, can read it. Use a key you are able to revoke, and do not enable a model on a shared computer.</value></data>
 </root>
