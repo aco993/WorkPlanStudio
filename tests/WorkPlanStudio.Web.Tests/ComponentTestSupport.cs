@@ -25,11 +25,19 @@ internal sealed class FakeAssistantConfig : IAssistantConfig
 {
     public AssistantSettings Settings { get; set; } = AssistantSettings.Default;
 
-    public ValueTask<AssistantSettings> LoadAsync() => ValueTask.FromResult(Settings);
+    public ValueTask<AssistantSettings> LoadAsync(CancellationToken cancellationToken = default) =>
+        ValueTask.FromResult(Settings);
 
-    public Task SaveAsync(AssistantSettings settings)
+    public Task SaveAsync(AssistantSettings settings, CancellationToken cancellationToken = default)
     {
-        Settings = settings;
+        // Same contract as the real store: a blank key means "keep the stored one".
+        Settings = settings.HasApiKey ? settings : settings with { ApiKey = Settings.ApiKey };
+        return Task.CompletedTask;
+    }
+
+    public Task ForgetApiKeyAsync(CancellationToken cancellationToken = default)
+    {
+        Settings = Settings with { ApiKey = "" };
         return Task.CompletedTask;
     }
 }
