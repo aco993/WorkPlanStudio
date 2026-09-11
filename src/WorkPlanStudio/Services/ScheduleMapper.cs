@@ -274,7 +274,15 @@ public static class ScheduleMapper
         if (horizon is null || timelines is null || makespan <= 0 || !timelines.TryGetValue(workCenterId, out var timeline))
             return [];
 
-        return timeline.Segments(horizon.Value, horizon.Value.AddSeconds(makespan))
+        // The timeline only answers inside the horizon it was built for
+        // (ShopCalendar.Lookahead). A makespan that reaches past it is a real
+        // schedule, not an error, so clamp the question rather than let the
+        // Gantt throw on a plan that simply runs long.
+        var end = horizon.Value.AddSeconds(makespan);
+        if (end > timeline.To)
+            end = timeline.To;
+
+        return timeline.Segments(horizon.Value, end)
             .Where(s => s.Kind != SegmentKind.Working)
             .Select(s => new GanttClosedSegment(
                 (long)(s.Start - horizon.Value).TotalSeconds,

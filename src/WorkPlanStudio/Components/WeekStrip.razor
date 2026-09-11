@@ -113,7 +113,7 @@
         }
 
         // A continuous pattern has no windows at all: draw the whole day as work.
-        if (Timeline.WeekWindows.Count == 0 && Timeline.Pattern.IsContinuous)
+        if (Timeline.Capacity.IsUnconstrained)
             yield return new WeekWindow(dayStart, dayEnd, SegmentKind.Working, "", DayOfWeek.Monday);
     }
 
