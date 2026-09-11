@@ -33,71 +33,30 @@ public sealed class SchedulingEngine
     {
         ArgumentNullException.ThrowIfNull(context);
         cancellationToken.ThrowIfCancellationRequested();
+        return Begin(context).Complete(cancellationToken);
+    }
 
-        var dueByJob = DueDateAssigner.Assign(context);
-        var outcome = Search(context, dueByJob, cancellationToken);
-
-        return new SchedulingResult(outcome.Schedule, outcome.Evaluation, dueByJob, outcome.StepsUsed)
-        {
-            EquivalentRules = PriorityOrdering.EquivalentRules(context, dueByJob)
-        };
+    /// <summary>
+    /// Prepares the same run but hands the restart boundary back to the caller —
+    /// see <see cref="MultiStartRun"/>, which is what a single-threaded host needs
+    /// in order to stay responsive, report progress and honour cancellation.
+    /// </summary>
+    /// <remarks>
+    /// A descent from every restart, not just from the best raw shuffle: the
+    /// starting point of a descent matters much less than how far it can walk, and
+    /// polishing only the best shuffle wastes the other restarts entirely. Target
+    /// dates are assigned here, once, before any restart runs.
+    /// </remarks>
+    public MultiStartRun Begin(SchedulingContext context)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        return new MultiStartRun(_scheduler, context, DueDateAssigner.Assign(context));
     }
 
     /// <summary>The search without the equivalent-rule roll-up, for callers that only need the score.</summary>
     internal SearchOutcome Search(
-        SchedulingContext context, IReadOnlyDictionary<int, long> dueByJob, CancellationToken cancellationToken)
-    {
-        var evaluator = LocalSearch.EvaluatorFor(_scheduler, dueByJob);
-        var workspace = SchedulingWorkspace.For(context, dueByJob);
-
-        if (context.Jobs.Count == 0)
-        {
-            var emptySchedule = evaluator.Materialise(context, [], workspace);
-            return new SearchOutcome(emptySchedule, ScheduleEvaluator.Evaluate(emptySchedule, context), 0);
-        }
-
-        var baseOrder = PriorityOrdering.For(context, dueByJob);
-        int restarts = context.Parameters.MultiStartRuns;
-        int budget = context.Parameters.LocalSearchMaxSteps;
-        var acceptance = context.Parameters.LocalSearchAcceptance;
-
-        var order = new int[baseOrder.Length];
-        var bestOrder = new int[baseOrder.Length];
-        double bestPenalty = double.PositiveInfinity;
-        int totalSteps = 0;
-
-        // A descent from every restart, not just from the best raw shuffle: the
-        // starting point of a descent matters much less than how far it can walk,
-        // and polishing only the best shuffle wastes the other restarts entirely.
-        for (int restart = 0; restart < restarts; restart++)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            // Restart 0 is the pure rule order, so the chosen schedule can never be
-            // worse than what the dispatch rule alone produces.
-            Array.Copy(baseOrder, order, order.Length);
-            if (restart > 0)
-                DeterministicRandom.ForRun(context.Parameters.Seed, restart).Shuffle(order);
-
-            var start = evaluator.Score(context, order, workspace, cancellationToken);
-            var descent = LocalSearch.Descend(
-                evaluator, context, workspace, order, start, budget, acceptance, cancellationToken);
-            totalSteps += descent.StepsUsed;
-
-            // Strict improvement, so restart 0 keeps ties and the result does not
-            // depend on how many restarts were configured.
-            if (descent.Penalty < bestPenalty)
-            {
-                bestPenalty = descent.Penalty;
-                Array.Copy(order, bestOrder, order.Length);
-            }
-        }
-
-        // One materialised schedule per run, for the order that won.
-        evaluator.Score(context, bestOrder, workspace, cancellationToken);
-        var schedule = evaluator.Materialise(context, bestOrder, workspace);
-        return new SearchOutcome(schedule, ScheduleEvaluator.Evaluate(schedule, context), totalSteps);
-    }
+        SchedulingContext context, IReadOnlyDictionary<int, long> dueByJob, CancellationToken cancellationToken) =>
+        new MultiStartRun(_scheduler, context, dueByJob).CompleteOutcome(cancellationToken);
 
     /// <summary>What one multi-start search produced.</summary>
     /// <param name="Schedule">The winning schedule.</param>
