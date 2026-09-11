@@ -62,7 +62,10 @@ public class GermanHolidaysTests
     [InlineData(GermanState.SL, 12, "CorpusChristi,Assumption,AllSaints")]
     [InlineData(GermanState.HE, 10, "CorpusChristi")]
     [InlineData(GermanState.RP, 11, "CorpusChristi,AllSaints")]
-    [InlineData(GermanState.BB, 10, "ReformationDay")]
+    // Brandenburg is the only state whose Feiertagsgesetz lists Ostersonntag and
+    // Pfingstsonntag (§ 1 Abs. 1 BbgFTG), so it has twelve where the other
+    // northern states have ten.
+    [InlineData(GermanState.BB, 12, "ReformationDay,EasterSunday,WhitSunday")]
     [InlineData(GermanState.HB, 10, "ReformationDay")]
     [InlineData(GermanState.HH, 10, "ReformationDay")]
     [InlineData(GermanState.NI, 10, "ReformationDay")]

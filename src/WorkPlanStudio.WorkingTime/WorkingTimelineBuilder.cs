@@ -6,13 +6,23 @@ namespace WorkPlanStudio.WorkingTime;
 /// the capacity, in this order, per shift instance in an ordinary week:
 /// <list type="number">
 /// <item>§9 — clip everything that falls on a closed Sunday;</item>
-/// <item>§3 / §6 — cap the working time of the shift (night cap when it is night work);</item>
+/// <item>§3 / §6 — cap the working time of each <i>crew and calendar day</i>
+/// (night cap when any of that day's work is night work);</item>
 /// <item>§5 — delay a shift whose crew has not had its rest since their previous shift;</item>
+/// <item>§3 / §6 again — a delayed shift can land in a calendar day that already
+/// has its hours;</item>
 /// <item>§4 — carve the owed breaks out of the shift.</item>
 /// </list>
 /// Public holidays and absences are one-off exceptions layered on top. Every
-/// cut is recorded as a <see cref="RuleApplication"/> so the UI can explain it.
-/// Deterministic: same inputs, same timeline.
+/// cut is recorded as a <see cref="RuleApplication"/> so the UI can explain it,
+/// and the obligations a permission carries with it (§5 (2) compensation,
+/// §11 (2)/(3) replacement rest) are recorded the same way rather than left
+/// silent. Deterministic: same inputs, same timeline.
+/// <para>
+/// All times are plant-local wall clock; see <see cref="PlantTime"/>. The
+/// averaging duties of §3 sentence 2 and §6 (2) are date-dependent and therefore
+/// not pattern cuts — <see cref="WorkingTimeline.Evaluate"/> computes those.
+/// </para>
 /// </summary>
 public static class WorkingTimelineBuilder
 {
@@ -28,6 +38,11 @@ public static class WorkingTimelineBuilder
     public static readonly TimeSpan MaxRange = TimeSpan.FromDays(5 * 366);
 
     /// <summary>Builds the timeline for <c>[from, to)</c>.</summary>
+    /// <param name="pattern">How the work center is staffed.</param>
+    /// <param name="rules">The working-time rules in force.</param>
+    /// <param name="absences">One-off closures.</param>
+    /// <param name="from">Start of the range, plant-local wall clock.</param>
+    /// <param name="to">End of the range (exclusive), plant-local wall clock.</param>
     public static WorkingTimeline Build(
         ShiftPattern pattern,
         WorkingTimeRules rules,
@@ -40,12 +55,27 @@ public static class WorkingTimelineBuilder
         ArgumentNullException.ThrowIfNull(absences);
         pattern.Validate();
         rules.Validate();
+
+        // Every DateTime crossing this boundary is read as a plant-local clock
+        // reading and re-stamped, so no record downstream can end up with one end
+        // in UTC and the other in nobody's time zone.
+        from = PlantTime.Wall(from);
+        to = PlantTime.Wall(to);
+        var wallAbsences = new List<AbsencePeriod>(absences.Count);
         foreach (var absence in absences)
+        {
             absence.Validate();
+            wallAbsences.Add(absence.AsWallClock());
+        }
+
         if (to <= from)
             throw new ArgumentException("The range end must come after its start.", nameof(to));
         if (to - from > MaxRange)
             throw new ArgumentException($"The range may span at most {MaxRange.TotalDays:0} days.", nameof(to));
+        if (from.Year < GermanHolidays.MinYear)
+            throw new ArgumentOutOfRangeException(nameof(from), from, $"The holiday tables start in {GermanHolidays.MinYear}.");
+        if (to.Year > GermanHolidays.MaxYear)
+            throw new ArgumentOutOfRangeException(nameof(to), to, $"The holiday tables end in {GermanHolidays.MaxYear}.");
 
         var applications = new List<RuleApplication>();
         var annotations = new List<WeekWindow>();
@@ -54,18 +84,30 @@ public static class WorkingTimelineBuilder
         if (!pattern.IsContinuous)
         {
             blocks = Instances(pattern);
+            WarnIfNotMultiShift(pattern, blocks, rules, applications);
             blocks = ClipSundays(blocks, rules, applications, annotations);
             blocks = CapWorkingTime(blocks, rules, applications);
             blocks = EnforceRest(blocks, rules, applications, annotations);
+
+            // §5 can delay a shift past midnight, and the calendar day it lands
+            // in may already have its hours. Capping again is cheap, changes
+            // nothing where the delay stayed inside the day, and only ever
+            // shortens - so it cannot undo the rest it was given.
+            blocks = CapWorkingTime(blocks, rules, applications);
             CarveBreaks(blocks, rules, applications, annotations);
         }
 
+        var crewShifts = CrewShifts(blocks, rules);
         var windows = Windows(blocks);
-        var gaps = Gaps(windows, annotations);
-        var (exceptions, holidays) = Exceptions(rules, absences, from, to);
-        int freeSundays = FreeSundaysPerYear(pattern, windows, rules);
+        List<WeekWindow> gaps = pattern.IsContinuous ? [] : Gaps(windows, annotations);
+        WeekCapacity capacity = pattern.IsContinuous
+            ? new WeekCapacity.Unconstrained()
+            : WeekCapacity.FromWindows(windows, CuttingRules(applications));
+        var (exceptions, holidays) = Exceptions(rules, wallAbsences, from, to);
 
-        return new WorkingTimeline(pattern, rules, from, to, windows, gaps, exceptions, applications, holidays, freeSundays);
+        ReportReplacementRestDays(pattern, rules, crewShifts, from, to, applications);
+
+        return new WorkingTimeline(pattern, rules, from, to, capacity, gaps, crewShifts, exceptions, applications, holidays);
     }
 
     // ----- 1. shift instances of one week -----
@@ -101,12 +143,35 @@ public static class WorkingTimelineBuilder
 
     // ----- 2. §9 Sunday -----
 
+    /// <summary>
+    /// §9 (2) reserves the moved Sunday boundary for "mehrschichtige Betriebe mit
+    /// regelmäßiger Tag- und Nachtschicht". A single-shift plant that claims it is
+    /// taking a privilege it does not have, and silence would be the app agreeing.
+    /// </summary>
+    private static void WarnIfNotMultiShift(
+        ShiftPattern pattern, List<Block> blocks, WorkingTimeRules rules, List<RuleApplication> applications)
+    {
+        if (rules.SundayBoundaryShift == TimeSpan.Zero)
+            return;
+
+        long threshold = (long)rules.NightWorkThreshold.TotalSeconds;
+        bool hasNight = blocks.Any(b => NightSeconds(b, rules) > threshold);
+        bool hasDay = blocks.Any(b => NightSeconds(b, rules) <= threshold);
+        if (pattern.Shifts.Count >= 2 && hasNight && hasDay)
+            return;
+
+        var claimed = rules.SundayBoundaryShift < TimeSpan.Zero ? -rules.SundayBoundaryShift : rules.SundayBoundaryShift;
+        applications.Add(new RuleApplication(
+            WorkingTimeRuleId.MultiShiftRequirement, pattern.Key, DayOfWeek.Sunday, claimed, TimeSpan.Zero));
+    }
+
     private static List<Block> ClipSundays(
         List<Block> blocks, WorkingTimeRules rules, List<RuleApplication> applications, List<WeekWindow> annotations)
     {
         if (rules.SundayWorkAllowed)
             return blocks;
 
+        // The shift may be negative: §9 (2) moves the closed day forward or back.
         long shift = (long)rules.SundayBoundaryShift.TotalSeconds;
         long closedStart = 6 * Day + shift;
         long closedEnd = 7 * Day + shift;
@@ -152,27 +217,70 @@ public static class WorkingTimelineBuilder
 
     // ----- 3. §3 / §6 caps -----
 
+    /// <summary>
+    /// §3 caps "die werktägliche Arbeitszeit der Arbeitnehmer" — what one crew
+    /// works on one calendar day, however many blocks that is. Capping each block
+    /// on its own lets a crew work 00:00–06:00 and 17:00–23:00 on the same Monday,
+    /// twelve hours, two over even the extended ceiling, without a word.
+    /// <para>
+    /// A block that crosses midnight counts on the day it starts: that is the day
+    /// the crew reported for, and it is the same convention
+    /// <see cref="WeekWindow.Day"/> uses.
+    /// </para>
+    /// </summary>
     private static List<Block> CapWorkingTime(List<Block> blocks, WorkingTimeRules rules, List<RuleApplication> applications)
     {
-        foreach (var block in blocks)
-        {
-            long dayCap = (long)rules.DailyCap.TotalSeconds;
-            long nightCap = (long)rules.NightCap.TotalSeconds;
-            bool isNightWork = NightSeconds(block, rules) > (long)rules.NightWorkThreshold.TotalSeconds;
+        long dayCap = (long)rules.DailyCap.TotalSeconds;
+        long nightCap = (long)rules.NightCap.TotalSeconds;
+        long threshold = (long)rules.NightWorkThreshold.TotalSeconds;
 
-            long cap = isNightWork ? Math.Min(dayCap, nightCap) : dayCap;
-            long net = NetWorkingSeconds(block.Gross, rules);
+        foreach (var group in blocks
+                     .GroupBy(b => (b.Shift.Crew, DayIndex: b.Start / Day), CrewDayComparer.Instance)
+                     .OrderBy(g => g.Key.Crew, StringComparer.Ordinal).ThenBy(g => g.Key.DayIndex))
+        {
+            var ordered = group.OrderBy(b => b.Start).ToList();
+            bool nightWork = ordered.Any(b => NightSeconds(b, rules) > threshold);
+            long cap = nightWork ? Math.Min(dayCap, nightCap) : dayCap;
+
+            long net = ordered.Sum(b => Net(b.Gross, rules));
             if (net <= cap)
                 continue;
 
-            long newGross = GrossForNet(cap, rules);
-            block.End = block.Start + newGross;
+            // Trim from the end of the day: the crew stays on the blocks it has
+            // already started and goes home early on the last one.
+            long allowance = cap;
+            foreach (var block in ordered)
+            {
+                long blockNet = Net(block.Gross, rules);
+                if (blockNet <= allowance)
+                {
+                    allowance -= blockNet;
+                    continue;
+                }
 
-            var rule = isNightWork && nightCap < dayCap ? WorkingTimeRuleId.NightWork : WorkingTimeRuleId.MaxDailyWorkingTime;
-            applications.Add(new RuleApplication(rule, block.Shift.Key, block.Day, TimeSpan.FromSeconds(net), TimeSpan.FromSeconds(cap)));
+                long newGross = (long)rules.GrossForNet(TimeSpan.FromSeconds(allowance)).TotalSeconds;
+                block.End = block.Start + Math.Min(newGross, block.Gross);
+                allowance = 0;
+            }
+
+            var last = ordered[^1];
+            var rule = nightWork && nightCap < dayCap ? WorkingTimeRuleId.NightWork : WorkingTimeRuleId.MaxDailyWorkingTime;
+            applications.Add(new RuleApplication(rule, last.Shift.Key, last.Day,
+                TimeSpan.FromSeconds(net), TimeSpan.FromSeconds(cap)));
         }
 
         return blocks.Where(b => b.Gross > 0).ToList();
+    }
+
+    private sealed class CrewDayComparer : IEqualityComparer<(string Crew, long DayIndex)>
+    {
+        public static readonly CrewDayComparer Instance = new();
+
+        public bool Equals((string Crew, long DayIndex) x, (string Crew, long DayIndex) y) =>
+            x.DayIndex == y.DayIndex && string.Equals(x.Crew, y.Crew, StringComparison.Ordinal);
+
+        public int GetHashCode((string Crew, long DayIndex) obj) =>
+            HashCode.Combine(StringComparer.Ordinal.GetHashCode(obj.Crew), obj.DayIndex);
     }
 
     /// <summary>Seconds of the block that fall inside the nightly night window.</summary>
@@ -195,36 +303,9 @@ public static class WorkingTimelineBuilder
         return total;
     }
 
-    /// <summary>§4 break owed for a shift of <paramref name="gross"/> seconds, consistent with the net time it leaves.</summary>
-    internal static long BreakSeconds(long gross, WorkingTimeRules rules)
-    {
-        long six = (long)rules.MaxWorkWithoutBreak.TotalSeconds;
-        long nine = 9 * Hour;
-        long shortBreak = (long)rules.BreakAfterSixHours.TotalSeconds;
-        long longBreak = (long)rules.BreakAfterNineHours.TotalSeconds;
-
-        if (gross <= six)
-            return 0;
-        // With the short break taken, is the remaining working time still over nine hours?
-        return gross - shortBreak > nine ? longBreak : shortBreak;
-    }
-
-    internal static long NetWorkingSeconds(long gross, WorkingTimeRules rules) => gross - BreakSeconds(gross, rules);
-
-    /// <summary>The longest gross shift whose net working time does not exceed <paramref name="netCap"/>.</summary>
-    internal static long GrossForNet(long netCap, WorkingTimeRules rules)
-    {
-        long longBreak = (long)rules.BreakAfterNineHours.TotalSeconds;
-        long shortBreak = (long)rules.BreakAfterSixHours.TotalSeconds;
-
-        foreach (long candidate in new[] { netCap + longBreak, netCap + shortBreak, netCap })
-        {
-            if (NetWorkingSeconds(candidate, rules) <= netCap)
-                return candidate;
-        }
-
-        return netCap;
-    }
+    /// <summary>The working time a gross presence leaves, in seconds — §4 solved on the net, not on the span.</summary>
+    private static long Net(long gross, WorkingTimeRules rules) =>
+        (long)rules.NetWorkingTime(TimeSpan.FromSeconds(gross)).TotalSeconds;
 
     // ----- 4. §5 rest -----
 
@@ -242,13 +323,16 @@ public static class WorkingTimelineBuilder
 
             // Consecutive pairs, then the wrap from the last shift of the week to
             // the first of the next: the pattern repeats, so that gap is real too.
+            // "When did this crew last stop working" is the greatest end so far,
+            // not the end of the block that started last - two shifts of one crew
+            // can start together, and the shorter one is not where the rest began.
+            long latestEnd = ordered.Max(b => b.End);
+            long runningEnd = long.MinValue;
             for (int i = 0; i < ordered.Count; i++)
             {
-                var previous = i == 0 ? ordered[^1] : ordered[i - 1];
                 var current = ordered[i];
-                long previousEnd = i == 0 ? previous.End - Week : previous.End;
-                if (ordered.Count == 1)
-                    previousEnd = current.End - Week;
+                long previousEnd = i == 0 ? latestEnd - Week : runningEnd;
+                runningEnd = Math.Max(runningEnd, current.End);
 
                 long gap = current.Start - previousEnd;
                 if (gap >= rest)
@@ -264,10 +348,54 @@ public static class WorkingTimelineBuilder
                 current.Start = delayedStart;
             }
 
-            kept.AddRange(ordered.Where(b => b.Gross > 0));
+            var survivors = ordered.Where(b => b.Gross > 0).ToList();
+            ReportRestCompensation(survivors, rules, applications);
+            kept.AddRange(survivors);
         }
 
         return kept.OrderBy(b => b.Start).ToList();
+    }
+
+    /// <summary>
+    /// §5 (2): the 10-hour rest is available only in the sectors the subsection
+    /// names, and only where "jede Verkürzung der Ruhezeit … durch Verlängerung
+    /// einer anderen Ruhezeit auf mindestens zwölf Stunden ausgeglichen wird". A
+    /// plant that takes the shortening is told what it now owes, and one outside
+    /// those sectors is told it has no such permission at all.
+    /// </summary>
+    private static void ReportRestCompensation(List<Block> ordered, WorkingTimeRules rules, List<RuleApplication> applications)
+    {
+        if (rules.MinimumRest >= TimeSpan.FromHours(11) || ordered.Count == 0)
+            return;
+
+        var crewShift = ordered[0].Shift;
+        if (rules.RestExceptionSector == RestExceptionSector.None)
+        {
+            applications.Add(new RuleApplication(WorkingTimeRuleId.RestCompensation, crewShift.Key, ordered[0].Day,
+                rules.MinimumRest, TimeSpan.FromHours(11)));
+            return;
+        }
+
+        long full = 11 * Hour;
+        long compensating = (long)rules.CompensatingRest.TotalSeconds;
+        int shortened = 0;
+        int compensated = 0;
+        long latestEnd = ordered.Max(b => b.End);
+        long runningEnd = long.MinValue;
+        for (int i = 0; i < ordered.Count; i++)
+        {
+            long previousEnd = i == 0 ? latestEnd - Week : runningEnd;
+            runningEnd = Math.Max(runningEnd, ordered[i].End);
+            long gap = ordered[i].Start - previousEnd;
+            if (gap < full)
+                shortened++;
+            else if (gap >= compensating)
+                compensated++;
+        }
+
+        for (int i = compensated; i < shortened; i++)
+            applications.Add(new RuleApplication(WorkingTimeRuleId.RestCompensation, crewShift.Key, ordered[0].Day,
+                rules.MinimumRest, rules.CompensatingRest));
     }
 
     // ----- 5. §4 breaks -----
@@ -281,7 +409,15 @@ public static class WorkingTimelineBuilder
 
         foreach (var block in blocks)
         {
-            long total = BreakSeconds(block.Gross, rules);
+            long net = Net(block.Gross, rules);
+            long total = (long)rules.BreakOwed(TimeSpan.FromSeconds(net)).TotalSeconds;
+
+            // Presence the crew can neither work nor spend on a break is not
+            // capacity; trimming it is what keeps net working time monotonic in
+            // the length of the shift.
+            if (net + total < block.Gross)
+                block.End = block.Start + net + total;
+
             if (total == 0)
                 continue;
 
@@ -325,7 +461,45 @@ public static class WorkingTimelineBuilder
     private static long StretchFor(long gross, long totalBreak, int pieceCount) =>
         (gross - totalBreak) / (pieceCount + 1);
 
-    // ----- 6. windows and gaps -----
+    // ----- 6. windows, gaps and the per-crew view -----
+
+    /// <summary>
+    /// What each crew actually works in an ordinary week, before the windows of
+    /// different crews are merged for the machine's benefit. §5, §3 per crew-day
+    /// and §11 are all obligations owed to people, so they need the person's view,
+    /// not the machine's.
+    /// </summary>
+    private static List<CrewShiftInstance> CrewShifts(List<Block> blocks, WorkingTimeRules rules)
+    {
+        long threshold = (long)rules.NightWorkThreshold.TotalSeconds;
+        var instances = new List<CrewShiftInstance>();
+        foreach (var block in blocks)
+        {
+            var spans = new List<WorkSpan>();
+            long cursor = block.Start;
+            foreach (var (breakStart, breakEnd) in block.Breaks.OrderBy(b => b.Start))
+            {
+                if (breakStart > cursor)
+                    spans.Add(new WorkSpan(cursor, breakStart));
+                cursor = breakEnd;
+            }
+
+            if (cursor < block.End)
+                spans.Add(new WorkSpan(cursor, block.End));
+
+            if (spans.Count == 0)
+                continue;
+
+            instances.Add(new CrewShiftInstance(
+                block.Shift.Crew, block.Shift.Key, block.Day, block.Start, block.End, spans,
+                NightSeconds(block, rules) > threshold));
+        }
+
+        instances.Sort((a, b) => a.StartSeconds != b.StartSeconds
+            ? a.StartSeconds.CompareTo(b.StartSeconds)
+            : string.CompareOrdinal(a.Crew, b.Crew));
+        return instances;
+    }
 
     private static List<WeekWindow> Windows(List<Block> blocks)
     {
@@ -372,10 +546,9 @@ public static class WorkingTimelineBuilder
 
     private static List<WeekWindow> Gaps(List<WeekWindow> windows, List<WeekWindow> annotations)
     {
-        if (windows.Count == 0)
-            return [];
-
-        // The complement of the windows over one week …
+        // No early exit on an empty window list: a staffed pattern the rules
+        // emptied has a closed week to describe, and describing it as "nothing at
+        // all" is what made it look unconstrained.
         var complement = new List<(long Start, long End)>();
         long cursor = 0;
         foreach (var window in windows)
@@ -412,10 +585,19 @@ public static class WorkingTimelineBuilder
             for (int i = 0; i < points.Count - 1; i++)
             {
                 long start = points[i], end = points[i + 1];
-                var best = annotations
-                    .Where(a => a.StartSeconds <= start && a.EndSeconds >= end)
-                    .OrderByDescending(a => Priority(a.Kind))
-                    .FirstOrDefault();
+                WeekWindow? best = null;
+                int bestPriority = -1;
+                foreach (var annotation in annotations)
+                {
+                    if (annotation.StartSeconds > start || annotation.EndSeconds < end)
+                        continue;
+                    int priority = Priority(annotation.Kind);
+                    if (priority > bestPriority)
+                    {
+                        best = annotation;
+                        bestPriority = priority;
+                    }
+                }
 
                 var kind = best?.Kind ?? SegmentKind.OffShift;
                 var label = best?.Label ?? "";
@@ -464,8 +646,12 @@ public static class WorkingTimelineBuilder
         if (!rules.HolidayWorkAllowed)
         {
             var boundary = rules.SundayBoundaryShift;
+            var lookupFrom = DateOnly.FromDateTime(from.Date.AddDays(-1));
+            if (lookupFrom.Year < GermanHolidays.MinYear)
+                lookupFrom = new DateOnly(GermanHolidays.MinYear, 1, 1);
+
             foreach (var holiday in GermanHolidays.Between(
-                         DateOnly.FromDateTime(from.Date.AddDays(-1)), DateOnly.FromDateTime(to.Date), rules.State, rules.IncludePartialHolidays))
+                         lookupFrom, DateOnly.FromDateTime(to.Date), rules.State, rules.IncludePartialHolidays))
             {
                 var start = holiday.Date.ToDateTime(TimeOnly.MinValue) + boundary;
                 var end = start.AddDays(1);
@@ -486,8 +672,11 @@ public static class WorkingTimelineBuilder
 
         segments.Sort((a, b) => a.Start != b.Start ? a.Start.CompareTo(b.Start) : b.End.CompareTo(a.End));
 
-        // Overlaps merge into one closed stretch; the first cause keeps the kind,
-        // the labels are joined so nothing is hidden.
+        // Overlaps merge into one closed stretch. The earliest cause names the
+        // kind; every distinct cause is kept, compared for equality rather than
+        // by substring — "Wartung Halle 2" contains "Wartung" and "Halle", so a
+        // substring test silently swallowed two of three causes, and it swallowed
+        // every unlabelled one by construction.
         var merged = new List<TimelineSegment>();
         foreach (var segment in segments)
         {
@@ -500,34 +689,77 @@ public static class WorkingTimelineBuilder
             if (merged.Count > 0 && clipped.Start < merged[^1].End)
             {
                 var last = merged[^1];
+                var causes = last.Causes.Contains(clipped.Label, StringComparer.Ordinal)
+                    ? last.Causes
+                    : [.. last.Causes, clipped.Label];
                 merged[^1] = last with
                 {
                     End = clipped.End > last.End ? clipped.End : last.End,
-                    Label = last.Label.Contains(clipped.Label, StringComparison.Ordinal) ? last.Label : $"{last.Label}; {clipped.Label}"
+                    Label = string.Join("; ", causes),
+                    Causes = causes
                 };
             }
             else
             {
-                merged.Add(clipped);
+                merged.Add(clipped with { Causes = [clipped.Label] });
             }
         }
 
         return (merged, holidays);
     }
 
-    private static int FreeSundaysPerYear(ShiftPattern pattern, List<WeekWindow> windows, WorkingTimeRules rules)
+    /// <summary>
+    /// §11 (3) gives a crew that works a Sunday a replacement rest day within two
+    /// weeks, §11 (2) gives one for holiday work within eight weeks. A repeating
+    /// weekly pattern cannot show where that day goes, but leaving the obligation
+    /// unmentioned would let the permission look free of charge.
+    /// </summary>
+    private static void ReportReplacementRestDays(
+        ShiftPattern pattern,
+        WorkingTimeRules rules,
+        List<CrewShiftInstance> crewShifts,
+        DateTime from,
+        DateTime to,
+        List<RuleApplication> applications)
     {
-        // A continuous pattern is an unattended machine: nobody's Sunday is at
-        // stake, and §11 is about people. It reports 0 free Sundays so a UI can
-        // still say "runs every Sunday"; ViolatesFreeSundays ignores it.
-        if (pattern.IsContinuous)
-            return 0;
+        if (crewShifts.Count == 0)
+            return;
 
-        long shift = (long)rules.SundayBoundaryShift.TotalSeconds;
-        bool sundayWorked = windows.Any(w =>
-            (w.StartSeconds < 7 * Day + shift && w.EndSeconds > 6 * Day + shift) ||
-            (shift > 0 && w.StartSeconds < shift));
+        if (rules.SundayWorkAllowed)
+        {
+            long shift = (long)rules.SundayBoundaryShift.TotalSeconds;
+            foreach (var crew in crewShifts
+                         .Where(i => i.WorkingSpans.Any(s => s.StartSeconds < 7 * Day + shift && s.EndSeconds > 6 * Day + shift))
+                         .Select(i => i.Crew)
+                         .Distinct(StringComparer.Ordinal)
+                         .OrderBy(c => c, StringComparer.Ordinal))
+            {
+                applications.Add(new RuleApplication(WorkingTimeRuleId.ReplacementRestDay, crew, DayOfWeek.Sunday,
+                    TimeSpan.Zero, rules.SundayReplacementRestWindow));
+            }
+        }
 
-        return sundayWorked ? 0 : 52;
+        if (!rules.HolidayWorkAllowed)
+            return;
+
+        // When holiday work is allowed the holidays are not exceptions, so they
+        // are not in the timeline's list — but the obligation still needs one to
+        // exist before it is worth reporting.
+        var worked = GermanHolidays.Between(
+            DateOnly.FromDateTime(from.Date), DateOnly.FromDateTime(to.Date.AddDays(-1)), rules.State, rules.IncludePartialHolidays);
+        if (worked.Count > 0)
+        {
+            applications.Add(new RuleApplication(WorkingTimeRuleId.ReplacementRestDay, pattern.Key,
+                worked[0].Date.DayOfWeek, TimeSpan.Zero, rules.HolidayReplacementRestWindow));
+        }
     }
+
+    /// <summary>The rules that can take working time away — what a closed week names as its cause.</summary>
+    private static List<WorkingTimeRuleId> CuttingRules(List<RuleApplication> applications) =>
+        applications
+            .Select(a => a.Rule)
+            .Where(r => r is WorkingTimeRuleId.SundayRest or WorkingTimeRuleId.HolidayRest
+                or WorkingTimeRuleId.MaxDailyWorkingTime or WorkingTimeRuleId.NightWork or WorkingTimeRuleId.RestPeriod)
+            .Distinct()
+            .ToList();
 }

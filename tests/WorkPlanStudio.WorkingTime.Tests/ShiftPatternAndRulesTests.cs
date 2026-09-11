@@ -61,9 +61,23 @@ public class ShiftPatternAndRulesTests
         Assert.Equal(TimeSpan.FromHours(11), rules.MinimumRest);
         Assert.Equal(new TimeOnly(23, 0), rules.NightStart);
         Assert.Equal(new TimeOnly(6, 0), rules.NightEnd);
+        Assert.Equal(TimeSpan.FromHours(7), rules.NightLength);
         Assert.Equal(15, rules.MinimumFreeSundaysPerYear);
         Assert.False(rules.SundayWorkAllowed);
         Assert.False(rules.HolidayWorkAllowed);
+
+        // §4 sentence 1 has two tiers of its own, separate from the §4 sentence 3
+        // stretch limit they happen to coincide with.
+        Assert.Equal(TimeSpan.FromHours(6), rules.BreakThresholdShort);
+        Assert.Equal(TimeSpan.FromHours(9), rules.BreakThresholdLong);
+
+        // The permissions a plant has to ask for rather than be given.
+        Assert.Equal(RestExceptionSector.None, rules.RestExceptionSector);
+        Assert.Equal(1, rules.SundayRotationWeeks);
+        Assert.Equal(AveragingWindow.TwentyFourWeeks, rules.AveragingWindow);
+        Assert.Equal(TimeSpan.FromHours(12), rules.CompensatingRest);
+        Assert.Equal(TimeSpan.FromDays(14), rules.SundayReplacementRestWindow);
+        Assert.Equal(TimeSpan.FromDays(56), rules.HolidayReplacementRestWindow);
         rules.Validate();
     }
 
@@ -90,6 +104,47 @@ public class ShiftPatternAndRulesTests
         Assert.Throws<ArgumentOutOfRangeException>(() => (WorkingTimeRules.Statutory with { MinimumRest = TimeSpan.Zero }).Validate());
         Assert.Throws<ArgumentOutOfRangeException>(() => (WorkingTimeRules.Statutory with { BreakAfterNineHours = TimeSpan.FromMinutes(10) }).Validate());
         Assert.Throws<ArgumentOutOfRangeException>(() => (WorkingTimeRules.Statutory with { MinimumFreeSundaysPerYear = 60 }).Validate());
+    }
+
+    [Fact]
+    public void Rule_validation_rejects_values_that_are_not_rules_at_all()
+    {
+        // Each of these was accepted and each of them changes an unrelated answer:
+        // a 23-hour "break", a rest that leaves no room for the working day, a
+        // second break tier below the first, a rota that cannot repeat.
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            (WorkingTimeRules.Statutory with { BreakAfterSixHours = TimeSpan.FromHours(23), BreakAfterNineHours = TimeSpan.FromHours(23) }).Validate());
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            (WorkingTimeRules.Statutory with { MinimumRest = TimeSpan.FromHours(20) }).Validate());
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            (WorkingTimeRules.Statutory with { BreakThresholdLong = TimeSpan.FromHours(4) }).Validate());
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            (WorkingTimeRules.Statutory with { SundayRotationWeeks = 0 }).Validate());
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            (WorkingTimeRules.Statutory with { ExtendedNightWorkingTime = TimeSpan.FromHours(4) }).Validate());
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            (WorkingTimeRules.Statutory with { CompensatingRest = TimeSpan.FromHours(10) }).Validate());
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            (WorkingTimeRules.Statutory with { State = (GermanState)99 }).Validate());
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            (WorkingTimeRules.Statutory with { AveragingWindow = (AveragingWindow)7 }).Validate());
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            (WorkingTimeRules.Statutory with { RestExceptionSector = (RestExceptionSector)7 }).Validate());
+
+        // A works agreement may be stricter than the act: twelve hours of rest
+        // with an eight-hour day still fits inside a day.
+        (WorkingTimeRules.Statutory with { AllowExtendedDay = false, MinimumRest = TimeSpan.FromHours(12) }).Validate();
+    }
+
+    [Fact]
+    public void Every_rule_id_is_in_the_catalog_with_its_section()
+    {
+        foreach (var id in Enum.GetValues<WorkingTimeRuleId>())
+        {
+            var info = Assert.Single(WorkingTimeRules.Catalog, r => r.Id == id);
+            Assert.StartsWith("§", info.LegalReference, StringComparison.Ordinal);
+            Assert.EndsWith("ArbZG", info.LegalReference, StringComparison.Ordinal);
+        }
     }
 
     [Fact]
