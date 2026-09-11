@@ -39,7 +39,7 @@
 
 @if (OnCreateRequested.HasDelegate)
 {
-    <button type="button" class="link" style="background:none;border:0;padding:.2rem 0;font:inherit;cursor:pointer;text-align:left;"
+    <button type="button" class="link link-button"
             @onclick="OnCreateRequested">
         @(CreateLabel ?? L["Md_Picker_Create"])
     </button>

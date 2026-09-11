@@ -887,3 +887,36 @@ select.input { cursor: pointer; }
 }
 .btn.small { padding: .32rem .6rem; font-size: .8rem; }
 .sign-in-card { max-width: 520px; }
+
+/* ----- Controls that had to ship as inline styles -----
+   Three places needed a button that does not look like a button: a sortable
+   column header, the picker's "create a cost center" affordance, and the error
+   summary's list. They were written inline because the streams that added them
+   did not own this file; they belong here, where the focus ring and the colour
+   tokens are, and where a reader looking for "why is that header clickable"
+   finds them. */
+
+/* A column header that sorts. The reset is deliberate and complete: a <button>
+   inherits none of a <th>'s typography, and half a reset leaves a control that
+   looks right in one theme and wrong in the other. */
+.th-sort {
+    background: none; border: 0; padding: 0;
+    font: inherit; color: inherit; text-align: inherit;
+    cursor: pointer;
+}
+.th-sort:hover { color: var(--text); }
+/* No :focus-visible rule here on purpose. The global one at the top of this file
+   uses :where(), which contributes no specificity, so any rule written here would
+   win and would have to re-state the ring correctly — and a near-miss (a token
+   that does not exist, say) silently removes it. */
+
+/* A button that reads as a link, for an action that opens a form rather than
+   navigating. It is a button and not an anchor because it goes nowhere. */
+.link-button {
+    background: none; border: 0; padding: .2rem 0;
+    font: inherit; text-align: left; cursor: pointer;
+}
+
+/* The error summary's list: tight to the heading above it, indented enough for
+   the markers to sit outside the text. */
+.error-summary-list { margin: .35rem 0 0; padding-left: 1.1rem; }

@@ -16,7 +16,7 @@
         <p>@(State.Summary ?? L["Md_FormErrorsLead"])</p>
         @if (State.All.Count > 0)
         {
-            <ul style="margin:.35rem 0 0;padding-left:1.1rem">
+            <ul class="error-summary-list">
                 @foreach (var error in State.All)
                 {
                     <li>
