@@ -494,4 +494,18 @@
   <data name="Provider_Anthropic" xml:space="preserve"><value>Anthropic (Claude)</value></data>
   <data name="Provider_Gemini" xml:space="preserve"><value>Google Gemini</value></data>
   <data name="Sched_Ai_CorsNote" xml:space="preserve"><value>Die Anfrage geht aus Ihrem Browser an den Endpunkt; der Anbieter muss Browser-Aufrufe (CORS) erlauben. OpenAI, Anthropic (mit seinem Direktzugriffs-Header, automatisch gesetzt), Gemini, OpenRouter und lokale Server tun das; manche Proxys nicht.</value></data>
+  <data name="Ui_NavMenu" xml:space="preserve"><value>Menü</value></data>
+  <data name="Ui_Language" xml:space="preserve"><value>Sprache</value></data>
+  <data name="Ui_GanttHelp" xml:space="preserve"><value>Pfeiltasten wechseln zwischen Arbeitsgängen und geschlossenen Zeiten, Eingabetaste liest den fokussierten Eintrag vor, Escape blendet ihn aus.</value></data>
+  <data name="Ui_GanttShowTable" xml:space="preserve"><value>Als Tabelle anzeigen</value></data>
+  <data name="Ui_GanttHideTable" xml:space="preserve"><value>Tabelle ausblenden</value></data>
+  <data name="Ui_GanttTableCaption" xml:space="preserve"><value>Alle Arbeitsgänge und geschlossenen Zeiten des Diagramms, Arbeitsplatz für Arbeitsplatz</value></data>
+  <data name="Ui_ColStart" xml:space="preserve"><value>Beginn</value></data>
+  <data name="Ui_ColEnd" xml:space="preserve"><value>Ende</value></data>
+  <data name="Ui_ColDuration" xml:space="preserve"><value>Dauer</value></data>
+  <data name="Ui_ColDetail" xml:space="preserve"><value>Detail</value></data>
+  <data name="Ui_ColDay" xml:space="preserve"><value>Tag</value></data>
+  <data name="Ui_ScheduleAnnounced" xml:space="preserve"><value>Produktionsplan erzeugt: {0} von {1} Aufträgen pünktlich, Durchlaufzeit {2}.</value></data>
+  <data name="Ui_Range" xml:space="preserve"><value>{0} bis {1}</value></data>
+  <data name="Ui_WeekDayClosed" xml:space="preserve"><value>ganztägig geschlossen</value></data>
 </root>

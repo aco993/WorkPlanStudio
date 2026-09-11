@@ -13,7 +13,11 @@
 
     --text: #1b1f27;
     --text-muted: #5f6878;
-    --text-soft: #6f7787;          /* 4.6:1 on white — the smallest text stays AA */
+    /* The smallest text in the app (table headers, axis ticks) uses --text-soft at
+       ~11 px, so it is measured against the two grounds it actually lands on and
+       kept clear of 4.5:1 rather than exactly on it: 5.4:1 on --surface, 5.0:1 on
+       --bg, 4.9:1 on --surface-2. A pair sitting at 4.50 fails on the next nudge. */
+    --text-soft: #626a7a;
 
     --primary: #4f46e5;
     --primary-hover: #4338ca;
@@ -24,7 +28,7 @@
     --sidebar-bg: #1c2030;
     --sidebar-bg-2: #151826;
     --sidebar-text: #b3bacb;
-    --sidebar-muted: #8a92a6;      /* 4.7:1 on the sidebar */
+    --sidebar-muted: #949cb0;      /* 5.9:1 on the sidebar's lightest stop */
     --sidebar-hover: rgba(255, 255, 255, .06);
     --sidebar-active: rgba(255, 255, 255, .11);
     --sidebar-accent: #a5b4fc;
@@ -32,9 +36,13 @@
     --topbar-bg: rgba(255, 255, 255, .82);
     --scrim: rgba(17, 22, 33, .45);
 
-    --green: #15803d;   --green-soft: #dcfce7;   --green-border: #b7e2c4;
-    --amber: #b45309;   --amber-soft: #fef3c7;
-    --red: #dc2626;     --red-soft: #fee2e2;     --red-border: #f3c9c9;   --red-hover: #b91c1c;
+    /* Each status colour is also its own foreground on the matching -soft ground
+       (pills, badges, banners), so the pairs are measured that way: green 5.4:1,
+       amber 5.6:1, red 5.1:1, slate 6.2:1. The reds were the one real failure —
+       #dc2626 on #fee2e2 is 3.95:1, below AA at the 12–13 px these pills use. */
+    --green: #137334;   --green-soft: #dcfce7;   --green-border: #b7e2c4;
+    --amber: #9a4a06;   --amber-soft: #fef3c7;
+    --red: #c01919;     --red-soft: #fee2e2;     --red-border: #f3c9c9;   --red-hover: #9f1414;
     --slate: #475569;   --slate-soft: #e4e8ee;
 
     --radius-sm: 7px;
@@ -61,7 +69,7 @@
 
     --text: #e6e8ef;
     --text-muted: #a3abbd;
-    --text-soft: #8f98ab;
+    --text-soft: #98a1b4;          /* 6.7:1 on --surface, 7.3:1 on --bg */
 
     --primary: #818cf8;
     --primary-hover: #a5b4fc;
@@ -101,14 +109,21 @@
 
 * { box-sizing: border-box; }
 
+/* The whole rem scale is anchored here. It is a percentage, not a pixel value, so
+   the browser's own "default font size" preference — the one setting a reader with
+   low vision actually changes — still multiplies through. 93.75% of the usual 16 px
+   default is the 15 px the design was drawn at, so nothing moves for everyone else. */
+html { font-size: 93.75%; }
+
 html, body {
     margin: 0;
     font-family: "Segoe UI", system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif;
-    font-size: 15px;
     color: var(--text);
     background: var(--bg);
     -webkit-font-smoothing: antialiased;
 }
+
+body { font-size: 1rem; }
 
 h1, h2, h3 { margin: 0; font-weight: 600; letter-spacing: -.01em; }
 h1:focus, h2:focus, h3:focus { outline: none; }
@@ -204,9 +219,11 @@ a:hover { text-decoration: underline; }
 
 /* ----- Culture selector ----- */
 .culture-selector { display: inline-flex; background: var(--surface-2); border-radius: 8px; padding: 3px; gap: 2px; }
+/* WCAG 2.2 target size (2.5.8): the two buttons sit 2 px apart, so the spacing
+   exception does not apply and each box has to reach 24 px in both directions. */
 .culture-btn {
     border: none; background: none; cursor: pointer;
-    padding: .3rem .65rem; border-radius: 6px;
+    padding: .45rem .7rem; border-radius: 6px; min-height: 24px; min-width: 24px;
     font-size: .8rem; font-weight: 600; color: var(--text-muted);
 }
 .culture-btn.active { background: var(--surface); color: var(--primary); box-shadow: var(--shadow-sm); }
@@ -216,7 +233,7 @@ a:hover { text-decoration: underline; }
 .page-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1.4rem; }
 .page-sub { color: var(--text-muted); font-size: .9rem; margin-top: .25rem; }
 .head-actions { display: flex; gap: .5rem; }
-.link.back { font-size: .82rem; color: var(--text-muted); display: inline-block; margin-bottom: .35rem; }
+.link.back { font-size: .82rem; color: var(--text-muted); display: inline-flex; align-items: center; min-height: 24px; padding: .25rem .35rem .25rem 0; margin-bottom: .1rem; }
 .link.back:hover { color: var(--primary); }
 
 /* ----- Buttons ----- */
@@ -284,7 +301,56 @@ a:hover { text-decoration: underline; }
 .legend li { display: flex; align-items: center; gap: .6rem; }
 .legend-count { margin-left: auto; font-weight: 600; color: var(--text); }
 
-/* ----- Tables ----- */
+/* ----- Tables -----
+   A data table is the one block in this app that legitimately wants more width
+   than a phone has. It must therefore scroll, not be clipped: `.card` clips to
+   its radius, so a table dropped straight into a card loses its right-hand
+   columns — and the right-hand column is always Actions. `.table-scroll` is the
+   container that scrolls instead, and `.card` stops clipping horizontally
+   wherever a table is still unwrapped (see the `:has()` rule below).
+
+   The right-edge shade is the affordance. It is painted with the classic
+   background-attachment trick — two fixed "cover" layers over two local
+   "shadow" layers — so it appears only while the table actually overflows and
+   fades out at each end of the scroll, with no script and no resize observer. */
+.table-scroll {
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    background:
+        linear-gradient(to right, var(--surface) 30%, rgba(255, 255, 255, 0)) left center / 28px 100% no-repeat local,
+        linear-gradient(to left,  var(--surface) 30%, rgba(255, 255, 255, 0)) right center / 28px 100% no-repeat local,
+        linear-gradient(to right, rgba(16, 24, 40, .12), rgba(255, 255, 255, 0)) left center / 12px 100% no-repeat scroll,
+        linear-gradient(to left,  rgba(16, 24, 40, .12), rgba(255, 255, 255, 0)) right center / 12px 100% no-repeat scroll;
+}
+:root[data-theme="dark"] .table-scroll {
+    background:
+        linear-gradient(to right, var(--surface) 30%, rgba(23, 26, 35, 0)) left center / 28px 100% no-repeat local,
+        linear-gradient(to left,  var(--surface) 30%, rgba(23, 26, 35, 0)) right center / 28px 100% no-repeat local,
+        linear-gradient(to right, rgba(0, 0, 0, .45), rgba(0, 0, 0, 0)) left center / 12px 100% no-repeat scroll,
+        linear-gradient(to left,  rgba(0, 0, 0, .45), rgba(0, 0, 0, 0)) right center / 12px 100% no-repeat scroll;
+}
+/* The region is a tab stop so it can be scrolled from the keyboard; without it the
+   columns are reachable by mouse and by nothing else. */
+.table-scroll:focus-visible { outline: 3px solid var(--primary); outline-offset: -3px; }
+
+/* The header row stays put while the rows below it scroll, and the first column
+   stays put while the table scrolls sideways — otherwise, four columns in, the
+   reader no longer knows which row they are on. Both need an opaque background
+   of their own, since a sticky cell paints over what passes beneath it. */
+.table-scroll .data-table { min-width: 100%; width: auto; }
+.table-scroll .data-table thead th { position: sticky; top: 0; z-index: 2; background: var(--surface); }
+.table-scroll .data-table th.sticky-col,
+.table-scroll .data-table td.sticky-col { position: sticky; left: 0; background: var(--surface); }
+.table-scroll .data-table thead th.sticky-col { z-index: 3; }
+.data-table.hover tbody tr:hover td.sticky-col, .data-table tr.clickable:hover td.sticky-col { background: var(--surface-2); }
+
+/* Until every list page wraps its table, a card that holds one directly scrolls
+   rather than clipping. It is the weaker fix — the card header scrolls with the
+   table — but it is the difference between "the Edit button is behind a swipe"
+   and "the Edit button does not exist on this device". */
+.card:has(> .data-table),
+.card:has(> .card-body > .data-table) { overflow-x: auto; overflow-y: hidden; }
+
 .data-table { width: 100%; border-collapse: collapse; font-size: .9rem; }
 .data-table th { text-align: left; padding: .7rem 1rem; font-size: .74rem; text-transform: uppercase; letter-spacing: .04em; color: var(--text-soft); font-weight: 600; border-bottom: 1px solid var(--border); white-space: nowrap; }
 .data-table td { padding: .7rem 1rem; border-bottom: 1px solid var(--border); }
@@ -321,7 +387,12 @@ a:hover { text-decoration: underline; }
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem 1.1rem; }
 .field { display: flex; flex-direction: column; gap: .35rem; }
 .field.wide { grid-column: 1 / -1; }
-.field > span { font-size: .82rem; font-weight: 600; color: var(--text-muted); }
+/* Two shapes of field coexist: `<label class="field"><span>Name</span><input></label>`
+   (implicit association) and `<div class="field"><label for="x">Name</label>…` —
+   the second is used wherever a hint or an error has to sit *outside* the label,
+   because anything inside a label is folded into the control's accessible name. */
+.field > span:not(.field-hint):not(.field-error),
+.field > label { font-size: .82rem; font-weight: 600; color: var(--text-muted); }
 .field.check { flex-direction: row; align-items: center; gap: .5rem; }
 .field.check span { color: var(--text); }
 .input { width: 100%; padding: .5rem .7rem; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); font-size: .9rem; background: var(--surface); color: var(--text); font-family: inherit; }
@@ -344,6 +415,10 @@ select.input { cursor: pointer; }
 .summary .highlight { border-top: 1px solid var(--border); padding-top: .7rem; margin-top: .1rem; }
 .summary .highlight dt { color: var(--text); font-weight: 600; }
 .summary .highlight dd { color: var(--primary); font-size: 1.1rem; }
+
+/* A labelled control inside a table cell: the label text is for assistive
+   technology only, so the wrapper must not add a line box of its own. */
+.cell-field { display: block; }
 
 .op-table th, .op-table td { padding: .45rem .6rem; }
 .op-table td { vertical-align: middle; }
@@ -397,14 +472,33 @@ select.input { cursor: pointer; }
     .summary-card { position: static; }
 }
 @media (max-width: 720px) {
-    .sidebar { position: fixed; left: 0; top: 0; z-index: 60; transform: translateX(-100%); transition: transform .2s ease; }
-    .app-shell.nav-open .sidebar { transform: translateX(0); box-shadow: var(--shadow-lg); }
+    /* `transform` alone slides the drawer off-screen but leaves its seven links
+       focusable: tabbing from the skip link used to walk through a navigation
+       nobody can see. `visibility: hidden` takes them out of the tab order and is
+       delayed until the slide has finished so the close still animates. The
+       markup also sets `inert`, for the browsers that support it. */
+    .sidebar {
+        position: fixed; left: 0; top: 0; z-index: 60;
+        transform: translateX(-100%);
+        visibility: hidden;
+        transition: transform .2s ease, visibility 0s linear .2s;
+    }
+    .app-shell.nav-open .sidebar {
+        transform: translateX(0); visibility: visible; box-shadow: var(--shadow-lg);
+        transition: transform .2s ease, visibility 0s;
+    }
     .app-shell.nav-open .scrim { display: block; position: fixed; inset: 0; background: rgba(0, 0, 0, .4); z-index: 50; }
     .hamburger { display: inline-flex; }
     .page-body { padding: 1.1rem; }
     .page-head { flex-direction: column; }
     .form-grid { grid-template-columns: 1fr; }
     .data-table { font-size: .84rem; }
+
+    /* iOS Safari zooms the whole layout in when a focused field is under 16 px and
+       never zooms back out, so every tap on every form in the app used to leave the
+       user pinching. The value is absolute on purpose: it is a browser threshold,
+       not a design size. */
+    .input, .search input { font-size: 16px; }
 }
 
 /* ----- Scheduling ----- */
@@ -418,14 +512,29 @@ select.input { cursor: pointer; }
 .btn-ico { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 
 /* Gantt chart */
-.gantt { display: flex; flex-direction: column; gap: 6px; overflow-x: auto; }
+.gantt { display: flex; flex-direction: column; gap: 6px; overflow-x: auto; scroll-behavior: smooth; }
 .gantt:focus-visible, .chat-thread:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; border-radius: var(--radius-sm); }
 .gantt-row { display: flex; align-items: center; gap: .8rem; }
 .gantt-label { width: 150px; flex-shrink: 0; font-size: .8rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .gantt-track { position: relative; flex: 1; height: 26px; background: var(--surface-2); border-radius: 6px; min-width: 340px; }
 .gantt-grid { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--border-strong); opacity: .7; }
-.gantt-bar { position: absolute; top: 3px; bottom: 3px; min-width: 3px; border-radius: 4px; display: flex; align-items: center; padding: 0 .4rem; overflow: hidden; box-shadow: var(--shadow-sm); cursor: default; }
+/* Bars and closed stretches are <button>s: they carry the only explanation of why
+   a machine ran or stood still, so they have to be reachable by something other
+   than a mouse pointer. A sliver of a bar is still a 24 px-tall target, and the
+   roving tabindex (see Schedule.razor) keeps the whole chart to one tab stop. */
+.gantt-bar, .gantt-closed { border: 0; font: inherit; margin: 0; background-color: transparent; }
+.gantt-bar { position: absolute; top: 3px; bottom: 3px; min-width: 3px; border-radius: 4px; display: flex; align-items: center; padding: 0 .4rem; overflow: hidden; box-shadow: var(--shadow-sm); cursor: pointer; }
 .gantt-bar span { font-size: .7rem; font-weight: 600; color: #fff; white-space: nowrap; text-shadow: 0 1px 1px rgba(0, 0, 0, .3); }
+.gantt-bar:focus-visible, .gantt-closed:focus-visible { outline: 3px solid var(--primary); outline-offset: 1px; z-index: 5; }
+.gantt-bar[aria-pressed="true"], .gantt-closed[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--primary); z-index: 4; }
+
+/* The explanation the bars open. It is a live region, so it exists from the first
+   render and is only filled in on activation — a region inserted already populated
+   is not announced. */
+.gantt-detail { margin-top: .9rem; padding: .6rem .8rem; border-radius: var(--radius-sm); background: var(--surface-2); font-size: .86rem; line-height: 1.45; min-height: 1.4em; }
+.gantt-detail:empty { padding: 0; background: none; }
+.gantt-hint { font-size: .76rem; color: var(--text-muted); margin-top: .6rem; }
+.gantt-table-toggle { margin-left: auto; }
 .gantt-axis { display: flex; align-items: center; gap: .8rem; margin-top: 2px; height: 16px; }
 .gantt-axis .gantt-track { height: 16px; background: none; min-width: 340px; }
 .gantt-tick { position: absolute; top: 0; transform: translateX(-50%); font-size: .68rem; color: var(--text-soft); white-space: nowrap; }
@@ -447,7 +556,14 @@ select.input { cursor: pointer; }
 .job-color-5 { background: #7c3aed; }
 .job-color-6 { background: #b91c1c; }
 .job-color-7 { background: #0f766e; }
-.color-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: .55rem; vertical-align: middle; }
+/* The dot carries the job's letter as well as its colour. Eight hues are the only
+   thing that told two jobs apart on the chart and in this table; a letter survives
+   colour blindness, a greyscale print and a forced-colours theme. */
+.color-dot {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 16px; height: 16px; border-radius: 50%; margin-right: .5rem; vertical-align: -3px;
+    font-size: .62rem; font-weight: 700; color: #fff; line-height: 1;
+}
 
 .pill.ontime { background: var(--green-soft); color: var(--green); }
 .pill.late { background: var(--red-soft); color: var(--red); }
@@ -459,11 +575,12 @@ select.input { cursor: pointer; }
 }
 
 /* ============================================================
-   Blazor framework styles (loading, errors, validation)
+   Blazor framework styles (loading, errors)
    ============================================================ */
-.valid.modified:not([type=checkbox]) { outline: 1px solid var(--green); }
-.invalid { outline: 1px solid var(--red); }
-.validation-message { color: var(--red); }
+/* The three EditForm state classes and the framework's default error-boundary
+   block used to live here. The app contains no EditForm anywhere, and App.razor
+   supplies its own ErrorContent, so none of them could ever match; the boundary
+   block also carried the only untranslated English string in the stylesheet. */
 
 #blazor-error-ui {
     color-scheme: light only;
@@ -479,12 +596,6 @@ select.input { cursor: pointer; }
     z-index: 1000;
 }
 #blazor-error-ui .dismiss { cursor: pointer; position: absolute; right: 0.75rem; top: 0.5rem; }
-
-.blazor-error-boundary {
-    background: #b32121;
-    padding: 1rem; color: white; border-radius: var(--radius-sm);
-}
-.blazor-error-boundary::after { content: "An error has occurred."; }
 
 /* Boot screen: shown by index.html until the WebAssembly runtime starts. */
 .boot { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; background: var(--bg); color: var(--text); }
@@ -536,6 +647,10 @@ select.input { cursor: pointer; }
 .chat-title { font-size: .95rem; font-weight: 600; margin: 0 0 .25rem; }
 .chat-intro { font-size: .82rem; margin: 0 0 .9rem; line-height: 1.4; }
 .chat-thread { list-style: none; margin: 0 0 .9rem; padding: 0; display: flex; flex-direction: column; gap: .7rem; max-height: 28rem; overflow-y: auto; }
+/* The thread is rendered before the first question so that it is a live region by
+   the time one is asked; empty, it must not reserve space — and it must not be
+   display:none either, or it leaves the accessibility tree and announces nothing. */
+.chat-thread.empty { margin-bottom: 0; }
 .chat-turn { display: flex; flex-direction: column; gap: .3rem; max-width: 92%; }
 .chat-turn.user { align-self: flex-end; align-items: flex-end; }
 .chat-turn.assistant { align-self: flex-start; align-items: flex-start; }
@@ -577,10 +692,10 @@ select.input { cursor: pointer; }
 
 /* ----- Working time: calendars on the Gantt ----- */
 .gantt-closed {
-    position: absolute; top: 0; bottom: 0;
+    position: absolute; top: 0; bottom: 0; min-width: 3px; padding: 0;
     background: repeating-linear-gradient(135deg, rgba(100, 108, 128, .18) 0 4px, transparent 4px 8px);
     border-left: 1px solid rgba(100, 108, 128, .18);
-    cursor: help;
+    cursor: pointer;
 }
 .gantt-closed.closed-break { background: repeating-linear-gradient(135deg, rgba(79, 70, 229, .16) 0 3px, transparent 3px 6px); }
 .gantt-closed.closed-sunday, .gantt-closed.closed-holiday { background: rgba(180, 83, 9, .14); }
@@ -715,6 +830,46 @@ select.input { cursor: pointer; }
     .editor-grid { grid-template-columns: minmax(0, 1000px) 300px; }
 }
 
+/* ----- Windows high-contrast / forced colours -----
+   In a forced-colours theme the browser throws away every author colour and every
+   background image and repaints with the user's palette. That is the right default
+   for chrome, and wrong for the three places in this app where a colour or a hatch
+   *is* the datum. Those opt out explicitly with forced-color-adjust: none; the
+   hatched closed-time stretches cannot (a background-image is stripped regardless),
+   so they switch to a border style, which does survive. */
+@media (forced-colors: active) {
+    .job-color-0, .job-color-1, .job-color-2, .job-color-3,
+    .job-color-4, .job-color-5, .job-color-6, .job-color-7,
+    .status-seg, .week-seg, .assistant-dot, .persona-avatar { forced-color-adjust: none; }
+
+    .gantt-bar { border: 1px solid CanvasText; }
+    .gantt-bar.late { outline: 3px solid Highlight; outline-offset: -3px; }
+
+    .gantt-closed { background: Canvas; border: 2px solid CanvasText; }
+    .gantt-closed.closed-break { border-style: dotted; }
+    .gantt-closed.closed-sunday, .gantt-closed.closed-holiday { border-style: double; border-width: 4px; }
+    .gantt-closed.closed-absence { border-style: dashed; }
+    .gantt-closed.closed-rest { border-style: solid; }
+
+    /* Pills, badges and banners are drawn as a tinted ground with no border, so
+       without one they lose every edge and read as loose words. */
+    .badge, .pill, .tech-badge, .chip, .glance-kpi, .readonly-notice,
+    .form-banner, .assistant-note, .week-swatch, .gantt-legend-swatch { border: 1px solid CanvasText; }
+
+    .card, .stat-card, .modal-card { border: 1px solid CanvasText; }
+    .btn, .icon-btn, .culture-btn, .seg button, .theme-toggle { border: 1px solid ButtonText; }
+    .btn-primary, .seg button.active, .culture-btn.active { border-color: Highlight; }
+    .nav-link.active { border: 1px solid Highlight; }
+
+    /* The scroll shade is a gradient, so it is stripped; an edge rule replaces it
+       as the "there is more to the side" affordance. */
+    .table-scroll { background: none; border-inline: 1px solid CanvasText; }
+}
+
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
+    /* The drawer's visibility swap is delayed by the slide; with the slide gone the
+       delay would leave the closed drawer focusable for 200 ms. */
+    .sidebar { transition-delay: 0s !important; }
+    .gantt { scroll-behavior: auto; }
 }

@@ -1,0 +1,29 @@
+@*
+    The container a wide data table scrolls inside.
+
+    Without it a table dropped into a `.card` is clipped by the card's radius
+    overflow, and the clipped columns are simply gone — not scrolled off, not
+    swipeable, not reachable by keyboard. Since the Actions column is the last one
+    on every list in this app, the phone layout quietly turned the whole
+    application read-only.
+
+    The region is labelled and focusable so the columns can also be reached with a
+    keyboard: a scroll container that only a pointing device can move is the same
+    defect in a different disguise.
+*@
+<div class="table-scroll @Class" role="region" aria-label="@Label" tabindex="0">
+    @ChildContent
+</div>
+
+@code {
+    /// <summary>
+    /// Names the region, so a screen reader announces which table is being scrolled
+    /// rather than "region". Pass the table's own caption text.
+    /// </summary>
+    [Parameter, EditorRequired] public string Label { get; set; } = "";
+
+    /// <summary>Extra classes for the caller's own layout needs.</summary>
+    [Parameter] public string? Class { get; set; }
+
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}
