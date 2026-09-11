@@ -23,3 +23,4 @@ the decision and its consequences, in the spirit of
 | [0014](0014-schedule-chat-on-device-first-with-pluggable-models.md) | A conversation over the schedule: on-device answers first, models pluggable | Accepted |
 | [0023](0023-accessible-gantt-and-responsive-tables.md) | Make the chart operable without a mouse and stop the cards clipping the tables | Accepted |
 | [0019](0019-off-thread-scheduling.md) | Slice the scheduling run on the one thread there is, rather than pretend to leave it | Accepted |
+| [0017](0017-in-browser-export.md) | Write the CSV, the workbook and the PDF by hand, in the browser | Accepted |
