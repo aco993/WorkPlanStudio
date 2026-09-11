@@ -299,6 +299,9 @@ internal sealed class FakeBrowserSettings : IJSRuntime
             case "workplanSettings.set":
                 Store[name] = args?.Length > 1 ? args[1] as string ?? "" : "";
                 return ValueTask.FromResult(default(TValue)!);
+            case "workplanSettings.remove":
+                Store.Remove(name);
+                return ValueTask.FromResult(default(TValue)!);
             default:
                 throw new InvalidOperationException("unexpected interop call: " + identifier);
         }

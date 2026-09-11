@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Localization;
+using WorkPlanStudio.Services.Chat;
 
 namespace WorkPlanStudio.Web.Tests;
 
@@ -69,6 +70,14 @@ internal sealed class FakeAssistantConfig : IAssistantConfig
         Settings = Settings with { ApiKey = "" };
         return Task.CompletedTask;
     }
+
+    /// <summary>
+    /// The double keeps one provider's key, so this answers for the provider the
+    /// settings currently name and reports "nothing stored" for any other — which
+    /// is the behaviour the dialog has to cope with anyway.
+    /// </summary>
+    public ValueTask<bool> HasKeyForAsync(AssistantProvider provider, CancellationToken cancellationToken = default) =>
+        ValueTask.FromResult(provider == Settings.Provider && Settings.HasApiKey);
 }
 
 /// <summary>

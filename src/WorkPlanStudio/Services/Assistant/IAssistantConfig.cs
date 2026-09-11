@@ -1,3 +1,5 @@
+using WorkPlanStudio.Services.Chat;
+
 namespace WorkPlanStudio.Services;
 
 /// <summary>
@@ -21,4 +23,14 @@ public interface IAssistantConfig
 
     /// <summary>Forgets the key stored for the current provider. The rest of the settings stay.</summary>
     Task ForgetApiKeyAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Whether a key is stored for <paramref name="provider"/>, without returning
+    /// it. The settings dialog needs to tell the user "a key is already stored"
+    /// while never holding the key itself — asking this instead of reading the
+    /// value is what keeps the secret out of the page.
+    /// </summary>
+    /// <param name="provider">The provider whose slot to probe.</param>
+    /// <param name="cancellationToken">Cancels the storage read.</param>
+    ValueTask<bool> HasKeyForAsync(AssistantProvider provider, CancellationToken cancellationToken = default);
 }

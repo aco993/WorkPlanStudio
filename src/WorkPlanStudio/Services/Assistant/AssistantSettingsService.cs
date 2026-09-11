@@ -75,9 +75,13 @@ public sealed class AssistantSettingsService : IAssistantConfig
     public async Task ForgetApiKeyAsync(CancellationToken cancellationToken = default)
     {
         var current = await LoadAsync(cancellationToken);
-        await WriteAsync(KeyFor(current.Provider), "", cancellationToken);
+        await RemoveAsync(KeyFor(current.Provider), cancellationToken);
         _cache = current with { ApiKey = "" };
     }
+
+    /// <inheritdoc />
+    public async ValueTask<bool> HasKeyForAsync(AssistantProvider provider, CancellationToken cancellationToken = default) =>
+        (await ReadKeyAsync(provider, cancellationToken)).Length > 0;
 
     private static string KeyFor(AssistantProvider provider) => KeyPrefix + provider;
 
@@ -86,6 +90,9 @@ public sealed class AssistantSettingsService : IAssistantConfig
 
     private ValueTask WriteAsync(string name, string value, CancellationToken cancellationToken) =>
         _js.InvokeVoidAsync("workplanSettings.set", cancellationToken, name, value);
+
+    private ValueTask RemoveAsync(string name, CancellationToken cancellationToken) =>
+        _js.InvokeVoidAsync("workplanSettings.remove", cancellationToken, name);
 
     private static string Serialize(AssistantSettings settings) =>
         JsonSerializer.Serialize(settings, AssistantJsonContext.Default.AssistantSettings);

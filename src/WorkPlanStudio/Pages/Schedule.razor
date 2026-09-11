@@ -531,12 +531,17 @@
 
                         <form class="chat-input" @onsubmit="SubmitQuestionAsync" @onsubmit:preventDefault>
                             <label class="sr-only" for="chat-question">@L["Chat_Title"]</label>
-                            <input id="chat-question" class="input" autocomplete="off" placeholder="@L["Chat_Placeholder"]"
-                                   disabled="@_chatBusy" @bind="_question" @bind:event="oninput" />
-                            <button type="submit" class="btn btn-primary" disabled="@(_chatBusy || string.IsNullOrWhiteSpace(_question))">@L["Chat_Send"]</button>
+                            @* maxlength mirrors the service's own limit: the service
+                               refuses a longer question anyway, and without this the
+                               field accepts a pasted megabyte and re-renders it. *@
+                            <input id="chat-question" class="input" autocomplete="off" maxlength="1000" placeholder="@L["Chat_Placeholder"]"
+                                   disabled="@(_chatBusy || Chat.IsBusy)" @bind="_question" @bind:event="oninput" />
+                            <button type="submit" class="btn btn-primary" disabled="@(_chatBusy || Chat.IsBusy || string.IsNullOrWhiteSpace(_question))">@L["Chat_Send"]</button>
                             @if (Chat.Turns.Count > 0)
                             {
-                                <button type="button" class="btn btn-ghost" disabled="@_chatBusy" @onclick="ClearChat">@L["Chat_Clear"]</button>
+                                @* Chat.IsBusy is the authority: _chatBusy only knows about
+                                   the question this page asked. *@
+                                <button type="button" class="btn btn-ghost" disabled="@(_chatBusy || Chat.IsBusy)" @onclick="ClearChat">@L["Chat_Clear"]</button>
                             }
                         </form>
                     </div>
@@ -571,8 +576,24 @@
             </label>
             <label class="field">
                 <span>@L["Sched_Ai_ApiKey"]</span>
-                <input class="input" type="password" autocomplete="off" @bind="_aiForm.ApiKey" @bind:event="oninput" />
+                @* Never populated from storage. An input's value is readable by any
+                   script on this origin, and a blank field means "keep the stored
+                   key", so the dialog never has to hold the secret at all. *@
+                <input class="input" type="password" autocomplete="off" spellcheck="false"
+                       placeholder="@(_aiKeyStored ? L["Ai_KeyStored", _aiForm.Provider] : L["Ai_KeyNone"])"
+                       @bind="_aiForm.ApiKey" @bind:event="oninput" />
             </label>
+            @if (_aiKeyStored)
+            {
+                <div class="field">
+                    <button type="button" class="btn btn-ghost small" @onclick="ForgetAiKeyAsync">@L["Ai_KeyForget"]</button>
+                </div>
+            }
+            @if (_aiKeyNotice is not null)
+            {
+                <p class="assistant-privacy wide" role="status">@_aiKeyNotice</p>
+            }
+            <p class="assistant-privacy wide">@L["Ai_KeyRisk"]</p>
             <p class="assistant-privacy wide">@L["Sched_Ai_Privacy"]</p>
             <p class="assistant-privacy wide">@L["Sched_Ai_CorsNote"]</p>
             @if (_aiSettingsError is not null)
@@ -834,21 +855,38 @@
     private string PreparationError(SchedulePreparationErrorCode code) =>
         L[$"Sched_Error_{code}"];
 
+    private bool _aiKeyStored;
+    private string? _aiKeyNotice;
+
     private async Task OpenAiSettingsAsync()
     {
-        var settings = await AssistantConfig.LoadAsync();
+        var settings = await AssistantConfig.LoadAsync(_lifetimeCancellation.Token);
         _aiForm.Enabled = settings.Enabled;
         _aiForm.Provider = settings.Provider;
         _aiForm.PreviousProvider = settings.Provider;
         _aiForm.Endpoint = settings.Endpoint;
         _aiForm.Model = settings.Model;
-        _aiForm.ApiKey = settings.ApiKey;
+
+        // The stored key never re-enters the page; the placeholder says whether
+        // one exists, which is all the dialog needs to be usable.
+        _aiForm.ApiKey = "";
+        _aiKeyStored = await AssistantConfig.HasKeyForAsync(settings.Provider, _lifetimeCancellation.Token);
+        _aiKeyNotice = null;
         _aiSettingsError = null;
         _showAiSettings = true;
     }
 
+    private async Task ForgetAiKeyAsync()
+    {
+        await AssistantConfig.ForgetApiKeyAsync(_lifetimeCancellation.Token);
+        _aiForm.ApiKey = "";
+        _aiKeyStored = false;
+        _aiKeyNotice = L["Ai_KeyForgotten", _aiForm.Provider];
+        _aiEnabled = await Assistant.IsAiEnabledAsync(_lifetimeCancellation.Token);
+    }
+
     /// <summary>Switching provider fills in that provider's endpoint and model unless the user typed their own.</summary>
-    private void ProviderChanged()
+    private async Task ProviderChanged()
     {
         var previous = _aiForm.PreviousProvider;
         if (string.IsNullOrWhiteSpace(_aiForm.Endpoint) || _aiForm.Endpoint == AssistantSettings.DefaultEndpoint(previous))
@@ -856,6 +894,13 @@
         if (string.IsNullOrWhiteSpace(_aiForm.Model) || _aiForm.Model == AssistantSettings.DefaultModel(previous))
             _aiForm.Model = AssistantSettings.DefaultModel(_aiForm.Provider);
         _aiForm.PreviousProvider = _aiForm.Provider;
+
+        // Keys are stored per provider, so switching provider switches which key
+        // applies. Ask the store rather than guess: a wrong indicator here either
+        // hides a key the user has or promises one they do not.
+        _aiForm.ApiKey = "";
+        _aiKeyNotice = null;
+        _aiKeyStored = await AssistantConfig.HasKeyForAsync(_aiForm.Provider, _lifetimeCancellation.Token);
     }
 
     private async Task SaveAiSettingsAsync()
@@ -869,14 +914,16 @@
             ApiKey = _aiForm.ApiKey.Trim()
         };
 
-        if (settings.Enabled && !settings.IsConfigured)
+        // A blank key means "keep the stored one", so completeness is judged
+        // without it: the settings are incomplete only when nothing is stored.
+        if (settings.Enabled && !(settings.IsUsableApartFromTheKey && (settings.HasApiKey || _aiKeyStored)))
         {
             _aiSettingsError = L["Sched_Ai_InvalidSettings"];
             return;
         }
 
-        await AssistantConfig.SaveAsync(settings);
-        _aiEnabled = await Assistant.IsAiEnabledAsync();
+        await AssistantConfig.SaveAsync(settings, _lifetimeCancellation.Token);
+        _aiEnabled = await Assistant.IsAiEnabledAsync(_lifetimeCancellation.Token);
         _showAiSettings = false;
     }
 
