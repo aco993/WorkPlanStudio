@@ -7,8 +7,18 @@ namespace WorkPlanStudio.Services;
 public interface IAssistantConfig
 {
     /// <summary>Returns the current settings (defaults when nothing is stored).</summary>
-    ValueTask<AssistantSettings> LoadAsync();
+    ValueTask<AssistantSettings> LoadAsync(CancellationToken cancellationToken = default);
 
-    /// <summary>Persists <paramref name="settings"/>.</summary>
-    Task SaveAsync(AssistantSettings settings);
+    /// <summary>
+    /// Persists <paramref name="settings"/>. A blank <see cref="AssistantSettings.ApiKey"/>
+    /// means "leave the stored key alone", not "delete it": the settings dialog
+    /// must be able to change the endpoint or the model without ever holding the
+    /// secret, which is what keeps the key out of the page's DOM. Removing a key
+    /// is <see cref="ForgetApiKeyAsync"/> — an explicit act, never a side effect
+    /// of saving.
+    /// </summary>
+    Task SaveAsync(AssistantSettings settings, CancellationToken cancellationToken = default);
+
+    /// <summary>Forgets the key stored for the current provider. The rest of the settings stay.</summary>
+    Task ForgetApiKeyAsync(CancellationToken cancellationToken = default);
 }
