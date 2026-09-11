@@ -69,13 +69,20 @@ public sealed record ShiftDefinition(
     /// <summary>The crew that works this shift.</summary>
     public string Crew => CrewKey ?? Key;
 
-    /// <summary>Length of the shift, midnight crossings included.</summary>
+    /// <summary>
+    /// Length of the shift, midnight crossings included. Equal clock times are
+    /// the degenerate case <see cref="Validate"/> refuses; reporting them as a
+    /// 24-hour shift would turn a typo into a full day of capacity, so they
+    /// report nothing.
+    /// </summary>
     public TimeSpan Duration
     {
         get
         {
+            if (Start == End)
+                return TimeSpan.Zero;
             var span = End.ToTimeSpan() - Start.ToTimeSpan();
-            return span <= TimeSpan.Zero ? span + TimeSpan.FromDays(1) : span;
+            return span < TimeSpan.Zero ? span + TimeSpan.FromDays(1) : span;
         }
     }
 
@@ -91,13 +98,36 @@ public sealed record ShiftDefinition(
     }
 }
 
-/// <summary>A named set of shifts that together describe how a work center is staffed.</summary>
+/// <summary>
+/// A named set of shifts that together describe how a work center is staffed.
+/// <para>
+/// Equality is by value all the way down, <see cref="Shifts"/> included. The
+/// compiler's own <c>record</c> equality would compare the list by reference, so
+/// two patterns spelled identically would be unequal — which quietly breaks
+/// memoisation, <c>Distinct()</c> and any render short-circuit that asks whether
+/// the pattern changed.
+/// </para>
+/// </summary>
 /// <param name="Key">Stable identifier, e.g. <c>two-shift</c>.</param>
 /// <param name="Shifts">The shifts, in any order.</param>
 public sealed record ShiftPattern(string Key, IReadOnlyList<ShiftDefinition> Shifts)
 {
     /// <summary>True when there is no shift at all — the work center is available around the clock.</summary>
     public bool IsContinuous => Shifts.Count == 0;
+
+    /// <inheritdoc />
+    public bool Equals(ShiftPattern? other) =>
+        other is not null && string.Equals(Key, other.Key, StringComparison.Ordinal) && Shifts.SequenceEqual(other.Shifts);
+
+    /// <inheritdoc />
+    public override int GetHashCode()
+    {
+        var hash = new HashCode();
+        hash.Add(Key, StringComparer.Ordinal);
+        foreach (var shift in Shifts)
+            hash.Add(shift);
+        return hash.ToHashCode();
+    }
 
     /// <summary>Throws unless every shift is usable and keys are unique.</summary>
     public void Validate()
