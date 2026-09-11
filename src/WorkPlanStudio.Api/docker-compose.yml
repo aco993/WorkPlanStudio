@@ -1,0 +1,34 @@
+# Runs the optional API locally in a container.
+#
+#   Jwt__SigningKey=$(openssl rand -base64 48) docker compose -f src/WorkPlanStudio.Api/docker-compose.yml up --build
+#
+# The build context is the repository root because the API compiles shared
+# source from the browser application. Nothing secret is in this file: the
+# signing key comes from the environment and the application refuses to start
+# without a usable one.
+
+services:
+  api:
+    build:
+      context: ../..
+      dockerfile: src/WorkPlanStudio.Api/Dockerfile
+    ports:
+      # Host port first; change it freely, the container side is fixed by the image.
+      - "8080:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      Jwt__SigningKey: ${Jwt__SigningKey:?set Jwt__SigningKey to at least 32 bytes of random material}
+      Jwt__Issuer: workplan-studio
+      Jwt__Audience: workplan-studio-client
+      # The origin the browser client is served from. Empty means same-origin only.
+      Cors__AllowedOrigins__0: ${CLIENT_ORIGIN:-http://localhost:5235}
+      Seed__SampleData: "true"
+      # Seeded accounts are opt-in and never defaulted here; a container that
+      # creates a known account on first start is a back door with a nice name.
+    volumes:
+      # The SQLite file outlives the container. Owned by the image's non-root
+      # user, which is why the path matches the one the Dockerfile prepares.
+      - api-data:/data
+
+volumes:
+  api-data:
