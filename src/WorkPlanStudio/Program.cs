@@ -73,6 +73,11 @@ builder.Services.AddScoped<WorkPlanStudio.Services.Chat.ScheduleChat>();
 // Cost centres: master data in their own right since schema 6 (docs/adr/0016).
 builder.Services.AddScoped<CostCenterService>();
 
+// CSV import: a dry run by default, one atomic write on commit (docs/adr/0018).
+builder.Services.AddScoped<WorkPlanStudio.Services.Import.CsvImportService>();
+builder.Services.AddScoped<WorkPlanStudio.Services.Import.IImportMappingStore,
+    WorkPlanStudio.Services.Import.JsImportMappingStore>();
+
 var host = builder.Build();
 
 // Apply the language the user picked last time (stored in the browser).
