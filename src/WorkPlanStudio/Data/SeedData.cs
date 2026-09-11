@@ -16,15 +16,28 @@ public static class SeedData
         if (db.WorkCenters.Any())
             return;
 
+        // Cost centres are master data in their own right: several machines book
+        // against the same one, which is the definition of an entity rather than
+        // an attribute. CC-2000 carrying two work centres is the case that used to
+        // be two unrelated strings.
+        var cutting = new CostCenter { Code = "CC-1000", Name = "Sawing" };
+        var drilling = new CostCenter { Code = "CC-1500", Name = "Drilling" };
+        var machining = new CostCenter { Code = "CC-2000", Name = "Machining" };
+        var finishing = new CostCenter { Code = "CC-3000", Name = "Finishing" };
+        var assembly = new CostCenter { Code = "CC-5000", Name = "Assembly" };
+        var quality = new CostCenter { Code = "CC-9000", Name = "Quality assurance" };
+
+        db.CostCenters.AddRange(cutting, drilling, machining, finishing, assembly, quality);
+
         // Staffing follows the machine: the expensive CNC centers run more shifts,
         // manual stations one. The plant sits in North Rhine-Westphalia by default.
-        var saw = new WorkCenter { Code = "SAW-10", Name = "Cut-off Saw", CostCenter = "CC-1000", HourlyRate = 42m, ShiftPatternKey = ShiftPatterns.OneShift.Key };
-        var lathe = new WorkCenter { Code = "CNC-200", Name = "CNC Turning Center", CostCenter = "CC-2000", HourlyRate = 78m, ShiftPatternKey = ShiftPatterns.TwoShift.Key };
-        var mill = new WorkCenter { Code = "CNC-300", Name = "5-Axis Milling Center", CostCenter = "CC-2000", HourlyRate = 95m, ShiftPatternKey = ShiftPatterns.ThreeShift.Key };
-        var drill = new WorkCenter { Code = "DRL-120", Name = "Column Drill", CostCenter = "CC-1500", HourlyRate = 38m, ShiftPatternKey = ShiftPatterns.OneShift.Key };
-        var grind = new WorkCenter { Code = "GRD-400", Name = "Surface Grinder", CostCenter = "CC-3000", HourlyRate = 64m, ShiftPatternKey = ShiftPatterns.OneShift.Key };
-        var insp = new WorkCenter { Code = "QC-900", Name = "Quality Inspection", CostCenter = "CC-9000", HourlyRate = 55m, ShiftPatternKey = ShiftPatterns.OneShift.Key };
-        var asm = new WorkCenter { Code = "ASM-500", Name = "Manual Assembly", CostCenter = "CC-5000", HourlyRate = 48m, ShiftPatternKey = ShiftPatterns.TwoShift.Key };
+        var saw = new WorkCenter { Code = "SAW-10", Name = "Cut-off Saw", CostCenter = cutting, HourlyRate = 42m, ShiftPatternKey = ShiftPatterns.OneShift.Key };
+        var lathe = new WorkCenter { Code = "CNC-200", Name = "CNC Turning Center", CostCenter = machining, HourlyRate = 78m, ShiftPatternKey = ShiftPatterns.TwoShift.Key };
+        var mill = new WorkCenter { Code = "CNC-300", Name = "5-Axis Milling Center", CostCenter = machining, HourlyRate = 95m, ShiftPatternKey = ShiftPatterns.ThreeShift.Key };
+        var drill = new WorkCenter { Code = "DRL-120", Name = "Column Drill", CostCenter = drilling, HourlyRate = 38m, ShiftPatternKey = ShiftPatterns.OneShift.Key };
+        var grind = new WorkCenter { Code = "GRD-400", Name = "Surface Grinder", CostCenter = finishing, HourlyRate = 64m, ShiftPatternKey = ShiftPatterns.OneShift.Key };
+        var insp = new WorkCenter { Code = "QC-900", Name = "Quality Inspection", CostCenter = quality, HourlyRate = 55m, ShiftPatternKey = ShiftPatterns.OneShift.Key };
+        var asm = new WorkCenter { Code = "ASM-500", Name = "Manual Assembly", CostCenter = assembly, HourlyRate = 48m, ShiftPatternKey = ShiftPatterns.TwoShift.Key };
 
         db.WorkCenters.AddRange(saw, lathe, mill, drill, grind, insp, asm);
 
@@ -208,7 +221,8 @@ public static class SeedData
 
         // Monday 1 June 2026, 06:00 — the week of Fronleichnam (Thursday 4 June),
         // a holiday in the default state, so the calendar visibly shapes the plan.
-        var horizon = new DateTime(2026, 6, 1, 6, 0, 0, DateTimeKind.Utc);
+        // Plant-local wall clock, like every other planning date in the app.
+        var horizon = new DateTime(2026, 6, 1, 6, 0, 0, DateTimeKind.Unspecified);
 
         // plan number -> (quantity, release offset in hours, due offset in hours, priority).
         // Due dates are in working days now that machines keep shift calendars.
@@ -232,19 +246,23 @@ public static class SeedData
             if (!terms.TryGetValue(plan.PlanNumber, out var t))
                 continue;
 
+            var snapshot = RoutingSnapshot.Capture(plan);
             db.ProductionOrders.Add(new ProductionOrder
             {
                 OrderNumber = $"PO-{sequence++}",
                 WorkPlanId = plan.Id,
                 Quantity = t.Quantity,
-                ReleaseUtc = horizon.AddHours(t.ReleaseHours),
-                DueUtc = horizon.AddHours(t.DueHours),
+                ReleaseLocal = horizon.AddHours(t.ReleaseHours),
+                DueLocal = horizon.AddHours(t.DueHours),
                 Priority = t.Priority,
                 Status = ProductionOrderStatus.Released,
                 RoutingRevision = plan.Revision ?? "",
-                RoutingSnapshotJson = RoutingSnapshot.Capture(plan).Serialize(),
-                CreatedUtc = horizon,
-                ModifiedUtc = horizon
+                RoutingSnapshotJson = snapshot.Serialize(),
+                RoutingCenters = [.. snapshot.WorkCenterIds.Select(id => new OrderRoutingCenter { WorkCenterId = id })],
+                // A real UTC stamp: the horizon beside it is wall clock, and the
+                // two are deliberately no longer the same kind of value.
+                CreatedUtc = new DateTime(2026, 5, 29, 9, 0, 0, DateTimeKind.Utc),
+                ModifiedUtc = new DateTime(2026, 5, 29, 9, 0, 0, DateTimeKind.Utc)
             });
         }
     }

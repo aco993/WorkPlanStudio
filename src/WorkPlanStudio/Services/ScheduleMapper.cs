@@ -100,7 +100,7 @@ public static class ScheduleMapper
         if (decoded.Count == 0)
             return new SchedulePreparationResult(null, errors);
 
-        var horizon = decoded.Min(d => d.Order.ReleaseUtc);
+        var horizon = decoded.Min(d => d.Order.ReleaseLocal);
         long horizonTicks = horizon.Ticks;
 
         // The working-time calendar of every active work center, built once per
@@ -148,8 +148,8 @@ public static class ScheduleMapper
             {
                 Id = order.Id,
                 Reference = order.OrderNumber,
-                ReleaseSeconds = ToOffsetSeconds(order.ReleaseUtc, horizonTicks),
-                ExplicitDueSeconds = ToOffsetSeconds(order.DueUtc, horizonTicks),
+                ReleaseSeconds = ToOffsetSeconds(order.ReleaseLocal, horizonTicks),
+                ExplicitDueSeconds = ToOffsetSeconds(order.DueLocal, horizonTicks),
                 Weight = Math.Clamp(order.Priority, 1, 5),
                 Steps = steps
             });

@@ -43,11 +43,24 @@ public class ProductionOrder
     /// <summary>How many pieces to make. Replaces the work plan's lot size for this order.</summary>
     public int Quantity { get; set; } = 1;
 
-    /// <summary>Earliest moment work may start.</summary>
-    public DateTime ReleaseUtc { get; set; }
+    /// <summary>
+    /// Earliest moment work may start, in <b>plant-local wall-clock time</b>.
+    /// <para>
+    /// It was called <c>ReleaseUtc</c> and was never UTC: the page took the
+    /// visitor's calendar date and relabelled its <see cref="DateTime.Kind"/>.
+    /// The shift calendar, the §9(2) Sunday window and the holiday closures all
+    /// read it as plant-local, so the name was the only thing that was wrong —
+    /// and a name that lies is an offset bug waiting for the first person who
+    /// adds a conversion. See <see cref="Services.PlantTime"/>.
+    /// </para>
+    /// </summary>
+    public DateTime ReleaseLocal { get; set; }
 
-    /// <summary>When the customer expects it. Drives the explicit due-date rule and every lateness KPI.</summary>
-    public DateTime DueUtc { get; set; }
+    /// <summary>
+    /// When the customer expects it, in plant-local wall-clock time. Drives the
+    /// explicit due-date rule and every lateness KPI.
+    /// </summary>
+    public DateTime DueLocal { get; set; }
 
     /// <summary>Order importance, 1 (normal) to 5 (rush). Used as the weight in the weighted dispatch rule.</summary>
     public int Priority { get; set; } = 1;
@@ -65,8 +78,17 @@ public class ProductionOrder
     /// </summary>
     public string RoutingSnapshotJson { get; set; } = "";
 
+    /// <summary>
+    /// The work centres <see cref="RoutingSnapshotJson"/> names, lifted out of the
+    /// blob so the database can protect them. Present only while the order is
+    /// released — see <see cref="OrderRoutingCenter"/>.
+    /// </summary>
+    public ICollection<OrderRoutingCenter> RoutingCenters { get; set; } = new List<OrderRoutingCenter>();
+
+    /// <summary>A genuine UTC audit stamp, unlike the two dates above.</summary>
     public DateTime CreatedUtc { get; set; }
 
+    /// <summary>A genuine UTC audit stamp, unlike the two dates above.</summary>
     public DateTime ModifiedUtc { get; set; }
 
     /// <summary>A released order carries a frozen routing and can be scheduled.</summary>
