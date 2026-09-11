@@ -207,14 +207,7 @@ else
                     <ul class="assistant-lines">
                         <li class="assistant-line @SundayTone">
                             <span class="assistant-dot"></span>
-                            <span>
-                                <span class="pill law">@WorkingTimeText.LegalReference(WorkingTimeRuleId.FreeSundays)</span>
-                                @if (_preview.SundayRest != SundayRestStatus.NotApplicable)
-                                {
-                                    <span>@string.Format(Culture, L["Wt_FreeSundays"], _preview.FreeSundays(_holidayYear), _holidayYear, _preview.Rules.MinimumFreeSundaysPerYear) </span>
-                                }
-                                <span>@L[$"Wt_SundayStatus_{_preview.SundayRest}"]</span>
-                            </span>
+                            <span><span class="pill law">@WorkingTimeText.LegalReference(WorkingTimeRuleId.FreeSundays)</span> @SundaySentence(_preview)</span>
                         </li>
                     </ul>
                     @if (_preview.ViolatesFreeSundays)
@@ -259,7 +252,7 @@ else
         else
         {
             <TableScroll Label="@L["Wt_Averaging"]">
-                <table class="data-table">
+                <table class="data-table wt-averaging">
                     <caption class="sr-only">@L["Wt_Averaging"]</caption>
                     <thead>
                         <tr>
@@ -604,6 +597,26 @@ else
         }
 
         _ruleAnnouncement = string.Join(" ", announcements);
+    }
+
+    /// <summary>
+    /// The § 11 (1) line: the count, and what the count means. An unconstrained
+    /// pattern staffs nobody, so the count would be a number about no one — there
+    /// the sentence is all there is to say.
+    /// </summary>
+    private string SundaySentence(WorkingTimeline preview)
+    {
+        var state = L[$"Wt_SundayStatus_{preview.SundayRest}"].Value;
+        if (preview.SundayRest == SundayRestStatus.NotApplicable)
+            return state;
+
+        var count = string.Format(
+            Culture,
+            L["Wt_FreeSundays"],
+            preview.FreeSundays(_holidayYear),
+            _holidayYear,
+            preview.Rules.MinimumFreeSundaysPerYear);
+        return $"{count} {state}";
     }
 
     /// <summary>The per-crew averaging results, crew first so a plant reads its own rows together.</summary>

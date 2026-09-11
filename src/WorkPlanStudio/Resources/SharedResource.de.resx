@@ -571,11 +571,11 @@
   <data name="Account_PullDone" xml:space="preserve"><value>Die lokale Kopie wurde durch {0} Kostenstellen, {1} Arbeitsplätze, {2} Arbeitspläne und {3} Fertigungsaufträge ersetzt.</value></data>
   <data name="Account_PullFailed" xml:space="preserve"><value>Die Stammdaten konnten nicht vom Server geholt werden.</value></data>
   <data name="Rule_RestCompensation_Title" xml:space="preserve"><value>Ausgleichsruhezeit</value></data>
-  <data name="Rule_RestCompensation_Text" xml:space="preserve"><value>Eine auf zehn Stunden verkürzte Ruhezeit ist Krankenhäusern und anderen Einrichtungen zur Behandlung und Pflege, Gaststätten und Beherbergungsbetrieben, Verkehrsbetrieben, dem Rundfunk sowie der Landwirtschaft und der Tierhaltung vorbehalten — und auch dort nur, wenn jede Verkürzung innerhalb eines Kalendermonats oder von vier Wochen durch Verlängerung einer anderen Ruhezeit auf mindestens zwölf Stunden ausgeglichen wird.</value></data>
+  <data name="Rule_RestCompensation_Text" xml:space="preserve"><value>§ 5 Abs. 2 behält eine auf zehn Stunden verkürzte Ruhezeit Krankenhäusern und anderen Einrichtungen zur Behandlung und Pflege, Gaststätten und Beherbergungsbetrieben, Verkehrsbetrieben, dem Rundfunk sowie der Landwirtschaft und der Tierhaltung vorbehalten — und auch dort nur, wenn jede Verkürzung innerhalb eines Kalendermonats oder von vier Wochen durch Verlängerung einer anderen Ruhezeit auf mindestens zwölf Stunden ausgeglichen wird.</value></data>
   <data name="Rule_MultiShiftRequirement_Title" xml:space="preserve"><value>Mehrschichtbetrieb</value></data>
   <data name="Rule_MultiShiftRequirement_Text" xml:space="preserve"><value>Beginn und Ende der Sonn- und Feiertagsruhe dürfen um bis zu sechs Stunden vor- oder zurückverlegt werden — aber nur in mehrschichtigen Betrieben mit regelmäßiger Tag- und Nachtschicht. Ein Modell mit nur einer der beiden nimmt eine Befugnis in Anspruch, die § 9 Abs. 2 ihm nicht gibt.</value></data>
   <data name="Rule_ReplacementRestDay_Title" xml:space="preserve"><value>Ersatzruhetag</value></data>
-  <data name="Rule_ReplacementRestDay_Text" xml:space="preserve"><value>Für Sonntagsarbeit ist ein Ersatzruhetag innerhalb eines den Beschäftigungstag einschließenden Zeitraums von zwei Wochen zu gewähren, für Arbeit an einem auf einen Werktag fallenden Feiertag einer innerhalb von acht Wochen. Die Erlaubnis, an diesen Tagen zu arbeiten, bringt die Pflicht mit sich.</value></data>
+  <data name="Rule_ReplacementRestDay_Text" xml:space="preserve"><value>§ 11 Abs. 3 verlangt für Sonntagsarbeit einen Ersatzruhetag innerhalb eines den Beschäftigungstag einschließenden Zeitraums von zwei Wochen; § 11 Abs. 2 verlangt für Arbeit an einem auf einen Werktag fallenden Feiertag einen innerhalb von acht Wochen. Die Erlaubnis, an diesen Tagen zu arbeiten, bringt die Pflicht mit sich.</value></data>
   <data name="Applied_RestCompensation" xml:space="preserve"><value>{0} am {1}: Ruhezeit auf {2} verkürzt; das Gesetz verlangt hier mindestens {3} (§ 5 Abs. 2).</value></data>
   <data name="Applied_MultiShiftRequirement" xml:space="preserve"><value>{0}: Die Sonn- und Feiertagsruhe ist um {2} verschoben — § 9 Abs. 2 lässt das nur im Mehrschichtbetrieb mit regelmäßiger Tag- und Nachtschicht zu.</value></data>
   <data name="Applied_ReplacementRestDay" xml:space="preserve"><value>{0} am {1}: Dafür ist ein Ersatzruhetag innerhalb von {3} zu gewähren (§ 11 Abs. 2, 3).</value></data>
@@ -634,4 +634,6 @@
   <data name="Wt_Val_SectorInvalid" xml:space="preserve"><value>Wählen Sie eine der in § 5 Abs. 2 genannten Branchen.</value></data>
   <data name="Wt_Val_AveragingWindowInvalid" xml:space="preserve"><value>Wählen Sie einen Ausgleichszeitraum.</value></data>
   <data name="Wt_Range" xml:space="preserve"><value>{0} – {1}</value></data>
+  <data name="Holiday_EasterSunday" xml:space="preserve"><value>Ostersonntag</value></data>
+  <data name="Holiday_WhitSunday" xml:space="preserve"><value>Pfingstsonntag</value></data>
 </root>

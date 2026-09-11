@@ -571,11 +571,11 @@
   <data name="Account_PullDone" xml:space="preserve"><value>Replaced the local copy with {0} cost centers, {1} work centers, {2} work plans and {3} production orders.</value></data>
   <data name="Account_PullFailed" xml:space="preserve"><value>The master data could not be fetched from the server.</value></data>
   <data name="Rule_RestCompensation_Title" xml:space="preserve"><value>Compensating rest</value></data>
-  <data name="Rule_RestCompensation_Text" xml:space="preserve"><value>A rest shortened to 10 hours is reserved for hospitals and other institutions for treatment and care, catering and accommodation, transport undertakings, broadcasting, agriculture and animal husbandry — and even there only where every shortening is made good within a calendar month or four weeks by extending another rest to at least 12 hours.</value></data>
+  <data name="Rule_RestCompensation_Text" xml:space="preserve"><value>§ 5 (2) reserves a rest shortened to 10 hours for hospitals and other institutions for treatment and care, catering and accommodation, transport undertakings, broadcasting, agriculture and animal husbandry — and even there only where every shortening is made good within a calendar month or four weeks by extending another rest to at least 12 hours.</value></data>
   <data name="Rule_MultiShiftRequirement_Title" xml:space="preserve"><value>Multi-shift operation</value></data>
   <data name="Rule_MultiShiftRequirement_Text" xml:space="preserve"><value>The start and end of the Sunday and holiday rest may be moved by up to six hours, forward or back — but only in multi-shift plants running a regular day and night shift. A pattern with only one of the two claims a permission § 9 (2) does not give it.</value></data>
   <data name="Rule_ReplacementRestDay_Title" xml:space="preserve"><value>Replacement rest day</value></data>
-  <data name="Rule_ReplacementRestDay_Text" xml:space="preserve"><value>Sunday work earns a replacement rest day within a two-week period that includes the Sunday worked; work on a public holiday falling on a working day earns one within eight weeks. The permission to work those days brings the obligation with it.</value></data>
+  <data name="Rule_ReplacementRestDay_Text" xml:space="preserve"><value>§ 11 (3) gives a crew that works a Sunday a replacement rest day within a two-week period that includes the Sunday worked; § 11 (2) gives one within eight weeks for work on a public holiday that falls on a working day. The permission to work those days brings the obligation with it.</value></data>
   <data name="Applied_RestCompensation" xml:space="preserve"><value>{0} on {1}: rest shortened to {2}; the statute requires at least {3} here (§ 5 (2)).</value></data>
   <data name="Applied_MultiShiftRequirement" xml:space="preserve"><value>{0}: the Sunday and holiday rest is moved by {2}, which § 9 (2) allows only in a multi-shift plant with a regular day and night shift.</value></data>
   <data name="Applied_ReplacementRestDay" xml:space="preserve"><value>{0} on {1}: a replacement rest day is owed for it, within {3} (§ 11 (2), (3)).</value></data>
@@ -634,4 +634,6 @@
   <data name="Wt_Val_SectorInvalid" xml:space="preserve"><value>Choose one of the sectors § 5 (2) names.</value></data>
   <data name="Wt_Val_AveragingWindowInvalid" xml:space="preserve"><value>Choose a reference period.</value></data>
   <data name="Wt_Range" xml:space="preserve"><value>{0} – {1}</value></data>
+  <data name="Holiday_EasterSunday" xml:space="preserve"><value>Easter Sunday</value></data>
+  <data name="Holiday_WhitSunday" xml:space="preserve"><value>Whit Sunday</value></data>
 </root>
