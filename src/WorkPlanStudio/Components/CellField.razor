@@ -1,0 +1,29 @@
+@*
+    A form control that lives in a table cell rather than in a form grid.
+
+    A `<th scope="col">` names a *cell*; it never names a control inside one. An
+    editable grid — the operations editor is the app's example — therefore ships
+    rows of inputs with no accessible name at all: "edit, blank", "spin button,
+    15", "spin button, 0.8". Wrapping the control in a label whose text is visually
+    hidden gives it the same accessible name every other field in the app has,
+    without adding a second visible column heading to each row.
+
+    The name has to identify the row as well as the column, because a keyboard user
+    who tabs into the middle of a twelve-operation routing has no other clue which
+    operation they are editing. Compose it as "<column> — <row>", e.g.
+    `Label="@($"{L["Field_SetupTime"]} — {L["Field_OperationNo"]} {op.OperationNumber}")"`.
+*@
+<label class="cell-field">
+    <span class="sr-only">@Label</span>
+    @ChildContent
+</label>
+
+@code {
+    /// <summary>
+    /// The control's accessible name. Name the column and the row, in that order:
+    /// the column is what the user is looking for, the row is what disambiguates it.
+    /// </summary>
+    [Parameter, EditorRequired] public string Label { get; set; } = "";
+
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

@@ -147,7 +147,11 @@ public class SchedulePageTests : BunitContext
         cut.WaitForAssertion(() => Assert.Equal(4, cut.FindAll(".stat-card").Count));
         Assert.Equal(2, cut.FindAll(".gantt-row").Count);
         Assert.Equal(2, cut.FindAll(".gantt-bar").Count);
-        Assert.Equal(2, cut.FindAll(".data-table tbody tr").Count);
+        // The page now renders two data tables — the per-job results and the chart's
+        // text equivalent — so the selector names the one this test is about. The
+        // chart table is asserted alongside it rather than quietly absorbed.
+        Assert.Equal(2, cut.FindAll(".jobs-table tbody tr").Count);
+        Assert.Equal(2, cut.FindAll(".chart-table tbody tr").Count);
         Assert.Empty(cut.FindAll(".empty-state"));
         Assert.Empty(cut.FindAll(".pill.late"));
     }
@@ -238,10 +242,15 @@ public class SchedulePageTests : BunitContext
         Assert.Contains("Sched_ClosedLegend", cut.Markup);
         Assert.Contains("Sched_TotalPaused", cut.Markup);
 
-        // axis ticks fall on midnight and are labelled with the date
+        // Axis ticks fall on midnight and are labelled with the date rather than a
+        // time. The expected text comes from the formatter because the label is now
+        // culture-aware — it used to be "d.M." in every language, which reads as a
+        // German date to an English reader (and made this assertion accidentally
+        // culture-independent).
         var ticks = cut.FindAll(".gantt-tick");
         Assert.NotEmpty(ticks);
-        Assert.Contains(ticks, t => t.TextContent.Contains("2.6.", StringComparison.Ordinal));
+        var midnight = Format.DayMonth(new DateTime(2026, 6, 2));
+        Assert.Contains(ticks, t => t.TextContent.Contains(midnight, StringComparison.Ordinal));
     }
 
     [Fact]

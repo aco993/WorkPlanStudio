@@ -66,7 +66,7 @@ else
                     <label class="field">
                         <span>@L["WorkingTime_BoundaryShift"]</span>
                         <span class="input-unit">
-                            <input class="input num" type="number" min="0" max="6" @bind="_form.SundayBoundaryShiftHours" @bind:event="oninput" @bind:after="Recompute" />
+                            <input class="input num" type="number" inputmode="numeric" min="0" max="6" @bind="_form.SundayBoundaryShiftHours" @bind:after="Recompute" />
                             <span>@L["WorkingTime_Hours"]</span>
                         </span>
                         @if (_formErrors.TryGetValue("SundayBoundaryShiftHours", out var shiftError))
@@ -77,7 +77,7 @@ else
                     <label class="field">
                         <span>@L["WorkingTime_MinimumRest"]</span>
                         <span class="input-unit">
-                            <input class="input num" type="number" min="10" max="11" @bind="_form.MinimumRestHours" @bind:event="oninput" @bind:after="Recompute" />
+                            <input class="input num" type="number" inputmode="numeric" min="10" max="11" @bind="_form.MinimumRestHours" @bind:after="Recompute" />
                             <span>@L["WorkingTime_Hours"]</span>
                         </span>
                         @if (_formErrors.TryGetValue("MinimumRestHours", out var restError))
@@ -177,26 +177,28 @@ else
                 <h2>@string.Format(L["WorkingTime_Holidays"], _holidayYear)</h2>
                 <span class="muted gantt-legend-note">@L["WorkingTime_HolidaysNote"]</span>
             </div>
-            <table class="data-table">
-                <caption class="sr-only">@string.Format(L["WorkingTime_Holidays"], _holidayYear)</caption>
-                <thead>
-                    <tr>
-                        <th scope="col">@L["Common_Date"]</th>
-                        <th scope="col">@L["Field_Name"]</th>
-                        <th scope="col">@L["Field_Status"]</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var holiday in _holidays)
-                    {
+            <TableScroll Label="@string.Format(L["WorkingTime_Holidays"], _holidayYear)">
+                <table class="data-table">
+                    <caption class="sr-only">@string.Format(L["WorkingTime_Holidays"], _holidayYear)</caption>
+                    <thead>
                         <tr>
-                            <td class="mono">@holiday.Date.ToString("ddd d. MMM", Culture)</td>
-                            <td>@L[$"Holiday_{holiday.Key}"]</td>
-                            <td><span class="pill @(holiday.Scope == HolidayScope.Nationwide ? "ok" : "off")">@L[$"HolidayScope_{holiday.Scope}"]</span></td>
+                            <th scope="col" class="sticky-col">@L["Common_Date"]</th>
+                            <th scope="col">@L["Field_Name"]</th>
+                            <th scope="col">@L["Field_Status"]</th>
                         </tr>
-                    }
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @foreach (var holiday in _holidays)
+                        {
+                            <tr @key="holiday.Key">
+                                <td class="mono sticky-col">@Format.DayMonth(holiday.Date)</td>
+                                <td>@L[$"Holiday_{holiday.Key}"]</td>
+                                <td><span class="pill @(holiday.Scope == HolidayScope.Nationwide ? "ok" : "off")">@L[$"HolidayScope_{holiday.Scope}"]</span></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </TableScroll>
         </section>
     </div>
 
@@ -218,38 +220,40 @@ else
         }
         else
         {
-            <table class="data-table">
-                <caption class="sr-only">@L["WorkingTime_Absences"]</caption>
-                <thead>
-                    <tr>
-                        <th scope="col">@L["Field_WorkCenter"]</th>
-                        <th scope="col">@L["WorkingTime_AbsenceFrom"]</th>
-                        <th scope="col">@L["WorkingTime_AbsenceTo"]</th>
-                        <th scope="col">@L["WorkingTime_AbsenceKind"]</th>
-                        <th scope="col">@L["WorkingTime_AbsenceLabel"]</th>
-                        <th scope="col" class="actions-col">@L["Common_Actions"]</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var absence in _absences)
-                    {
+            <TableScroll Label="@L["WorkingTime_Absences"]">
+                <table class="data-table">
+                    <caption class="sr-only">@L["WorkingTime_Absences"]</caption>
+                    <thead>
                         <tr>
-                            <td><span class="mono">@absence.WorkCenter?.Code</span> <span class="muted">@absence.WorkCenter?.Name</span></td>
-                            <td>@absence.Start.ToString("g", Culture)</td>
-                            <td>@absence.End.ToString("g", Culture)</td>
-                            <td>@L[$"Absence_{absence.Kind}"]</td>
-                            <td>@absence.Label</td>
-                            <td class="actions-col">
-                                <AuthorizeView Policy="@Permissions.ManageAbsences">
-                                    <button class="icon-btn danger" aria-label="@L["Common_Delete"]" title="@L["Common_Delete"]" @onclick="() => RemoveAbsenceAsync(absence.Id)">
-                                        <svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" /></svg>
-                                    </button>
-                                </AuthorizeView>
-                            </td>
+                            <th scope="col" class="sticky-col">@L["Field_WorkCenter"]</th>
+                            <th scope="col">@L["WorkingTime_AbsenceFrom"]</th>
+                            <th scope="col">@L["WorkingTime_AbsenceTo"]</th>
+                            <th scope="col">@L["WorkingTime_AbsenceKind"]</th>
+                            <th scope="col">@L["WorkingTime_AbsenceLabel"]</th>
+                            <th scope="col" class="actions-col">@L["Common_Actions"]</th>
                         </tr>
-                    }
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @foreach (var absence in _absences)
+                        {
+                            <tr @key="absence.Id">
+                                <td class="sticky-col"><span class="mono">@absence.WorkCenter?.Code</span> <span class="muted">@absence.WorkCenter?.Name</span></td>
+                                <td>@Format.DateTime(absence.Start)</td>
+                                <td>@Format.DateTime(absence.End)</td>
+                                <td>@L[$"Absence_{absence.Kind}"]</td>
+                                <td>@absence.Label</td>
+                                <td class="actions-col">
+                                    <AuthorizeView Policy="@Permissions.ManageAbsences">
+                                        <button class="icon-btn danger" aria-label="@L["Common_Delete"]" title="@L["Common_Delete"]" @onclick="() => RemoveAbsenceAsync(absence.Id)">
+                                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" /></svg>
+                                        </button>
+                                    </AuthorizeView>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </TableScroll>
         }
     </section>
 }
@@ -273,11 +277,17 @@ else
             </label>
             <label class="field">
                 <span>@L["WorkingTime_AbsenceFrom"]</span>
-                <input id="abs-from" class="input" type="datetime-local" @bind="_newAbsence.Start" />
+                <input id="abs-from" class="input @(_absenceErrors.ContainsKey("Start") ? "error" : null)" type="datetime-local"
+                       max="@LocalStamp(_newAbsence.End)" @bind="_newAbsence.Start" />
+                @if (_absenceErrors.TryGetValue("Start", out var startError))
+                {
+                    <span class="field-error">@startError</span>
+                }
             </label>
             <label class="field">
                 <span>@L["WorkingTime_AbsenceTo"]</span>
-                <input id="abs-to" class="input @(_absenceErrors.ContainsKey("End") ? "error" : null)" type="datetime-local" @bind="_newAbsence.End" />
+                <input id="abs-to" class="input @(_absenceErrors.ContainsKey("End") ? "error" : null)" type="datetime-local"
+                       min="@LocalStamp(_newAbsence.Start)" @bind="_newAbsence.End" />
                 @if (_absenceErrors.TryGetValue("End", out var endError))
                 {
                     <span class="field-error">@endError</span>
@@ -464,12 +474,17 @@ else
             : string.Join(", ", days.Select(format.GetAbbreviatedDayName));
     }
 
-    private static string Span(TimeSpan value)
-    {
-        if (value < TimeSpan.FromHours(1))
-            return $"{value.Minutes} min";
-        return value.TotalMinutes % 60 == 0
-            ? $"{(int)value.TotalHours} h"
-            : $"{(int)value.TotalHours} h {value.Minutes:00} min";
-    }
+    /// <summary>
+    /// The unit words used to be assembled here, outside both the resources and the
+    /// culture. Every duration in the app now goes through the same helper.
+    /// </summary>
+    private static string Span(TimeSpan value) => Format.Duration(value);
+
+    /// <summary>
+    /// `datetime-local` compares its `min`/`max` against an ISO-8601 local stamp, not
+    /// against whatever the reader's locale writes — the one place in the app where a
+    /// date must deliberately *not* be formatted for a human.
+    /// </summary>
+    private static string LocalStamp(DateTime moment) =>
+        moment.ToString("yyyy-MM-dd\\THH:mm", CultureInfo.InvariantCulture);
 }

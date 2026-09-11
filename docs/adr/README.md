@@ -21,3 +21,4 @@ the decision and its consequences, in the spirit of
 | [0012](0012-working-time-as-capacity.md) | Model working time and German labour law as capacity, in a second pure library | Accepted |
 | [0013](0013-personas-through-the-real-authorization-pipeline.md) | Personas through the real authorization pipeline, without a backend | Accepted |
 | [0014](0014-schedule-chat-on-device-first-with-pluggable-models.md) | A conversation over the schedule: on-device answers first, models pluggable | Accepted |
+| [0023](0023-accessible-gantt-and-responsive-tables.md) | Make the chart operable without a mouse and stop the cards clipping the tables | Accepted |

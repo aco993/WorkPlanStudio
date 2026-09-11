@@ -20,7 +20,7 @@
         <p class="page-sub">@L["Sched_Subtitle"]</p>
     </div>
     <button class="btn btn-primary" @onclick="GenerateAsync" disabled="@_running">
-        <svg class="btn-ico" viewBox="0 0 24 24"><path d="M12 3v2m0 14v2m9-9h-2M5 12H3m14.5-6.5-1.4 1.4M7.9 16.1l-1.4 1.4m12 0-1.4-1.4M7.9 7.9 6.5 6.5"/><circle cx="12" cy="12" r="3.2"/></svg>
+        <svg class="btn-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v2m0 14v2m9-9h-2M5 12H3m14.5-6.5-1.4 1.4M7.9 16.1l-1.4 1.4m12 0-1.4-1.4M7.9 7.9 6.5 6.5"/><circle cx="12" cy="12" r="3.2"/></svg>
         @(_running ? L["Sched_Generating"] : L["Sched_Generate"])
     </button>
 </div>
@@ -29,10 +29,17 @@
     <section class="card param-card">
         <div class="card-head"><h2>@L["Sched_Parameters"]</h2></div>
         <div class="card-body">
+            @*
+                The hints live outside the <label>, not inside it. Everything inside a
+                label becomes part of the control's accessible name, so the
+                "equivalent rules" line — which changes after every run — used to
+                rename the select each time it was regenerated.
+            *@
             <div class="param-grid">
-                <label class="field">
-                    <span>@L["Sched_DispatchRule"]</span>
-                    <select class="input" @bind="_form.DispatchRule">
+                <div class="field">
+                    <label for="sched-rule">@L["Sched_DispatchRule"]</label>
+                    <select id="sched-rule" class="input" @bind="_form.DispatchRule"
+                            aria-describedby="@(_result is { EquivalentRules.Count: > 0 } ? "sched-rule-hint" : null)">
                         @foreach (var r in Enum.GetValues<DispatchRule>())
                         {
                             <option value="@r">@DispatchLabel(r)</option>
@@ -40,13 +47,13 @@
                     </select>
                     @if (_result is { EquivalentRules.Count: > 0 })
                     {
-                        <span class="field-hint">
+                        <span id="sched-rule-hint" class="field-hint">
                             @string.Format(
                                 L["Sched_RuleEquivalent"],
                                 string.Join(", ", _result.EquivalentRules.Select(DispatchLabel)))
                         </span>
                     }
-                </label>
+                </div>
 
                 <label class="field">
                     <span>@L["Sched_DueRule"]</span>
@@ -61,48 +68,70 @@
                 @switch (_form.DueDateRule)
                 {
                     case DueDateRule.TotalWorkContent:
-                        <label class="field">
-                            <span>@L["Sched_TwkFactor"]</span>
-                            <input class="input num" type="number" step="0.1" min="0.1" max="100" @bind="_form.TwkFlowFactor" @bind:event="oninput" />
-                        </label>
+                        <div class="field">
+                            <label for="sched-twk">@L["Sched_TwkFactor"]</label>
+                            <input id="sched-twk" class="input num" type="number" inputmode="decimal" step="0.1"
+                                   min="@Form.TwkMin.ToString(CultureInfo.InvariantCulture)" max="@Form.TwkMax.ToString(CultureInfo.InvariantCulture)"
+                                   aria-describedby="sched-twk-hint"
+                                   @bind="_form.TwkFlowFactor" @bind:after="_form.Clamp" />
+                            <span id="sched-twk-hint" class="field-hint">@Range(Form.TwkMin, Form.TwkMax)</span>
+                        </div>
                         break;
                     case DueDateRule.NumberOfOperations:
-                        <label class="field">
-                            <span>@L["Sched_NopMinutes"]</span>
-                            <input class="input num" type="number" min="0" max="5256000" @bind="_form.NopMinutesPerOp" @bind:event="oninput" />
-                        </label>
+                        <div class="field">
+                            <label for="sched-nop">@L["Sched_NopMinutes"]</label>
+                            <input id="sched-nop" class="input num" type="number" inputmode="numeric" min="0" max="@Form.MinutesMax"
+                                   aria-describedby="sched-nop-hint" @bind="_form.NopMinutesPerOp" @bind:after="_form.Clamp" />
+                            <span id="sched-nop-hint" class="field-hint">@Range(0, Form.MinutesMax)</span>
+                        </div>
                         break;
                     case DueDateRule.EqualSlack:
-                        <label class="field">
-                            <span>@L["Sched_SlackMinutes"]</span>
-                            <input class="input num" type="number" min="0" max="5256000" @bind="_form.SlackMinutes" @bind:event="oninput" />
-                        </label>
+                        <div class="field">
+                            <label for="sched-slack">@L["Sched_SlackMinutes"]</label>
+                            <input id="sched-slack" class="input num" type="number" inputmode="numeric" min="0" max="@Form.MinutesMax"
+                                   aria-describedby="sched-slack-hint" @bind="_form.SlackMinutes" @bind:after="_form.Clamp" />
+                            <span id="sched-slack-hint" class="field-hint">@Range(0, Form.MinutesMax)</span>
+                        </div>
                         break;
                     default:
-                        <label class="field">
-                            <span>@L["Sched_ConMinutes"]</span>
-                            <input class="input num" type="number" min="0" max="5256000" @bind="_form.ConMinutes" @bind:event="oninput" />
-                        </label>
+                        <div class="field">
+                            <label for="sched-con">@L["Sched_ConMinutes"]</label>
+                            <input id="sched-con" class="input num" type="number" inputmode="numeric" min="0" max="@Form.MinutesMax"
+                                   aria-describedby="sched-con-hint" @bind="_form.ConMinutes" @bind:after="_form.Clamp" />
+                            <span id="sched-con-hint" class="field-hint">@Range(0, Form.MinutesMax)</span>
+                        </div>
                         break;
                 }
 
-                <label class="field">
-                    <span>@L["Sched_MultiStart"]</span>
-                    <input class="input num" type="number" min="1" max="64" @bind="_form.MultiStartRuns" @bind:event="oninput" />
-                </label>
-                <label class="field">
-                    <span>@L["Sched_LocalSearch"]</span>
-                    <input class="input num" type="number" min="0" max="20000" @bind="_form.LocalSearchMaxSteps" @bind:event="oninput" />
-                </label>
+                <div class="field">
+                    <label for="sched-multistart">@L["Sched_MultiStart"]</label>
+                    <input id="sched-multistart" class="input num" type="number" inputmode="numeric" min="1" max="@Form.MultiStartMax"
+                           aria-describedby="sched-multistart-hint" @bind="_form.MultiStartRuns" @bind:after="_form.Clamp" />
+                    <span id="sched-multistart-hint" class="field-hint">@Range(1, Form.MultiStartMax)</span>
+                </div>
+                <div class="field">
+                    <label for="sched-localsearch">@L["Sched_LocalSearch"]</label>
+                    <input id="sched-localsearch" class="input num" type="number" inputmode="numeric" min="0" max="@Form.LocalSearchMax"
+                           aria-describedby="sched-localsearch-hint" @bind="_form.LocalSearchMaxSteps" @bind:after="_form.Clamp" />
+                    <span id="sched-localsearch-hint" class="field-hint">@Range(0, Form.LocalSearchMax)</span>
+                </div>
                 <label class="field">
                     <span>@L["Sched_Seed"]</span>
-                    <input class="input num" type="number" @bind="_form.Seed" @bind:event="oninput" />
+                    <input class="input num" type="number" inputmode="numeric" min="0" max="@int.MaxValue"
+                           @bind="_form.Seed" @bind:after="_form.Clamp" />
                 </label>
             </div>
         </div>
     </section>
 
-    <div class="sched-results">
+    <div class="sched-results" aria-busy="@(_running ? "true" : "false")">
+        @*
+            Regenerating replaces four KPI cards, the chart, the jobs table and the
+            narration at once. Nothing announced it: the spinner below only renders
+            on the very first run, because _result keeps its previous value while a
+            re-run is in flight. This region carries the headline of every run.
+        *@
+        <p class="sr-only" role="status" aria-live="polite">@_runAnnouncement</p>
         @if (_runError is not null)
         {
             <div class="form-banner error" role="alert">@_runError</div>
@@ -134,7 +163,7 @@
         else if (!_result.HasData)
         {
             <div class="card"><div class="empty-state">
-                <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 4v16"/></svg>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 4v16"/></svg>
                 <p>@L["Sched_Empty"]</p>
             </div></div>
         }
@@ -165,47 +194,79 @@
                     <div class="gantt-head-meta">
                         @if (_result!.Kpis.LateJobCount > 0)
                         {
-                            <span class="gantt-legend"><span class="gantt-legend-swatch late"></span>@L["Sched_Late"]</span>
+                            <span class="gantt-legend"><span class="gantt-legend-swatch late" aria-hidden="true"></span>@L["Sched_Late"]</span>
                         }
                         @if (_result.Rows.Any(r => r.Closed.Count > 0))
                         {
-                            <span class="muted gantt-legend-note"><span class="gantt-legend-swatch closed"></span>@L["Sched_ClosedLegend"]</span>
+                            <span class="muted gantt-legend-note"><span class="gantt-legend-swatch closed" aria-hidden="true"></span>@L["Sched_ClosedLegend"]</span>
                         }
                         @if (_result.TotalPausedSeconds > 0)
                         {
                             <span class="muted gantt-legend-note">@string.Format(L["Sched_TotalPaused"], Hours(_result.TotalPausedSeconds))</span>
                         }
+                        <button type="button" class="btn btn-ghost btn-sm gantt-table-toggle" aria-expanded="@(_showChartTable ? "true" : "false")"
+                                aria-controls="gantt-table" @onclick="() => _showChartTable = !_showChartTable">
+                            @(_showChartTable ? L["Ui_GanttHideTable"] : L["Ui_GanttShowTable"])
+                        </button>
                     </div>
                 </div>
                 <div class="card-body">
-                    <div class="gantt" role="region" aria-label="@L["Sched_Gantt"]" tabindex="0">
-                        @foreach (var row in _result.Rows)
+                    @*
+                        Every bar and every closed stretch is a button carrying the full
+                        explanation as its accessible name, with a roving tabindex: the
+                        chart is one tab stop, the arrow keys walk it, Enter reads the
+                        detail out into the live region below and Escape clears it.
+                        Before this the chart's own legend said "hover for the reason",
+                        which was an accurate description of a defect.
+                    *@
+                    <div class="gantt" @ref="_chart" role="region" aria-label="@L["Sched_Gantt"]" aria-describedby="gantt-help" tabindex="0">
+                        @for (var lane = 0; lane < _result.Rows.Count; lane++)
                         {
+                            var laneIndex = lane;
+                            var row = _result.Rows[laneIndex];
                             <div class="gantt-row">
                                 <div class="gantt-label" title="@row.WorkCenterName">@row.WorkCenterName</div>
                                 <div class="gantt-track">
-                                    @foreach (var closed in row.Closed)
+                                    @for (var c = 0; c < row.Closed.Count; c++)
                                     {
-                                        <div class="gantt-closed closed-@closed.Kind.ToString().ToLowerInvariant()"
-                                             style="left:@Pct(closed.StartSeconds)%;width:@Pct(closed.DurationSeconds)%"
-                                             title="@ClosedTitle(closed)"></div>
+                                        var closedIndex = c;
+                                        var closed = row.Closed[closedIndex];
+                                        var key = new CellKey(laneIndex, false, closedIndex);
+                                        <button type="button" id="@CellId(key)"
+                                                class="gantt-closed closed-@closed.Kind.ToString().ToLowerInvariant()"
+                                                style="left:@Pct(closed.StartSeconds)%;width:@Pct(closed.DurationSeconds)%"
+                                                title="@ClosedTitle(closed)"
+                                                aria-label="@CellName(row, key)"
+                                                aria-pressed="@Pressed(key)"
+                                                tabindex="@TabIndex(key)"
+                                                @onclick="() => Activate(key)"
+                                                @onkeydown="args => OnCellKey(args, key)"></button>
                                     }
                                     @foreach (var d in AxisTicks())
                                     {
-                                        <div class="gantt-grid" style="left:@Pct(d)%"></div>
+                                        <div class="gantt-grid" style="left:@Pct(d)%" aria-hidden="true"></div>
                                     }
-                                    @foreach (var bar in row.Bars)
+                                    @for (var b = 0; b < row.Bars.Count; b++)
                                     {
-                                        <div class="@BarCss(bar)"
-                                             style="left:@Pct(bar.StartSeconds)%;width:@BarWidth(bar)%"
-                                             title="@BarTitle(bar)">
-                                            <span>@bar.JobReference</span>
-                                        </div>
+                                        var barIndex = b;
+                                        var bar = row.Bars[barIndex];
+                                        var key = new CellKey(laneIndex, true, barIndex);
+                                        <button type="button" id="@CellId(key)"
+                                                class="@BarCss(bar)"
+                                                style="left:@Pct(bar.StartSeconds)%;width:@BarWidth(bar)%"
+                                                title="@BarTitle(bar)"
+                                                aria-label="@CellName(row, key)"
+                                                aria-pressed="@Pressed(key)"
+                                                tabindex="@TabIndex(key)"
+                                                @onclick="() => Activate(key)"
+                                                @onkeydown="args => OnCellKey(args, key)">
+                                            <span aria-hidden="true">@bar.JobReference</span>
+                                        </button>
                                     }
                                 </div>
                             </div>
                         }
-                        <div class="gantt-axis">
+                        <div class="gantt-axis" aria-hidden="true">
                             <div class="gantt-label"></div>
                             <div class="gantt-track">
                                 @foreach (var d in AxisTicks())
@@ -215,45 +276,89 @@
                             </div>
                         </div>
                     </div>
+
+                    @* Rendered whether or not anything is selected: a live region inserted
+                       already populated is not announced by any screen reader. *@
+                    <p class="gantt-detail" role="status" aria-live="polite">@_chartDetail</p>
+                    <p id="gantt-help" class="gantt-hint">@L["Ui_GanttHelp"]</p>
+                </div>
+
+                @* The chart as text. Hidden from sight until the toggle is pressed, but
+                   never hidden from assistive technology: the placement of every
+                   operation and the reason behind every gap exist nowhere else. *@
+                <div id="gantt-table" class="@(_showChartTable ? "card-body no-pad" : "sr-only")">
+                    <TableScroll Label="@L["Ui_GanttTableCaption"]">
+                        <table class="data-table chart-table">
+                            <caption class="sr-only">@L["Ui_GanttTableCaption"]</caption>
+                            <thead>
+                                <tr>
+                                    <th scope="col">@L["Field_WorkCenter"]</th>
+                                    <th scope="col">@L["Ui_ColDetail"]</th>
+                                    <th scope="col">@L["Ui_ColStart"]</th>
+                                    <th scope="col">@L["Ui_ColEnd"]</th>
+                                    <th scope="col" class="num">@L["Ui_ColDuration"]</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @for (var lane = 0; lane < _result.Rows.Count; lane++)
+                                {
+                                    var row = _result.Rows[lane];
+                                    @foreach (var key in _lanes[lane])
+                                    {
+                                        <tr @key="key">
+                                            <th scope="row" class="sticky-col">@row.WorkCenterName</th>
+                                            <td>@CellDetail(row, key)</td>
+                                            <td>@DayTime(CellStart(row, key))</td>
+                                            <td>@DayTime(CellEnd(row, key))</td>
+                                            <td class="num">@Hours(CellEnd(row, key) - CellStart(row, key))</td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </TableScroll>
                 </div>
             </section>
 
             <section class="card no-pad">
-                <div class="card-head pad"><h2>@L["Sched_JobsTable"]</h2></div>
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th scope="col">@L["Orders_Number"]</th>
-                            <th scope="col">@L["Field_PartName"]</th>
-                            <th scope="col" class="num">@L["Sched_Target"]</th>
-                            <th scope="col" class="num">@L["Sched_Completion"]</th>
-                            <th scope="col" class="num">@L["Sched_Lateness"]</th>
-                            <th scope="col">@L["Field_Status"]</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var j in _result.Jobs)
-                        {
+                <div class="card-head pad"><h2 id="jobs-table-title">@L["Sched_JobsTable"]</h2></div>
+                <TableScroll Label="@L["Sched_JobsTable"]">
+                    <table class="data-table jobs-table">
+                        <caption class="sr-only">@L["Sched_JobsTable"]</caption>
+                        <thead>
                             <tr>
-                                <td><span class="color-dot job-color-@j.ColorIndex"></span><span class="mono">@j.Reference</span></td>
-                                <td>@j.PartName</td>
-                                <td class="num">@DayTime(j.DueSeconds)</td>
-                                <td class="num">@DayTime(j.CompletionSeconds)</td>
-                                <td class="num @(j.IsLate ? "late-text" : null)">@Lateness(j.LatenessSeconds)</td>
-                                <td>
-                                    @if (j.IsLate)
-                                    {
-                                        <span class="pill late">@L["Sched_Late"]</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="pill ontime">@L["Sched_OnTime"]</span>
-                                    }
-                                </td>
+                                <th scope="col" class="sticky-col">@L["Orders_Number"]</th>
+                                <th scope="col">@L["Field_PartName"]</th>
+                                <th scope="col" class="num">@L["Sched_Target"]</th>
+                                <th scope="col" class="num">@L["Sched_Completion"]</th>
+                                <th scope="col" class="num">@L["Sched_Lateness"]</th>
+                                <th scope="col">@L["Field_Status"]</th>
                             </tr>
-                        }
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            @foreach (var j in _result.Jobs)
+                            {
+                                <tr @key="j.JobId">
+                                    <td class="sticky-col"><span class="color-dot job-color-@j.ColorIndex" aria-hidden="true">@JobLetter(j.ColorIndex)</span><span class="mono">@j.Reference</span></td>
+                                    <td>@j.PartName</td>
+                                    <td class="num">@DayTime(j.DueSeconds)</td>
+                                    <td class="num">@DayTime(j.CompletionSeconds)</td>
+                                    <td class="num @(j.IsLate ? "late-text" : null)">@Lateness(j.LatenessSeconds)</td>
+                                    <td>
+                                        @if (j.IsLate)
+                                        {
+                                            <span class="pill late">@L["Sched_Late"]</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="pill ontime">@L["Sched_OnTime"]</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </TableScroll>
             </section>
 
             <section class="card assistant-card">
@@ -273,7 +378,7 @@
                             </button>
                         }
                         <button class="icon-btn" aria-label="@L["Sched_Ai_Configure"]" title="@L["Sched_Ai_Configure"]" @onclick="OpenAiSettingsAsync">
-                            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3m-4.9-7.1-2.1 2.1m-8 8-2.1 2.1m0-12.2 2.1 2.1m8 8 2.1 2.1"/></svg>
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3m-4.9-7.1-2.1 2.1m-8 8-2.1 2.1m0-12.2 2.1 2.1m8 8 2.1 2.1"/></svg>
                         </button>
                     </div>
                 </div>
@@ -304,25 +409,30 @@
                         <h3 id="chat-title" class="chat-title">@L["Chat_Title"]</h3>
                         <p class="chat-intro muted">@L["Chat_Intro"]</p>
 
-                        @if (Chat.Turns.Count > 0)
-                        {
-                            <ol class="chat-thread" aria-live="polite" aria-label="@L["Chat_Title"]" tabindex="0">
-                                @foreach (var turn in Chat.Turns)
-                                {
-                                    <li class="chat-turn @(turn.Role == ChatRole.User ? "user" : "assistant")">
-                                        <div class="chat-bubble">@turn.Text</div>
-                                        @if (turn.Role == ChatRole.Assistant)
-                                        {
-                                            <span class="chat-source pill @(turn.Source == NarrationSource.Ai ? "ai" : "off")">@turn.SourceLabel</span>
-                                        }
-                                        @if (turn.Note is not null)
-                                        {
-                                            <p class="assistant-note chat-note">@turn.Note</p>
-                                        }
-                                    </li>
-                                }
-                            </ol>
-                        }
+                        @*
+                            Rendered even when empty. A live region has to be in the DOM
+                            *before* its content changes: inserting it together with its
+                            first two turns is why the first answer of every conversation
+                            was never announced, and the second one was.
+                        *@
+                        <ol class="chat-thread @(Chat.Turns.Count == 0 ? "empty" : null)"
+                            aria-live="polite" aria-relevant="additions" aria-label="@L["Chat_Title"]"
+                            tabindex="@(Chat.Turns.Count == 0 ? -1 : 0)">
+                            @foreach (var turn in Chat.Turns)
+                            {
+                                <li class="chat-turn @(turn.Role == ChatRole.User ? "user" : "assistant")">
+                                    <div class="chat-bubble">@turn.Text</div>
+                                    @if (turn.Role == ChatRole.Assistant)
+                                    {
+                                        <span class="chat-source pill @(turn.Source == NarrationSource.Ai ? "ai" : "off")">@turn.SourceLabel</span>
+                                    }
+                                    @if (turn.Note is not null)
+                                    {
+                                        <p class="assistant-note chat-note">@turn.Note</p>
+                                    }
+                                </li>
+                            }
+                        </ol>
 
                         @if (_chatBusy)
                         {
@@ -374,7 +484,7 @@
             </label>
             <label class="field wide">
                 <span>@L["Sched_Ai_Endpoint"]</span>
-                <input class="input" @bind="_aiForm.Endpoint" @bind:event="oninput" />
+                <input class="input" type="url" inputmode="url" spellcheck="false" autocomplete="off" @bind="_aiForm.Endpoint" @bind:event="oninput" />
             </label>
             <label class="field">
                 <span>@L["Sched_Ai_Model"]</span>
@@ -403,7 +513,24 @@
     private ScheduleResult? _result;
     private bool _running;
     private string? _runError;
+    private string? _runAnnouncement;
     private readonly CancellationTokenSource _lifetimeCancellation = new();
+
+    // ----- Gantt keyboard state -----
+    private ElementReference _chart;
+    private bool _chartInstalled;
+    private bool _showChartTable;
+    private string? _chartDetail;
+    private CellKey? _selectedCell;
+    private CellKey? _focusCell;
+    private bool _focusChartOnRender;
+
+    /// <summary>
+    /// The chart's cells lane by lane, ordered by start time — bars and closed
+    /// stretches interleaved, because "what happened next on this machine" is the
+    /// order a reader expects, not "all the bars, then all the gaps".
+    /// </summary>
+    private List<List<CellKey>> _lanes = [];
 
     // ----- assistant state -----
     private readonly AiForm _aiForm = new();
@@ -436,6 +563,8 @@
         {
             var parameters = _form.ToParameters();
             _result = await Scheduler.GenerateAsync(parameters, _lifetimeCancellation.Token);
+            BuildLanes();
+            _runAnnouncement = Announcement(_result);
 
             // Instant, offline, deterministic explanation of the run just produced.
             if (_result.Explanation is not null)
@@ -527,16 +656,29 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!_scrollChat)
-            return;
-        _scrollChat = false;
         try
         {
-            await JS.InvokeVoidAsync("workplanChat.scrollToEnd");
+            if (_result is { HasData: true } && !_chartInstalled)
+            {
+                _chartInstalled = true;
+                await JS.InvokeVoidAsync("workplanGantt.install", _chart);
+            }
+
+            if (_focusChartOnRender && _focusCell is { } cell)
+            {
+                _focusChartOnRender = false;
+                await JS.InvokeVoidAsync("workplanFocus.byId", CellId(cell));
+            }
+
+            if (_scrollChat)
+            {
+                _scrollChat = false;
+                await JS.InvokeVoidAsync("workplanChat.scrollToEnd");
+            }
         }
         catch (JSException)
         {
-            // cosmetic; the answer is on the page either way
+            // every one of these is cosmetic; the content is on the page either way
         }
     }
 
@@ -627,7 +769,7 @@
         if (bar.SetupSeconds > 0) title += $" · {L["Sched_Setup"]} {Hours(bar.SetupSeconds)}";
         if (bar.PausedSeconds > 0) title += $" · {L["Sched_Paused"]} {Hours(bar.PausedSeconds)}";
         if (_result?.Horizon is { } horizon)
-            title += $" · {Stamp(horizon.AddSeconds(bar.StartSeconds))} – {Stamp(horizon.AddSeconds(bar.EndSeconds))}";
+            title += $" · {Format.Stamp(horizon.AddSeconds(bar.StartSeconds))} – {Format.Stamp(horizon.AddSeconds(bar.EndSeconds))}";
         return bar.IsLate ? $"{title} · {L["Sched_Late"]}" : title;
     }
 
@@ -642,9 +784,165 @@
         };
         var text = string.IsNullOrEmpty(label) ? kind.Value : $"{kind} · {label}";
         if (_result?.Horizon is { } horizon)
-            text += $" · {Stamp(horizon.AddSeconds(closed.StartSeconds))} – {Stamp(horizon.AddSeconds(closed.EndSeconds))}";
+            text += $" · {Format.Stamp(horizon.AddSeconds(closed.StartSeconds))} – {Format.Stamp(horizon.AddSeconds(closed.EndSeconds))}";
         return text;
     }
+
+    // ----- the chart as something other than a picture -----
+
+    /// <summary>
+    /// Identifies one cell of the chart: which lane, whether it is an operation or a
+    /// closed stretch, and its index within that kind. Index-within-kind rather than
+    /// a flat position, because the two kinds are rendered in separate loops (closed
+    /// stretches paint underneath the bars) while the keyboard walks them as one.
+    /// </summary>
+    private readonly record struct CellKey(int Lane, bool IsBar, int Index);
+
+    private void BuildLanes()
+    {
+        _lanes = [];
+        _selectedCell = null;
+        _chartDetail = null;
+
+        if (_result is null)
+        {
+            _focusCell = null;
+            return;
+        }
+
+        for (var lane = 0; lane < _result.Rows.Count; lane++)
+        {
+            var row = _result.Rows[lane];
+            var cells = new List<(long Start, CellKey Key)>(row.Bars.Count + row.Closed.Count);
+            for (var i = 0; i < row.Closed.Count; i++)
+                cells.Add((row.Closed[i].StartSeconds, new CellKey(lane, false, i)));
+            for (var i = 0; i < row.Bars.Count; i++)
+                cells.Add((row.Bars[i].StartSeconds, new CellKey(lane, true, i)));
+            _lanes.Add([.. cells.OrderBy(c => c.Start).Select(c => c.Key)]);
+        }
+
+        // One tab stop for the whole chart: the first cell that exists owns it.
+        _focusCell = null;
+        foreach (var lane in _lanes)
+        {
+            if (lane.Count == 0)
+                continue;
+            _focusCell = lane[0];
+            break;
+        }
+    }
+
+    private static string CellId(CellKey key) => $"gantt-{(key.IsBar ? "bar" : "gap")}-{key.Lane}-{key.Index}";
+
+    private string TabIndex(CellKey key) => _focusCell == key ? "0" : "-1";
+
+    private string Pressed(CellKey key) => _selectedCell == key ? "true" : "false";
+
+    /// <summary>
+    /// The accessible name of a cell. It leads with the work centre — the lane label
+    /// is a sibling <c>div</c>, so nothing else would say which machine the reader is
+    /// on — and then carries the same sentence the mouse gets as a tooltip.
+    /// </summary>
+    private string CellName(GanttRow row, CellKey key) => $"{row.WorkCenterName} · {CellDetail(row, key)}";
+
+    private string CellDetail(GanttRow row, CellKey key) =>
+        key.IsBar ? BarTitle(row.Bars[key.Index]) : ClosedTitle(row.Closed[key.Index]);
+
+    private static long CellStart(GanttRow row, CellKey key) =>
+        key.IsBar ? row.Bars[key.Index].StartSeconds : row.Closed[key.Index].StartSeconds;
+
+    private static long CellEnd(GanttRow row, CellKey key) =>
+        key.IsBar ? row.Bars[key.Index].EndSeconds : row.Closed[key.Index].EndSeconds;
+
+    /// <summary>Enter, Space or a click reads the cell's explanation into the live region.</summary>
+    private void Activate(CellKey key)
+    {
+        _focusCell = key;
+        if (_selectedCell == key)
+        {
+            _selectedCell = null;
+            _chartDetail = null;
+            return;
+        }
+
+        _selectedCell = key;
+        _chartDetail = _result is null ? null : CellName(_result.Rows[key.Lane], key);
+    }
+
+    /// <summary>
+    /// The roving tabindex. Left/right walk one machine's day; up/down change machine
+    /// and keep the position, so a reader can follow one moment across the plant;
+    /// Home/End jump to the ends of the lane; Escape clears the explanation.
+    /// Enter and Space are left to the button itself.
+    /// </summary>
+    private void OnCellKey(KeyboardEventArgs args, CellKey key)
+    {
+        if (args.Key == "Escape")
+        {
+            _selectedCell = null;
+            _chartDetail = null;
+            return;
+        }
+
+        if (_lanes.Count == 0)
+            return;
+
+        var lane = key.Lane;
+        var position = _lanes[lane].IndexOf(key);
+        if (position < 0)
+            return;
+
+        switch (args.Key)
+        {
+            case "ArrowRight": position++; break;
+            case "ArrowLeft": position--; break;
+            case "Home": position = 0; break;
+            case "End": position = _lanes[lane].Count - 1; break;
+            case "ArrowDown": lane = NextLane(lane, +1); break;
+            case "ArrowUp": lane = NextLane(lane, -1); break;
+            default: return;
+        }
+
+        position = Math.Clamp(position, 0, _lanes[lane].Count - 1);
+        _focusCell = _lanes[lane][position];
+        _focusChartOnRender = true;
+    }
+
+    /// <summary>Skips lanes with nothing on them; an empty lane cannot hold focus.</summary>
+    private int NextLane(int from, int step)
+    {
+        for (var lane = from + step; lane >= 0 && lane < _lanes.Count; lane += step)
+        {
+            if (_lanes[lane].Count > 0)
+                return lane;
+        }
+        return from;
+    }
+
+    /// <summary>
+    /// A, B, C … per job colour. The eight hues were the only thing separating two
+    /// jobs on the chart and in the table, which fails for a colour-blind reader, a
+    /// greyscale print and a forced-colours theme alike.
+    /// </summary>
+    private static char JobLetter(int colorIndex) => (char)('A' + colorIndex % 26);
+
+    private string Announcement(ScheduleResult result) =>
+        result.HasData
+            ? string.Format(
+                L["Ui_ScheduleAnnounced"],
+                result.Kpis.JobCount - result.Kpis.LateJobCount,
+                result.Kpis.JobCount,
+                Hours(result.Kpis.MakespanSeconds))
+            : L["Sched_Empty"].Value;
+
+    /// <summary>The allowed range, spelled out, so it is not hidden in a `max` attribute.</summary>
+    private string Range(double min, double max) =>
+        string.Format(L["Ui_Range"], Bound(min), Bound(max));
+
+    private static string Bound(double value) =>
+        value == Math.Floor(value)
+            ? Format.Number((decimal)value)
+            : value.ToString("0.###", CultureInfo.CurrentUICulture);
 
     /// <summary>
     /// Axis ticks in seconds from the horizon: every 6 h for a short schedule,
@@ -681,19 +979,15 @@
             return Hours(seconds);
 
         var moment = horizon.AddSeconds(seconds);
-        return moment.TimeOfDay == TimeSpan.Zero
-            ? moment.ToString("ddd d.M.", CultureInfo.CurrentUICulture)
-            : moment.ToString("HH:mm", CultureInfo.CurrentUICulture);
+        return moment.TimeOfDay == TimeSpan.Zero ? Format.DayMonth(moment) : Format.Time(moment);
     }
 
     private string Hours(long seconds) => Format.Hours(seconds / 60m);
 
-    private static string Stamp(DateTime moment) => moment.ToString("ddd d.M. HH:mm", CultureInfo.CurrentUICulture);
-
     private string DayTime(long seconds)
     {
         if (_result?.Horizon is { } horizon)
-            return Stamp(horizon.AddSeconds(seconds));
+            return Format.Stamp(horizon.AddSeconds(seconds));
 
         long day = seconds / DaySeconds + 1;
         long within = seconds % DaySeconds;
@@ -702,12 +996,16 @@
 
     private string Lateness(long seconds)
     {
-        if (seconds == 0) return "0";
+        if (seconds == 0) return Format.Number(0);
         string sign = seconds > 0 ? "+" : "−";
         return sign + Hours(Math.Abs(seconds));
     }
 
-    private static string Percent(double rate) => (rate * 100).ToString("0") + " %";
+    /// <summary>
+    /// Whether a space precedes the sign is the culture's decision, not ours; it used
+    /// to be hard-coded to the German convention in both languages.
+    /// </summary>
+    private static string Percent(double rate) => Format.Percent(rate);
 
     private static string ToneClass(FindingTone tone) => tone switch
     {
@@ -740,6 +1038,18 @@
     /// <summary>Mutable view-model for the parameter form, projected into immutable engine parameters.</summary>
     private sealed class Form
     {
+        // The engine throws ArgumentOutOfRangeException for a parameter outside its
+        // range, and the page catches every exception into one "review the inputs"
+        // banner over a form with seven inputs. `min`/`max` alone do not help: there
+        // is no <form>, so the browser never runs constraint validation and a typed
+        // 100 binds happily to a field advertising max 64. Clamping on bind means the
+        // value the user sees is the value that runs.
+        public const double TwkMin = 0.1;
+        public const double TwkMax = 100;
+        public const int MinutesMax = 5_256_000;    // ten years, the engine's own ceiling
+        public const int MultiStartMax = 64;
+        public const int LocalSearchMax = 20_000;
+
         public DispatchRule DispatchRule { get; set; } = DispatchRule.EarliestDueDate;
         public DueDateRule DueDateRule { get; set; } = DueDateRule.Explicit;
         public double TwkFlowFactor { get; set; } = 2.0;
@@ -749,6 +1059,18 @@
         public int MultiStartRuns { get; set; } = 8;
         public int LocalSearchMaxSteps { get; set; } = 2000;
         public int Seed { get; set; } = 20260616;
+
+        /// <summary>Pulls every parameter back inside the range its own field advertises.</summary>
+        public void Clamp()
+        {
+            TwkFlowFactor = Math.Clamp(TwkFlowFactor, TwkMin, TwkMax);
+            NopMinutesPerOp = Math.Clamp(NopMinutesPerOp, 0, MinutesMax);
+            SlackMinutes = Math.Clamp(SlackMinutes, 0, MinutesMax);
+            ConMinutes = Math.Clamp(ConMinutes, 0, MinutesMax);
+            MultiStartRuns = Math.Clamp(MultiStartRuns, 1, MultiStartMax);
+            LocalSearchMaxSteps = Math.Clamp(LocalSearchMaxSteps, 0, LocalSearchMax);
+            Seed = Math.Max(0, Seed);
+        }
 
         public SchedulingParameters ToParameters() => new()
         {
