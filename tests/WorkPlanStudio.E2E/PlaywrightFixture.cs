@@ -13,8 +13,10 @@ namespace WorkPlanStudio.E2E;
 /// browser and the classes run concurrently, while the tests inside one class
 /// stay sequential. Every test still opens its own <see cref="IBrowserContext"/>,
 /// so storage, the SQLite snapshot and the persona remain isolated — the browser
-/// is shared, the state is not. <c>xunit.runner.json</c> caps how many classes
-/// run at once so a two-core runner is not oversubscribed.
+/// is shared, the state is not. <c>xunit.runner.json</c> caps the run at three
+/// classes at once: these tests spend most of their time waiting on the app
+/// rather than on the local CPU, and three browsers is what bounds memory on a
+/// large developer machine.
 /// </summary>
 public sealed class PlaywrightFixture : IAsyncLifetime
 {
