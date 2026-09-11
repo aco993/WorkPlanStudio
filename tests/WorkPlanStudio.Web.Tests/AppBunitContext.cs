@@ -3,16 +3,18 @@ using Bunit;
 namespace WorkPlanStudio.Web.Tests;
 
 /// <summary>
-/// The base every component test uses, for one reason: bUnit's default
-/// <see cref="BunitContext.DefaultWaitTimeout"/> is one second, and one second is
-/// a measurement of the machine, not of the component.
+/// The base every component test uses. It exists for one setting: bUnit's
+/// default <see cref="BunitContext.DefaultWaitTimeout"/> is one second, which is
+/// a measurement of the machine rather than of the component. A shared CI runner
+/// compiling three other projects can miss it while the component is perfectly
+/// correct.
 /// <para>
-/// Two of these tests failed roughly once in four runs on a developer machine
-/// that was busy compiling — never in isolation, and never with a wrong value,
-/// only with "the assertion did not become true in time". A shared CI runner is
-/// busier than that. Raising the ceiling costs nothing on the passing path,
-/// because a satisfied assertion returns as soon as it is satisfied; it only
-/// changes how long a genuinely failing test takes to admit it.
+/// Raising the ceiling costs nothing on the passing path — a satisfied assertion
+/// returns as soon as it is satisfied — and only changes how long a genuinely
+/// failing test takes to admit it. It is not, and was not, a fix for a flaky
+/// test: the one intermittent failure this suite had was a stale element, not a
+/// slow one, and is fixed at its cause in
+/// <see cref="GanttAccessibilityTests"/>.
 /// </para>
 /// </summary>
 public abstract class AppBunitContext : BunitContext
