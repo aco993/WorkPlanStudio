@@ -20,14 +20,6 @@ public enum WorkingTimeRuleId
     /// <summary>§5 ArbZG — 11 h of uninterrupted rest between two working days of the same crew.</summary>
     RestPeriod,
 
-    /// <summary>
-    /// §5 (2) ArbZG — a rest shortened to 10 h is lawful only in the sectors the
-    /// subsection names, and only if another rest of the same crew is extended to
-    /// 12 h within a month. Raised when the shortening is taken and the
-    /// compensation is not in the pattern.
-    /// </summary>
-    RestCompensation,
-
     /// <summary>§6 ArbZG — night work (more than 2 h between 23:00 and 06:00) is capped at 8 h, or 10 h where the one-month average stays at 8 h.</summary>
     NightWork,
 
@@ -37,15 +29,26 @@ public enum WorkingTimeRuleId
     /// <summary>§9 ArbZG — no work on public holidays; which days those are is set by the plant's state.</summary>
     HolidayRest,
 
+    /// <summary>§11 ArbZG — at least 15 Sundays a year must stay free even where Sunday work is permitted.</summary>
+    FreeSundays,
+
+    // The three below were added after the first seven. They are appended rather
+    // than filed in section order so the values of the originals do not move.
+
+    /// <summary>
+    /// §5 (2) ArbZG — a rest shortened to 10 h is lawful only in the sectors the
+    /// subsection names, and only if another rest of the same crew is extended to
+    /// 12 h within a month. Raised when the shortening is taken and the
+    /// compensation is not in the pattern.
+    /// </summary>
+    RestCompensation,
+
     /// <summary>
     /// §9 (2) ArbZG — the moved Sunday boundary is reserved for plants running a
     /// regular day <i>and</i> night shift. Raised when a pattern that is not
     /// multi-shift claims it.
     /// </summary>
     MultiShiftRequirement,
-
-    /// <summary>§11 ArbZG — at least 15 Sundays a year must stay free even where Sunday work is permitted.</summary>
-    FreeSundays,
 
     /// <summary>
     /// §11 (2) / (3) ArbZG — work on a Sunday earns a replacement rest day within
