@@ -45,16 +45,25 @@ public sealed partial record AssistantSettings
     [JsonIgnore]
     public bool HasApiKey => !string.IsNullOrWhiteSpace(ApiKey);
 
-    /// <summary>True when the assistant is enabled and has everything it needs to run.</summary>
-    public bool IsConfigured =>
-        Enabled
-        && Enum.IsDefined(Provider)
-        && HasApiKey
-        && ApiKey.Length <= 4096
-        && IsHeaderSafe(ApiKey)
+    /// <summary>
+    /// Everything except the key checks out. The settings dialog needs this on
+    /// its own: a blank key field there means "keep the stored key", so the
+    /// dialog never holds the secret and therefore cannot judge completeness
+    /// with it.
+    /// </summary>
+    public bool IsUsableApartFromTheKey =>
+        Enum.IsDefined(Provider)
         && !string.IsNullOrWhiteSpace(Model)
         && ModelName().IsMatch(Model.Trim())
         && TryGetEndpoint(out _);
+
+    /// <summary>True when the assistant is enabled and has everything it needs to run.</summary>
+    public bool IsConfigured =>
+        Enabled
+        && IsUsableApartFromTheKey
+        && HasApiKey
+        && ApiKey.Length <= 4096
+        && IsHeaderSafe(ApiKey);
 
     /// <summary>Accepts HTTPS endpoints, plus HTTP loopback for local development.</summary>
     public bool TryGetEndpoint(out Uri? endpoint)

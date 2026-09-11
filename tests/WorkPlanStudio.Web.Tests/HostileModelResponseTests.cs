@@ -230,6 +230,19 @@ public class HostileModelResponseTests
         Assert.True((Hostile.Configured(AssistantProvider.Gemini, key) with { Model = "gemini-2.5-flash" }).IsConfigured);
     }
 
+    [Fact]
+    public void Settings_without_a_key_are_still_complete_apart_from_the_key()
+    {
+        // What the settings dialog asks, because a blank key field there means
+        // "keep the stored key" and the dialog never holds the secret.
+        var keyless = Hostile.Configured(AssistantProvider.Gemini, "") with { Model = "gemini-2.5-flash" };
+
+        Assert.True(keyless.IsUsableApartFromTheKey);
+        Assert.False(keyless.IsConfigured);
+        Assert.False((keyless with { Model = "gemini?alt=sse" }).IsUsableApartFromTheKey);
+        Assert.False((keyless with { Endpoint = "http://example.com/v1" }).IsUsableApartFromTheKey);
+    }
+
     [Theory]
     [InlineData("sk-with\r\nInjected: header")]
     [InlineData("sk-with\ttab")]
