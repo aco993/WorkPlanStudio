@@ -41,7 +41,7 @@ public sealed class BrowserDatabaseTests
         BrowserDatabaseFailure expected)
     {
         using var files = new TempDatabaseFiles();
-        var storage = new FakeStorage { Stored = new(payload, 3) };
+        var storage = new FakeStorage { Stored = new(payload, SchemaUpgrades.CurrentVersion) };
 
         var result = await files.CreateDatabase("invalid.db", storage).EnsureReadyAsync();
 
@@ -56,7 +56,7 @@ public sealed class BrowserDatabaseTests
     {
         using var files = new TempDatabaseFiles();
         var payload = Convert.ToBase64String(Enumerable.Repeat((byte)42, 200).ToArray());
-        var storage = new FakeStorage { Stored = new(payload, 3) };
+        var storage = new FakeStorage { Stored = new(payload, SchemaUpgrades.CurrentVersion) };
 
         var result = await files.CreateDatabase("not-sqlite.db", storage).EnsureReadyAsync();
 

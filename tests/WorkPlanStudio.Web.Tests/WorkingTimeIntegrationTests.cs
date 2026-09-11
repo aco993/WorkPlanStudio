@@ -22,8 +22,18 @@ public class WorkingTimeIntegrationTests
     private static WorkPlan Plan(int id, params Operation[] ops) =>
         new() { Id = id, PlanNumber = $"WP-{id}", PartName = $"Part {id}", Status = WorkPlanStatus.Released, LotSize = 1, Operations = ops.ToList() };
 
+    // The work centre is attached, not just its id: RoutingSnapshot.Capture now
+    // refuses to freeze an empty lane label rather than writing one forever.
     private static Operation Op(int number, int workCenterId, decimal minutes) =>
-        new() { OperationNumber = number, WorkCenterId = workCenterId, Description = $"Op {number}", SetupTimeMinutes = minutes, TimePerPieceMinutes = 0 };
+        new()
+        {
+            OperationNumber = number,
+            WorkCenterId = workCenterId,
+            WorkCenter = Center(workCenterId, ShiftPatterns.Continuous.Key),
+            Description = $"Op {number}",
+            SetupTimeMinutes = minutes,
+            TimePerPieceMinutes = 0
+        };
 
     private static ProductionOrder Released(WorkPlan plan, int dueDays = 10) => new()
     {
@@ -31,8 +41,8 @@ public class WorkingTimeIntegrationTests
         OrderNumber = $"PO-{plan.Id}",
         WorkPlanId = plan.Id,
         Quantity = 1,
-        ReleaseUtc = Horizon,
-        DueUtc = Horizon.AddDays(dueDays),
+        ReleaseLocal = Horizon,
+        DueLocal = Horizon.AddDays(dueDays),
         Status = ProductionOrderStatus.Released,
         RoutingSnapshotJson = RoutingSnapshot.Capture(plan).Serialize()
     };

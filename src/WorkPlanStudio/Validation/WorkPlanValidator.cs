@@ -9,6 +9,9 @@ public static class WorkPlanValidator
     public const int MaxOperationNumber = 1_000_000;
     public const decimal MaxOperationMinutes = 1_000_000m;
 
+    /// <summary>Decimal places an operation time may carry; the column stores exactly this.</summary>
+    public const int MinutesScale = 2;
+
     public static IReadOnlyList<ValidationIssue> Validate(
         WorkPlan plan,
         IReadOnlyDictionary<int, WorkCenter> centers,
@@ -51,8 +54,12 @@ public static class WorkPlanValidator
 
             if (operation.SetupTimeMinutes < 0 || operation.SetupTimeMinutes > MaxOperationMinutes)
                 issues.Add(new(prefix, "Val_SetupTimeRange", 0, MaxOperationMinutes));
+            else if (Text.ExceedsScale(operation.SetupTimeMinutes, MinutesScale))
+                issues.Add(new(prefix, "Val_Scale", MinutesScale));
             if (operation.TimePerPieceMinutes < 0 || operation.TimePerPieceMinutes > MaxOperationMinutes)
                 issues.Add(new(prefix, "Val_RunTimeRange", 0, MaxOperationMinutes));
+            else if (Text.ExceedsScale(operation.TimePerPieceMinutes, MinutesScale))
+                issues.Add(new(prefix, "Val_Scale", MinutesScale));
 
             if (!centers.TryGetValue(operation.WorkCenterId, out var center))
                 issues.Add(new(prefix, "Val_WorkCenterMissing", operation.WorkCenterId));
@@ -88,6 +95,8 @@ public static class WorkPlanValidator
             issues.Add(new(field, "Val_Required"));
         else if (value.Trim().Length > maxLength)
             issues.Add(new(field, "Val_MaxLength", maxLength));
+        else if (Text.HasControlCharacters(value))
+            issues.Add(new(field, "Val_SingleLine"));
     }
 
     private static void ValidateOptionalLength(
@@ -98,5 +107,7 @@ public static class WorkPlanValidator
     {
         if (value?.Trim().Length > maxLength)
             issues.Add(new(field, "Val_MaxLength", maxLength));
+        else if (Text.HasControlCharacters(value))
+            issues.Add(new(field, "Val_SingleLine"));
     }
 }

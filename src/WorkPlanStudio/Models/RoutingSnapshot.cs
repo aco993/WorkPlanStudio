@@ -44,6 +44,12 @@ public sealed record RoutingSnapshot(
     };
 
     /// <summary>Freezes a plan's routing. Operations are ordered so a replay is stable.</summary>
+    /// <exception cref="InvalidOperationException">
+    /// An operation was loaded without its work centre. The snapshot is written
+    /// once and never rewritten, so an empty work-centre name here is permanent —
+    /// blank lane labels on every future Gantt for that order, with no way back.
+    /// Failing loudly at capture is the only point at which it is still fixable.
+    /// </exception>
     public static RoutingSnapshot Capture(WorkPlan plan)
     {
         ArgumentNullException.ThrowIfNull(plan);
@@ -59,10 +65,18 @@ public sealed record RoutingSnapshot(
                     o.OperationNumber,
                     o.Description,
                     o.WorkCenterId,
-                    o.WorkCenter?.Name ?? "",
+                    (o.WorkCenter ?? throw new InvalidOperationException(
+                        $"Operation {o.OperationNumber} was loaded without its work center, "
+                        + "so the routing snapshot would freeze an empty name.")).Name,
                     o.SetupTimeMinutes,
                     o.TimePerPieceMinutes))]);
     }
+
+    /// <summary>
+    /// The distinct work centres this routing needs, which is what
+    /// <see cref="OrderRoutingCenter"/> rows are built from.
+    /// </summary>
+    public IEnumerable<int> WorkCenterIds => Operations.Select(o => o.WorkCenterId).Distinct();
 
     public string Serialize() => JsonSerializer.Serialize(this, Options);
 

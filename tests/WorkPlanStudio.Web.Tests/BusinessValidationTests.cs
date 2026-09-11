@@ -26,6 +26,7 @@ public class BusinessValidationTests
                 OperationNumber = 10,
                 Description = " Cut ",
                 WorkCenterId = 1,
+                WorkCenter = Center(),
                 SetupTimeMinutes = 1,
                 TimePerPieceMinutes = 2
             }
@@ -118,6 +119,7 @@ public class BusinessValidationTests
 
         var plan = ValidPlan();
         plan.Operations[0].WorkCenterId = 2;
+        plan.Operations[0].WorkCenter = invalid;
         var rejected = ScheduleMapper.BuildInputFromOrders(
             [ReleasedOrder(plan)],
             [valid, invalid],
@@ -134,8 +136,8 @@ public class BusinessValidationTests
         WorkPlanId = plan.Id,
         Quantity = Math.Max(1, plan.LotSize),
         Priority = 1,
-        ReleaseUtc = new DateTime(2026, 6, 15, 6, 0, 0, DateTimeKind.Utc),
-        DueUtc = new DateTime(2026, 6, 25, 6, 0, 0, DateTimeKind.Utc),
+        ReleaseLocal = new DateTime(2026, 6, 15, 6, 0, 0, DateTimeKind.Utc),
+        DueLocal = new DateTime(2026, 6, 25, 6, 0, 0, DateTimeKind.Utc),
         Status = ProductionOrderStatus.Released,
         RoutingSnapshotJson = RoutingSnapshot.Capture(plan).Serialize()
     };

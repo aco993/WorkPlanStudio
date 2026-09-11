@@ -14,8 +14,19 @@ public class WorkCenter
 
     public string Name { get; set; } = "";
 
-    /// <summary>Accounting cost center this work center belongs to.</summary>
-    public string CostCenter { get; set; } = "";
+    /// <summary>
+    /// The accounting cost centre this work centre books against, or <c>null</c>
+    /// when Controlling has not assigned one yet.
+    /// <para>
+    /// Nullable on purpose. The column it replaces allowed an empty string, so a
+    /// required foreign key could not be filled for every existing row without
+    /// inventing a cost centre that nobody owns — and inventing master data
+    /// during an upgrade is worse than admitting the gap. See ADR 0016.
+    /// </para>
+    /// </summary>
+    public int? CostCenterId { get; set; }
+
+    public CostCenter? CostCenter { get; set; }
 
     /// <summary>Machine-hour rate used to estimate operation cost.</summary>
     public decimal HourlyRate { get; set; }
