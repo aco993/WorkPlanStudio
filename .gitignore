@@ -49,6 +49,10 @@ wwwroot/_framework/
 *.db-shm
 *.db-wal
 
+# Python bytecode from the repository checks in .github/scripts
+__pycache__/
+*.py[cod]
+
 # OS files
 .DS_Store
 Thumbs.db
