@@ -920,3 +920,20 @@ select.input { cursor: pointer; }
 /* The error summary's list: tight to the heading above it, indented enough for
    the markers to sit outside the text. */
 .error-summary-list { margin: .35rem 0 0; padding-left: 1.1rem; }
+
+/* ----- CSV import -----
+   The drop zone hides a real <input type=file> over its whole area rather than
+   faking one: the file picker cannot be opened from script without a user
+   gesture on a real input, and a fake one would leave keyboard users with a
+   control that looks operable and is not. :focus-within is what puts the ring
+   on the zone when that invisible input takes focus. */
+    .import-drop { position: relative; border: 2px dashed var(--border-strong); border-radius: var(--radius); padding: 1.6rem 1rem; text-align: center; background: var(--surface-2); }
+    .import-drop.over { border-color: var(--primary); background: var(--primary-soft); }
+    .import-drop input[type=file] { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+    .import-drop:focus-within { outline: 3px solid var(--primary); outline-offset: 2px; }
+    .import-drop-icon { width: 30px; height: 30px; fill: none; stroke: var(--text-soft); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+    .import-drop label { font-weight: 600; display: block; margin-top: .3rem; }
+    .import-map-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: .9rem 1rem; }
+    .import-counts { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: 1rem; }
+    .import-bar { height: 6px; border-radius: 3px; background: var(--surface-2); overflow: hidden; }
+    .import-bar > span { display: block; height: 100%; background: var(--primary); }

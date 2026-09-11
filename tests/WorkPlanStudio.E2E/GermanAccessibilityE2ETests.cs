@@ -43,7 +43,7 @@ public sealed class GermanAccessibilityE2ETests : IClassFixture<PlaywrightFixtur
         await page.GotoAsync($"{_fixture.BaseUrl}/");
         await page.EvaluateAsync("() => localStorage.setItem('BlazorCulture', 'de-DE')");
         await AppReady.GotoAsync(page, $"{_fixture.BaseUrl}{route}");
-        await page.WaitForSelectorAsync(".gantt, .empty-state, .data-table, .glance-kpis, .about-grid, .form-grid, .param-grid", new() { Timeout = AppReady.BootTimeoutMilliseconds });
+        await page.WaitForSelectorAsync(AppReady.ContentSelector, new() { Timeout = AppReady.BootTimeoutMilliseconds });
         await AppReady.SettledAsync(page);
 
         // Guard the premise: a scan of an English page that silently failed to

@@ -14,6 +14,17 @@ internal static class AppReady
     public const int BootTimeoutMilliseconds = 60_000;
 
     /// <summary>
+    /// "This route has finished drawing its own content", as one selector rather
+    /// than two copies. It listed the shapes the routes happened to have when it
+    /// was written, so adding a page whose body is a plain card — the account
+    /// page — made the scan hang for a minute and then fail on a page that was
+    /// perfectly healthy. `.card-body` is the general case and the others stay
+    /// because they are the routes whose content arrives after their card does.
+    /// </summary>
+    public const string ContentSelector =
+        ".gantt, .empty-state, .data-table, .glance-kpis, .about-grid, .form-grid, .param-grid, .card-body";
+
+    /// <summary>
     /// Navigates and waits for <paramref name="readySelector"/>. The first
     /// navigation in a fresh context downloads and starts the WebAssembly
     /// runtime, which on a loaded shared runner occasionally overruns the

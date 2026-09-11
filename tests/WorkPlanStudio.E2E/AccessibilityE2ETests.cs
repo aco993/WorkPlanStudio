@@ -28,7 +28,8 @@ public sealed class AccessibilityE2ETests : IClassFixture<PlaywrightFixture>
     public static IEnumerable<string> Routes { get; } =
     [
         "/", "/schedule", "/production-orders", "/work-plans", "/work-plans/new",
-        "/work-plans/1", "/work-centers", "/working-time", "/about"
+        "/work-plans/1", "/work-centers", "/cost-centers", "/import", "/working-time",
+        "/sign-in", "/about"
     ];
 
     public static TheoryData<string, string> RoutesAndThemes()
@@ -95,7 +96,7 @@ public sealed class AccessibilityE2ETests : IClassFixture<PlaywrightFixture>
         await page.GotoAsync($"{_fixture.BaseUrl}/");
         await page.EvaluateAsync("t => localStorage.setItem('workplanstudio.settings.theme', t)", theme);
         await AppReady.GotoAsync(page, $"{_fixture.BaseUrl}{route}");
-        await page.WaitForSelectorAsync(".gantt, .empty-state, .data-table, .glance-kpis, .about-grid, .form-grid, .param-grid", new() { Timeout = AppReady.BootTimeoutMilliseconds });
+        await page.WaitForSelectorAsync(AppReady.ContentSelector, new() { Timeout = AppReady.BootTimeoutMilliseconds });
         await AppReady.SettledAsync(page);
 
         await AssertNoViolationsAsync(page, $"{route} ({theme})", route);
