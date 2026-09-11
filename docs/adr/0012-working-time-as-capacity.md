@@ -69,9 +69,17 @@ calendar and hands the page the annotated segments for the Gantt shading.
 - ➖ Wall-clock only: the model has no time zone and no daylight-saving
   transition. A plant's local day is the axis, which is right for one plant
   and wrong for two.
+  **Amended 2026-09-11:** the *pattern* is still wall-clock, but
+  `WorkingTimeline.Evaluate(TimeZoneInfo)` measures real elapsed hours, and both
+  transitions are tested — a night shift across the autumn change is nine hours and
+  is reported as the §6 (2) breach it appears on the clock to keep.
 - ➖ The §3 and §6 averaging periods are honoured as caps, not tracked as
   averages over 24 weeks or a month. A plant using the extension every day
   is not flagged.
+  **No longer true as of 2026-09-11.** The averages are computed per crew, with the
+  worst window, its Werktage divisor, the first breach date and the compensation days
+  owed, and the Working-time page shows them. See
+  [ADR 0024](0024-arbzg-in-the-ui.md), which supersedes this paragraph.
 - ➖ An operation longer than the longest shift (breaks bridged) can never be
   placed. It is reported as a rejected order rather than split across days,
   because the model still has no preemption beyond breaks.

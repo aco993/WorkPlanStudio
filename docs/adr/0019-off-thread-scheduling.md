@@ -1,8 +1,8 @@
 # 19. Slice the scheduling run on the one thread there is, rather than pretend to leave it
 
-* Status: accepted
-* Date: 2026-09-11
-* Extends [ADR 0001](0001-pure-scheduling-library.md), which keeps the engine pure and
+- **Status:** Accepted
+- **Date:** 2026-09-11
+- Extends [ADR 0001](0001-pure-scheduling-library.md), which keeps the engine pure and
   synchronous; this record is about the host, not the engine.
 
 ## Context

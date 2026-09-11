@@ -1,7 +1,9 @@
 # 6. Explicit browser-storage recovery instead of migrations
 
-- Status: Accepted
-- Date: 2026-07-12
+- **Status:** Accepted
+- **Date:** 2026-07-12
+- **Amended:** 2026-09-11 — the schema number below has moved with the model, and
+  versions one and two steps behind are now upgraded rather than refused
 
 ## Context
 
@@ -13,7 +15,11 @@ Full migrations would require retaining and testing every historical browser dat
 
 Choose explicit demo-storage behavior:
 
-- schema version 3 represents the current model;
+- a single schema version represents the current model — **7** as of 0.3.0, read
+  from `SchemaUpgrades.CurrentVersion` and never written as a literal;
+- a payload at version **5 or 6** is upgraded in place, preserving primary keys,
+  rather than refused (added in 0.3.0; see [ADR 0016](0016-cost-centre-master-data.md));
+- a payload further behind, or from a newer deployment, still enters recovery;
 - incompatible, corrupt, truncated or unreadable payloads enter typed recovery state;
 - the stored payload is not overwritten automatically;
 - users can export the original versioned payload and explicitly confirm reset/reseed;

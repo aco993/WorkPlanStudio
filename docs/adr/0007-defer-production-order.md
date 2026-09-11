@@ -1,7 +1,9 @@
 # 7. Defer ProductionOrder and constrain scheduling scope
 
-- Status: Accepted
-- Date: 2026-07-12
+- **Status:** Superseded by [ADR 0011](0011-production-orders-own-routing-snapshots.md)
+- **Date:** 2026-07-12
+- Superseded: 2026-08-30 — production orders exist, carry a real customer due date,
+  and `DueDateRule.Explicit` is the default
 
 ## Context
 
