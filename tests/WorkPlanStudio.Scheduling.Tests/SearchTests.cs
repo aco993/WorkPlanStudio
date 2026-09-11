@@ -37,10 +37,10 @@ public class SearchTests
         var scheduler = new DispatchScheduler();
 
         var startOrder = new[] { 0, 1 };             // loose first → urgent finishes late
-        var startSchedule = scheduler.Run(ctx, startOrder, due);
+        var startSchedule = scheduler.Run(ctx, startOrder, due, Ct);
         var startEval = ScheduleEvaluator.Evaluate(startSchedule, ctx);
 
-        var result = LocalSearch.Improve(scheduler, ctx, due, startOrder, startSchedule, startEval, maxSteps: 100);
+        var result = LocalSearch.Improve(scheduler, ctx, due, startOrder, startSchedule, startEval, maxSteps: 100, Ct);
 
         Assert.True(result.Evaluation.Penalty < startEval.Penalty);
         Assert.Equal(0, result.Schedule.Operations.Single(o => o.JobId == 2).StartSeconds); // urgent now first
@@ -53,10 +53,10 @@ public class SearchTests
         var due = DueDateAssigner.Assign(ctx);
         var scheduler = new DispatchScheduler();
         var order = PriorityOrdering.For(ctx, due);
-        var schedule = scheduler.Run(ctx, order, due);
+        var schedule = scheduler.Run(ctx, order, due, Ct);
         var eval = ScheduleEvaluator.Evaluate(schedule, ctx);
 
-        var result = LocalSearch.Improve(scheduler, ctx, due, order, schedule, eval, maxSteps: 0);
+        var result = LocalSearch.Improve(scheduler, ctx, due, order, schedule, eval, maxSteps: 0, Ct);
 
         Assert.Equal(0, result.StepsUsed);
         Assert.Equal(schedule.Signature(), result.Schedule.Signature());
@@ -70,10 +70,10 @@ public class SearchTests
         var due = DueDateAssigner.Assign(ctx);
         var scheduler = new DispatchScheduler();
         var order = PriorityOrdering.For(ctx, due);
-        var schedule = scheduler.Run(ctx, order, due);
+        var schedule = scheduler.Run(ctx, order, due, Ct);
         var eval = ScheduleEvaluator.Evaluate(schedule, ctx);
 
-        var result = LocalSearch.Improve(scheduler, ctx, due, order, schedule, eval, maxSteps: 500);
+        var result = LocalSearch.Improve(scheduler, ctx, due, order, schedule, eval, maxSteps: 500, Ct);
 
         Assert.True(result.Evaluation.Penalty <= eval.Penalty + 1e-9);
     }
@@ -86,7 +86,7 @@ public class SearchTests
             var ctx = MediumScenario(rule);
             var due = DueDateAssigner.Assign(ctx);
             double rulePenalty = ScheduleEvaluator
-                .Evaluate(new DispatchScheduler().Run(ctx, PriorityOrdering.For(ctx, due), due), ctx).Penalty;
+                .Evaluate(new DispatchScheduler().Run(ctx, PriorityOrdering.For(ctx, due), due, Ct), ctx).Penalty;
 
             var result = new SchedulingEngine().Run(ctx);
 

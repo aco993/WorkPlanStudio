@@ -1,5 +1,6 @@
 using BenchmarkDotNet.Attributes;
 using WorkPlanStudio.Scheduling;
+using WorkPlanStudio.Scheduling.Testing;
 
 namespace WorkPlanStudio.Benchmarks;
 

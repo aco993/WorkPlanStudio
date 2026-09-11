@@ -1,79 +1,356 @@
 using System.Diagnostics;
 using WorkPlanStudio.Scheduling;
+using WorkPlanStudio.Scheduling.Testing;
 
-var scenarios = new[]
-{
-    new ScenarioDefinition("small", Jobs: 25, OperationsPerJob: 4, WorkCenters: 5, Capacity: 1, MultiStart: 4, LocalSearch: 500),
-    new ScenarioDefinition("medium", Jobs: 100, OperationsPerJob: 6, WorkCenters: 10, Capacity: 2, MultiStart: 8, LocalSearch: 2_000),
-    new ScenarioDefinition("large", Jobs: 250, OperationsPerJob: 8, WorkCenters: 20, Capacity: 2, MultiStart: 16, LocalSearch: 5_000)
-};
+// A measurement harness, not a benchmark: BenchmarkDotNet lives in
+// tests/WorkPlanStudio.Benchmarks and answers "how fast". This answers "which
+// setting is better", which needs many instances rather than many iterations.
+//
+//   dotnet run -c Release --project tools/WorkPlanStudio.Scheduling.Scenarios [mode]
+//
+//   scenarios    (default) the three reference sizes: time, allocation, penalty
+//   acceptance   first-improvement vs steepest descent at equal budget, n = 5..100
+//   restarts     what each extra multi-start restart buys, n = 5..100
+//   allocation   bytes per evaluated candidate
+//   explain      cost of one ScheduleExplainer.Explain on the medium problem
+//   budget       penalty against wall clock on the reference medium instance
+//   optimality   gap to the exact dispatch-order optimum on 7-job instances
+string mode = args.Length > 0 ? args[0].ToLowerInvariant() : "scenarios";
 
 Console.WriteLine($"Runtime: {Environment.Version}; OS: {Environment.OSVersion}; CPU: {Environment.ProcessorCount}");
 Console.WriteLine();
-Console.WriteLine("| Scenario | Jobs | Operations | Centers | Capacity | Starts | Local steps | Duration ms | Allocated MB | Peak working MB | Penalty | Deterministic |");
-Console.WriteLine("| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |");
 
-foreach (var definition in scenarios)
+switch (mode)
 {
-    var context = Build(definition);
-    _ = new SchedulingEngine().Run(context); // warm JIT outside the measurement
-
-    GC.Collect();
-    GC.WaitForPendingFinalizers();
-    GC.Collect();
-
-    var allocatedBefore = GC.GetAllocatedBytesForCurrentThread();
-    var stopwatch = Stopwatch.StartNew();
-    var first = new SchedulingEngine().Run(context);
-    stopwatch.Stop();
-    var allocated = GC.GetAllocatedBytesForCurrentThread() - allocatedBefore;
-    var second = new SchedulingEngine().Run(context);
-
-    Console.WriteLine(
-        $"| {definition.Name} | {definition.Jobs} | {definition.Jobs * definition.OperationsPerJob} | " +
-        $"{definition.WorkCenters} | {definition.Capacity} | {definition.MultiStart} | {definition.LocalSearch} | " +
-        $"{stopwatch.Elapsed.TotalMilliseconds:F1} | {allocated / 1024d / 1024d:F2} | " +
-        $"{Process.GetCurrentProcess().PeakWorkingSet64 / 1024d / 1024d:F1} | {first.Evaluation.Penalty:F4} | " +
-        $"{Signature(first) == Signature(second)} |");
+    case "acceptance": Acceptance(); break;
+    case "restarts": Restarts(); break;
+    case "allocation": Allocation(); break;
+    case "explain": Explain(); break;
+    case "budget": Budget(); break;
+    case "optimality": Optimality(); break;
+    default: Scenarios(); break;
 }
 
-static SchedulingContext Build(ScenarioDefinition definition)
+static void Scenarios()
 {
-    var machines = Enumerable.Range(1, definition.WorkCenters)
-        .Select(id => new MachineCapacity(id, $"WC-{id:00}", definition.Capacity))
-        .ToList();
+    var scenarios = new[]
+    {
+        new ScenarioDefinition("small", Jobs: 25, OperationsPerJob: 4, WorkCenters: 5, Capacity: 1, MultiStart: 4, LocalSearch: 500),
+        new ScenarioDefinition("medium", Jobs: 100, OperationsPerJob: 6, WorkCenters: 10, Capacity: 2, MultiStart: 8, LocalSearch: 2_000),
+        new ScenarioDefinition("large", Jobs: 250, OperationsPerJob: 8, WorkCenters: 20, Capacity: 2, MultiStart: 16, LocalSearch: 5_000)
+    };
 
-    var jobs = Enumerable.Range(1, definition.Jobs)
-        .Select(jobId => new ProductionJob
+    Console.WriteLine("| Scenario | Jobs | Operations | Centers | Capacity | Starts | Local steps | Duration ms | Allocated MB | Peak working MB | Penalty | Deterministic |");
+    Console.WriteLine("| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |");
+
+    foreach (var definition in scenarios)
+    {
+        var context = ProblemFactory.Build(
+            definition.Jobs, definition.OperationsPerJob, definition.WorkCenters,
+            definition.Capacity, definition.MultiStart, definition.LocalSearch);
+        _ = new SchedulingEngine().Run(context); // warm JIT outside the measurement
+
+        Settle();
+        long allocatedBefore = GC.GetAllocatedBytesForCurrentThread();
+        var stopwatch = Stopwatch.StartNew();
+        var first = new SchedulingEngine().Run(context);
+        stopwatch.Stop();
+        long allocated = GC.GetAllocatedBytesForCurrentThread() - allocatedBefore;
+        var second = new SchedulingEngine().Run(context);
+
+        Console.WriteLine(
+            $"| {definition.Name} | {definition.Jobs} | {definition.Jobs * definition.OperationsPerJob} | " +
+            $"{definition.WorkCenters} | {definition.Capacity} | {definition.MultiStart} | {definition.LocalSearch} | " +
+            $"{stopwatch.Elapsed.TotalMilliseconds:F1} | {allocated / 1024d / 1024d:F2} | " +
+            $"{Process.GetCurrentProcess().PeakWorkingSet64 / 1024d / 1024d:F1} | {first.Evaluation.Penalty:F4} | " +
+            $"{first.Schedule.Signature() == second.Schedule.Signature()} |");
+    }
+}
+
+// Both acceptance rules over the same fixed instances at the same budget. The
+// budget is neighbour evaluations, so the two columns cost the same number of
+// dispatches by construction and the penalty column is the whole comparison.
+// Five instances per size, because one instance is an anecdote.
+static void Acceptance()
+{
+    var rules = new[]
+    {
+        LocalSearchAcceptance.SteepestDescent,
+        LocalSearchAcceptance.FirstImprovement,
+        LocalSearchAcceptance.BestInsertion
+    };
+
+    Console.WriteLine("| Jobs | Budget | Pass | Steepest | FirstImprovement | BestInsertion | Best rule | Best vs steepest |");
+    Console.WriteLine("| ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: |");
+
+    foreach (var shape in Shapes())
+    {
+        foreach (int budget in Budgets(shape.Jobs))
         {
-            Id = jobId,
-            Reference = $"JOB-{jobId:0000}",
-            ReleaseSeconds = jobId % 7 * 60L,
-            Weight = 1 + jobId % 10,
-            Steps = Enumerable.Range(1, definition.OperationsPerJob)
-                .Select(step => new JobStep(
-                    step,
-                    (jobId * 3 + step * 5) % definition.WorkCenters + 1,
-                    60L + (jobId * 37L + step * 53L) % 3_600L))
-                .ToList()
-        })
-        .ToList();
+            var means = new double[rules.Length];
+            foreach (int seed in Seeds())
+            {
+                var instance = shape with { Variant = seed };
+                for (int r = 0; r < rules.Length; r++)
+                    means[r] += Measure(instance, budget, rules[r]).Penalty;
+            }
+
+            int n = Seeds().Length;
+            for (int r = 0; r < means.Length; r++)
+                means[r] /= n;
+
+            int winner = 0;
+            for (int r = 1; r < means.Length; r++)
+            {
+                if (means[r] < means[winner])
+                    winner = r;
+            }
+
+            double delta = means[0] <= 0 ? 0 : (means[0] - means[winner]) / means[0];
+            Console.WriteLine(
+                $"| {shape.Jobs} | {budget} | {shape.Jobs * (shape.Jobs - 1)} | {means[0]:F3} | {means[1]:F3} | {means[2]:F3} | " +
+                $"{rules[winner]} | {delta:P2} |");
+        }
+    }
+}
+
+// What a restart buys. Single-restart is the reference; a restart only earns its
+// keep if it finds a strictly better order somewhere, on some instance.
+static void Restarts()
+{
+    Console.WriteLine("| Jobs | Acceptance | Budget/restart | Starts | Mean penalty | Strictly better than 1 start | Mean ms | Mean allocated KB |");
+    Console.WriteLine("| ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: |");
+
+    foreach (var acceptance in Enum.GetValues<LocalSearchAcceptance>())
+    {
+        foreach (var shape in Shapes())
+        {
+            int budget = Budgets(shape.Jobs)[^1];
+            var single = new Dictionary<int, double>();
+
+            foreach (int starts in new[] { 1, 2, 4, 8 })
+            {
+                double penaltySum = 0, msSum = 0, allocSum = 0;
+                int better = 0;
+                foreach (int seed in Seeds())
+                {
+                    var run = Measure(shape with { Variant = seed }, budget, acceptance, starts);
+                    penaltySum += run.Penalty;
+                    msSum += run.Milliseconds;
+                    allocSum += run.AllocatedBytes;
+                    if (starts == 1)
+                        single[seed] = run.Penalty;
+                    else if (run.Penalty < single[seed] - 1e-9)
+                        better++;
+                }
+
+                int n = Seeds().Length;
+                Console.WriteLine(
+                    $"| {shape.Jobs} | {acceptance} | {budget} | {starts} | {penaltySum / n:F3} | " +
+                    $"{(starts == 1 ? "-" : $"{better}/{n}")} | {msSum / n:F1} | {allocSum / n / 1024d:F0} |");
+            }
+        }
+    }
+}
+
+// Bytes per evaluated candidate: the number docs/PERFORMANCE.md quotes. Counted
+// against the candidates the run actually built, which is
+// restarts x (1 initial dispatch + the descent steps it used).
+static void Allocation()
+{
+    Console.WriteLine("| Jobs | Ops | Starts | Budget | Candidates | Allocated bytes | Bytes/candidate | ms | us/candidate |");
+    Console.WriteLine("| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |");
+
+    foreach (var shape in Shapes())
+    {
+        int budget = Budgets(shape.Jobs)[^1];
+        const int starts = 8;
+        var context = Context(shape, budget, LocalSearchAcceptance.BestInsertion, starts);
+        _ = new SchedulingEngine().Run(context);
+
+        Settle();
+        long before = GC.GetAllocatedBytesForCurrentThread();
+        var stopwatch = Stopwatch.StartNew();
+        var result = new SchedulingEngine().Run(context);
+        stopwatch.Stop();
+        long allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+
+        long candidates = result.LocalSearchSteps + starts;
+        Console.WriteLine(
+            $"| {shape.Jobs} | {shape.Jobs * shape.OperationsPerJob} | {starts} | {budget} | {candidates} | {allocated} | " +
+            $"{(double)allocated / candidates:F1} | {stopwatch.Elapsed.TotalMilliseconds:F1} | " +
+            $"{stopwatch.Elapsed.TotalMilliseconds * 1000 / candidates:F1} |");
+    }
+}
+
+// What the freed time buys on the one instance every published number is for:
+// the same wall clock now covers several times the search it used to.
+static void Budget()
+{
+    var shape = new Shape(100, 6, 10, 2, ProblemFactory.DefaultSeed);
+    Console.WriteLine("| Acceptance | Starts | Budget/restart | Candidates | Penalty | ms |");
+    Console.WriteLine("| --- | ---: | ---: | ---: | ---: | ---: |");
+
+    foreach (var acceptance in Enum.GetValues<LocalSearchAcceptance>())
+    {
+        foreach (int budget in new[] { 2_000, 6_000, 12_000, 20_000 })
+        {
+            var run = Measure(shape, budget, acceptance, starts: 8);
+            Console.WriteLine(
+                $"| {acceptance} | 8 | {budget} | {run.Steps + 8} | {run.Penalty:F3} | {run.Milliseconds:F1} |");
+        }
+    }
+}
+
+// The small-instance regime the size sweep under-samples: 7 jobs, a budget of
+// 2 000 (many passes), and an exactly computable dispatch-order optimum to
+// measure the gap against. This is where a restart is the only thing that can
+// still move a converged descent.
+static void Optimality()
+{
+    Console.WriteLine("| Acceptance | Starts | Instances | Mean gap | Worst gap | Over 5 % |");
+    Console.WriteLine("| --- | ---: | ---: | ---: | ---: | ---: |");
+
+    foreach (var acceptance in Enum.GetValues<LocalSearchAcceptance>())
+    {
+        foreach (int starts in new[] { 1, 2, 4, 8 })
+        {
+            double gapSum = 0, worst = 0;
+            int count = 0, over = 0;
+            foreach (var rule in Enum.GetValues<DispatchRule>())
+            {
+                foreach (int seed in new[] { 1, 3, 7, 19, 42, 55, 101, 20260616 })
+                {
+                    var context = SevenJobInstance(seed, rule, acceptance, starts);
+                    double found = new SchedulingEngine().Run(context).Evaluation.Penalty;
+                    double optimum = ExactDispatchOrderOptimizer.Run(context).Result.Evaluation.Penalty;
+                    double gap = optimum <= 0 ? 0 : (found - optimum) / optimum;
+
+                    gapSum += gap;
+                    worst = Math.Max(worst, gap);
+                    if (gap > 0.05) over++;
+                    count++;
+                }
+            }
+
+            Console.WriteLine($"| {acceptance} | {starts} | {count} | {gapSum / count:P2} | {worst:P2} | {over} |");
+        }
+    }
+}
+
+// The same shape OptimalityTests generates, so the numbers explain that suite.
+static SchedulingContext SevenJobInstance(int seed, DispatchRule rule, LocalSearchAcceptance acceptance, int starts)
+{
+    var rng = new DeterministicRandom(seed);
+    var machines = Enumerable.Range(1, 4).Select(id => new MachineCapacity(id, $"WC-{id}")).ToArray();
+
+    var jobs = new ProductionJob[7];
+    for (int j = 0; j < jobs.Length; j++)
+    {
+        var steps = new List<JobStep>();
+        int stepCount = 2 + rng.NextInt(3);
+        for (int s = 0; s < stepCount; s++)
+            steps.Add(new JobStep(s + 1, 1 + rng.NextInt(machines.Length), 600 + rng.NextInt(9000)));
+
+        jobs[j] = new ProductionJob
+        {
+            Id = j + 1,
+            Reference = $"J{j + 1}",
+            Weight = 1 + rng.NextInt(4),
+            Steps = steps
+        };
+    }
 
     return new SchedulingContext(jobs, machines, new SchedulingParameters
     {
-        DispatchRule = DispatchRule.EarliestDueDate,
+        DispatchRule = rule,
         DueDateRule = DueDateRule.TotalWorkContent,
-        TwkFlowFactor = 2,
-        MultiStartRuns = definition.MultiStart,
-        LocalSearchMaxSteps = definition.LocalSearch,
-        Seed = 20260712
+        TwkFlowFactor = 1.5,
+        MultiStartRuns = starts,
+        LocalSearchAcceptance = acceptance,
+        Seed = seed
     });
 }
 
-static string Signature(SchedulingResult result) => string.Join(
-    '|',
-    result.Schedule.Operations.Select(operation =>
-        $"{operation.JobId}:{operation.StepNumber}:{operation.WorkCenterId}:{operation.SlotIndex}:{operation.StartSeconds}:{operation.EndSeconds}"));
+static void Explain()
+{
+    var context = ProblemFactory.Build(jobs: 100, operationsPerJob: 6, workCenters: 10, capacity: 2, multiStart: 8, localSearch: 2_000);
+    var result = new SchedulingEngine().Run(context);
+    _ = ScheduleExplainer.Explain(context, result);
+
+    Console.WriteLine("| Probe | ms | Allocated MB |");
+    Console.WriteLine("| --- | ---: | ---: |");
+    foreach (bool probe in new[] { true, false })
+    {
+        Settle();
+        long before = GC.GetAllocatedBytesForCurrentThread();
+        var stopwatch = Stopwatch.StartNew();
+        _ = ScheduleExplainer.Explain(context, result, probe);
+        stopwatch.Stop();
+        long allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+        Console.WriteLine($"| {probe} | {stopwatch.Elapsed.TotalMilliseconds:F1} | {allocated / 1024d / 1024d:F2} |");
+    }
+}
+
+static SchedulingContext Context(Shape shape, int budget, LocalSearchAcceptance acceptance, int starts) =>
+    ProblemFactory.Build(
+        shape.Jobs, shape.OperationsPerJob, shape.WorkCenters, shape.Capacity,
+        multiStart: starts, localSearch: budget, acceptance: acceptance, seed: shape.Seed, variant: shape.Variant);
+
+static Run Measure(Shape shape, int budget, LocalSearchAcceptance acceptance, int starts = 1)
+{
+    var context = Context(shape, budget, acceptance, starts);
+    _ = new SchedulingEngine().Run(context);
+
+    Settle();
+    long before = GC.GetAllocatedBytesForCurrentThread();
+    var stopwatch = Stopwatch.StartNew();
+    var result = new SchedulingEngine().Run(context);
+    stopwatch.Stop();
+
+    return new Run(
+        result.Evaluation.Penalty,
+        result.LocalSearchSteps,
+        stopwatch.Elapsed.TotalMilliseconds,
+        GC.GetAllocatedBytesForCurrentThread() - before);
+}
+
+static void Settle()
+{
+    GC.Collect();
+    GC.WaitForPendingFinalizers();
+    GC.Collect();
+}
+
+// n = 5, 8, 20, 50, 100, each with its own seed so the rows are five different
+// instances rather than five prefixes of one.
+// Five different instances per size — different routings, durations and
+// releases, not one instance under five PRNG seeds. A difference that survives
+// all five is not an artefact of the one instance the audit measured.
+static int[] Seeds() => [0, 1, 2, 3, 4];
+
+static Shape[] Shapes() =>
+[
+    new(5, 4, 3, 1, 11),
+    new(8, 4, 4, 1, 22),
+    new(20, 5, 6, 2, 33),
+    new(50, 6, 8, 2, 44),
+    new(100, 6, 10, 2, ProblemFactory.DefaultSeed)
+];
+
+// One full pass is n*(n-1) neighbours; the budgets straddle it so the table shows
+// what happens below and at a single pass, and the third row is the budget the
+// shipped default actually spends - which at small n is many passes, the regime
+// where a descent has already converged and only a restart can move it.
+static int[] Budgets(int jobs)
+{
+    int pass = jobs * (jobs - 1);
+    return [Math.Max(20, pass / 4), pass, Math.Min(20_000, Math.Max(pass * 3, 2_000))];
+}
+
+internal readonly record struct Shape(int Jobs, int OperationsPerJob, int WorkCenters, int Capacity, int Seed, int Variant = 0);
+
+internal readonly record struct Run(double Penalty, int Steps, double Milliseconds, long AllocatedBytes);
 
 internal sealed record ScenarioDefinition(
     string Name,
