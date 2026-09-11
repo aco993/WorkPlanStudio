@@ -508,7 +508,6 @@
   <data name="Ui_ScheduleAnnounced" xml:space="preserve"><value>Schedule generated: {0} of {1} orders on time, makespan {2}.</value></data>
   <data name="Ui_Range" xml:space="preserve"><value>{0} to {1}</value></data>
   <data name="Ui_WeekDayClosed" xml:space="preserve"><value>closed all day</value></data>
-</root>
   <data name="Val_SingleLine" xml:space="preserve"><value>This must be a single line of text.</value></data>
   <data name="Val_Scale" xml:space="preserve"><value>At most {0} decimal places.</value></data>
   <data name="Val_CostCenterCodeTaken" xml:space="preserve"><value>Another cost center already uses this code.</value></data>

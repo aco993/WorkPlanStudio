@@ -353,8 +353,8 @@ else
         }
 
         _editing.Quantity = _quantity.Value;
-        _editing.ReleaseLocal = PlantTime.Date(_releaseDate);
-        _editing.DueLocal = PlantTime.Date(_dueDate);
+        _editing.ReleaseLocal = PlantTime.Wall(_releaseDate).Date;
+        _editing.DueLocal = PlantTime.Wall(_dueDate).Date;
 
         var result = await Orders.SaveAsync(_editing);
         if (!Apply(result))

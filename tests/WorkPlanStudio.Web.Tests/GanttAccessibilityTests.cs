@@ -17,7 +17,7 @@ namespace WorkPlanStudio.Web.Tests;
 /// on every mark, one tab stop with arrow keys inside it, and the same information
 /// available as text.
 /// </summary>
-public sealed class GanttAccessibilityTests : BunitContext
+public sealed class GanttAccessibilityTests : AppBunitContext
 {
     private readonly TempDatabaseFiles _files = new();
 

@@ -9,7 +9,7 @@ using WorkPlanStudio.Services;
 
 namespace WorkPlanStudio.Web.Tests;
 
-public sealed class AccessibilityTests : BunitContext
+public sealed class AccessibilityTests : AppBunitContext
 {
     [Fact]
     public void Modal_has_dialog_semantics_localized_close_name_and_escape_behavior()

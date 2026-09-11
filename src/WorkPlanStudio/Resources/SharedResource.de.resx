@@ -508,7 +508,6 @@
   <data name="Ui_ScheduleAnnounced" xml:space="preserve"><value>Produktionsplan erzeugt: {0} von {1} Aufträgen pünktlich, Durchlaufzeit {2}.</value></data>
   <data name="Ui_Range" xml:space="preserve"><value>{0} bis {1}</value></data>
   <data name="Ui_WeekDayClosed" xml:space="preserve"><value>ganztägig geschlossen</value></data>
-</root>
   <data name="Val_SingleLine" xml:space="preserve"><value>Dies muss eine einzelne Textzeile sein.</value></data>
   <data name="Val_Scale" xml:space="preserve"><value>Höchstens {0} Nachkommastellen.</value></data>
   <data name="Val_CostCenterCodeTaken" xml:space="preserve"><value>Eine andere Kostenstelle verwendet diesen Schlüssel bereits.</value></data>

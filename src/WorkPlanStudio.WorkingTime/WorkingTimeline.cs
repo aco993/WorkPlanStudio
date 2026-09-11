@@ -260,7 +260,6 @@ public sealed class WorkingTimeline
     private const long WeekSeconds = 7 * 24 * 3600;
 
     private long? _weeklyWorkingSeconds;
-    private WorkingTimeCompliance? _compliance;
 
     internal WorkingTimeline(
         ShiftPattern pattern,
@@ -438,7 +437,7 @@ public sealed class WorkingTimeline
     /// this timeline covers on the plant's own clock. See
     /// <see cref="Evaluate(TimeZoneInfo?)"/> for the zone-aware form.
     /// </summary>
-    public WorkingTimeCompliance Compliance => _compliance ??= Evaluate(null);
+    public WorkingTimeCompliance Compliance => field ??= Evaluate(null);
 
     /// <summary>
     /// Works out what the plan actually costs a crew: hours per crew and calendar

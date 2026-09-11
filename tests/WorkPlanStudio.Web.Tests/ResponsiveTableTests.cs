@@ -15,7 +15,7 @@ namespace WorkPlanStudio.Web.Tests;
 /// of the fix in place: a scroll container in the markup, and a stylesheet that no
 /// longer clips a card holding a table.
 /// </summary>
-public sealed class ResponsiveTableTests : BunitContext
+public sealed class ResponsiveTableTests : AppBunitContext
 {
     private static string Css => File.ReadAllText(Path.Join(RepoFiles.AppWwwroot, "css", "app.css"));
 

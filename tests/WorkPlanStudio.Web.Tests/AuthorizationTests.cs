@@ -18,7 +18,7 @@ namespace WorkPlanStudio.Web.Tests;
 /// stops writes at the service boundary, and the pages that hide what a
 /// persona may not do.
 /// </summary>
-public sealed class AuthorizationTests : BunitContext
+public sealed class AuthorizationTests : AppBunitContext
 {
     // ----- the policy table through the real pipeline -----
 

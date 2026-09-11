@@ -13,14 +13,12 @@ namespace WorkPlanStudio.Web.Tests;
 /// </summary>
 internal sealed class TempDatabaseFiles : IDisposable
 {
-    private readonly string _directory = Path.Join(Path.GetTempPath(), $"workplanstudio-{Guid.NewGuid():N}");
+    public TempDatabaseFiles() => Directory.CreateDirectory(Root);
 
-    public TempDatabaseFiles() => Directory.CreateDirectory(_directory);
-
-    public TestDbContextFactory CreateFactory(string fileName) => new(Path.Join(_directory, fileName));
+    public TestDbContextFactory CreateFactory(string fileName) => new(Path.Join(Root, fileName));
 
     /// <summary>The directory the databases live in, for tests that need a second file.</summary>
-    public string Root => _directory;
+    public string Root { get; } = Path.Join(Path.GetTempPath(), $"workplanstudio-{Guid.NewGuid():N}");
 
     public BrowserDatabase CreateDatabase(
         string fileName,
@@ -28,7 +26,7 @@ internal sealed class TempDatabaseFiles : IDisposable
         int? schemaVersion = null,
         WorkPlanStudio.Services.Auth.IPermissionGuard? guard = null)
     {
-        var path = Path.Join(_directory, fileName);
+        var path = Path.Join(Root, fileName);
         return new BrowserDatabase(
             new TestDbContextFactory(path),
             storage,
@@ -42,7 +40,7 @@ internal sealed class TempDatabaseFiles : IDisposable
         Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
         try
         {
-            Directory.Delete(_directory, recursive: true);
+            Directory.Delete(Root, recursive: true);
         }
         catch (IOException exception)
         {

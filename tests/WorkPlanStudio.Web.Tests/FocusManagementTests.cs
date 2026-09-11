@@ -15,7 +15,7 @@ namespace WorkPlanStudio.Web.Tests;
 /// a successful Save. Those left the focus trap attached to a detached node and the
 /// keyboard user on <c>&lt;body&gt;</c>, at the top of the document.
 /// </summary>
-public sealed class FocusManagementTests : BunitContext
+public sealed class FocusManagementTests : AppBunitContext
 {
     private IRenderedComponent<Modal> RenderModal(Action<bool> onVisibleChanged, bool visible = true)
     {

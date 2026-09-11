@@ -18,7 +18,7 @@ namespace WorkPlanStudio.Web.Tests;
 /// inserted already populated is announced by no screen reader — and a string that
 /// never reached <c>IStringLocalizer</c> is announced in the wrong language.
 /// </summary>
-public sealed class LiveRegionAndUiStringTests : BunitContext
+public sealed class LiveRegionAndUiStringTests : AppBunitContext
 {
     private readonly TempDatabaseFiles _files = new();
 

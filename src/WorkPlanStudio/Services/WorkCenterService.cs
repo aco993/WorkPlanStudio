@@ -3,6 +3,7 @@ using WorkPlanStudio.Data;
 using WorkPlanStudio.Models;
 using WorkPlanStudio.Services.Auth;
 using WorkPlanStudio.Validation;
+using WorkPlanStudio.WorkingTime;
 
 namespace WorkPlanStudio.Services;
 
@@ -225,8 +226,8 @@ public sealed class WorkCenterService
 
         ArgumentNullException.ThrowIfNull(absence);
         absence.Label = absence.Label?.Trim() ?? "";
-        absence.Start = PlantTime.WallClock(absence.Start);
-        absence.End = PlantTime.WallClock(absence.End);
+        absence.Start = PlantTime.Wall(absence.Start);
+        absence.End = PlantTime.Wall(absence.End);
 
         var issues = WorkCenterValidator.ValidateAbsence(absence);
         if (issues.Count > 0)

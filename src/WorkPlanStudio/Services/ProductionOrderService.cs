@@ -3,6 +3,7 @@ using WorkPlanStudio.Data;
 using WorkPlanStudio.Models;
 using WorkPlanStudio.Services.Auth;
 using WorkPlanStudio.Validation;
+using WorkPlanStudio.WorkingTime;
 
 namespace WorkPlanStudio.Services;
 
@@ -252,7 +253,7 @@ public sealed class ProductionOrderService
     {
         order.OrderNumber = Text.Key(order.OrderNumber);
         order.RoutingRevision = order.RoutingRevision?.Trim() ?? "";
-        order.ReleaseLocal = PlantTime.WallClock(order.ReleaseLocal);
-        order.DueLocal = PlantTime.WallClock(order.DueLocal);
+        order.ReleaseLocal = PlantTime.Wall(order.ReleaseLocal);
+        order.DueLocal = PlantTime.Wall(order.DueLocal);
     }
 }

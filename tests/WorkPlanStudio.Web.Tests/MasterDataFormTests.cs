@@ -14,7 +14,7 @@ namespace WorkPlanStudio.Web.Tests;
 /// reproduces something that previously made <b>Save</b> do nothing at all, or
 /// saved a value the screen was not showing.
 /// </summary>
-public sealed class MasterDataFormTests : BunitContext
+public sealed class MasterDataFormTests : AppBunitContext
 {
     private BrowserDatabase Arrange(TempDatabaseFiles files, WorkspaceRole role = WorkspaceRole.Planner)
     {

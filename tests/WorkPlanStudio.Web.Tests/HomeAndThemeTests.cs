@@ -8,7 +8,7 @@ using WorkPlanStudio.Services.Auth;
 namespace WorkPlanStudio.Web.Tests;
 
 /// <summary>The dashboard's glance cards and the colour-theme toggle.</summary>
-public sealed class HomeAndThemeTests : BunitContext
+public sealed class HomeAndThemeTests : AppBunitContext
 {
     [Fact]
     public async Task The_dashboard_shows_the_plant_and_a_freshly_computed_schedule()

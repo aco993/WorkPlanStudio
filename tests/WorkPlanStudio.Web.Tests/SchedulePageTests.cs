@@ -12,7 +12,7 @@ namespace WorkPlanStudio.Web.Tests;
 /// a fake service — no browser, no database. They verify the page's rendering and
 /// interaction logic (the engine is tested separately).
 /// </summary>
-public class SchedulePageTests : BunitContext
+public class SchedulePageTests : AppBunitContext
 {
     private readonly FakeAssistantConfig _assistantConfig = new();
 
