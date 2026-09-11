@@ -3,6 +3,9 @@ namespace WorkPlanStudio.Scheduling.Tests;
 /// <summary>Concise builders for scheduling test fixtures, imported statically.</summary>
 internal static class Scenario
 {
+    /// <summary>The running test's cancellation token, so a long engine call stays interruptible.</summary>
+    public static CancellationToken Ct => TestContext.Current.CancellationToken;
+
     public static MachineCapacity Machine(int id, int capacity = 1) => new(id, $"WC-{id}", capacity);
 
     public static JobStep Step(int step, int workCenterId, long seconds) => new(step, workCenterId, seconds);

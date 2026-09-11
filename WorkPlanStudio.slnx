@@ -10,6 +10,7 @@
     <Project Path="tests/WorkPlanStudio.Web.Tests/WorkPlanStudio.Web.Tests.csproj" />
     <Project Path="tests/WorkPlanStudio.E2E/WorkPlanStudio.E2E.csproj" />
     <Project Path="tests/WorkPlanStudio.Benchmarks/WorkPlanStudio.Benchmarks.csproj" />
+    <Project Path="tests/WorkPlanStudio.Scheduling.Testing/WorkPlanStudio.Scheduling.Testing.csproj" />
   </Folder>
   <Folder Name="/tools/">
     <Project Path="tools/WorkPlanStudio.Scheduling.Scenarios/WorkPlanStudio.Scheduling.Scenarios.csproj" />

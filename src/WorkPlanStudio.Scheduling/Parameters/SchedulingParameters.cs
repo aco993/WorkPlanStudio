@@ -33,10 +33,30 @@ public sealed record SchedulingParameters
     // ----- Search -----
 
     /// <summary>Number of (re)starts; run 0 is the pure rule order, the rest are seeded perturbations. ≥ 1.</summary>
+    /// <remarks>
+    /// Eight, and measured rather than inherited. On 48 seven-job instances whose
+    /// dispatch-order optimum is exactly computable, the mean gap to that optimum
+    /// falls from 9.0 % at one restart to 3.8 % at two, 1.4 % at four and 0.45 %
+    /// at eight — and the number of instances more than 5 % off falls from 16 to
+    /// one. On the 100-job benchmark instance the extra restarts change nothing at
+    /// all, which is where the "8 restarts buy nothing" reading comes from; it is
+    /// true of that instance and false of the sizes below it. The cost of being
+    /// wrong in that direction is now small: eight restarts of the 100-job problem
+    /// take 97 ms and allocate 92 KB, against 301 ms and 1.05 GB before.
+    /// See ADR 0022.
+    /// </remarks>
     public int MultiStartRuns { get; init; } = 8;
 
-    /// <summary>Upper bound on local-search neighbour evaluations. 0 disables the polish.</summary>
+    /// <summary>
+    /// Upper bound on local-search neighbour evaluations <b>per restart</b>. 0
+    /// disables the polish; the total work of a run is this times
+    /// <see cref="MultiStartRuns"/>, capped by
+    /// <see cref="SchedulingParameterLimits.MaxTotalEvaluations"/>.
+    /// </summary>
     public int LocalSearchMaxSteps { get; init; } = 2000;
+
+    /// <summary>Which improving neighbour a local-search pass adopts.</summary>
+    public LocalSearchAcceptance LocalSearchAcceptance { get; init; } = LocalSearchAcceptance.BestInsertion;
 
     /// <summary>Seed for the deterministic PRNG; the same seed always yields the same schedule.</summary>
     public int Seed { get; init; } = 20260616;

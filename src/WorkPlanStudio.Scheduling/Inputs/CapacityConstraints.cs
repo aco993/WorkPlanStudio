@@ -41,6 +41,16 @@ public sealed record CapacityWindow(long StartSeconds, long EndSeconds)
 /// <paramref name="Tag"/> is an opaque label the caller can use to explain the
 /// gap in a UI ("Fronleichnam", "Wartung"); the engine never interprets it.
 /// </para>
+/// <para>
+/// A blackout is never bridged, and the test is against the operation's whole
+/// wall span — the pauses it takes across breaks included, not only the seconds
+/// it is actually busy. That is deliberate rather than an oversight: a
+/// maintenance stop or a plant shutdown means the machine is physically
+/// unavailable, so a half-finished part cannot sit in it across the stop and
+/// resume afterwards. The cost of that reading is visible: a blackout covering
+/// exactly a break the machine was closed for anyway still pushes the operation
+/// to the next window, even though it removes no open seconds.
+/// </para>
 /// </summary>
 public sealed record CapacityBlackout(long StartSeconds, long EndSeconds, string Tag)
 {
@@ -71,15 +81,29 @@ public sealed record CapacityBlackout(long StartSeconds, long EndSeconds, string
 /// simple queueing — running all the steel parts together and then all the
 /// aluminium ones is cheaper than alternating.
 /// </para>
+/// <para>
+/// A same-family entry is therefore not a cheap change-over but a contradiction,
+/// and it is rejected rather than accepted and ignored. Silently discarding
+/// declared configuration is the worst of the three options: the caller has said
+/// something about the shop that the engine will not honour and will not report.
+/// </para>
 /// </summary>
 public sealed record SetupDuration(string FromFamily, string ToFamily, long DurationSeconds)
 {
-    /// <summary>Throws unless both families are named and the duration is non-negative.</summary>
+    /// <summary>Throws unless both families are named, distinct, and the duration is in range.</summary>
     public void Validate()
     {
         if (string.IsNullOrWhiteSpace(FromFamily) || string.IsNullOrWhiteSpace(ToFamily))
             throw new ArgumentOutOfRangeException(nameof(FromFamily), "Setup transition needs a source and target family.");
-        if (DurationSeconds < 0)
-            throw new ArgumentOutOfRangeException(nameof(DurationSeconds), "Setup transition cannot be negative.");
+        if (string.Equals(FromFamily, ToFamily, StringComparison.Ordinal))
+            throw new ArgumentOutOfRangeException(
+                nameof(ToFamily),
+                FromFamily,
+                "A change-over from a family to itself is never charged; declare it between two distinct families.");
+        if (DurationSeconds < 0 || DurationSeconds > SchedulingParameterLimits.MaxStepDurationSeconds)
+            throw new ArgumentOutOfRangeException(
+                nameof(DurationSeconds),
+                DurationSeconds,
+                $"Setup transition must lie in [0, {SchedulingParameterLimits.MaxStepDurationSeconds}].");
     }
 }

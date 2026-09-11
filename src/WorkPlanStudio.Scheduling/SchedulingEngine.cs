@@ -11,6 +11,11 @@ namespace WorkPlanStudio.Scheduling;
 /// Restart 0 is always the rule order and the descent never regresses, so the
 /// result can never be worse than the pure rule schedule, and it is fully
 /// reproducible for a given seed.
+/// <para>
+/// Every restart shares one <see cref="SchedulingWorkspace"/> and only the
+/// winning order is turned into a <see cref="Schedule"/>, so a run allocates a
+/// fixed amount regardless of how many candidates it evaluates.
+/// </para>
 /// </summary>
 public sealed class SchedulingEngine
 {
@@ -30,19 +35,35 @@ public sealed class SchedulingEngine
         cancellationToken.ThrowIfCancellationRequested();
 
         var dueByJob = DueDateAssigner.Assign(context);
+        var outcome = Search(context, dueByJob, cancellationToken);
+
+        return new SchedulingResult(outcome.Schedule, outcome.Evaluation, dueByJob, outcome.StepsUsed)
+        {
+            EquivalentRules = PriorityOrdering.EquivalentRules(context, dueByJob)
+        };
+    }
+
+    /// <summary>The search without the equivalent-rule roll-up, for callers that only need the score.</summary>
+    internal SearchOutcome Search(
+        SchedulingContext context, IReadOnlyDictionary<int, long> dueByJob, CancellationToken cancellationToken)
+    {
+        var evaluator = LocalSearch.EvaluatorFor(_scheduler, dueByJob);
+        var workspace = SchedulingWorkspace.For(context, dueByJob);
 
         if (context.Jobs.Count == 0)
         {
-            var emptySchedule = _scheduler.RunCancellable(context, [], dueByJob, cancellationToken);
-            return new SchedulingResult(emptySchedule, ScheduleEvaluator.Evaluate(emptySchedule, context), dueByJob, 0);
+            var emptySchedule = evaluator.Materialise(context, [], workspace);
+            return new SearchOutcome(emptySchedule, ScheduleEvaluator.Evaluate(emptySchedule, context), 0);
         }
 
         var baseOrder = PriorityOrdering.For(context, dueByJob);
-        int restarts = Math.Max(1, context.Parameters.MultiStartRuns);
+        int restarts = context.Parameters.MultiStartRuns;
         int budget = context.Parameters.LocalSearchMaxSteps;
+        var acceptance = context.Parameters.LocalSearchAcceptance;
 
-        Schedule? bestSchedule = null;
-        ScheduleEvaluation? bestEvaluation = null;
+        var order = new int[baseOrder.Length];
+        var bestOrder = new int[baseOrder.Length];
+        double bestPenalty = double.PositiveInfinity;
         int totalSteps = 0;
 
         // A descent from every restart, not just from the best raw shuffle: the
@@ -54,29 +75,33 @@ public sealed class SchedulingEngine
 
             // Restart 0 is the pure rule order, so the chosen schedule can never be
             // worse than what the dispatch rule alone produces.
-            var order = (int[])baseOrder.Clone();
+            Array.Copy(baseOrder, order, order.Length);
             if (restart > 0)
                 DeterministicRandom.ForRun(context.Parameters.Seed, restart).Shuffle(order);
 
-            var schedule = _scheduler.RunCancellable(context, order, dueByJob, cancellationToken);
-            var evaluation = ScheduleEvaluator.Evaluate(schedule, context);
-
-            var polished = LocalSearch.ImproveCancellable(
-                _scheduler, context, dueByJob, order, schedule, evaluation, budget, cancellationToken);
-            totalSteps += polished.StepsUsed;
+            var start = evaluator.Score(context, order, workspace, cancellationToken);
+            var descent = LocalSearch.Descend(
+                evaluator, context, workspace, order, start, budget, acceptance, cancellationToken);
+            totalSteps += descent.StepsUsed;
 
             // Strict improvement, so restart 0 keeps ties and the result does not
             // depend on how many restarts were configured.
-            if (bestEvaluation is null || polished.Evaluation.Penalty < bestEvaluation.Penalty)
+            if (descent.Penalty < bestPenalty)
             {
-                bestSchedule = polished.Schedule;
-                bestEvaluation = polished.Evaluation;
+                bestPenalty = descent.Penalty;
+                Array.Copy(order, bestOrder, order.Length);
             }
         }
 
-        return new SchedulingResult(bestSchedule!, bestEvaluation!, dueByJob, totalSteps)
-        {
-            EquivalentRules = PriorityOrdering.EquivalentRules(context, dueByJob)
-        };
+        // One materialised schedule per run, for the order that won.
+        evaluator.Score(context, bestOrder, workspace, cancellationToken);
+        var schedule = evaluator.Materialise(context, bestOrder, workspace);
+        return new SearchOutcome(schedule, ScheduleEvaluator.Evaluate(schedule, context), totalSteps);
     }
+
+    /// <summary>What one multi-start search produced.</summary>
+    /// <param name="Schedule">The winning schedule.</param>
+    /// <param name="Evaluation">Its KPIs and penalty.</param>
+    /// <param name="StepsUsed">Neighbours evaluated across every restart.</param>
+    internal readonly record struct SearchOutcome(Schedule Schedule, ScheduleEvaluation Evaluation, int StepsUsed);
 }

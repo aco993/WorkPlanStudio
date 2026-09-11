@@ -22,6 +22,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\WorkPlanStudio.Scheduling\WorkPlanStudio.Scheduling.csproj" />
     <ProjectReference Include="..\..\src\WorkPlanStudio.WorkingTime\WorkPlanStudio.WorkingTime.csproj" />
+    <ProjectReference Include="..\WorkPlanStudio.Scheduling.Testing\WorkPlanStudio.Scheduling.Testing.csproj" />
   </ItemGroup>
 
 </Project>
