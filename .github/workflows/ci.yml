@@ -11,6 +11,10 @@ name: CI
 #   • web-tests     — data, mapper, assistant and bUnit component tests; these
 #     reference the Blazor WASM app, so the job installs the wasm-tools workload
 #     to build it. Coverage of the app assembly is measured and gated too.
+#   • api-tests     — the optional backend, driven end to end through
+#     WebApplicationFactory against a real SQLite file. It compiles the shared
+#     domain source but never the Blazor app, so it needs no WebAssembly
+#     workload and runs in its own, fast job.
 #
 # Third-party actions are pinned to a commit SHA with the tag in a comment: a
 # moving tag is a write-access dependency on someone else's repository.
@@ -52,6 +56,8 @@ env:
   MIN_TESTS_ENGINE: 145
   MIN_TESTS_WORKING_TIME: 88
   MIN_TESTS_WEB: 155
+  MIN_TESTS_API: 80
+  GATE_API: 60
   # The wall-clock budget tests are the only ones in the repo whose outcome
   # depends on a shared two-core runner. They are tripwires with roughly an
   # order of magnitude of headroom, which is the right design — but a tripwire
@@ -202,5 +208,57 @@ jobs:
           name: badges-app
           path: badges
           if-no-files-found: error
+          retention-days: 14
+          overwrite: true
+
+  api-tests:
+    name: Backend integration tests (coverage gate)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68  # v6.0.0
+        with:
+          global-json-file: global.json
+
+      - name: Cache NuGet packages
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', 'Directory.Packages.props') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      - name: Test the backend (with coverage)
+        run: >
+          dotnet test tests/WorkPlanStudio.Api.Tests/WorkPlanStudio.Api.Tests.csproj -c Release
+          --minimum-expected-tests ${{ env.MIN_TESTS_API }}
+          --coverage --coverage-output-format cobertura --coverage-output api.cobertura.xml
+
+      - name: Coverage gate
+        run: |
+          python3 .github/scripts/coverage_gate.py TestResults/api.cobertura.xml WorkPlanStudio.Api=$GATE_API
+
+      - name: Build coverage report
+        if: always()
+        run: |
+          dotnet tool install --global dotnet-reportgenerator-globaltool
+          reportgenerator -reports:'TestResults/api.cobertura.xml' -targetdir:coverage-report -reporttypes:'Html;TextSummary' -assemblyfilters:'+WorkPlanStudio.Api'
+          echo '### Backend coverage report' >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          cat coverage-report/Summary.txt >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload coverage report
+        if: always()
+        continue-on-error: true   # the gate is the check; a hiccup in the artifact service is not a failed build
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: coverage-report-api
+          path: coverage-report
+          if-no-files-found: ignore
           retention-days: 14
           overwrite: true
