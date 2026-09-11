@@ -9,7 +9,6 @@ public enum ApplicationResultStatus
     NotFound,
     Conflict,
     PersistenceFailed,
-    Cancelled,
 
     /// <summary>The current persona lacks the policy this action requires.</summary>
     Forbidden
