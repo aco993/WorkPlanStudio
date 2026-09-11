@@ -138,6 +138,7 @@ public sealed class ExtremeOrderRejectionTests : AppBunitContext
             Services.AddSingleton<OfflineScheduleAnswerer>();
             Services.AddSingleton<ScheduleChat>();
             Services.AddScheduleExport();
+            Services.AddOptimalityProver();
             Services.AddSingleton(new PlantSettingsService(files.CreateDatabase("extreme-order.db", new FakeStorage())));
 
             var cut = Render<SchedulePage>();

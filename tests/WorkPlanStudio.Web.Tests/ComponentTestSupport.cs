@@ -168,6 +168,42 @@ internal static class ExportTestSupport
         Microsoft.Extensions.DependencyInjection.ServiceCollectionServiceExtensions.AddSingleton<ScheduleExportService>(services);
         return services;
     }
+
+    /// <summary>
+    /// The schedule page also offers to prove the run optimal. The double answers
+    /// "too large" unless a test says otherwise, which is the honest default: the
+    /// page must read well when the instance cannot be settled, and that is the
+    /// branch a component test would otherwise never see.
+    /// </summary>
+    public static FakeOptimalityProver AddOptimalityProver(
+        this Microsoft.Extensions.DependencyInjection.IServiceCollection services)
+    {
+        var prover = new FakeOptimalityProver();
+        Microsoft.Extensions.DependencyInjection.ServiceCollectionServiceExtensions
+            .AddSingleton<WorkPlanStudio.Services.Scheduling.IOptimalityProver>(services, prover);
+        return prover;
+    }
+}
+
+/// <summary>A prover that returns whatever the test set, and records the call.</summary>
+internal sealed class FakeOptimalityProver : WorkPlanStudio.Services.Scheduling.IOptimalityProver
+{
+    public WorkPlanStudio.Services.Scheduling.OptimalityProof Proof { get; set; } =
+        WorkPlanStudio.Services.Scheduling.OptimalityProof.NotAttempted(
+            WorkPlanStudio.Services.Scheduling.OptimalityProofStatus.TooLarge, 120);
+
+    public int Calls { get; private set; }
+
+    public Exception? ExceptionToThrow { get; set; }
+
+    public Task<WorkPlanStudio.Services.Scheduling.OptimalityProof> ProveAsync(
+        WorkPlanStudio.Scheduling.SchedulingParameters parameters, CancellationToken cancellationToken = default)
+    {
+        Calls++;
+        return ExceptionToThrow is not null
+            ? Task.FromException<WorkPlanStudio.Services.Scheduling.OptimalityProof>(ExceptionToThrow)
+            : Task.FromResult(Proof);
+    }
 }
 
 /// <summary>A persona store that never touches the browser.</summary>

@@ -33,6 +33,7 @@ public sealed class GanttAccessibilityTests : AppBunitContext
         Services.AddSingleton<OfflineScheduleAnswerer>();
         Services.AddSingleton<ScheduleChat>();
         Services.AddScheduleExport();
+        Services.AddOptimalityProver();
         Services.AddSingleton(new PlantSettingsService(_files.CreateDatabase("gantt-a11y.db", new FakeStorage())));
     }
 

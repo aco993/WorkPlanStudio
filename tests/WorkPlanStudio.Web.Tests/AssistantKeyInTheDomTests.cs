@@ -43,6 +43,7 @@ public sealed class AssistantKeyInTheDomTests : AppBunitContext
 
         // The schedule page renders the export menu, which has its own dependencies.
         Services.AddScheduleExport();
+        Services.AddOptimalityProver();
     }
 
     protected override void Dispose(bool disposing)

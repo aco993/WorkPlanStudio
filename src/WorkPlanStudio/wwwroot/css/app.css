@@ -981,3 +981,13 @@ select.input { cursor: pointer; }
 @media (max-width: 480px) {
     .export-panel { right: auto; left: 0; width: min(260px, calc(100vw - 2rem)); }
 }
+
+/* ----- "prove this is optimal" -----
+   Sits under the KPI cards because that is what it qualifies. The answer is a
+   sentence, not a badge: "optimal", "n % above the optimum" and "not proved"
+   are three different things and a coloured pill would blur them. */
+.proof-row {
+    display: flex; flex-wrap: wrap; align-items: center; gap: .6rem 1rem;
+    margin: -.4rem 0 1.2rem;
+}
+.proof-answer { margin: 0; color: var(--text-soft); font-size: .86rem; max-width: 70ch; }

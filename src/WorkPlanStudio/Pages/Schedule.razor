@@ -12,6 +12,7 @@
 @inject ILogger<Schedule> Logger
 @inject IAssistantConfig AssistantConfig
 @inject IJSRuntime JS
+@inject IOptimalityProver Prover
 
 <PageTitle>@L["Sched_Title"] · WorkPlan Studio</PageTitle>
 
@@ -276,6 +277,22 @@
                     <div class="stat-top"><span class="stat-value">@Percent(_result.Kpis.AverageUtilization)</span></div>
                     <div class="stat-label">@L["Sched_KpiUtilization"]</div>
                 </div>
+            </div>
+
+            @*
+                The question the KPI cards invite and never answer. It sits under
+                them because that is what it qualifies: the heuristic searches the
+                order jobs are dispatched in, and the best dispatch order is not
+                the best schedule. Offered only when the instance is small enough
+                to settle, and the wording never says "optimal" unless it was
+                proved.
+            *@
+            <div class="proof-row">
+                <button type="button" class="btn btn-outline small" @onclick="ProveOptimalAsync"
+                        disabled="@(_proving || _running)">
+                    @(_proving ? L["Sched_Proof_Busy"] : L["Sched_Proof_Action"])
+                </button>
+                <p class="proof-answer" role="status" aria-live="polite">@ProofText()</p>
             </div>
 
             <section class="card">
@@ -922,6 +939,64 @@
         _aiForm.ApiKey = "";
         _aiKeyNotice = null;
         _aiKeyStored = await AssistantConfig.HasKeyForAsync(_aiForm.Provider, _lifetimeCancellation.Token);
+    }
+
+    // ----- proving the schedule optimal -----
+
+    private bool _proving;
+    private OptimalityProof? _proof;
+    private string? _proofError;
+
+    private async Task ProveOptimalAsync()
+    {
+        _proving = true;
+        _proof = null;
+        _proofError = null;
+        try
+        {
+            _proof = await Prover.ProveAsync(_resultParameters ?? _form.ToParameters(), _lifetimeCancellation.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            // Navigating away, not a failure.
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(exception, "Proving the schedule optimal failed");
+            _proofError = L["Sched_Proof_Failed"];
+        }
+        finally
+        {
+            _proving = false;
+        }
+    }
+
+    /// <summary>
+    /// The sentence under the KPI cards. Every branch states what was proved and
+    /// what was not — "not proved" is an outcome the search reaches often enough
+    /// that hiding it would make the other answers worth less.
+    /// </summary>
+    private string ProofText()
+    {
+        if (_proofError is not null)
+            return _proofError;
+        if (_proof is null)
+            return "";
+
+        var proof = _proof;
+        return proof.Status switch
+        {
+            OptimalityProofStatus.NothingToProve => L["Sched_Proof_Nothing"],
+            OptimalityProofStatus.TooLarge => L["Sched_Proof_TooLarge", proof.Operations],
+            OptimalityProofStatus.ScheduleIsOptimal =>
+                L["Sched_Proof_Optimal", Format.Number(proof.Nodes), Format.Seconds(proof.Elapsed)],
+            OptimalityProofStatus.BetterScheduleExists =>
+                L["Sched_Proof_Better", Format.Number((decimal)(proof.GapPercent ?? 0), 1),
+                  Format.Number(proof.Nodes), Format.Seconds(proof.Elapsed)],
+            _ => proof.BoundGapPercent is { } bound
+                ? L["Sched_Proof_NotProved", Format.Seconds(proof.Elapsed), Format.Number((decimal)bound, 1)]
+                : L["Sched_Proof_NotProvedNoBound", Format.Seconds(proof.Elapsed)]
+        };
     }
 
     private async Task SaveAiSettingsAsync()

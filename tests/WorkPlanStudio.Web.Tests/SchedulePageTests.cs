@@ -36,6 +36,7 @@ public class SchedulePageTests : AppBunitContext
         Services.AddSingleton<OfflineScheduleAnswerer>();
         Services.AddSingleton<ScheduleChat>();
         Services.AddScheduleExport();
+        Services.AddOptimalityProver();
         Services.AddSingleton(new PlantSettingsService(_files.CreateDatabase("schedule-page.db", new FakeStorage())));
         return fake;
     }

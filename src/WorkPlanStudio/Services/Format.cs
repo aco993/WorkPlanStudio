@@ -61,6 +61,23 @@ public static class Format
     /// <summary>A plain integer count: "1,234" / "1.234".</summary>
     public static string Number(decimal value) => value.ToString("N0", Culture);
 
+    /// <summary>The same with a fixed number of decimals: "5.3" / "5,3".</summary>
+    /// <param name="value">The number.</param>
+    /// <param name="decimals">Digits after the separator.</param>
+    public static string Number(decimal value, int decimals) =>
+        value.ToString("N" + decimals.ToString(System.Globalization.CultureInfo.InvariantCulture), Culture);
+
+    /// <summary>
+    /// A short elapsed time: milliseconds below a second, otherwise seconds with
+    /// one decimal. A measurement printed to five decimals reads as a claim about
+    /// precision the clock does not have.
+    /// </summary>
+    /// <param name="elapsed">How long something took.</param>
+    public static string Seconds(TimeSpan elapsed) =>
+        elapsed.TotalSeconds < 1
+            ? Number((decimal)elapsed.TotalMilliseconds) + " ms"
+            : Number((decimal)elapsed.TotalSeconds, 1) + " s";
+
     /// <summary>
     /// A rate in 0..1 as a percentage, rounded to whole points. The culture decides
     /// whether a space precedes the sign, which is why this is not string concatenation.

@@ -10,6 +10,7 @@ using WorkPlanStudio.Data;
 using WorkPlanStudio.Services;
 using WorkPlanStudio.Services.Auth;
 using WorkPlanStudio.Services.Remote;
+using WorkPlanStudio.Services.Scheduling;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
@@ -79,6 +80,10 @@ builder.Services.AddScoped<CostCenterService>();
 // personas, the in-browser database and the local scheduler as before. With
 // Api:BaseAddress configured it replaces the persona provider with a real
 // sign-in and runs the schedule on the server - see docs/adr/0020.
+// Proving a schedule optimal is a separate, bounded, user-initiated act — see
+// ADR 0015. It is not on the path a normal run takes.
+builder.Services.AddScoped<IOptimalityProver, OptimalityProver>();
+
 builder.Services.AddOptionalApi(builder.Configuration);
 // How the scheduling search is executed. WebAssembly has one thread and the app
 // links SQLite into the module, which rules out WasmEnableThreads outright, so the
