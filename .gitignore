@@ -53,6 +53,10 @@ wwwroot/_framework/
 __pycache__/
 *.py[cod]
 
+# BenchmarkDotNet writes its reports to the working directory, which for
+# `dotnet run --project tests/WorkPlanStudio.Benchmarks` is the repository root.
+BenchmarkDotNet.Artifacts/
+
 # OS files
 .DS_Store
 Thumbs.db
