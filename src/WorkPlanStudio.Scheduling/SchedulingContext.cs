@@ -33,18 +33,7 @@ public sealed class SchedulingContext
 
     // ----- flattened model, built once, read by the dispatcher -----
 
-    private readonly MachineCapacity[] _machinesByIndex;
-    private readonly int[] _machineIdsSorted;
-    private readonly int[] _slotOffsetByMachineIndex;  // length machines + 1
     private readonly long[] _longestPlacementByMachineIndex;
-
-    private readonly int[] _jobStepOffset;             // length jobs + 1
-    private readonly int[] _stepMachineIndex;
-    private readonly long[] _stepDuration;
-    private readonly int[] _stepFamilyId;
-    private readonly int[] _stepNumber;
-    private readonly long[] _jobRelease;
-
     private readonly Dictionary<string, int> _familyIds;
     private readonly bool[] _machineHasSetup;
     private readonly Dictionary<long, long> _setupByKey;
@@ -85,16 +74,16 @@ public sealed class SchedulingContext
             }
         }
 
-        _machineIdsSorted = [.. byId.Keys.Order()];
-        _machinesByIndex = new MachineCapacity[_machineIdsSorted.Length];
-        _slotOffsetByMachineIndex = new int[_machineIdsSorted.Length + 1];
-        _longestPlacementByMachineIndex = new long[_machineIdsSorted.Length];
-        _machineHasSetup = new bool[_machineIdsSorted.Length];
-        for (int i = 0; i < _machineIdsSorted.Length; i++)
+        MachineIdsSorted = [.. byId.Keys.Order()];
+        MachinesByIndex = new MachineCapacity[MachineIdsSorted.Length];
+        SlotOffsetByMachineIndex = new int[MachineIdsSorted.Length + 1];
+        _longestPlacementByMachineIndex = new long[MachineIdsSorted.Length];
+        _machineHasSetup = new bool[MachineIdsSorted.Length];
+        for (int i = 0; i < MachineIdsSorted.Length; i++)
         {
-            var machine = byId[_machineIdsSorted[i]];
-            _machinesByIndex[i] = machine;
-            _slotOffsetByMachineIndex[i + 1] = _slotOffsetByMachineIndex[i] + machine.ParallelCapacity;
+            var machine = byId[MachineIdsSorted[i]];
+            MachinesByIndex[i] = machine;
+            SlotOffsetByMachineIndex[i + 1] = SlotOffsetByMachineIndex[i] + machine.ParallelCapacity;
             _longestPlacementByMachineIndex[i] = machine.LongestPlacementSeconds;
             _machineHasSetup[i] = machine.SetupDurations.Count > 0;
         }
@@ -111,14 +100,14 @@ public sealed class SchedulingContext
             totalSteps += job.Steps.Count;
         }
 
-        _jobStepOffset = new int[jobList.Length + 1];
-        _stepMachineIndex = new int[totalSteps];
-        _stepDuration = new long[totalSteps];
-        _stepFamilyId = new int[totalSteps];
-        _stepNumber = new int[totalSteps];
-        _jobRelease = new long[jobList.Length];
+        JobStepOffset = new int[jobList.Length + 1];
+        StepMachineIndex = new int[totalSteps];
+        StepDuration = new long[totalSteps];
+        StepFamilyId = new int[totalSteps];
+        StepNumbers = new int[totalSteps];
+        JobRelease = new long[jobList.Length];
 
-        var familiesOnMachine = new HashSet<int>[_machinesByIndex.Length];
+        var familiesOnMachine = new HashSet<int>[MachinesByIndex.Length];
         for (int i = 0; i < familiesOnMachine.Length; i++)
             familiesOnMachine[i] = [];
 
@@ -128,8 +117,8 @@ public sealed class SchedulingContext
         for (int j = 0; j < jobList.Length; j++)
         {
             var job = jobList[j];
-            _jobRelease[j] = job.ReleaseSeconds;
-            _jobStepOffset[j] = cursor;
+            JobRelease[j] = job.ReleaseSeconds;
+            JobStepOffset[j] = cursor;
             latestRelease = Math.Max(latestRelease, job.ReleaseSeconds);
 
             long previousStepNumber = long.MinValue;
@@ -153,21 +142,21 @@ public sealed class SchedulingContext
                 if (!byId.ContainsKey(step.WorkCenterId))
                     throw new ArgumentException($"Job {job.Id} step {step.StepNumber} references unknown work center {step.WorkCenterId}.");
 
-                int machineIndex = Array.BinarySearch(_machineIdsSorted, step.WorkCenterId);
+                int machineIndex = Array.BinarySearch(MachineIdsSorted, step.WorkCenterId);
                 int familyId = InternFamily(step.SetupFamily);
                 familiesOnMachine[machineIndex].Add(familyId);
 
-                _stepMachineIndex[cursor] = machineIndex;
-                _stepDuration[cursor] = step.DurationSeconds;
-                _stepFamilyId[cursor] = familyId;
-                _stepNumber[cursor] = step.StepNumber;
+                StepMachineIndex[cursor] = machineIndex;
+                StepDuration[cursor] = step.DurationSeconds;
+                StepFamilyId[cursor] = familyId;
+                StepNumbers[cursor] = step.StepNumber;
                 cursor++;
 
                 totalWork = checked(totalWork + step.DurationSeconds);
             }
         }
 
-        _jobStepOffset[jobList.Length] = cursor;
+        JobStepOffset[jobList.Length] = cursor;
 
         // The whole instance has to fit the horizon, not only each step: jobs
         // compose on a shared machine clock, and that clock is what overflows.
@@ -188,18 +177,18 @@ public sealed class SchedulingContext
         // can act on.
         for (int j = 0; j < jobList.Length; j++)
         {
-            for (int s = _jobStepOffset[j]; s < _jobStepOffset[j + 1]; s++)
+            for (int s = JobStepOffset[j]; s < JobStepOffset[j + 1]; s++)
             {
-                int machineIndex = _stepMachineIndex[s];
+                int machineIndex = StepMachineIndex[s];
                 long longestPlacement = _longestPlacementByMachineIndex[machineIndex];
                 if (longestPlacement == long.MaxValue)
                     continue;
 
-                long needed = _stepDuration[s] + WorstSetupInto(machineIndex, _stepFamilyId[s], familiesOnMachine[machineIndex]);
+                long needed = StepDuration[s] + WorstSetupInto(machineIndex, StepFamilyId[s], familiesOnMachine[machineIndex]);
                 if (needed > longestPlacement)
                     throw new ArgumentException(
-                        $"Job {jobList[j].Id} step {_stepNumber[s]} needs {needed}s including change-over, " +
-                        $"but the longest availability window of work center {_machineIdsSorted[machineIndex]} is {longestPlacement}s.");
+                        $"Job {jobList[j].Id} step {StepNumbers[s]} needs {needed}s including change-over, " +
+                        $"but the longest availability window of work center {MachineIdsSorted[machineIndex]} is {longestPlacement}s.");
             }
         }
 
@@ -217,16 +206,16 @@ public sealed class SchedulingContext
         Machines = source.Machines;
         Parameters = parameters;
 
-        _machinesByIndex = source._machinesByIndex;
-        _machineIdsSorted = source._machineIdsSorted;
-        _slotOffsetByMachineIndex = source._slotOffsetByMachineIndex;
+        MachinesByIndex = source.MachinesByIndex;
+        MachineIdsSorted = source.MachineIdsSorted;
+        SlotOffsetByMachineIndex = source.SlotOffsetByMachineIndex;
         _longestPlacementByMachineIndex = source._longestPlacementByMachineIndex;
-        _jobStepOffset = source._jobStepOffset;
-        _stepMachineIndex = source._stepMachineIndex;
-        _stepDuration = source._stepDuration;
-        _stepFamilyId = source._stepFamilyId;
-        _stepNumber = source._stepNumber;
-        _jobRelease = source._jobRelease;
+        JobStepOffset = source.JobStepOffset;
+        StepMachineIndex = source.StepMachineIndex;
+        StepDuration = source.StepDuration;
+        StepFamilyId = source.StepFamilyId;
+        StepNumbers = source.StepNumbers;
+        JobRelease = source.JobRelease;
         _familyIds = source._familyIds;
         _machineHasSetup = source._machineHasSetup;
         _setupByKey = source._setupByKey;
@@ -264,7 +253,7 @@ public sealed class SchedulingContext
         if (from is null || string.Equals(from, to, StringComparison.Ordinal))
             return 0;
 
-        int machineIndex = Array.BinarySearch(_machineIdsSorted, workCenterId);
+        int machineIndex = Array.BinarySearch(MachineIdsSorted, workCenterId);
         if (machineIndex < 0 ||
             !_familyIds.TryGetValue(from, out int fromId) ||
             !_familyIds.TryGetValue(to, out int toId))
@@ -279,17 +268,17 @@ public sealed class SchedulingContext
 
     // ----- internal flattened accessors (the dispatcher's hot path) -----
 
-    internal MachineCapacity[] MachinesByIndex => _machinesByIndex;
-    internal int[] MachineIdsSorted => _machineIdsSorted;
-    internal int[] SlotOffsetByMachineIndex => _slotOffsetByMachineIndex;
-    internal int TotalSlots => _slotOffsetByMachineIndex[^1];
-    internal int[] JobStepOffset => _jobStepOffset;
-    internal int[] StepMachineIndex => _stepMachineIndex;
-    internal long[] StepDuration => _stepDuration;
-    internal int[] StepFamilyId => _stepFamilyId;
-    internal int[] StepNumbers => _stepNumber;
-    internal long[] JobRelease => _jobRelease;
-    internal int TotalSteps => _jobStepOffset.Length == 0 ? 0 : _jobStepOffset[^1];
+    internal MachineCapacity[] MachinesByIndex { get; }
+    internal int[] MachineIdsSorted { get; }
+    internal int[] SlotOffsetByMachineIndex { get; }
+    internal int TotalSlots => SlotOffsetByMachineIndex[^1];
+    internal int[] JobStepOffset { get; }
+    internal int[] StepMachineIndex { get; }
+    internal long[] StepDuration { get; }
+    internal int[] StepFamilyId { get; }
+    internal int[] StepNumbers { get; }
+    internal long[] JobRelease { get; }
+    internal int TotalSteps => JobStepOffset.Length == 0 ? 0 : JobStepOffset[^1];
 
     /// <summary>Change-over cost by dense index; <c>-1</c> means a slot that has run nothing yet.</summary>
     internal long SetupSecondsFor(int machineIndex, int fromFamilyId, int toFamilyId)
@@ -304,9 +293,9 @@ public sealed class SchedulingContext
     private Dictionary<long, long> BuildSetupLookup(Dictionary<int, MachineCapacity> byId)
     {
         var lookup = new Dictionary<long, long>();
-        for (int i = 0; i < _machineIdsSorted.Length; i++)
+        for (int i = 0; i < MachineIdsSorted.Length; i++)
         {
-            var machine = byId[_machineIdsSorted[i]];
+            var machine = byId[MachineIdsSorted[i]];
             foreach (var setup in machine.SetupDurations)
             {
                 long key = ((long)i * _familyCount + _familyIds[setup.FromFamily]) * _familyCount + _familyIds[setup.ToFamily];
