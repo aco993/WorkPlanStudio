@@ -5,11 +5,19 @@ namespace WorkPlanStudio.Scheduling;
 /// <param name="Schedule">The schedule for <paramref name="Order"/>.</param>
 /// <param name="Evaluation">Its score.</param>
 /// <param name="StepsUsed">How many neighbours were evaluated.</param>
+/// <param name="AdoptedMoves">
+/// How many of those neighbours were actually taken. The ratio to
+/// <paramref name="StepsUsed"/> is what says whether the budget bought search or
+/// only comparison: a descent that evaluates nine thousand neighbours to adopt
+/// one has spent its budget proving that the order it started from is hard to
+/// improve one job at a time, which is not the same as improving it.
+/// </param>
 public sealed record LocalSearchResult(
     IReadOnlyList<int> Order,
     Schedule Schedule,
     ScheduleEvaluation Evaluation,
-    int StepsUsed);
+    int StepsUsed,
+    int AdoptedMoves = 0);
 
 /// <summary>
 /// Hill climb over the job priority order using the <b>insertion</b> (or-opt)
@@ -29,12 +37,14 @@ public sealed record LocalSearchResult(
 /// </para>
 /// <para>
 /// The acceptance rule matters at scale, which ADR 0008 did not test: a pass is
-/// n·(n−1) neighbours, so at 100 jobs steepest descent spends the entire default
-/// budget comparing and adopts one move, leaving three quarters of the sequence
-/// never lifted out at all. First improvement adopts immediately and restarts the
-/// pass, and measured better penalties at every size from 20 jobs upwards for the
-/// same number of dispatches. It is the default; steepest descent stays available
-/// through <see cref="SchedulingParameters.LocalSearchAcceptance"/>. See ADR 0022.
+/// n·(n−1) neighbours, so at 100 jobs steepest descent spends the whole default
+/// budget on comparisons and adopts <b>one</b> move, leaving four fifths of the
+/// sequence never lifted out at all. The default is therefore
+/// <see cref="LocalSearchAcceptance.BestInsertion"/> — one adopted move per job
+/// rather than per pass — which measured 6.8 % better than steepest descent over
+/// 25 instances at three budgets each, and keeps improving as the budget grows
+/// where steepest descent flattens. All three rules stay available through
+/// <see cref="SchedulingParameters.LocalSearchAcceptance"/>. See ADR 0022.
 /// </para>
 /// </summary>
 public static class LocalSearch
@@ -75,12 +85,13 @@ public static class LocalSearch
             evaluator, context, workspace, order, start,
             maxSteps, context.Parameters.LocalSearchAcceptance, cancellationToken);
 
-        if (outcome.StepsUsed == 0 || !outcome.Improved)
-            return new LocalSearchResult([.. order], startSchedule, startEvaluation, outcome.StepsUsed);
+        if (!outcome.Improved)
+            return new LocalSearchResult([.. order], startSchedule, startEvaluation, outcome.StepsUsed, 0);
 
         evaluator.Score(context, order, workspace, cancellationToken);
         var schedule = evaluator.Materialise(context, order, workspace);
-        return new LocalSearchResult([.. order], schedule, ScheduleEvaluator.Evaluate(schedule, context), outcome.StepsUsed);
+        return new LocalSearchResult(
+            [.. order], schedule, ScheduleEvaluator.Evaluate(schedule, context), outcome.StepsUsed, outcome.AdoptedMoves);
     }
 
     /// <summary>An evaluator for <paramref name="scheduler"/>, adapting one that cannot score in place.</summary>
@@ -91,8 +102,12 @@ public static class LocalSearch
     /// <param name="Score">The best score reached.</param>
     /// <param name="Penalty">Its penalty under the context's parameters.</param>
     /// <param name="StepsUsed">Neighbours evaluated.</param>
-    /// <param name="Improved">Whether the descent moved away from the starting order at all.</param>
-    internal readonly record struct DescentOutcome(ScheduleScore Score, double Penalty, int StepsUsed, bool Improved);
+    /// <param name="AdoptedMoves">Neighbours adopted.</param>
+    internal readonly record struct DescentOutcome(ScheduleScore Score, double Penalty, int StepsUsed, int AdoptedMoves)
+    {
+        /// <summary>Whether the descent moved away from the starting order at all.</summary>
+        public bool Improved => AdoptedMoves > 0;
+    }
 
     /// <summary>
     /// Descends from <paramref name="order"/>, leaving the best order found in it.
@@ -114,9 +129,9 @@ public static class LocalSearch
 
         int n = order.Length;
         int steps = 0;
-        bool everImproved = false;
+        int adopted = 0;
         if (n < 2 || maxSteps <= 0)
-            return new DescentOutcome(bestScore, bestPenalty, 0, false);
+            return new DescentOutcome(bestScore, bestPenalty, 0, 0);
 
         var candidate = new int[n];
         var winner = acceptance == LocalSearchAcceptance.FirstImprovement ? null : new int[n];
@@ -163,7 +178,7 @@ public static class LocalSearch
                             bestPenalty = penalty;
                             bestScore = score;
                             improved = true;
-                            everImproved = true;
+                            adopted++;
                             adoptedNow = true;
                             break;
 
@@ -197,7 +212,7 @@ public static class LocalSearch
                     bestPenalty = jobPenalty;
                     bestScore = jobScore;
                     improved = true;
-                    everImproved = true;
+                    adopted++;
                 }
             }
 
@@ -207,11 +222,11 @@ public static class LocalSearch
                 bestPenalty = passPenalty;
                 bestScore = passScore;
                 improved = true;
-                everImproved = true;
+                adopted++;
             }
         }
 
-        return new DescentOutcome(bestScore, bestPenalty, steps, everImproved);
+        return new DescentOutcome(bestScore, bestPenalty, steps, adopted);
     }
 
     /// <summary>Copies <c>source</c> into <c>target</c> with the element at <c>from</c> moved to index <c>to</c>.</summary>

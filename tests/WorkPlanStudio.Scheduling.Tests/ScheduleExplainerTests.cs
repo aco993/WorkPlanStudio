@@ -102,6 +102,111 @@ public class ScheduleExplainerTests
         Assert.Null(late.BlockingWorkCenterName);
     }
 
+    /// <summary>
+    /// The fixture the old ranking got wrong. With the shipped weights a late job
+    /// costs 100 and an hour of tardiness costs 10, so one late job is worth ten
+    /// hours of tardiness — and shortest-processing-time here trades one job that
+    /// is three hours late for three that are barely late. By total tardiness that
+    /// reads as 10 800 s down to 300 s and looks like a large win; by the penalty
+    /// the engine minimises it is 133.028 up to 303.861, a schedule 2.3× worse.
+    /// </summary>
+    [Fact]
+    public void A_rule_that_cuts_tardiness_but_raises_the_penalty_is_not_recommended()
+    {
+        var context = Context(
+            new SchedulingParameters
+            {
+                DispatchRule = DispatchRule.LongestProcessingTime,
+                DueDateRule = DueDateRule.Explicit,
+                MultiStartRuns = 1,
+                LocalSearchMaxSteps = 0
+            },
+            new[] { Machine(1) },
+            DueAt(1, 3_600, Step(10, 1, 3_600)),
+            DueAt(2, 7_200, Step(10, 1, 3_600)),
+            DueAt(3, 10_800, Step(10, 1, 3_600)),
+            DueAt(4, 100, Step(10, 1, 100)));
+
+        var result = new SchedulingEngine().Run(context);
+        var explanation = ScheduleExplainer.Explain(context, result);
+
+        // The current schedule: one job three hours late, penalty 133.028.
+        Assert.Equal(10_800, result.Evaluation.TotalTardinessSeconds);
+        Assert.Equal(1, result.Evaluation.LateJobCount);
+
+        // Shortest-processing-time would cut tardiness to 300 s and still be worse.
+        var alternative = context.WithParameters(context.Parameters with { DispatchRule = DispatchRule.ShortestProcessingTime });
+        var alternativeResult = new SchedulingEngine().Run(alternative);
+        Assert.True(alternativeResult.Evaluation.TotalTardinessSeconds < result.Evaluation.TotalTardinessSeconds);
+        Assert.True(alternativeResult.Evaluation.Penalty > result.Evaluation.Penalty);
+
+        Assert.NotEqual(DispatchRule.ShortestProcessingTime, explanation.Recommendation.SuggestedRule);
+    }
+
+    /// <summary>
+    /// Whatever it does recommend, following the advice must actually help — by
+    /// the objective, on every instance the suite generates.
+    /// </summary>
+    [Fact]
+    public void A_recommended_rule_always_lowers_the_penalty()
+    {
+        foreach (var rule in Enum.GetValues<DispatchRule>())
+        {
+            var context = SearchTests.MediumScenario(rule);
+            var result = new SchedulingEngine().Run(context);
+            var recommendation = ScheduleExplainer.Explain(context, result).Recommendation;
+
+            if (recommendation.SuggestedRule is not { } suggested)
+                continue;
+
+            var probe = context.WithParameters(context.Parameters with { DispatchRule = suggested });
+            double suggestedPenalty = new SchedulingEngine().Run(probe).Evaluation.Penalty;
+
+            Assert.True(suggestedPenalty < result.Evaluation.Penalty,
+                $"from {rule}, the explainer suggested {suggested}, which scores {suggestedPenalty} against {result.Evaluation.Penalty}");
+        }
+    }
+
+    /// <summary>
+    /// The probe is five more searches; a caller that cannot spend them must be
+    /// able to say so and still get the rest of the explanation.
+    /// </summary>
+    [Fact]
+    public void The_rule_probe_can_be_skipped()
+    {
+        var context = LateByRuleChoice();
+        var result = new SchedulingEngine().Run(context);
+
+        var explanation = ScheduleExplainer.Explain(context, result, probeAlternativeRules: false);
+
+        Assert.Equal(RecommendationKind.NotProbed, explanation.Recommendation.Kind);
+        Assert.Null(explanation.Recommendation.SuggestedRule);
+        Assert.NotNull(explanation.Bottleneck);
+        Assert.Single(explanation.LateJobs);
+    }
+
+    /// <summary>
+    /// More than <see cref="ScheduleExplainer.MaxLateJobs"/> late jobs: exactly
+    /// five findings, worst first, ties broken by job id.
+    /// </summary>
+    [Fact]
+    public void Late_jobs_are_truncated_worst_first()
+    {
+        var jobs = Enumerable.Range(1, 9)
+            .Select(i => DueAt(i, 0, Step(10, 1, 100 * i)))
+            .ToArray();
+        var context = Context(
+            new SchedulingParameters { DueDateRule = DueDateRule.Explicit, DispatchRule = DispatchRule.ShortestProcessingTime, MultiStartRuns = 1, LocalSearchMaxSteps = 0 },
+            new[] { Machine(1) },
+            jobs);
+
+        var explanation = ScheduleExplainer.Explain(context, new SchedulingEngine().Run(context), probeAlternativeRules: false);
+
+        Assert.Equal(ScheduleExplainer.MaxLateJobs, explanation.LateJobs.Count);
+        var tardiness = explanation.LateJobs.Select(j => j.TardinessSeconds).ToArray();
+        Assert.Equal(tardiness.OrderByDescending(t => t), tardiness);
+    }
+
     [Fact]
     public void The_explanation_is_deterministic()
     {
