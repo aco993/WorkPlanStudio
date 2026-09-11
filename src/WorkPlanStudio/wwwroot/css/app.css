@@ -920,3 +920,48 @@ select.input { cursor: pointer; }
 /* The error summary's list: tight to the heading above it, indented enough for
    the markers to sit outside the text. */
 .error-summary-list { margin: .35rem 0 0; padding-left: 1.1rem; }
+
+/* ----- Export menu -----
+   A menu button, not a <details>: the panel needs arrow-key navigation, which
+   means real role="menu"/"menuitem" elements. The backdrop is a transparent
+   full-screen layer that closes the menu on an outside click without any
+   JavaScript; it is aria-hidden and not focusable, so it is invisible to the
+   keyboard and to assistive technology. */
+.export-menu { position: relative; display: inline-flex; }
+.export-trigger { min-width: 7.5rem; justify-content: center; }
+.export-trigger:disabled { opacity: .55; cursor: not-allowed; }
+.export-spinner { width: 14px; height: 14px; border-width: 2px; }
+
+.export-backdrop { position: fixed; inset: 0; z-index: 39; background: transparent; }
+
+.export-panel {
+    position: absolute; right: 0; top: calc(100% + 6px); z-index: 40;
+    width: min(260px, 90vw); padding: .4rem;
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    box-shadow: var(--shadow-lg);
+    display: flex; flex-direction: column; gap: .1rem;
+}
+.export-option {
+    display: flex; align-items: baseline; justify-content: space-between; gap: .6rem;
+    width: 100%; padding: .5rem .6rem; border-radius: var(--radius-sm);
+    border: 1px solid transparent; background: none; cursor: pointer;
+    color: var(--text); font: inherit; text-align: left;
+}
+.export-option:hover { background: var(--surface-2); }
+.export-option:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }
+.export-option-name { font-size: .88rem; font-weight: 600; }
+.export-option-ext { font-size: .74rem; color: var(--text-muted); font-family: "Cascadia Code", "Consolas", ui-monospace, monospace; }
+.export-hint { font-size: .72rem; color: var(--text-muted); line-height: 1.4; margin: .3rem .6rem .2rem; }
+
+.export-error { font-size: .8rem; color: var(--red); margin-top: .4rem; }
+
+/* On a wide screen the head actions sit at the right of the page, so a panel
+   anchored to the trigger's right edge opens leftwards into the page. Below the
+   breakpoint the head stacks and the actions start at the left margin, and the
+   same anchoring sends the panel off the left edge of the screen — measured at
+   360 px: the panel's left edge landed at -131 px and every item was
+   unreachable. Anchoring to the trigger's left edge there opens it the other
+   way, and the width is clamped so it cannot run off the right instead. */
+@media (max-width: 480px) {
+    .export-panel { right: auto; left: 0; width: min(260px, calc(100vw - 2rem)); }
+}

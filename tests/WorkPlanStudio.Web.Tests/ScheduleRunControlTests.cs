@@ -34,6 +34,7 @@ public sealed class ScheduleRunControlTests : AppBunitContext
         Services.AddSingleton<ScheduleAssistant>();
         Services.AddSingleton<OfflineScheduleAnswerer>();
         Services.AddSingleton<ScheduleChat>();
+        Services.AddScheduleExport();
         Services.AddSingleton(new PlantSettingsService(_files.CreateDatabase("run-control.db", new FakeStorage())));
         return fake;
     }

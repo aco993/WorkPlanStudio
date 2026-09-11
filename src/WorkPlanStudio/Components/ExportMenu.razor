@@ -1,0 +1,233 @@
+@inject IStringLocalizer<SharedResource> L
+@inject ScheduleExportService Export
+@inject ILogger<ExportMenu> Logger
+
+@*
+    Export the schedule as a PDF report, an Excel workbook or a CSV file.
+
+    A menu button rather than three buttons: three formats on a page header is
+    noise, and only one of them is wanted at a time. It is built from a real
+    button and a role="menu" panel rather than a <details> element, because a
+    menu item has to be reachable with the arrow keys and <details> gives no
+    control over that - Enter, Space or Down opens and moves to the first item,
+    Up opens at the last, Home and End jump, Escape closes and puts focus back
+    on the trigger, and a choice does the same.
+
+    Nothing here is gated: the scheduling page itself is readable by every
+    persona, and reading a schedule you are allowed to see includes taking it
+    with you. A guest exports exactly what a guest can see.
+*@
+
+<div class="export-menu">
+    <button type="button" class="btn btn-outline export-trigger"
+            id="export-trigger"
+            aria-haspopup="menu"
+            aria-expanded="@(_open ? "true" : "false")"
+            aria-controls="export-menu-panel"
+            disabled="@(Disabled || _busy || Result is null)"
+            @ref="_trigger"
+            @onclick="Toggle"
+            @onkeydown="OnTriggerKeyDown">
+        @if (_busy)
+        {
+            <span class="spinner export-spinner" aria-hidden="true"></span>
+        }
+        else
+        {
+            <svg class="btn-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" /></svg>
+        }
+        <span>@(_busy ? L["Export_Busy"] : L["Export_Menu"])</span>
+    </button>
+
+    @if (_open)
+    {
+        <div class="export-backdrop" aria-hidden="true" @onclick="Close"></div>
+        <div class="export-panel" id="export-menu-panel" role="menu" aria-labelledby="export-trigger"
+             @onkeydown="OnMenuKeyDownAsync">
+            @for (int i = 0; i < Formats.Length; i++)
+            {
+                var index = i;
+                var format = Formats[index];
+                <button type="button" role="menuitem" class="export-option"
+                        @ref="_items[index]"
+                        @onclick="() => ExportAsync(format)">
+                    <span class="export-option-name">@L[$"Export_{format}"]</span>
+                    <span class="export-option-ext">.@ScheduleExportFile.Extension(format)</span>
+                </button>
+            }
+            <p class="export-hint">@L["Export_Hint"]</p>
+        </div>
+    }
+</div>
+
+@if (_error is not null)
+{
+    <p class="export-error" role="alert">@_error</p>
+}
+
+<p class="sr-only" role="status" aria-live="polite">@_announcement</p>
+
+@code {
+    private static readonly ScheduleExportFormat[] Formats =
+        [ScheduleExportFormat.Pdf, ScheduleExportFormat.Excel, ScheduleExportFormat.Csv];
+
+    /// <summary>Focus the trigger after the next render; see <see cref="_focusAfterRender"/>.</summary>
+    private const int Trigger = -1;
+
+    private readonly ElementReference[] _items = new ElementReference[Formats.Length];
+    private ElementReference _trigger;
+    private bool _open;
+    private bool _busy;
+    private int _focused;
+
+    /// <summary>
+    /// Which element to focus once the DOM has caught up: an item index, or
+    /// <see cref="Trigger"/>. Focus cannot be moved in the handler itself - the
+    /// panel does not exist yet when the menu opens, and the trigger is still
+    /// disabled when an export finishes.
+    /// </summary>
+    private int? _focusAfterRender;
+
+    private string? _announcement;
+    private string? _error;
+
+    /// <summary>The schedule to export. Null until the first run has finished.</summary>
+    [Parameter, EditorRequired] public ScheduleResult? Result { get; set; }
+
+    /// <summary>The parameters that produced <see cref="Result"/>; they go into the export so the run can be repeated.</summary>
+    [Parameter, EditorRequired] public SchedulingParameters Parameters { get; set; } = new();
+
+    /// <summary>Set while the page is busy with something else, so two long jobs cannot overlap.</summary>
+    [Parameter] public bool Disabled { get; set; }
+
+    /// <summary>Cancels an export in flight when the host page goes away.</summary>
+    [Parameter] public CancellationToken CancellationToken { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_focusAfterRender is not { } target)
+            return;
+
+        _focusAfterRender = null;
+        await FocusAsync(target);
+    }
+
+    private void Toggle()
+    {
+        if (_open)
+            Close();
+        else
+            Open(0);
+    }
+
+    /// <summary>Opens the menu with one item focused once the panel has been rendered.</summary>
+    private void Open(int index)
+    {
+        _open = true;
+        _focused = index;
+        _error = null;
+        _focusAfterRender = index;
+    }
+
+    private void Close()
+    {
+        _open = false;
+        _focused = 0;
+    }
+
+    private void CloseAndRestoreFocus()
+    {
+        Close();
+        _focusAfterRender = Trigger;
+    }
+
+    private void OnTriggerKeyDown(KeyboardEventArgs args)
+    {
+        // Enter and Space are left to the button's own activation, which raises
+        // click - handling them here as well would open and close again.
+        switch (args.Key)
+        {
+            case "ArrowDown":
+                Open(0);
+                break;
+            case "ArrowUp":
+                Open(Formats.Length - 1);
+                break;
+            case "Escape" when _open:
+                CloseAndRestoreFocus();
+                break;
+        }
+    }
+
+    private async Task OnMenuKeyDownAsync(KeyboardEventArgs args)
+    {
+        switch (args.Key)
+        {
+            case "ArrowDown":
+                await FocusAsync((_focused + 1) % Formats.Length);
+                break;
+            case "ArrowUp":
+                await FocusAsync((_focused - 1 + Formats.Length) % Formats.Length);
+                break;
+            case "Home":
+                await FocusAsync(0);
+                break;
+            case "End":
+                await FocusAsync(Formats.Length - 1);
+                break;
+            case "Escape":
+                CloseAndRestoreFocus();
+                break;
+        }
+    }
+
+    private async Task FocusAsync(int index)
+    {
+        if (index >= 0)
+            _focused = index;
+
+        try
+        {
+            await (index == Trigger ? _trigger : _items[index]).FocusAsync();
+        }
+        catch (JSException exception)
+        {
+            // Focus is a courtesy: the menu is still usable with the mouse, and
+            // an interop failure here must not swallow the export.
+            Logger.LogDebug(exception, "Could not move focus inside the export menu");
+        }
+    }
+
+    private async Task ExportAsync(ScheduleExportFormat format)
+    {
+        if (Result is null)
+            return;
+
+        Close();
+        _busy = true;
+        _error = null;
+        _announcement = null;
+        StateHasChanged();
+
+        try
+        {
+            var fileName = await Export.ExportAsync(Result, Parameters, format, CancellationToken);
+            _announcement = string.Format(System.Globalization.CultureInfo.CurrentUICulture, L["Export_Ready"], fileName);
+        }
+        catch (OperationCanceledException)
+        {
+            // The page is going away; nothing to report.
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(exception, "Export failed for format {Format}", format);
+            _error = L["Export_Failed"];
+        }
+        finally
+        {
+            _busy = false;
+            _focusAfterRender = Trigger;
+            StateHasChanged();
+        }
+    }
+}

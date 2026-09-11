@@ -584,4 +584,31 @@
   <data name="Run_Acceptance_FirstHint" xml:space="preserve"><value>Takes the first move that helps and carries straight on. Spends the budget on moves rather than on comparisons.</value></data>
   <data name="Run_Acceptance_BestHint" xml:space="preserve"><value>Moves each job to its best position in turn. The measured default: about 7% better than steepest descent over 25 test instances.</value></data>
   <data name="Run_Acceptance_SteepestHint" xml:space="preserve"><value>Compares every move before taking the best one. Thorough on small plans; on large ones the budget runs out after one or two moves.</value></data>
+  <data name="Export_Menu" xml:space="preserve"><value>Export</value></data>
+  <data name="Export_Busy" xml:space="preserve"><value>Preparing…</value></data>
+  <data name="Export_Pdf" xml:space="preserve"><value>PDF report</value></data>
+  <data name="Export_Excel" xml:space="preserve"><value>Excel workbook</value></data>
+  <data name="Export_Csv" xml:space="preserve"><value>CSV file</value></data>
+  <data name="Export_Hint" xml:space="preserve"><value>The file is produced in your browser; nothing is uploaded.</value></data>
+  <data name="Export_Ready" xml:space="preserve"><value>{0} is ready to download.</value></data>
+  <data name="Export_Failed" xml:space="preserve"><value>The export could not be produced. Try again, or pick another format.</value></data>
+  <data name="Export_Title" xml:space="preserve"><value>Production schedule</value></data>
+  <data name="Export_Subtitle" xml:space="preserve"><value>Dispatch rule: {0} · target-date rule: {1}</value></data>
+  <data name="Export_PageNumber" xml:space="preserve"><value>Page {0} of {1}</value></data>
+  <data name="Export_Operations" xml:space="preserve"><value>Operations</value></data>
+  <data name="Export_Utilization" xml:space="preserve"><value>Utilization per work center</value></data>
+  <data name="Export_Parameters" xml:space="preserve"><value>Run parameters</value></data>
+  <data name="Export_Setting" xml:space="preserve"><value>Setting</value></data>
+  <data name="Export_Value" xml:space="preserve"><value>Value</value></data>
+  <data name="Export_Start" xml:space="preserve"><value>Start</value></data>
+  <data name="Export_End" xml:space="preserve"><value>End</value></data>
+  <data name="Export_Duration" xml:space="preserve"><value>Duration</value></data>
+  <data name="Export_Generated" xml:space="preserve"><value>Generated</value></data>
+  <data name="Export_Horizon" xml:space="preserve"><value>Schedule starts</value></data>
+  <data name="Export_LocalSearchTaken" xml:space="preserve"><value>Local-search steps taken</value></data>
+  <data name="Export_HoursUnit" xml:space="preserve"><value>h</value></data>
+  <data name="Export_Summary" xml:space="preserve"><value>Summary</value></data>
+  <data name="Export_Figure" xml:space="preserve"><value>Figure</value></data>
+  <data name="Export_True" xml:space="preserve"><value>TRUE</value></data>
+  <data name="Export_False" xml:space="preserve"><value>FALSE</value></data>
 </root>

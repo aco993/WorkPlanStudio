@@ -35,6 +35,7 @@ public class SchedulePageTests : AppBunitContext
         JSInterop.Mode = JSRuntimeMode.Loose;
         Services.AddSingleton<OfflineScheduleAnswerer>();
         Services.AddSingleton<ScheduleChat>();
+        Services.AddScheduleExport();
         Services.AddSingleton(new PlantSettingsService(_files.CreateDatabase("schedule-page.db", new FakeStorage())));
         return fake;
     }

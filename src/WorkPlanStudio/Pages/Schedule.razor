@@ -27,11 +27,22 @@
         focus: a run finishing must not pull the reader out of whatever they were
         reading while it ran.
     *@
+    @*
+        Export sits beside Generate because that is where the plan is made, and
+        the file is the plan. It carries the parameters of the run on screen, not
+        the ones currently in the form — those may have been edited since — and it
+        is unavailable while a run is in flight, because the schedule it would
+        write is about to be replaced.
+    *@
     <div class="head-actions">
         @if (_running)
         {
             <button id="sched-cancel" type="button" class="btn btn-outline" @onclick="CancelRun">@L["Run_Cancel"]</button>
         }
+        <ExportMenu Result="@(_result is { HasData: true } ? _result : null)"
+                    Parameters="_resultParameters"
+                    Disabled="_running"
+                    CancellationToken="_lifetimeCancellation.Token" />
         <button id="sched-generate" class="btn btn-primary" @onclick="GenerateAsync"
                 disabled="@(_running || _form.ExceedsEvaluationBudget)">
             <svg class="btn-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v2m0 14v2m9-9h-2M5 12H3m14.5-6.5-1.4 1.4M7.9 16.1l-1.4 1.4m12 0-1.4-1.4M7.9 7.9 6.5 6.5"/><circle cx="12" cy="12" r="3.2"/></svg>
@@ -590,6 +601,15 @@
 @code {
     private readonly Form _form = new();
     private ScheduleResult? _result;
+
+    /// <summary>
+    /// The parameters that produced <see cref="_result"/>, kept apart from the
+    /// form because the form goes on being edited after a run. An export names
+    /// the settings of the schedule it contains; taking them from the form would
+    /// make it name settings that were never run.
+    /// </summary>
+    private SchedulingParameters _resultParameters = new();
+
     private bool _running;
     private string? _runError;
     private string? _runAnnouncement;
@@ -673,6 +693,7 @@
                 _form.MinutesPerWorkingDay,
                 new InlineProgress<ScheduleRunProgress>(OnProgress),
                 _runCancellation.Token);
+            _resultParameters = parameters;
             BuildLanes();
             _runAnnouncement = Announcement(_result);
 
