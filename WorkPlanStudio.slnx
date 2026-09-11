@@ -5,6 +5,7 @@
     <Project Path="src/WorkPlanStudio.WorkingTime/WorkPlanStudio.WorkingTime.csproj" />
     <Project Path="src/WorkPlanStudio.Contracts/WorkPlanStudio.Contracts.csproj" />
     <Project Path="src/WorkPlanStudio.Api/WorkPlanStudio.Api.csproj" />
+    <Project Path="src/WorkPlanStudio.Export/WorkPlanStudio.Export.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/WorkPlanStudio.Scheduling.Tests/WorkPlanStudio.Scheduling.Tests.csproj" />
@@ -14,6 +15,7 @@
     <Project Path="tests/WorkPlanStudio.Benchmarks/WorkPlanStudio.Benchmarks.csproj" />
     <Project Path="tests/WorkPlanStudio.Scheduling.Testing/WorkPlanStudio.Scheduling.Testing.csproj" />
     <Project Path="tests/WorkPlanStudio.Api.Tests/WorkPlanStudio.Api.Tests.csproj" />
+    <Project Path="tests/WorkPlanStudio.Export.Tests/WorkPlanStudio.Export.Tests.csproj" />
   </Folder>
   <Folder Name="/tools/">
     <Project Path="tools/WorkPlanStudio.Scheduling.Scenarios/WorkPlanStudio.Scheduling.Scenarios.csproj" />
