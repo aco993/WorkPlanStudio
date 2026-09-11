@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using WorkPlanStudio.Scheduling;
+using WorkPlanStudio.Scheduling.Exact;
 using WorkPlanStudio.Scheduling.Testing;
 
 // A measurement harness, not a benchmark: BenchmarkDotNet lives in
@@ -15,6 +16,10 @@ using WorkPlanStudio.Scheduling.Testing;
 //   explain      cost of one ScheduleExplainer.Explain on the medium problem
 //   budget       penalty against wall clock on the reference medium instance
 //   optimality   gap to the exact dispatch-order optimum on 7-job instances
+//   exact        the 20-instance study: true optimum vs heuristic, as a markdown table
+//   exactwall    where the branch-and-bound stops proving optimality, by instance shape
+//   exactbudget  how many instances of each size are proved inside 1 s and inside 60 s
+//   milp         writes an LP-format model per study instance into ./milp
 string mode = args.Length > 0 ? args[0].ToLowerInvariant() : "scenarios";
 
 Console.WriteLine($"Runtime: {Environment.Version}; OS: {Environment.OSVersion}; CPU: {Environment.ProcessorCount}");
@@ -28,6 +33,10 @@ switch (mode)
     case "explain": Explain(); break;
     case "budget": Budget(); break;
     case "optimality": Optimality(); break;
+    case "exact": Exact(); break;
+    case "exactwall": ExactWall(); break;
+    case "exactbudget": ExactBudget(); break;
+    case "milp": Milp(args.Length > 1 ? args[1] : "milp"); break;
     default: Scenarios(); break;
 }
 
@@ -270,6 +279,166 @@ static SchedulingContext SevenJobInstance(int seed, DispatchRule rule, LocalSear
         LocalSearchAcceptance = acceptance,
         Seed = seed
     });
+}
+
+// The study the documentation's optimality figures are supposed to come from.
+// Every number in docs/adr/0015-exact-solver.md is a line of this output.
+static void Exact()
+{
+    var summary = OptimalityStudy.Run();
+    Console.WriteLine(OptimalityStudy.ToMarkdown(summary));
+}
+
+// Where the exponential wall is, measured rather than asserted. The instances are
+// makespan-dominated job shops - target dates loose enough that nothing is late -
+// because that is the hard case: with tight dates the job bound is often already
+// the optimum and the search proves it in a few dozen nodes.
+static void ExactWall()
+{
+    Console.WriteLine("| Jobs | Steps | WC | Ops | Status | Nodes | ms |");
+    Console.WriteLine("| ---: | ---: | ---: | ---: | --- | ---: | ---: |");
+
+    foreach (var (jobs, steps, centres) in WallShapes())
+    {
+        var context = WallInstance(jobs, steps, centres);
+        var options = ExactSolverOptions.Default with
+        {
+            MaxOperations = 400,
+            NodeLimit = 200_000_000,
+            StateMemoCapacity = 1 << 20,
+            TimeLimit = TimeSpan.FromSeconds(60)
+        };
+
+        Settle();
+        var stopwatch = Stopwatch.StartNew();
+        var solution = ExactJobShopSolver.Solve(context, options);
+        stopwatch.Stop();
+
+        Console.WriteLine(
+            $"| {jobs} | {steps} | {centres} | {jobs * steps} | {solution.Status} | " +
+            $"{solution.NodesExplored} | {stopwatch.Elapsed.TotalMilliseconds:F0} |");
+    }
+}
+
+// Random routings over every work center, durations 10 to 50 minutes, and target
+// dates three times the work content so the objective is the makespan alone.
+static SchedulingContext WallInstance(int jobs, int steps, int centres, int variant = 0)
+{
+    var random = new DeterministicRandom(20260911 + jobs * 101 + steps * 17 + centres + variant * 7919);
+    var machines = Enumerable.Range(1, centres)
+        .Select(id => new MachineCapacity(id, $"WC-{id:00}"))
+        .ToList();
+
+    var list = new List<ProductionJob>(jobs);
+    for (int index = 0; index < jobs; index++)
+    {
+        var routing = new List<JobStep>(steps);
+        for (int step = 0; step < steps; step++)
+        {
+            int centre = (index + step * 2 + random.NextInt(centres)) % centres + 1;
+            routing.Add(new JobStep((step + 1) * 10, centre, 600 + random.NextInt(9) * 300L));
+        }
+
+        list.Add(new ProductionJob
+        {
+            Id = index + 1,
+            Reference = $"JOB-{index + 1:00}",
+            Weight = 1,
+            Steps = routing
+        });
+    }
+
+    return new SchedulingContext(list, machines, new SchedulingParameters
+    {
+        DispatchRule = DispatchRule.EarliestDueDate,
+        DueDateRule = DueDateRule.TotalWorkContent,
+        TwkFlowFactor = 3.0,
+        Seed = 20260911
+    });
+}
+
+static (int Jobs, int Steps, int WorkCentres)[] WallShapes() =>
+[
+    (3, 3, 3), (4, 3, 3), (5, 3, 3), (6, 3, 3), (7, 3, 3), (8, 3, 3), (9, 3, 3), (10, 3, 3),
+    (4, 4, 3), (5, 4, 3), (6, 4, 3), (7, 4, 3),
+    (5, 4, 4), (6, 4, 4), (7, 4, 4), (8, 4, 4),
+    (6, 5, 5), (7, 5, 5), (8, 5, 5)
+];
+
+// How often the solver proves an optimum inside one second, and inside one
+// minute, over five instances of each size from the hard family. Wall-clock
+// limits, so this mode is the one measurement here that does not reproduce
+// exactly; the node counts do. It stops at 24 operations because that is already
+// past the wall: two of five instances at 21 and at 24 are not proved in a
+// minute, and every further size costs a minute per unproved instance.
+static void ExactBudget()
+{
+    Console.WriteLine("| Jobs | Steps | WC | Ops | Proved <= 1 s | Proved <= 60 s | Median nodes when proved |");
+    Console.WriteLine("| ---: | ---: | ---: | ---: | ---: | ---: | ---: |");
+
+    for (int jobs = 4; jobs <= 8; jobs++)
+    {
+        int fast = 0;
+        int slow = 0;
+        var nodes = new List<long>();
+
+        for (int seed = 0; seed < 5; seed++)
+        {
+            var context = WallInstance(jobs, 3, 3, seed);
+            var quick = Solve(context, TimeSpan.FromSeconds(1));
+            if (quick.Status == ExactSolutionStatus.Optimal)
+            {
+                fast++;
+                slow++;
+                nodes.Add(quick.NodesExplored);
+                continue;
+            }
+
+            var patient = Solve(context, TimeSpan.FromSeconds(60));
+            if (patient.Status == ExactSolutionStatus.Optimal)
+            {
+                slow++;
+                nodes.Add(patient.NodesExplored);
+            }
+        }
+
+        nodes.Sort();
+        string median = nodes.Count == 0 ? "-" : nodes[nodes.Count / 2].ToString();
+        Console.WriteLine($"| {jobs} | 3 | 3 | {jobs * 3} | {fast}/5 | {slow}/5 | {median} |");
+    }
+
+    static ExactSolution Solve(SchedulingContext context, TimeSpan limit)
+    {
+        Settle();
+        return ExactJobShopSolver.Solve(context, ExactSolverOptions.Default with
+        {
+            MaxOperations = 400,
+            NodeLimit = 500_000_000,
+            StateMemoCapacity = 1 << 20,
+            TimeLimit = limit
+        });
+    }
+}
+
+// One LP file per study instance, for a reviewer who would rather trust HiGHS.
+static void Milp(string directory)
+{
+    Directory.CreateDirectory(directory);
+    Console.WriteLine("| Instance | Written | Reason |");
+    Console.WriteLine("| --- | --- | --- |");
+
+    foreach (var instance in OptimalityInstances.All())
+    {
+        if (!MilpModelWriter.CanWrite(instance.Context, out string reason))
+        {
+            Console.WriteLine($"| `{instance.Name}` | no | {reason} |");
+            continue;
+        }
+
+        string path = Path.Combine(directory, $"{instance.Name}.lp");
+        File.WriteAllText(path, MilpModelWriter.Write(instance.Context));
+        Console.WriteLine($"| `{instance.Name}` | {path} | |");
+    }
 }
 
 static void Explain()
