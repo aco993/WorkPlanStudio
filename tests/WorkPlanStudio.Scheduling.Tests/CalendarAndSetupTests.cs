@@ -25,7 +25,7 @@ public class CalendarAndSetupTests
     {
         var context = Context(RuleOnly(DispatchRule.Fifo), [DayShift(1)], Job(1, Step(10, 1, Hour)));
 
-        var op = new DispatchScheduler().Run(context, [0], DueDateAssigner.Assign(context)).Operations.Single();
+        var op = new DispatchScheduler().Run(context, [0], DueDateAssigner.Assign(context), Ct).Operations.Single();
 
         Assert.Equal(8 * Hour, op.StartSeconds);
         Assert.Equal(9 * Hour, op.EndSeconds);
@@ -40,7 +40,7 @@ public class CalendarAndSetupTests
             Job(1, Step(10, 1, 5 * Hour)),
             Job(2, Step(10, 1, 5 * Hour)));
 
-        var schedule = new DispatchScheduler().Run(context, [0, 1], DueDateAssigner.Assign(context));
+        var schedule = new DispatchScheduler().Run(context, [0, 1], DueDateAssigner.Assign(context), Ct);
         var first = schedule.Operations.Single(o => o.JobId == 1);
         var second = schedule.Operations.Single(o => o.JobId == 2);
 
@@ -56,7 +56,7 @@ public class CalendarAndSetupTests
         var jobs = Enumerable.Range(1, 5).Select(i => Job(i, Step(10, 1, 8 * Hour))).ToArray();
         var context = Context(RuleOnly(DispatchRule.Fifo), [DayShift(1)], jobs);
 
-        var schedule = new DispatchScheduler().Run(context, [0, 1, 2, 3, 4], DueDateAssigner.Assign(context));
+        var schedule = new DispatchScheduler().Run(context, [0, 1, 2, 3, 4], DueDateAssigner.Assign(context), Ct);
 
         var starts = schedule.Operations.OrderBy(o => o.StartSeconds).Select(o => o.StartSeconds).ToArray();
         Assert.Equal(Enumerable.Range(0, 5).Select(d => d * Day + 8 * Hour).ToArray(), starts);
@@ -120,7 +120,7 @@ public class CalendarAndSetupTests
             Job(1, Step(10, 1, 5 * Hour)),
             Job(2, Step(10, 1, 5 * Hour)));
 
-        var schedule = new DispatchScheduler().Run(context, [0, 1], DueDateAssigner.Assign(context));
+        var schedule = new DispatchScheduler().Run(context, [0, 1], DueDateAssigner.Assign(context), Ct);
         var first = schedule.Operations.Single(o => o.JobId == 1);
         var second = schedule.Operations.Single(o => o.JobId == 2);
 
@@ -164,7 +164,7 @@ public class CalendarAndSetupTests
         // 5 h of work starting 08:00: 4 h before the break, 30 min pause, 1 h after.
         var context = Context(RuleOnly(DispatchRule.Fifo), [ShiftWithBreak(1)], Job(1, Step(10, 1, 5 * Hour)));
 
-        var op = new DispatchScheduler().Run(context, [0], DueDateAssigner.Assign(context)).Operations.Single();
+        var op = new DispatchScheduler().Run(context, [0], DueDateAssigner.Assign(context), Ct).Operations.Single();
 
         Assert.Equal(8 * Hour, op.StartSeconds);
         Assert.Equal(13 * Hour + 30 * 60, op.EndSeconds);
@@ -182,7 +182,7 @@ public class CalendarAndSetupTests
             Job(1, Step(10, 1, 7 * Hour + 30 * 60)),
             Job(2, Step(10, 1, 7 * Hour + 30 * 60)));
 
-        var schedule = new DispatchScheduler().Run(context, [0, 1], DueDateAssigner.Assign(context));
+        var schedule = new DispatchScheduler().Run(context, [0, 1], DueDateAssigner.Assign(context), Ct);
         var second = schedule.Operations.Single(o => o.JobId == 2);
 
         Assert.Equal(Day + 8 * Hour, second.StartSeconds);
@@ -206,7 +206,7 @@ public class CalendarAndSetupTests
         var machine = ShiftWithBreak(1) with { Blackouts = [new CapacityBlackout(12 * Hour, 12 * Hour + 30 * 60, "maintenance")] };
         var context = Context(RuleOnly(DispatchRule.Fifo), [machine], Job(1, Step(10, 1, 5 * Hour)));
 
-        var op = new DispatchScheduler().Run(context, [0], DueDateAssigner.Assign(context)).Operations.Single();
+        var op = new DispatchScheduler().Run(context, [0], DueDateAssigner.Assign(context), Ct).Operations.Single();
 
         Assert.Equal(Day + 8 * Hour, op.StartSeconds);
     }
@@ -250,7 +250,7 @@ public class CalendarAndSetupTests
             Job(1, Step(10, 1, 2 * Hour)),
             Job(2, Step(10, 1, 2 * Hour)));
 
-        var schedule = new DispatchScheduler().Run(context, [0, 1], DueDateAssigner.Assign(context));
+        var schedule = new DispatchScheduler().Run(context, [0, 1], DueDateAssigner.Assign(context), Ct);
 
         Assert.Equal(0, schedule.Operations.Single(o => o.JobId == 1).StartSeconds);
         Assert.Equal(5 * Hour, schedule.Operations.Single(o => o.JobId == 2).StartSeconds);
@@ -265,7 +265,7 @@ public class CalendarAndSetupTests
         var holiday = DayShift(1) with { Blackouts = [new CapacityBlackout(0, Day, "holiday")] };
         var context = Context(RuleOnly(DispatchRule.Fifo), [holiday], Job(1, Step(10, 1, Hour)));
 
-        var op = new DispatchScheduler().Run(context, [0], DueDateAssigner.Assign(context)).Operations.Single();
+        var op = new DispatchScheduler().Run(context, [0], DueDateAssigner.Assign(context), Ct).Operations.Single();
 
         Assert.Equal(Day + 8 * Hour, op.StartSeconds);
         Feasibility.AssertFeasible(new Schedule([op], []), context);
@@ -285,7 +285,7 @@ public class CalendarAndSetupTests
         };
         var context = Context(RuleOnly(DispatchRule.Fifo), [machine], Job(1, Step(10, 1, 90 * 60)));
 
-        var op = new DispatchScheduler().Run(context, [0], DueDateAssigner.Assign(context)).Operations.Single();
+        var op = new DispatchScheduler().Run(context, [0], DueDateAssigner.Assign(context), Ct).Operations.Single();
 
         // 90 min: does not fit before 1 h, nor in [4 h, 5 h); first fit is 6 h.
         Assert.Equal(6 * Hour, op.StartSeconds);
@@ -349,7 +349,7 @@ public class CalendarAndSetupTests
             Job(1, new JobStep(10, 1, Hour, "STEEL")),
             Job(2, new JobStep(10, 1, Hour, "STEEL")));
 
-        var schedule = new DispatchScheduler().Run(context, [0, 1], DueDateAssigner.Assign(context));
+        var schedule = new DispatchScheduler().Run(context, [0, 1], DueDateAssigner.Assign(context), Ct);
 
         Assert.All(schedule.Operations, o => Assert.Equal(0, o.SetupSeconds));
         Assert.Equal(2 * Hour, schedule.MakespanSeconds);
@@ -362,7 +362,7 @@ public class CalendarAndSetupTests
             Job(1, new JobStep(10, 1, Hour, "STEEL")),
             Job(2, new JobStep(10, 1, Hour, "ALU")));
 
-        var schedule = new DispatchScheduler().Run(context, [0, 1], DueDateAssigner.Assign(context));
+        var schedule = new DispatchScheduler().Run(context, [0, 1], DueDateAssigner.Assign(context), Ct);
         var second = schedule.Operations.Single(o => o.JobId == 2);
 
         Assert.Equal(Hour, second.SetupSeconds);
@@ -377,7 +377,7 @@ public class CalendarAndSetupTests
             Job(1, new JobStep(10, 1, Hour, "ALU")));
 
         Assert.Equal(0, new DispatchScheduler()
-            .Run(context, [0], DueDateAssigner.Assign(context)).Operations.Single().SetupSeconds);
+            .Run(context, [0], DueDateAssigner.Assign(context), Ct).Operations.Single().SetupSeconds);
     }
 
     [Fact]
@@ -387,7 +387,7 @@ public class CalendarAndSetupTests
             Job(1, new JobStep(10, 1, Hour, "STEEL")),
             Job(2, new JobStep(10, 1, Hour, "BRASS")));   // STEEL -> BRASS is not in the matrix
 
-        var schedule = new DispatchScheduler().Run(context, [0, 1], DueDateAssigner.Assign(context));
+        var schedule = new DispatchScheduler().Run(context, [0, 1], DueDateAssigner.Assign(context), Ct);
 
         Assert.Equal(0, schedule.Operations.Single(o => o.JobId == 2).SetupSeconds);
     }
@@ -411,8 +411,8 @@ public class CalendarAndSetupTests
         var due = DueDateAssigner.Assign(context);
         var scheduler = new DispatchScheduler();
 
-        long grouped = scheduler.Run(context, [0, 2, 1, 3], due).MakespanSeconds;    // SS AA -> one change-over
-        long alternating = scheduler.Run(context, [0, 1, 2, 3], due).MakespanSeconds; // SASA -> three
+        long grouped = scheduler.Run(context, [0, 2, 1, 3], due, Ct).MakespanSeconds;    // SS AA -> one change-over
+        long alternating = scheduler.Run(context, [0, 1, 2, 3], due, Ct).MakespanSeconds; // SASA -> three
 
         Assert.Equal(4 * Hour + 2 * Hour, grouped);
         Assert.Equal(4 * Hour + 6 * Hour, alternating);
@@ -433,7 +433,7 @@ public class CalendarAndSetupTests
             Job(2, new JobStep(10, 1, Hour, "STEEL")),       // -> slot 1
             Job(3, new JobStep(10, 1, Hour, "ALU")));        // should follow job 1 on slot 0
 
-        var schedule = new DispatchScheduler().Run(context, [0, 1, 2], DueDateAssigner.Assign(context));
+        var schedule = new DispatchScheduler().Run(context, [0, 1, 2], DueDateAssigner.Assign(context), Ct);
         var third = schedule.Operations.Single(o => o.JobId == 3);
 
         Assert.Equal(0, third.SetupSeconds);
@@ -448,7 +448,7 @@ public class CalendarAndSetupTests
         var context = Context(RuleOnly(DispatchRule.Fifo), [Machine(1)],
             Job(1, Step(10, 1, 100)), Job(2, Step(10, 1, 100)));
 
-        var schedule = new DispatchScheduler().Run(context, [0, 1], DueDateAssigner.Assign(context));
+        var schedule = new DispatchScheduler().Run(context, [0, 1], DueDateAssigner.Assign(context), Ct);
 
         Assert.Equal(200, schedule.MakespanSeconds);
         Assert.All(schedule.Operations, o => Assert.Equal(0, o.SetupSeconds));

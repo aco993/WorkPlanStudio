@@ -11,7 +11,7 @@ public class DispatchSchedulerTests
         var ctx = Context(new SchedulingParameters(), new[] { Machine(1, capacity: 1) },
             Job(1, Step(10, 1, 100)), Job(2, Step(10, 1, 100)), Job(3, Step(10, 1, 100)));
 
-        var schedule = new DispatchScheduler().Run(ctx, new[] { 0, 1, 2 }, FarDue(ctx));
+        var schedule = new DispatchScheduler().Run(ctx, new[] { 0, 1, 2 }, FarDue(ctx), Ct);
 
         Assert.Equal(300, schedule.MakespanSeconds);
         Feasibility.AssertFeasible(schedule, ctx);
@@ -23,7 +23,7 @@ public class DispatchSchedulerTests
         var ctx = Context(new SchedulingParameters(), new[] { Machine(1, capacity: 2) },
             Job(1, Step(10, 1, 100)), Job(2, Step(10, 1, 100)));
 
-        var schedule = new DispatchScheduler().Run(ctx, new[] { 0, 1 }, FarDue(ctx));
+        var schedule = new DispatchScheduler().Run(ctx, new[] { 0, 1 }, FarDue(ctx), Ct);
 
         Assert.Equal(100, schedule.MakespanSeconds); // both at once on the two slots
         Assert.Equal(new[] { 0, 1 }, schedule.Operations.Select(o => o.SlotIndex).OrderBy(s => s).ToArray());
@@ -38,7 +38,7 @@ public class DispatchSchedulerTests
             Job(1, Step(10, 1, 100), Step(20, 2, 100)),
             Job(2, Step(10, 3, 100), Step(20, 4, 100)));
 
-        var schedule = new DispatchScheduler().Run(ctx, new[] { 0, 1 }, FarDue(ctx));
+        var schedule = new DispatchScheduler().Run(ctx, new[] { 0, 1 }, FarDue(ctx), Ct);
 
         Assert.Equal(200, schedule.MakespanSeconds); // each job's own critical path
         Feasibility.AssertFeasible(schedule, ctx);
@@ -50,7 +50,7 @@ public class DispatchSchedulerTests
         var ctx = Context(new SchedulingParameters(), new[] { Machine(1), Machine(2) },
             Job(1, Step(10, 1, 100), Step(20, 2, 50)));
 
-        var schedule = new DispatchScheduler().Run(ctx, new[] { 0 }, FarDue(ctx));
+        var schedule = new DispatchScheduler().Run(ctx, new[] { 0 }, FarDue(ctx), Ct);
         var first = schedule.Operations.Single(o => o.StepNumber == 10);
         var second = schedule.Operations.Single(o => o.StepNumber == 20);
 
@@ -66,7 +66,7 @@ public class DispatchSchedulerTests
         var ctx = Context(new SchedulingParameters(), new[] { Machine(1) },
             Released(1, 500, Step(10, 1, 100)));
 
-        var op = new DispatchScheduler().Run(ctx, new[] { 0 }, FarDue(ctx)).Operations.Single();
+        var op = new DispatchScheduler().Run(ctx, new[] { 0 }, FarDue(ctx), Ct).Operations.Single();
 
         Assert.Equal(500, op.StartSeconds);
         Assert.Equal(600, op.EndSeconds);

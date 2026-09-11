@@ -47,7 +47,7 @@ public class ExactDispatchOrderOptimizerTests
         {
             var order = Enumerable.Range(0, context.Jobs.Count).ToArray();
             new DeterministicRandom(seed).Shuffle(order);
-            double sampled = ScheduleEvaluator.Evaluate(scheduler.Run(context, order, due), context).Penalty;
+            double sampled = ScheduleEvaluator.Evaluate(scheduler.Run(context, order, due, Ct), context).Penalty;
 
             Assert.True(sampled >= exact - 1e-9, $"seed {seed} found {sampled} < exact {exact}");
         }

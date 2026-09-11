@@ -113,10 +113,10 @@ public class OptimalityTests
         var due = DueDateAssigner.Assign(context);
         var scheduler = new DispatchScheduler();
         var start = new[] { 0, 1, 2, 3, 4 };
-        var startSchedule = scheduler.Run(context, start, due);
+        var startSchedule = scheduler.Run(context, start, due, Ct);
         var startEvaluation = ScheduleEvaluator.Evaluate(startSchedule, context);
 
-        var result = LocalSearch.Improve(scheduler, context, due, start, startSchedule, startEvaluation, 1000);
+        var result = LocalSearch.Improve(scheduler, context, due, start, startSchedule, startEvaluation, 1000, Ct);
 
         Assert.Equal(0, result.Evaluation.LateJobCount);
         Assert.Equal(4, result.Order[0]);   // the urgent job moved from last to first in one insertion

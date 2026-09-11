@@ -19,10 +19,20 @@ public static class PriorityOrdering
     /// known identities means it cannot drift away from what the engine does.
     /// </para>
     /// </summary>
+    /// <remarks>
+    /// Six sorts and no validation. This used to build a whole
+    /// <see cref="SchedulingContext"/> per rule just to change one enum, re-running
+    /// every input check including the per-step calendar fit — five times on every
+    /// engine run, and twenty-five more on every call to
+    /// <see cref="ScheduleExplainer.Explain"/>.
+    /// </remarks>
     public static IReadOnlyList<DispatchRule> EquivalentRules(
         SchedulingContext context, IReadOnlyDictionary<int, long> dueByJob)
     {
-        var chosen = For(context, dueByJob);
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(dueByJob);
+
+        var chosen = For(context.Jobs, context.Parameters.DispatchRule, dueByJob);
         var others = new List<DispatchRule>();
 
         foreach (var rule in Enum.GetValues<DispatchRule>())
@@ -30,9 +40,10 @@ public static class PriorityOrdering
             if (rule == context.Parameters.DispatchRule)
                 continue;
 
-            var candidate = context.Parameters with { DispatchRule = rule };
-            if (For(new SchedulingContext(context.Jobs, [.. context.Machines.Values], candidate), dueByJob)
-                .AsSpan().SequenceEqual(chosen))
+            // An empty instance has one order — the empty one — under every rule,
+            // so every other rule is equivalent. Reporting none was a special case
+            // that contradicted the definition.
+            if (For(context.Jobs, rule, dueByJob).AsSpan().SequenceEqual(chosen))
                 others.Add(rule);
         }
 
@@ -42,22 +53,29 @@ public static class PriorityOrdering
     /// <summary>Indices into <see cref="SchedulingContext.Jobs"/>, highest priority first.</summary>
     public static int[] For(SchedulingContext context, IReadOnlyDictionary<int, long> dueByJob)
     {
-        var jobs = context.Jobs;
-        int n = jobs.Count;
+        ArgumentNullException.ThrowIfNull(context);
+        return For(context.Jobs, context.Parameters.DispatchRule, dueByJob);
+    }
 
+    /// <summary>Indices into <paramref name="jobs"/> under one rule, highest priority first.</summary>
+    public static int[] For(IReadOnlyList<ProductionJob> jobs, DispatchRule rule, IReadOnlyDictionary<int, long> dueByJob)
+    {
+        ArgumentNullException.ThrowIfNull(jobs);
+        ArgumentNullException.ThrowIfNull(dueByJob);
+
+        int n = jobs.Count;
         var order = new int[n];
-        var key = new double[n];
+        var keys = new SortKey[n];
         for (int i = 0; i < n; i++)
         {
             order[i] = i;
-            key[i] = KeyFor(context.Parameters.DispatchRule, jobs[i], dueByJob);
+            keys[i] = new SortKey(KeyFor(rule, jobs[i], dueByJob), jobs[i].Id);
         }
 
-        Array.Sort(order, (a, b) =>
-        {
-            int c = key[a].CompareTo(key[b]);
-            return c != 0 ? c : jobs[a].Id.CompareTo(jobs[b].Id);
-        });
+        // A total, comparable key rather than a comparison delegate: Array.Sort is
+        // not stable, so the id has to be part of the key, and the delegate form
+        // allocated a closure over the key and job arrays on every call.
+        Array.Sort(keys, order);
         return order;
     }
 
@@ -72,8 +90,22 @@ public static class PriorityOrdering
             DispatchRule.LongestProcessingTime => -(double)total,
             DispatchRule.EarliestDueDate => due,
             DispatchRule.CriticalRatio => due / Math.Max(1.0, total),
-            DispatchRule.WeightedShortestProcessingTime => total / Math.Max(1e-9, job.Weight),
+
+            // No 1e-9 floor: the context rejects a weight that is not finite and
+            // positive, so the fudge that used to hide those inputs is gone with
+            // them.
+            DispatchRule.WeightedShortestProcessingTime => total / job.Weight,
             _ => total
         };
+    }
+
+    /// <summary>The rule key plus the job id, so the sort is total and needs no comparer instance.</summary>
+    private readonly record struct SortKey(double Key, int JobId) : IComparable<SortKey>
+    {
+        public int CompareTo(SortKey other)
+        {
+            int c = Key.CompareTo(other.Key);
+            return c != 0 ? c : JobId.CompareTo(other.JobId);
+        }
     }
 }

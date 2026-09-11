@@ -9,7 +9,8 @@ namespace WorkPlanStudio.Scheduling;
 /// handed, this returns the one with the lowest penalty. It is <b>not</b> a
 /// general job-shop optimality proof — the dispatcher places each job's steps
 /// greedily and never back-fills idle gaps, so schedules outside that model are
-/// not considered and could in principle be better.
+/// not considered and can be strictly better. On a two-job, three-machine
+/// instance the gap to the true optimum is 50 %.
 /// </para>
 /// <para>
 /// It exists for two reasons: as an answer for small real instances, where "the
@@ -40,24 +41,32 @@ public static class ExactDispatchOrderOptimizer
 
         var dueByJob = DueDateAssigner.Assign(context);
         var scheduler = new DispatchScheduler();
+        var workspace = SchedulingWorkspace.For(context, dueByJob);
 
         if (context.Jobs.Count == 0)
         {
-            var empty = scheduler.RunCancellable(context, [], dueByJob, cancellationToken);
+            var empty = scheduler.Materialise(context, [], workspace);
             return new ExactDispatchOrderResult(
-                new SchedulingResult(empty, ScheduleEvaluator.Evaluate(empty, context), dueByJob, 0),
+                new SchedulingResult(empty, ScheduleEvaluator.Evaluate(empty, context), dueByJob, 0)
+                {
+                    EquivalentRules = PriorityOrdering.EquivalentRules(context, dueByJob)
+                },
                 EvaluatedOrders: 1);
         }
 
         var order = Enumerable.Range(0, context.Jobs.Count).ToArray();
-        Schedule? bestSchedule = null;
-        ScheduleEvaluation? bestEvaluation = null;
+        var bestOrder = (int[])order.Clone();
+        double bestPenalty = double.PositiveInfinity;
         long evaluated = 0;
 
         Enumerate(0);
 
+        // One schedule object for the whole enumeration, built from the winner.
+        scheduler.Score(context, bestOrder, workspace, cancellationToken);
+        var bestSchedule = scheduler.Materialise(context, bestOrder, workspace);
+
         return new ExactDispatchOrderResult(
-            new SchedulingResult(bestSchedule!, bestEvaluation!, dueByJob, 0)
+            new SchedulingResult(bestSchedule, ScheduleEvaluator.Evaluate(bestSchedule, context), dueByJob, 0)
             {
                 EquivalentRules = PriorityOrdering.EquivalentRules(context, dueByJob)
             },
@@ -69,16 +78,18 @@ public static class ExactDispatchOrderOptimizer
 
             if (fixedPrefix == order.Length)
             {
-                var schedule = scheduler.RunCancellable(context, order, dueByJob, cancellationToken);
-                var evaluation = ScheduleEvaluator.Evaluate(schedule, context);
+                double penalty = scheduler.Score(context, order, workspace, cancellationToken).Penalty(context.Parameters);
                 evaluated++;
 
-                // Strict improvement keeps the first order found among equals, so
-                // the result does not depend on enumeration order.
-                if (bestEvaluation is null || evaluation.Penalty < bestEvaluation.Penalty)
+                // Deterministic because the enumeration is: strict improvement
+                // keeps whichever of several equally good orders the swap
+                // recursion reaches first. That is a fixed order for a fixed
+                // instance, but it is not lexicographic and it is not a
+                // tie-break rule anyone should reason about.
+                if (penalty < bestPenalty)
                 {
-                    bestSchedule = schedule;
-                    bestEvaluation = evaluation;
+                    bestPenalty = penalty;
+                    Array.Copy(order, bestOrder, order.Length);
                 }
 
                 return;
