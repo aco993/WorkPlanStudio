@@ -5,8 +5,12 @@ namespace WorkPlanStudio.WorkingTime.Tests;
 /// <summary>
 /// The working-time model is pure: it may know the scheduling engine (so it can
 /// hand over a calendar) and the base class library, nothing else. No clock, no
-/// time zones, no UI, no persistence — which is what keeps every test above
-/// deterministic.
+/// UI, no persistence — which is what keeps every test above deterministic.
+/// <para>
+/// It does know <see cref="TimeZoneInfo"/>, but never reads the machine's: a zone
+/// is something the caller passes in when it wants real elapsed hours rather than
+/// clock positions, so the answer still depends only on the arguments.
+/// </para>
 /// </summary>
 public class ArchitectureTests
 {
