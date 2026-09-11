@@ -20,7 +20,16 @@ public static class ScheduleExplainer
     private const int ProbeLocalSearch = 400;
 
     /// <summary>Builds the explanation for <paramref name="result"/> under <paramref name="context"/>.</summary>
-    public static ScheduleExplanation Explain(SchedulingContext context, SchedulingResult result)
+    /// <param name="context">The instance the result was produced from.</param>
+    /// <param name="result">The completed run.</param>
+    /// <param name="probeAlternativeRules">
+    /// Whether to re-dispatch the other rules to look for a better one. It is the
+    /// only expensive part of an explanation — five capped searches — so a caller
+    /// that has to stay responsive can turn it off and get
+    /// <see cref="RecommendationKind.NotProbed"/> instead.
+    /// </param>
+    public static ScheduleExplanation Explain(
+        SchedulingContext context, SchedulingResult result, bool probeAlternativeRules = true)
     {
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(result);
@@ -37,7 +46,7 @@ public static class ScheduleExplainer
             summary,
             FindBottleneck(context, result),
             FindLateJobs(context, result),
-            Recommend(context, result));
+            Recommend(context, result, probeAlternativeRules));
     }
 
     /// <summary>The work center with the highest utilisation (ties broken by id).</summary>
@@ -49,7 +58,7 @@ public static class ScheduleExplainer
 
         int bestId = -1;
         double bestUtil = double.NegativeInfinity;
-        foreach (var id in utilization.Keys.OrderBy(k => k))
+        foreach (var id in utilization.Keys.Order())
         {
             if (utilization[id] > bestUtil)
             {
@@ -58,7 +67,13 @@ public static class ScheduleExplainer
             }
         }
 
-        int operationCount = result.Schedule.Operations.Count(o => o.WorkCenterId == bestId);
+        int operationCount = 0;
+        foreach (var op in result.Schedule.Operations)
+        {
+            if (op.WorkCenterId == bestId)
+                operationCount++;
+        }
+
         string name = context.Machines.TryGetValue(bestId, out var machine)
             ? machine.Name
             : bestId.ToString(System.Globalization.CultureInfo.InvariantCulture);
@@ -114,13 +129,25 @@ public static class ScheduleExplainer
     }
 
     /// <summary>One computed suggestion: keep the rule, switch it, or accept the result.</summary>
-    private static ScheduleRecommendation Recommend(SchedulingContext context, SchedulingResult result)
+    /// <remarks>
+    /// Ranked by <see cref="ScheduleEvaluation.Penalty"/> — the objective the engine
+    /// actually minimises — not by total tardiness. Ranking by tardiness alone is
+    /// blind to the flat per-late-job penalty, so with the shipped weights (one late
+    /// job is worth ten hours of tardiness) it will happily trade one badly late job
+    /// for three barely late ones and report it as an improvement. Measured, that
+    /// advice made a four-job schedule 2.3× worse by the engine's own score.
+    /// </remarks>
+    private static ScheduleRecommendation Recommend(
+        SchedulingContext context, SchedulingResult result, bool probeAlternativeRules)
     {
         var currentRule = context.Parameters.DispatchRule;
         long currentTardiness = result.Evaluation.TotalTardinessSeconds;
 
         if (currentTardiness == 0)
             return new ScheduleRecommendation(RecommendationKind.AlreadyOnTime, currentRule, null, 0, 0);
+
+        if (!probeAlternativeRules)
+            return new ScheduleRecommendation(RecommendationKind.NotProbed, currentRule, null, currentTardiness, currentTardiness);
 
         // Fair what-if: due dates depend on the due-date rule, not the dispatch rule,
         // so swapping only the dispatch rule isolates its effect. Cap the budget so
@@ -130,27 +157,33 @@ public static class ScheduleExplainer
             MultiStartRuns = Math.Min(context.Parameters.MultiStartRuns, ProbeMultiStart),
             LocalSearchMaxSteps = Math.Min(context.Parameters.LocalSearchMaxSteps, ProbeLocalSearch)
         };
-        var machines = context.Machines.Values.ToList();
+
+        // One set of target dates and one validated model for all five probes. Each
+        // probe used to rebuild a SchedulingContext, which re-ran every input check,
+        // and then computed the equivalent rules again from five more of them.
+        var dueByJob = result.DueByJob;
         var engine = new SchedulingEngine();
 
         DispatchRule? bestRule = null;
-        long bestTardiness = currentTardiness;
+        double bestPenalty = result.Evaluation.Penalty;
+        long projectedTardiness = currentTardiness;
         foreach (var rule in Enum.GetValues<DispatchRule>())
         {
             if (rule == currentRule)
                 continue;
 
-            var probe = new SchedulingContext(context.Jobs, machines, probeParameters with { DispatchRule = rule });
-            long tardiness = engine.Run(probe).Evaluation.TotalTardinessSeconds;
-            if (tardiness < bestTardiness)
+            var probe = context.WithParameters(probeParameters with { DispatchRule = rule });
+            var outcome = engine.Search(probe, dueByJob, CancellationToken.None);
+            if (outcome.Evaluation.Penalty < bestPenalty)
             {
-                bestTardiness = tardiness;
+                bestPenalty = outcome.Evaluation.Penalty;
+                projectedTardiness = outcome.Evaluation.TotalTardinessSeconds;
                 bestRule = rule;
             }
         }
 
         return bestRule is null
             ? new ScheduleRecommendation(RecommendationKind.NoImprovementFound, currentRule, null, currentTardiness, currentTardiness)
-            : new ScheduleRecommendation(RecommendationKind.SwitchDispatchRule, currentRule, bestRule, currentTardiness, bestTardiness);
+            : new ScheduleRecommendation(RecommendationKind.SwitchDispatchRule, currentRule, bestRule, currentTardiness, projectedTardiness);
     }
 }

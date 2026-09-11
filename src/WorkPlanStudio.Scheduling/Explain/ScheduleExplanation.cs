@@ -59,23 +59,34 @@ public enum RecommendationKind
     /// <summary>Every job is already on time — nothing to change.</summary>
     AlreadyOnTime,
 
-    /// <summary>Another dispatch rule is expected to reduce total tardiness.</summary>
+    /// <summary>Another dispatch rule is expected to lower the objective.</summary>
     SwitchDispatchRule,
 
     /// <summary>Jobs are late, but no alternative dispatch rule did better here.</summary>
-    NoImprovementFound
+    NoImprovementFound,
+
+    /// <summary>
+    /// Jobs are late and the alternatives were not tried, because the caller asked
+    /// for an explanation without the probe.
+    /// </summary>
+    NotProbed
 }
 
 /// <summary>
 /// A single, deterministic, <b>computed</b> suggestion for the next run — not a
 /// guess. When jobs are late, the explainer quickly re-dispatches the other rules
-/// and only proposes a switch when one measurably beats the current result.
+/// and only proposes a switch when one measurably beats the current result, judged
+/// by the penalty the engine minimises rather than by tardiness alone.
 /// </summary>
 /// <param name="Kind">Which kind of advice this is.</param>
 /// <param name="CurrentRule">The dispatch rule that produced the current schedule.</param>
 /// <param name="SuggestedRule">The rule to try next, when <see cref="Kind"/> is <see cref="RecommendationKind.SwitchDispatchRule"/>.</param>
 /// <param name="CurrentTardinessSeconds">Total tardiness of the current schedule.</param>
-/// <param name="ProjectedTardinessSeconds">Estimated total tardiness under <see cref="SuggestedRule"/>.</param>
+/// <param name="ProjectedTardinessSeconds">
+/// Estimated total tardiness under <see cref="SuggestedRule"/>. Shown for context;
+/// it is not what the recommendation is ranked on, and a suggested rule may well
+/// trade more tardiness for fewer late jobs.
+/// </param>
 public sealed record ScheduleRecommendation(
     RecommendationKind Kind,
     DispatchRule CurrentRule,
