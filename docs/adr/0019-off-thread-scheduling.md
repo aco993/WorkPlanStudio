@@ -1,4 +1,4 @@
-# ADR 0019 — Slice the scheduling run on the one thread there is, rather than pretend to leave it
+# 19. Slice the scheduling run on the one thread there is, rather than pretend to leave it
 
 * Status: accepted
 * Date: 2026-09-11

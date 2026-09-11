@@ -1,4 +1,4 @@
-# ADR 0007: Defer ProductionOrder and constrain scheduling scope
+# 7. Defer ProductionOrder and constrain scheduling scope
 
 - Status: Accepted
 - Date: 2026-07-12

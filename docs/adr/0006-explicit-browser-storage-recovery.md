@@ -1,4 +1,4 @@
-# ADR 0006: Explicit browser-storage recovery instead of migrations
+# 6. Explicit browser-storage recovery instead of migrations
 
 - Status: Accepted
 - Date: 2026-07-12

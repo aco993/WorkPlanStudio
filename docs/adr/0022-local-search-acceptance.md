@@ -1,4 +1,4 @@
-# ADR 0022 — Which improving neighbour the local search adopts
+# 22. Which improving neighbour the local search adopts
 
 * Status: accepted
 * Date: 2026-09-11
