@@ -5,9 +5,10 @@ name: E2E
 # builds + serves the WASM app and downloads a browser), so it lives in its own
 # workflow — and is also called by the deploy workflow as a gate.
 #
-# Visual baselines are per operating system (tests/WorkPlanStudio.E2E/visual-
-# baselines/<os>). On a runner without baselines the tests write them and pass;
-# the folder is uploaded as an artifact so they can be committed.
+# Visual baselines are committed for Linux only, which is what this job runs;
+# see docs/adr/0021. A missing baseline fails the job and the screenshot it took
+# is uploaded with the other artifacts, so a new or renamed screen is a red
+# build with the image to commit attached — not a silent green.
 
 on:
   push:
@@ -16,11 +17,12 @@ on:
   workflow_dispatch:
   workflow_call:
 
-# A newer push to the same branch supersedes the run in flight; only the
-# latest state of a branch is worth a runner.
+# A newer push to the same branch supersedes the run in flight — but not when
+# the deploy workflow is the caller, because cancelling there would abort a
+# production deploy between its gate and its upload.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-e2e-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -33,16 +35,19 @@ jobs:
   e2e:
     name: Playwright end-to-end, axe, visual regression
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v6
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68  # v6.0.0
         with:
           global-json-file: global.json
 
       - name: Cache NuGet packages
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
         with:
           path: ~/.nuget/packages
           key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', 'Directory.Packages.props') }}
@@ -66,28 +71,50 @@ jobs:
           done
           echo "app did not start in time"; cat app.log; exit 1
 
+      # UPDATE_VISUAL_BASELINES is deliberately not set here: in CI a missing
+      # baseline is a failure, never a bootstrap.
       - name: Run E2E, accessibility and visual tests
         env:
           E2E_BASE_URL: http://localhost:5235
           E2E_ARTIFACTS: ${{ github.workspace }}/e2e-artifacts
-        run: dotnet test tests/WorkPlanStudio.E2E/WorkPlanStudio.E2E.csproj -c Release --no-build
+        run: >
+          dotnet test tests/WorkPlanStudio.E2E/WorkPlanStudio.E2E.csproj -c Release --no-build
+          --minimum-expected-tests 60
+          --results-directory ${{ github.workspace }}/e2e-results
+          --report-xunit-trx --report-xunit-trx-filename e2e.trx
 
       - name: Upload screenshots and visual diffs
         if: always()
         continue-on-error: true   # the gate is the check; a hiccup in the artifact service is not a failed build
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:
           name: e2e-artifacts
           path: e2e-artifacts
           if-no-files-found: ignore
           retention-days: 14
+          overwrite: true
 
-      - name: Upload visual baselines (commit these after an intended change)
+      # A structured result, so a failure can be read without scrolling the log.
+      - name: Upload test results
         if: always()
         continue-on-error: true   # the gate is the check; a hiccup in the artifact service is not a failed build
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:
-          name: visual-baselines-${{ runner.os }}
-          path: tests/WorkPlanStudio.E2E/visual-baselines
+          name: e2e-results
+          path: e2e-results
           if-no-files-found: ignore
           retention-days: 14
+          overwrite: true
+
+      # The start step only cats the log when the app fails to come up. If it
+      # dies after that, the log is the only evidence of why, so keep it.
+      - name: Upload the application log
+        if: failure()
+        continue-on-error: true
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: e2e-app-log
+          path: app.log
+          if-no-files-found: ignore
+          retention-days: 14
+          overwrite: true
