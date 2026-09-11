@@ -1,11 +1,22 @@
+@inject IStringLocalizer<SharedResource> L
 @inject IJSRuntime JS
 @inject NavigationManager Nav
 
-<div class="culture-selector" role="group">
+@*
+    The group needs a name of its own: "EN / DE" on its own tells a screen-reader
+    user nothing about what the two buttons switch. `aria-pressed` says which one is
+    on — the `active` class was carrying that alone.
+
+    The language names stay in their own language (English, Deutsch), which is the
+    convention for a language switch and the reason they are not resource strings.
+*@
+<div class="culture-selector" role="group" aria-label="@L["Ui_Language"]">
     @foreach (var option in _cultures)
     {
         <button type="button"
                 class="culture-btn @(IsCurrent(option.Code) ? "active" : null)"
+                lang="@option.Code"
+                aria-pressed="@(IsCurrent(option.Code) ? "true" : "false")"
                 title="@option.Name"
                 @onclick="() => SetCultureAsync(option.Code)">
             @option.Short

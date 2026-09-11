@@ -8,8 +8,9 @@
 @inject IProductionScheduleService Scheduler
 @inject DemoAuthenticationStateProvider Auth
 @inject NavigationManager Nav
+@inject ILogger<Home> Logger
 
-<PageTitle>WorkPlan Studio</PageTitle>
+<PageTitle>@L["Dashboard_Title"] · WorkPlan Studio</PageTitle>
 
 <div class="page-head">
     <div>
@@ -28,28 +29,28 @@ else
         <div class="stat-card accent-indigo">
             <div class="stat-top">
                 <span class="stat-value">@_plans.Count</span>
-                <svg class="stat-icon" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2" /><path d="M9 4v2h6V4" /><path d="M9 11h6M9 15h4" /></svg>
+                <svg class="stat-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2" /><path d="M9 4v2h6V4" /><path d="M9 11h6M9 15h4" /></svg>
             </div>
             <div class="stat-label">@L["Dashboard_TotalPlans"]</div>
         </div>
         <div class="stat-card accent-green">
             <div class="stat-top">
                 <span class="stat-value">@Count(WorkPlanStatus.Released)</span>
-                <svg class="stat-icon" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" /></svg>
+                <svg class="stat-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>
             </div>
             <div class="stat-label">@L["Dashboard_Released"]</div>
         </div>
         <div class="stat-card accent-amber">
             <div class="stat-top">
                 <span class="stat-value">@_workCenters</span>
-                <svg class="stat-icon" viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="1" /><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3" /></svg>
+                <svg class="stat-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="1" /><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3" /></svg>
             </div>
             <div class="stat-label">@L["Dashboard_WorkCenters"]</div>
         </div>
         <div class="stat-card accent-slate">
             <div class="stat-top">
                 <span class="stat-value">@TotalOperations</span>
-                <svg class="stat-icon" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10" /></svg>
+                <svg class="stat-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10" /></svg>
             </div>
             <div class="stat-label">@L["Dashboard_Operations"]</div>
         </div>
@@ -59,7 +60,11 @@ else
         <section class="card">
             <div class="card-head"><h2>@L["Dashboard_ByStatus"]</h2></div>
             <div class="card-body">
-                <div class="status-bar">
+                @* Three bare coloured divs whose only content is a flex weight. The
+                   legend directly below is the same three numbers in words, so the bar
+                   is decoration and now says so, rather than being a chart that no
+                   screen reader and no forced-colours theme can read. *@
+                <div class="status-bar" aria-hidden="true">
                     @foreach (var s in _statuses)
                     {
                         var count = Count(s);
@@ -84,29 +89,35 @@ else
                 <a class="link" href="work-plans">@L["Dashboard_ViewAll"]</a>
             </div>
             <div class="card-body no-pad">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th scope="col">@L["Field_PlanNumber"]</th>
-                            <th scope="col">@L["Field_PartName"]</th>
-                            <th scope="col">@L["Field_Status"]</th>
-                            <th scope="col" class="num">@L["Field_TotalTime"]</th>
-                            <th scope="col" class="num">@L["Field_Modified"]</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var p in Recent)
-                        {
-                            <tr class="clickable" @onclick="() => Open(p.Id)">
-                                <td><span class="mono">@p.PlanNumber</span></td>
-                                <td>@p.PartName</td>
-                                <td><StatusBadge Status="p.Status" /></td>
-                                <td class="num">@Format.Hours(p.TotalTimeMinutes)</td>
-                                <td class="num muted">@p.ModifiedUtc.ToString("d")</td>
+                <TableScroll Label="@L["Dashboard_Recent"]">
+                    <table class="data-table">
+                        <caption class="sr-only">@L["Dashboard_Recent"]</caption>
+                        <thead>
+                            <tr>
+                                <th scope="col" class="sticky-col">@L["Field_PlanNumber"]</th>
+                                <th scope="col">@L["Field_PartName"]</th>
+                                <th scope="col">@L["Field_Status"]</th>
+                                <th scope="col" class="num">@L["Field_TotalTime"]</th>
+                                <th scope="col" class="num">@L["Field_Modified"]</th>
                             </tr>
-                        }
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            @* The row stays clickable for a pointer, but the plan number is a
+                               real link: an @@onclick on a <tr> is reachable by mouse and by
+                               nothing else. *@
+                            @foreach (var p in Recent)
+                            {
+                                <tr class="clickable" @key="p.Id" @onclick="() => Open(p.Id)">
+                                    <td class="sticky-col"><a class="mono" href="work-plans/@p.Id">@p.PlanNumber</a></td>
+                                    <td>@p.PartName</td>
+                                    <td><StatusBadge Status="p.Status" /></td>
+                                    <td class="num">@Format.Hours(p.TotalTimeMinutes)</td>
+                                    <td class="num muted">@Format.Date(p.ModifiedUtc)</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </TableScroll>
             </div>
         </section>
     </div>
@@ -125,7 +136,7 @@ else
                         <dd>
                             @if (_nextHoliday is { } holiday)
                             {
-                                @L[$"Holiday_{holiday.Key}"] <span class="muted">· @holiday.Date.ToString("ddd d. MMM", CultureInfo.CurrentUICulture)</span>
+                                @L[$"Holiday_{holiday.Key}"] <span class="muted">· @Format.DayMonth(holiday.Date)</span>
                             }
                             else
                             {
@@ -153,6 +164,10 @@ else
                 {
                     <div class="loading-row" role="status"><span class="spinner" aria-hidden="true"></span><span class="sr-only">@L["Common_Loading"]</span></div>
                 }
+                else if (_scheduleError is not null)
+                {
+                    <p class="small-text" role="alert">@_scheduleError</p>
+                }
                 else if (!_schedule.HasData)
                 {
                     <p class="muted small-text">@L["Dashboard_ScheduleEmpty"]</p>
@@ -161,7 +176,7 @@ else
                 {
                     <div class="glance-kpis">
                         <div class="glance-kpi">
-                            <strong>@((_schedule.Kpis.OnTimeRate * 100).ToString("0")) %</strong>
+                            <strong>@Format.Percent(_schedule.Kpis.OnTimeRate)</strong>
                             <span>@L["Sched_KpiOnTime"] · @(_schedule.Kpis.JobCount - _schedule.Kpis.LateJobCount)/@_schedule.Kpis.JobCount</span>
                         </div>
                         <div class="glance-kpi">
@@ -191,6 +206,8 @@ else
     private GermanState _state = GermanState.NW;
     private PublicHoliday? _nextHoliday;
     private ScheduleResult? _schedule;
+    private string? _scheduleError;
+    private readonly CancellationTokenSource _lifetimeCancellation = new();
 
     private readonly WorkPlanStatus[] _statuses =
     {
@@ -217,12 +234,37 @@ else
 
         // The schedule is computed after the first render so the page is usable immediately.
         StateHasChanged();
-        _schedule = await Scheduler.GenerateAsync(new SchedulingParameters { DueDateRule = DueDateRule.Explicit });   // the Scheduling page's defaults
+
+        // Unguarded, this call was the dashboard's one way to replace the whole
+        // application with "Something went wrong": a failing engine run escapes to the
+        // ErrorBoundary in App.razor before the user has done anything at all. The
+        // Scheduling page already handles both cases; the landing page handled neither.
+        try
+        {
+            _schedule = await Scheduler.GenerateAsync(
+                new SchedulingParameters { DueDateRule = DueDateRule.Explicit },   // the Scheduling page's defaults
+                _lifetimeCancellation.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            // navigated away mid-run; there is nothing left to render into
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(exception, "The dashboard could not compute a schedule");
+            _scheduleError = L["Error_ScheduleFailed"];
+            _schedule = ScheduleResult.Empty(0);
+        }
     }
 
     private void OnPersonaChanged(Task<AuthenticationState> task) => InvokeAsync(StateHasChanged);
 
-    public void Dispose() => Auth.AuthenticationStateChanged -= OnPersonaChanged;
+    public void Dispose()
+    {
+        Auth.AuthenticationStateChanged -= OnPersonaChanged;
+        _lifetimeCancellation.Cancel();
+        _lifetimeCancellation.Dispose();
+    }
 
     private int Count(WorkPlanStatus status) => _plans.Count(p => p.Status == status);
     private int TotalOperations => _plans.Sum(p => p.OperationCount);
