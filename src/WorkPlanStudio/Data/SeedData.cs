@@ -20,12 +20,12 @@ public static class SeedData
         // against the same one, which is the definition of an entity rather than
         // an attribute. CC-2000 carrying two work centres is the case that used to
         // be two unrelated strings.
-        var cutting = new CostCenter { Code = "CC-1000", Name = "Sawing" };
-        var drilling = new CostCenter { Code = "CC-1500", Name = "Drilling" };
-        var machining = new CostCenter { Code = "CC-2000", Name = "Machining" };
-        var finishing = new CostCenter { Code = "CC-3000", Name = "Finishing" };
-        var assembly = new CostCenter { Code = "CC-5000", Name = "Assembly" };
-        var quality = new CostCenter { Code = "CC-9000", Name = "Quality assurance" };
+        var cutting = new CostCenter { Code = "CC-1000", Name = "Sawing", Description = "Cutting stock to length before machining." };
+        var drilling = new CostCenter { Code = "CC-1500", Name = "Drilling", Description = "Hole patterns on manual and column drills." };
+        var machining = new CostCenter { Code = "CC-2000", Name = "Machining", Description = "CNC turning and milling. The plant's most expensive hours." };
+        var finishing = new CostCenter { Code = "CC-3000", Name = "Finishing", Description = "Grinding and surface work after machining." };
+        var assembly = new CostCenter { Code = "CC-5000", Name = "Assembly", Description = "Manual assembly stations." };
+        var quality = new CostCenter { Code = "CC-9000", Name = "Quality assurance", Description = "Inspection and measurement, booked separately from production." };
 
         db.CostCenters.AddRange(cutting, drilling, machining, finishing, assembly, quality);
 
