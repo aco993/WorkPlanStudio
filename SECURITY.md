@@ -14,13 +14,15 @@ here, because a great deal of this application is deliberately not protected.
 
 ## What is in scope, and what is not
 
-WorkPlan Studio is a **static demo that runs entirely in the visitor's browser**.
-It has no server, no accounts, no shared storage and no secrets of its own. The
-full reasoning, including the trust boundaries and the risks that were accepted
-rather than fixed, is in **[`docs/SECURITY.md`](docs/SECURITY.md)** — read that
-first.
+**The deployed demo** is a **static site that runs entirely in the visitor's
+browser**. It has no server, no accounts, no shared storage and no secrets of its
+own. The repository also contains an **optional ASP.NET Core backend**
+(`src/WorkPlanStudio.Api`) with real accounts, password hashing and token handling;
+it is off unless configured, and the deployed demo does not configure it. The full
+reasoning, including the trust boundaries and the risks that were accepted rather
+than fixed, is in **[`docs/SECURITY.md`](docs/SECURITY.md)** — read that first.
 
-Two things are documented there and are therefore *not* vulnerabilities:
+Three things are documented there and are therefore *not* vulnerabilities:
 
 - **The personas are not access control.** Planner, supervisor and guest run
   through the real ASP.NET Core authorization pipeline, but the identity behind
@@ -29,12 +31,19 @@ Two things are documented there and are therefore *not* vulnerabilities:
   flaw ([ADR 0013](docs/adr/0013-personas-through-the-real-authorization-pipeline.md)).
 - **Data lives in `localStorage`.** It is readable by any script on the origin,
   it is not encrypted, and the application says so on its own About page.
+- **A bring-your-own-key API key lives in `localStorage` too**, and any script on
+  that origin can read it. The application states this in the settings dialog
+  itself, stores the key per provider, never reads it back into the page, and
+  offers one-click removal. That it is readable at all is a property of a
+  browser-only app, not a defect in this one
+  ([ADR 0025](docs/adr/0025-hostile-input-on-the-model-path.md)).
 
-In scope: anything that lets a page or a link cause the application to act
-against the visitor's intent — script injection through imported or stored data,
-a bring-your-own-key credential leaving the browser for anywhere but the
-provider the user chose, a supply-chain problem in a pinned dependency or a
-pinned action.
+In scope: anything that lets a page, a link or a file cause the application to act
+against the visitor's intent — script injection through imported or stored data, a
+bring-your-own-key credential leaving the browser for anywhere but the provider the
+user chose, a request whose target can be steered by user-supplied configuration, a
+path into the optional backend that bypasses its policies, or a supply-chain problem
+in a pinned dependency or a pinned action.
 
 ## Supported versions
 

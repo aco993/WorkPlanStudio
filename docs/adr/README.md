@@ -1,9 +1,19 @@
 # Architecture Decision Records
 
-Short, dated records of the decisions that shaped the scheduling engine — the
-*why* behind the structure, not just the *what*. Each one captures the context,
-the decision and its consequences, in the spirit of
+**English** · [Deutsch](README.de.md)
+
+Short, dated records of the decisions that shaped this project — the *why* behind the
+structure, not just the *what*. Each one captures the context, the decision and its
+consequences, in the spirit of
 [Michael Nygard's ADRs](https://cognitect.com/blog/2011/11/15/documenting-architecture-decisions).
+
+Several carry a dated amendment recording where a *later* decision dissolved their own
+premise — 0008's optimality reference, 0012's averaging paragraph, 0006's schema number.
+That is what a decision log is for, and it is why the earlier records are amended in
+place rather than quietly rewritten.
+
+The record bodies are English only. [README.de.md](README.de.md) is the German index,
+with a one-line summary of each.
 
 | # | Decision | Status |
 | --- | --- | --- |

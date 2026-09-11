@@ -1,8 +1,8 @@
 # 22. Which improving neighbour the local search adopts
 
-* Status: accepted
-* Date: 2026-09-11
-* Supersedes the acceptance half of [ADR 0008](0008-insertion-neighbourhood.md); the
+- **Status:** Accepted
+- **Date:** 2026-09-11
+- Supersedes the acceptance half of [ADR 0008](0008-insertion-neighbourhood.md); the
   neighbourhood half of 0008 stands unchanged.
 
 ## Context

@@ -1,0 +1,42 @@
+# Entscheidungsprotokolle (ADRs)
+
+[English](README.md) · **Deutsch**
+
+Kurze, datierte Aufzeichnungen der Entscheidungen, die dieses Projekt geformt haben — das
+*Warum* hinter der Struktur, nicht nur das *Was*. Jede hält Ausgangslage, Entscheidung und
+Folgen fest, im Sinne von
+[Michael Nygards ADRs](https://cognitect.com/blog/2011/11/15/documenting-architecture-decisions).
+
+> **Die ADR-Texte selbst sind auf Englisch und bleiben es.** Ein Entscheidungsprotokoll ist
+> ein datierter Beleg; es zweisprachig zu pflegen, hieße, zwei Fassungen desselben Belegs zu
+> haben, die auseinanderlaufen können — und die deutsche wäre dann die falsche. Diese Seite
+> ist das Verzeichnis: eine deutsche Zeile je Datensatz, damit man weiß, welchen englischen
+> Text man aufschlägt.
+
+| # | Entscheidung | Worum es geht | Status |
+| --- | --- | --- | --- |
+| [0001](0001-pure-scheduling-library.md) | Die Planungsengine bleibt eine reine, abhängigkeitsfreie Bibliothek | Die Datenschicht läuft nur im Browser. Läge der Algorithmus daneben, bräuchte jeder Test der interessanten Logik die WASM-Werkzeugkette. | Angenommen |
+| [0002](0002-integer-seconds-time.md) | Alle interne Zeit als ganzzahlige Sekunden modellieren | Gleitkommasummen können sich zwischen Laufzeiten in den letzten Bits unterscheiden; ganze Zahlen nicht. Nur so ist der in der CI geprüfte Plan bit-identisch zu dem im Browser. | Angenommen |
+| [0003](0003-forward-only-scheduling.md) | Nur Vorwärtsplanung ausliefern, keinen Rückwärtslauf | Unter geteilter endlicher Kapazität braucht Rückwärtsplanung einen zweiten Planer und kann unzulässige Pläne erzeugen. Terminbasierte Prioritätsregeln holen den meisten Nutzen. | Angenommen |
+| [0004](0004-deterministic-prng.md) | Einen handgeschriebenen deterministischen PRNG statt `System.Random` | Der Algorithmus von `System.Random` ist über .NET-Versionen nicht zugesichert, ein Seed würde nach einem Laufzeit-Update also nicht mehr reproduzieren. | Angenommen |
+| [0005](0005-explainable-scheduling-and-optional-ai.md) | Erst die deterministische Erläuterung, die KI ist ein optionaler Erzähler | Die Analyse berechnet Zahlen, das Modell formuliert sie höchstens um. So kann in der Erklärung nichts halluziniert werden, und die Funktion arbeitet ohne Schlüssel. | Angenommen |
+| [0006](0006-explicit-browser-storage-recovery.md) | Ausdrückliche Wiederherstellung des Browser-Speichers statt Migrationen | Ein unlesbarer Datenblock wird nie überschrieben: Export, Import und ein zweistufiges Zurücksetzen stehen zur Wahl. Dazu WAL-sichere atomare Snapshots. | Angenommen |
+| [0007](0007-defer-production-order.md) | Den Fertigungsauftrag zurückstellen und den Planungsumfang enger fassen | Historisch: Solange es keinen Auftrag gab, konnte die App keinen echten Kundentermin liefern, und `DueDateRule.Explicit` blieb verborgen. | Abgelöst durch 0011 |
+| [0008](0008-insertion-neighbourhood.md) | Die Insertion-Nachbarschaft durchsuchen statt benachbarter Vertauschungen | Eine Vertauschung bewegt einen Auftrag um eine Position je Schritt und bleibt bei einer Verspätungszielfunktion sofort stecken. Der mittlere Abstand zur besten Auftragsreihenfolge sank von 27,3 % auf 0,2 %. | Angenommen |
+| [0009](0009-report-rule-equivalences.md) | Zusammenfallende Prioritätsregeln melden statt sie zu verbergen | Unter abgeleiteten Terminen ergeben sechs Regeln vier verschiedene Pläne. Die Seite sagt, welche andere Regel dieselbe Reihenfolge ergäbe — berechnet aus den Aufträgen, nicht aus einer Tabelle. Mit einem Nachtrag, der festhält, wie eine spätere Entscheidung die Prämisse aufgelöst hat. | Angenommen |
+| [0010](0010-periodic-calendars-and-setup-families.md) | Kalender als wiederkehrende Periode modellieren, Rüstzeit nach Familie | Eine endliche Fensterliste läuft mitten im Plan aus oder zwingt den Aufrufer, ein Jahr zu materialisieren. Eine Periode macht den Kalender total, ohne beides. | Angenommen |
+| [0011](0011-production-orders-own-routing-snapshots.md) | Fertigungsaufträge planen, die ihren Arbeitsplan als unveränderliche Kopie besitzen | Ein Arbeitsplan ist Stammdatum und darf sich ändern; was in der Fertigung ist, darf sich dadurch nicht ändern. Die Freigabe friert den Arbeitsplan ein. | Angenommen |
+| [0012](0012-working-time-as-capacity.md) | Arbeitszeit und Arbeitszeitgesetz als Kapazität, in einer zweiten reinen Bibliothek | Schichten, Pausen, Ruhezeiten, Sonn- und Feiertage werden zu Maschinenkalendern. Die Engine kennt Fenster und Sperrzeiten, aber nicht den Begriff „Sonntag“. | Angenommen |
+| [0013](0013-personas-through-the-real-authorization-pipeline.md) | Rollen durch die echte Autorisierungspipeline, ohne Backend | Richtlinien, `AuthorizeView` und eine Prüfung in jedem schreibenden Dienst. Sagt zugleich unmissverständlich: „Das ist keine Sicherheit.“ | Angenommen |
+| [0014](0014-schedule-chat-on-device-first-with-pluggable-models.md) | Ein Gespräch über den Plan: erst das Gerät, Modelle austauschbar | Die Absichtserkennung und die Antworten laufen lokal; drei Protokolle liegen hinter einer Nahtstelle, mit Rückfall bei jedem Fehler. | Angenommen |
+| [0015](0015-exact-solver.md) | Das Optimum mit einem disjunktiven Branch-and-Bound beweisen — und benennen, was nicht bewiesen ist | Das bisherige „exakte“ Orakel war exakt nur innerhalb des Dispatch-Order-Modells und teilte seinen Code mit dem Geprüften. Der neue Löser teilt keinen und beweist zwanzig von zwanzig Instanzen. | Angenommen |
+| [0016](0016-cost-centre-master-data.md) | Die Kostenstelle vom Textfeld zu echten Stammdaten befördern | Mit Fremdschlüssel, Eindeutigkeit ohne Beachtung der Groß-/Kleinschreibung und einer Aufwertung, die vorhandene Schreibweisen zusammenführt, ohne Stammdaten zu erfinden. | Angenommen |
+| [0017](0017-in-browser-export.md) | CSV, Arbeitsmappe und PDF von Hand schreiben, im Browser | Eine PDF- oder Excel-Bibliothek wären 5 bis 20 MB, die jeder Besucher lädt. Der begrenzte Funktionsumfang ist der bewusst gewählte Preis. | Angenommen |
+| [0018](0018-csv-import.md) | Ein CSV-Import, der nicht schreibt, bevor die Vorschau gelesen wurde | Vorschau und Übernahme sind ein Codepfad, die Vorschau kann also nicht lügen; die Übernahme verweigert, wenn sich die Datenbank dazwischen bewegt hat. | Angenommen |
+| [0019](0019-off-thread-scheduling.md) | Den Planungslauf auf dem einen vorhandenen Thread zerlegen, statt ein Verlassen vorzutäuschen | Gemessen: Mit in das Modul gelinktem SQLite scheitert ein Thread-Build schon am Linker. Also kooperatives Zerlegen mit Fortschritt und Abbruch. | Angenommen |
+| [0020](0020-optional-backend-and-real-auth.md) | Ein optionales Backend und die erste echte Anmeldung | Identity, JWT mit rotierenden Refresh-Tokens, echte EF-Migrationen — und dieselbe Richtlinientabelle wie im Client, als verlinkter Quelltext. | Angenommen |
+| [0021](0021-visual-baselines-linux-only.md) | Bild-Baselines für genau ein Betriebssystem pflegen und eine fehlende als Fehler werten | Schriften unterscheiden sich je Betriebssystem, und eine Baseline, die keine Automatisierung je vergleicht, ist Pflege ohne Abnehmer. | Angenommen |
+| [0022](0022-local-search-acceptance.md) | Welchen verbessernden Nachbarn die lokale Suche übernimmt | Über fünf Größen, fünf Instanzen und drei Budgets gemessen; die Vorbelegung hat sich dadurch geändert, und die eine Größe, bei der die alte Regel gewinnt, steht als Messwert drin. | Angenommen |
+| [0023](0023-accessible-gantt-and-responsive-tables.md) | Das Diagramm ohne Maus bedienbar machen und die Karten daran hindern, Tabellen abzuschneiden | Jeder Balken ist eine Schaltfläche mit zugänglichem Namen, Pfeiltasten-Navigation und wanderndem Tabstopp; daneben eine Textfassung als Tabelle. | Angenommen |
+| [0024](0024-arbzg-in-the-ui.md) | Das Arbeitszeitgesetz auf den Bildschirm bringen, und nur so weit, wie es berechnet ist | Der Ausgleichszeitraum mit Besatzung, Durchschnitt je Werktag, Datum der Überschreitung und auszugleichenden Tagen; die Zehn-Stunden-Ruhezeit nur mit erklärter Branche nach § 5 Abs. 2. | Angenommen |
+| [0025](0025-hostile-input-on-the-model-path.md) | Feindliche Eingaben auf dem Modellpfad: was eine reine Browser-App über einen Schlüssel und über Prompt Injection zusagen kann | Der Schlüssel je Anbieter getrennt und nie zurück in die Seite; die Fakten begrenzt, bereinigt und eingefasst; und die ausdrückliche Feststellung, dass das Minderung ist und keine Lösung. | Angenommen |

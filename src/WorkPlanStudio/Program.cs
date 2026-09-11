@@ -42,11 +42,13 @@ builder.Logging.SetMinimumLevel(LogLevel.Warning);
 #endif
 
 // EF Core + SQLite, running entirely in the browser.
-// Schema 6: cost centres as master data, the work centres a released order still
-// depends on as real rows, and decimals stored as text so they survive the trip.
-// A schema 5 payload is upgraded on load instead of being refused - the version
-// lives beside the upgrade steps so adding one and forgetting the bump is a
-// single edit rather than two (see Data/SchemaUpgrades.cs).
+// The current schema adds cost centres as master data, the work centres a released
+// order still depends on as real rows, decimals stored as text so they survive the
+// trip, and the ArbZG settings the working-time page needs. A payload one or two
+// versions behind is upgraded on load instead of being refused - the version lives
+// beside the upgrade steps, so adding a step and forgetting the bump is a single
+// edit rather than two, and no literal version number appears here or anywhere else
+// (see Data/SchemaUpgrades.cs).
 var databaseOptions = new BrowserDatabaseOptions("/data/workplan.db", SchemaUpgrades.CurrentVersion);
 builder.Services.AddSingleton(databaseOptions);
 builder.Services.AddDbContextFactory<AppDbContext>(options =>
