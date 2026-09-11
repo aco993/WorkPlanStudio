@@ -72,8 +72,9 @@ public sealed record SchedulingParameters
     /// <summary>Flat penalty per late job — dominates so the search first reduces the number of late jobs.</summary>
     public double LatePenalty { get; init; } = 100.0;
 
-    // ----- Display only -----
-
-    /// <summary>Working minutes per calendar day, used solely to map work-time onto days in the Gantt chart.</summary>
-    public int MinutesPerWorkingDay { get; init; } = 480; // 8 h
+    // There is deliberately no display section here. `MinutesPerWorkingDay` used
+    // to live on this record and, by its own doc-comment, existed only to map
+    // work-time onto days in a Gantt chart — a rendering constant inside the one
+    // library whose headline claim is that it has no UI concerns. It is now a
+    // field on the scheduling page's form, passed to the view projection directly.
 }

@@ -550,4 +550,18 @@
   <data name="Md_Priority_5" xml:space="preserve"><value>5 — Eilauftrag</value></data>
   <data name="Md_Storage_Import" xml:space="preserve"><value>Sicherung einspielen</value></data>
   <data name="Md_Storage_ImportFailed" xml:space="preserve"><value>Diese Datei konnte nicht als WorkPlan-Studio-Export gelesen werden.</value></data>
+  <data name="Run_Cancel" xml:space="preserve"><value>Abbrechen</value></data>
+  <data name="Run_Started" xml:space="preserve"><value>Der Produktionsplan wird erstellt.</value></data>
+  <data name="Run_Cancelled" xml:space="preserve"><value>Der Lauf wurde abgebrochen. Der bisherige Produktionsplan bleibt unverändert.</value></data>
+  <data name="Run_Preparing" xml:space="preserve"><value>Der Lauf wird vorbereitet.</value></data>
+  <data name="Run_Progress" xml:space="preserve"><value>Neustart {0} von {1} — bester Zielwert bisher {2}, kleiner ist besser.</value></data>
+  <data name="Run_SameThreadNote" xml:space="preserve"><value>Die Suche läuft im eigenen Thread dieses Tabs und gibt ihn zwischen den Neustarts frei, damit die Seite bedienbar bleibt.</value></data>
+  <data name="Run_BudgetExceeded" xml:space="preserve"><value>Mehrfachstarts mal Schritte der lokalen Suche ergibt {0} Kandidatenpläne, erlaubt sind höchstens {1}. Verringern Sie einen der beiden Werte.</value></data>
+  <data name="Run_Acceptance" xml:space="preserve"><value>Verbesserungsregel</value></data>
+  <data name="Run_Acceptance_First" xml:space="preserve"><value>Erste Verbesserung</value></data>
+  <data name="Run_Acceptance_Best" xml:space="preserve"><value>Beste Position je Auftrag</value></data>
+  <data name="Run_Acceptance_Steepest" xml:space="preserve"><value>Steilster Abstieg</value></data>
+  <data name="Run_Acceptance_FirstHint" xml:space="preserve"><value>Nimmt den ersten Zug, der hilft, und macht sofort weiter. Das Budget geht in Züge statt in Vergleiche.</value></data>
+  <data name="Run_Acceptance_BestHint" xml:space="preserve"><value>Setzt jeden Auftrag der Reihe nach auf seine beste Position. Der gemessene Standard: rund 7 % besser als der steilste Abstieg über 25 Testfälle.</value></data>
+  <data name="Run_Acceptance_SteepestHint" xml:space="preserve"><value>Vergleicht alle Züge und nimmt den besten. Gründlich bei kleinen Plänen; bei großen reicht das Budget für ein, zwei Züge.</value></data>
 </root>

@@ -73,6 +73,16 @@ builder.Services.AddScoped<WorkPlanStudio.Services.Chat.ScheduleChat>();
 // Cost centres: master data in their own right since schema 6 (docs/adr/0016).
 builder.Services.AddScoped<CostCenterService>();
 
+// How the scheduling search is executed. WebAssembly has one thread and the app
+// links SQLite into the module, which rules out WasmEnableThreads outright, so the
+// shipped strategy slices the run on that one thread and hands it back to the
+// browser between multi-start descents. Swapping this line is the whole change if
+// a worker ever becomes available - see docs/adr/0019.
+builder.Services.AddScoped<WorkPlanStudio.Services.Scheduling.IScheduleYield,
+    WorkPlanStudio.Services.Scheduling.BrowserScheduleYield>();
+builder.Services.AddScoped<WorkPlanStudio.Services.Scheduling.IScheduleRunner,
+    WorkPlanStudio.Services.Scheduling.CooperativeScheduleRunner>();
+
 var host = builder.Build();
 
 // Apply the language the user picked last time (stored in the browser).

@@ -27,10 +27,6 @@ public static class SchedulingParameterLimits
     /// </remarks>
     public const int MaxTotalEvaluations = 200_000;
 
-    /// <summary>Inclusive display-day lower bound.</summary>
-    public const int MinMinutesPerWorkingDay = 1;
-    /// <summary>Inclusive display-day upper bound.</summary>
-    public const int MaxMinutesPerWorkingDay = 1_440;
     /// <summary>Inclusive TWK factor lower bound.</summary>
     public const double MinTwkFlowFactor = 0.1;
     /// <summary>Inclusive TWK factor upper bound.</summary>
@@ -72,7 +68,6 @@ public static class SchedulingParameterLimits
 
         Range(parameters.MultiStartRuns, MinMultiStartRuns, MaxMultiStartRuns, nameof(parameters.MultiStartRuns));
         Range(parameters.LocalSearchMaxSteps, MinLocalSearchSteps, MaxLocalSearchSteps, nameof(parameters.LocalSearchMaxSteps));
-        Range(parameters.MinutesPerWorkingDay, MinMinutesPerWorkingDay, MaxMinutesPerWorkingDay, nameof(parameters.MinutesPerWorkingDay));
         Range(parameters.NopSecondsPerOp, 0, MaxDueDateSeconds, nameof(parameters.NopSecondsPerOp));
         Range(parameters.SlackSeconds, 0, MaxDueDateSeconds, nameof(parameters.SlackSeconds));
         Range(parameters.ConstantAllowanceSeconds, 0, MaxDueDateSeconds, nameof(parameters.ConstantAllowanceSeconds));
