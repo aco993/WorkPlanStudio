@@ -494,4 +494,24 @@
   <data name="Provider_Anthropic" xml:space="preserve"><value>Anthropic (Claude)</value></data>
   <data name="Provider_Gemini" xml:space="preserve"><value>Google Gemini</value></data>
   <data name="Sched_Ai_CorsNote" xml:space="preserve"><value>Die Anfrage geht aus Ihrem Browser an den Endpunkt; der Anbieter muss Browser-Aufrufe (CORS) erlauben. OpenAI, Anthropic (mit seinem Direktzugriffs-Header, automatisch gesetzt), Gemini, OpenRouter und lokale Server tun das; manche Proxys nicht.</value></data>
+  <data name="Account_Title" xml:space="preserve"><value>Konto</value></data>
+  <data name="Account_SignIn" xml:space="preserve"><value>Anmelden</value></data>
+  <data name="Account_SignOut" xml:space="preserve"><value>Abmelden</value></data>
+  <data name="Account_UserName" xml:space="preserve"><value>Benutzername</value></data>
+  <data name="Account_Password" xml:space="preserve"><value>Kennwort</value></data>
+  <data name="Account_Required" xml:space="preserve"><value>Dieses Feld ist erforderlich.</value></data>
+  <data name="Account_SignInIntro" xml:space="preserve"><value>Mit der Anmeldung tritt an die Stelle der Rolle zur Ansicht die Rolle, die Ihr Konto wirklich hat. Sie kommt vom Server und kann hier nicht geändert werden.</value></data>
+  <data name="Account_SignInFailed" xml:space="preserve"><value>Benutzername oder Kennwort wurden nicht akzeptiert.</value></data>
+  <data name="Account_SigningIn" xml:space="preserve"><value>Anmeldung läuft…</value></data>
+  <data name="Account_SignedInAs" xml:space="preserve"><value>Angemeldet als {0}</value></data>
+  <data name="Account_Roles" xml:space="preserve"><value>Rollen</value></data>
+  <data name="Account_Server" xml:space="preserve"><value>Server</value></data>
+  <data name="Account_ScheduleOnServer" xml:space="preserve"><value>Die Planung wird auf dem Server erzeugt, von derselben Maschine, die auch in dieser App steckt.</value></data>
+  <data name="Account_OfflineTitle" xml:space="preserve"><value>Kein Server konfiguriert</value></data>
+  <data name="Account_Offline" xml:space="preserve"><value>Dieser Stand läuft vollständig in Ihrem Browser. Es gibt keinen Server und keine Konten: Die Rolle in der Kopfzeile zeigt das Berechtigungsmodell, sie schützt nichts.</value></data>
+  <data name="Account_Pull" xml:space="preserve"><value>Stammdaten vom Server holen</value></data>
+  <data name="Account_Pulling" xml:space="preserve"><value>Wird geholt…</value></data>
+  <data name="Account_PullBoundary" xml:space="preserve"><value>Das Holen ersetzt die lokale Kopie durch die des Servers. Lokale Änderungen gehen nicht zurück: Das ist ein einseitiger Import, kein Abgleich in beide Richtungen.</value></data>
+  <data name="Account_PullDone" xml:space="preserve"><value>Die lokale Kopie wurde durch {0} Arbeitsplätze, {1} Arbeitspläne und {2} Fertigungsaufträge ersetzt.</value></data>
+  <data name="Account_PullFailed" xml:space="preserve"><value>Die Stammdaten konnten nicht vom Server geholt werden.</value></data>
 </root>

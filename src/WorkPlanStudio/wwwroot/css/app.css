@@ -718,3 +718,17 @@ select.input { cursor: pointer; }
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
 }
+
+/* ----- Account chip (top bar, only when an API is configured) -----
+   Deliberately the persona chip's shape and avatar: the two modes occupy the
+   same slot and should read as the same control, one of which happens to be
+   backed by a real account. The narrow-screen rule above already hides
+   .persona-name, so the chip degrades to the avatar like the persona does. */
+.persona.account {
+    display: inline-flex; align-items: center; gap: .5rem;
+    padding: .3rem .35rem .3rem .35rem; border-radius: 100px;
+    border: 1px solid var(--border); background: var(--surface);
+    font-size: .84rem; font-weight: 600; color: var(--text);
+}
+.btn.small { padding: .32rem .6rem; font-size: .8rem; }
+.sign-in-card { max-width: 520px; }

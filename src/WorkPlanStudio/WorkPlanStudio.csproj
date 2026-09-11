@@ -32,6 +32,11 @@
   <ItemGroup>
     <ProjectReference Include="..\WorkPlanStudio.Scheduling\WorkPlanStudio.Scheduling.csproj" />
     <ProjectReference Include="..\WorkPlanStudio.WorkingTime\WorkPlanStudio.WorkingTime.csproj" />
+
+    <!-- The wire format of the optional API. A dependency-free assembly of
+         records; the API itself is never referenced from here, so a build of
+         the browser app knows nothing about the server - see docs/adr/0020. -->
+    <ProjectReference Include="..\WorkPlanStudio.Contracts\WorkPlanStudio.Contracts.csproj" />
   </ItemGroup>
 
 </Project>

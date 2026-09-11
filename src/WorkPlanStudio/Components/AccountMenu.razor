@@ -1,0 +1,68 @@
+@using WorkPlanStudio.Services.Remote
+@implements IDisposable
+@inject IStringLocalizer<SharedResource> L
+@inject ApiOptions Api
+@inject IServiceProvider Services
+
+@*
+    Who you are working as, in whichever sense this build supports.
+
+    Offline the persona switcher is exactly what it was. Connected, it is gone:
+    the roles come from a signed token, so offering to change them in the
+    browser would be offering something the server will not honour - and a
+    control that lies about what it does is worse than no control.
+*@
+
+@if (!Api.IsConnected)
+{
+    <PersonaMenu />
+}
+else if (_provider?.User is { } user)
+{
+    <div class="persona account">
+        <span class="persona-avatar role-@RoleClass(user.Roles)" aria-hidden="true">@Initial(user.UserName)</span>
+        <span class="persona-name">@user.UserName</span>
+        <a class="btn btn-ghost small" href="sign-in">@L["Account_Title"]</a>
+    </div>
+}
+else
+{
+    <a class="btn btn-outline small" href="sign-in">@L["Account_SignIn"]</a>
+}
+
+@code {
+    private RemoteAuthenticationStateProvider? _provider;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Api.IsConnected)
+            return;
+
+        _provider = Services.GetService<RemoteAuthenticationStateProvider>();
+        if (_provider is null)
+            return;
+
+        _provider.AuthenticationStateChanged += OnStateChanged;
+
+        // Restores a session from the stored refresh token before the first render
+        // settles, so a reload does not flash "Sign in" at a signed-in user.
+        await _provider.GetAuthenticationStateAsync();
+    }
+
+    private static string Initial(string userName) =>
+        userName.Length == 0 ? "?" : userName[..1].ToUpperInvariant();
+
+    /// <summary>The strongest role decides the avatar colour, reusing the persona styles.</summary>
+    private static string RoleClass(IReadOnlyList<string> roles) =>
+        roles.Contains(WorkPlanStudio.Contracts.WorkspaceRoles.Planner) ? "planner"
+        : roles.Contains(WorkPlanStudio.Contracts.WorkspaceRoles.Supervisor) ? "supervisor"
+        : "guest";
+
+    private void OnStateChanged(Task<AuthenticationState> task) => InvokeAsync(StateHasChanged);
+
+    public void Dispose()
+    {
+        if (_provider is not null)
+            _provider.AuthenticationStateChanged -= OnStateChanged;
+    }
+}
