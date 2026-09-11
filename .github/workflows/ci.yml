@@ -1,26 +1,39 @@
 name: CI
 
-# Build and test on every pull request. Split into two jobs by what they need:
+# Build and test on every pull request, and the single source of truth for the
+# unit/component test matrix: the deploy workflow calls this one rather than
+# repeating it, so the coverage thresholds below exist in exactly one place.
+#
+# Split into two jobs by what they need:
 #   • library-tests — the two pure libraries (scheduling engine, working time);
 #     no Blazor, no SQLite, no WebAssembly, so they run in seconds. Coverage is
 #     measured and gated per assembly.
 #   • web-tests     — data, mapper, assistant and bUnit component tests; these
 #     reference the Blazor WASM app, so the job installs the wasm-tools workload
 #     to build it. Coverage of the app assembly is measured and gated too.
-# The thresholds live in the coverage_gate.py calls below; the badges the
-# README shows are produced from the same numbers by the deploy workflow.
+#
+# Third-party actions are pinned to a commit SHA with the tag in a comment: a
+# moving tag is a write-access dependency on someone else's repository.
 
 on:
   push:
     branches: [ main ]
   pull_request:
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      badges:
+        description: Write shields.io endpoint JSON from the measured coverage and upload it.
+        type: boolean
+        default: false
 
-# A newer push to the same branch supersedes the run in flight; only the
-# latest state of a branch is worth a runner.
+# A newer push to the same branch supersedes the run in flight — but only for a
+# pull request. When the deploy workflow calls this one, `github.workflow` is
+# the caller's, so cancelling here would abort an in-flight production deploy
+# between its gate and its upload.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -28,21 +41,44 @@ permissions:
 env:
   DOTNET_NOLOGO: true
   DOTNET_CLI_TELEMETRY_OPTOUT: true
+  # The advertised quality gate. Change a number here and both the pull-request
+  # check and the production deploy move together, because they are the same run.
+  GATE_ENGINE: 90
+  GATE_WORKING_TIME: 90
+  GATE_APP: 65
+  # Floors, not counts: a run that discovers nothing must never be reported as
+  # success. Comfortably below the real numbers so adding tests needs no edit,
+  # and far enough above zero to catch a suite that silently stopped loading.
+  MIN_TESTS_ENGINE: 145
+  MIN_TESTS_WORKING_TIME: 88
+  MIN_TESTS_WEB: 155
+  # The wall-clock budget tests are the only ones in the repo whose outcome
+  # depends on a shared two-core runner. They are tripwires with roughly an
+  # order of magnitude of headroom, which is the right design — but a tripwire
+  # that reddens one pull request a month teaches the author to re-run rather
+  # than look, and then it is noise. They run unchanged in the Performance
+  # workflow, on main, weekly and on demand, where a slow runner is worth
+  # investigating rather than worth re-running.
+  EXCLUDE_BUDGETS: --filter-not-class *.PerformanceBudgetTests
+  BADGE_ARGS: ${{ inputs.badges && '--badge badges' || '' }}
 
 jobs:
   library-tests:
     name: Engine + working-time tests (coverage gate)
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v6
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68  # v6.0.0
         with:
           global-json-file: global.json
 
       - name: Cache NuGet packages
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
         with:
           path: ~/.nuget/packages
           key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', 'Directory.Packages.props') }}
@@ -52,17 +88,23 @@ jobs:
       - name: Test scheduling engine (with coverage)
         run: >
           dotnet test tests/WorkPlanStudio.Scheduling.Tests/WorkPlanStudio.Scheduling.Tests.csproj -c Release
+          ${{ env.EXCLUDE_BUDGETS }}
+          --minimum-expected-tests ${{ env.MIN_TESTS_ENGINE }}
           --coverage --coverage-output-format cobertura --coverage-output engine.cobertura.xml
 
       - name: Test working-time library (with coverage)
         run: >
           dotnet test tests/WorkPlanStudio.WorkingTime.Tests/WorkPlanStudio.WorkingTime.Tests.csproj -c Release
+          ${{ env.EXCLUDE_BUDGETS }}
+          --minimum-expected-tests ${{ env.MIN_TESTS_WORKING_TIME }}
           --coverage --coverage-output-format cobertura --coverage-output workingtime.cobertura.xml
 
-      - name: Coverage gate (engine ≥ 90 % lines, working time ≥ 90 % lines)
+      - name: Coverage gate
         run: |
-          python3 .github/scripts/coverage_gate.py TestResults/engine.cobertura.xml WorkPlanStudio.Scheduling=90
-          python3 .github/scripts/coverage_gate.py TestResults/workingtime.cobertura.xml WorkPlanStudio.WorkingTime=90
+          python3 .github/scripts/coverage_gate.py TestResults/engine.cobertura.xml \
+            WorkPlanStudio.Scheduling=$GATE_ENGINE $BADGE_ARGS
+          python3 .github/scripts/coverage_gate.py TestResults/workingtime.cobertura.xml \
+            WorkPlanStudio.WorkingTime=$GATE_WORKING_TIME $BADGE_ARGS
 
       - name: Build coverage report
         if: always()
@@ -77,26 +119,42 @@ jobs:
       - name: Upload coverage report
         if: always()
         continue-on-error: true   # the gate is the check; a hiccup in the artifact service is not a failed build
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:
           name: coverage-report-libraries
           path: coverage-report
           if-no-files-found: ignore
           retention-days: 14
+          overwrite: true
+
+      # Not continue-on-error: the deploy workflow downloads this to publish the
+      # README's coverage badges, so losing it silently would ship stale numbers.
+      - name: Upload library badge data
+        if: ${{ inputs.badges }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: badges-libraries
+          path: badges
+          if-no-files-found: error
+          retention-days: 14
+          overwrite: true
 
   web-tests:
     name: Data, mapper, assistant & component tests (coverage gate)
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v6
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68  # v6.0.0
         with:
           global-json-file: global.json
 
       - name: Cache NuGet packages
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
         with:
           path: ~/.nuget/packages
           key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', 'Directory.Packages.props') }}
@@ -108,10 +166,13 @@ jobs:
       - name: Test data, mapper, assistant & components (with coverage)
         run: >
           dotnet test tests/WorkPlanStudio.Web.Tests/WorkPlanStudio.Web.Tests.csproj -c Release
+          --minimum-expected-tests ${{ env.MIN_TESTS_WEB }}
           --coverage --coverage-output-format cobertura --coverage-output web.cobertura.xml
 
-      - name: Coverage gate (app ≥ 65 % lines)
-        run: python3 .github/scripts/coverage_gate.py TestResults/web.cobertura.xml WorkPlanStudio=65
+      - name: Coverage gate
+        run: |
+          python3 .github/scripts/coverage_gate.py TestResults/web.cobertura.xml \
+            WorkPlanStudio=$GATE_APP $BADGE_ARGS
 
       - name: Build coverage report
         if: always()
@@ -126,9 +187,20 @@ jobs:
       - name: Upload coverage report
         if: always()
         continue-on-error: true   # the gate is the check; a hiccup in the artifact service is not a failed build
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:
           name: coverage-report-app
           path: coverage-report
           if-no-files-found: ignore
           retention-days: 14
+          overwrite: true
+
+      - name: Upload app badge data
+        if: ${{ inputs.badges }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: badges-app
+          path: badges
+          if-no-files-found: error
+          retention-days: 14
+          overwrite: true

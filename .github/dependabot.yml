@@ -7,13 +7,33 @@ updates:
       interval: weekly
     open-pull-requests-limit: 5
     groups:
+      # Listed before "microsoft" on purpose: a dependency joins the first group
+      # whose patterns match it, and Microsoft.Playwright and the testing
+      # extensions would otherwise be swept into the framework group. The test
+      # stack moves together and is verified by the same run, so one pull
+      # request per week for all of it beats seven.
+      test-stack:
+        patterns:
+          - "xunit*"
+          - "Microsoft.Testing.*"
+          - "Microsoft.Playwright"
+          - "Deque.AxeCore.*"
+          - "bunit"
+          - "CsCheck"
+          - "BenchmarkDotNet"
       microsoft:
         patterns:
           - "Microsoft.*"
           - "System.*"
 
-  # Keep the GitHub Actions in the workflows current.
+  # Keep the GitHub Actions in the workflows current. The workflows pin each
+  # action to a commit SHA with the tag in a trailing comment; Dependabot
+  # understands that form and bumps both together.
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
       interval: weekly
+    groups:
+      actions:
+        patterns:
+          - "*"

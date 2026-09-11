@@ -4,92 +4,64 @@ name: Deploy to GitHub Pages
 # Pages. The app runs entirely in the browser (EF Core + SQLite compiled to
 # WebAssembly), so no server or backend is required.
 #
-# The deployment is gated on every suite: the three unit/component projects
-# (with their coverage gates) and the Playwright run (E2E, axe, visual). The
-# coverage numbers measured here become the badge JSON the README links to,
-# served from the site itself under /badges/.
+# The deployment is gated on every suite: the three unit/component projects with
+# their coverage gates (by calling ci.yml rather than repeating it — the
+# thresholds live there and only there) and the Playwright run (E2E, axe,
+# visual). The coverage numbers measured in that call become the badge JSON the
+# README links to, served from the site itself under /badges/.
 
 on:
   push:
     branches: [ main ]
   workflow_dispatch:
 
-# Allow the GITHUB_TOKEN to deploy to Pages.
+# Least privilege: the default is read-only, and the two elevated grants sit on
+# the jobs that need them. The job that executes test code — which restores and
+# runs third-party packages — must not hold a deployment identity.
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
-# Only one concurrent deployment.
+# One deployment at a time, and never cancel one in flight: a run cancelled
+# between upload-pages-artifact and deploy-pages leaves the site on the previous
+# version while the commit shows a cancelled, not failed, run. Cancelling a test
+# run is free; cancelling a production deploy is a silent no-deploy.
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 env:
   DOTNET_NOLOGO: true
   DOTNET_CLI_TELEMETRY_OPTOUT: true
 
 jobs:
-  test:
+  tests:
     name: Unit, property, data & component tests
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v6
-        with:
-          global-json-file: global.json
-
-      - name: Cache NuGet packages
-        uses: actions/cache@v6
-        with:
-          path: ~/.nuget/packages
-          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', 'Directory.Packages.props') }}
-          restore-keys: nuget-${{ runner.os }}-
-
-      - name: Install WebAssembly tools
-        run: dotnet workload install wasm-tools
-
-      - name: Test scheduling engine
-        run: >
-          dotnet test tests/WorkPlanStudio.Scheduling.Tests/WorkPlanStudio.Scheduling.Tests.csproj -c Release
-          --coverage --coverage-output-format cobertura --coverage-output engine.cobertura.xml
-
-      - name: Test working-time library
-        run: >
-          dotnet test tests/WorkPlanStudio.WorkingTime.Tests/WorkPlanStudio.WorkingTime.Tests.csproj -c Release
-          --coverage --coverage-output-format cobertura --coverage-output workingtime.cobertura.xml
-
-      - name: Test data, mapper, assistant & components
-        run: >
-          dotnet test tests/WorkPlanStudio.Web.Tests/WorkPlanStudio.Web.Tests.csproj -c Release
-          --coverage --coverage-output-format cobertura --coverage-output web.cobertura.xml
-
-      - name: Coverage gates + badges
-        run: |
-          python3 .github/scripts/coverage_gate.py TestResults/engine.cobertura.xml WorkPlanStudio.Scheduling=90 --badge badges
-          python3 .github/scripts/coverage_gate.py TestResults/workingtime.cobertura.xml WorkPlanStudio.WorkingTime=90 --badge badges
-          python3 .github/scripts/coverage_gate.py TestResults/web.cobertura.xml WorkPlanStudio=65 --badge badges
-
-      - name: Upload badge data
-        uses: actions/upload-artifact@v7
-        with:
-          name: badges
-          path: badges
+    uses: ./.github/workflows/ci.yml
+    permissions:
+      contents: read
+    with:
+      badges: true
 
   e2e:
     name: Browser tests
     uses: ./.github/workflows/e2e.yml
+    permissions:
+      contents: read
 
   build:
-    needs: [test, e2e]
+    needs: [tests, e2e]
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      pages: write
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v6
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68  # v6.0.0
         with:
           global-json-file: global.json
 
@@ -112,24 +84,37 @@ jobs:
       - name: Add .nojekyll
         run: touch release/wwwroot/.nojekyll
 
+      # ci.yml measures coverage in two jobs, so the badges arrive as two
+      # artifacts; they are merged back into one folder here.
       - name: Add coverage badges to the site
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7.0.0
         with:
-          name: badges
+          pattern: badges-*
+          merge-multiple: true
           path: release/wwwroot/badges
 
+      - name: Check the badges arrived
+        run: |
+          count=$(find release/wwwroot/badges -name '*.json' | wc -l)
+          echo "badge files: $count"
+          test "$count" -eq 3
+
       - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v5
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9  # v5.0.0
         with:
           path: release/wwwroot
 
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v5
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346  # v5.0.1
