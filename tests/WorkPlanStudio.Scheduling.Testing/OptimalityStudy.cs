@@ -27,7 +27,7 @@ public static class OptimalityStudy
     /// <param name="Optimum">The proved optimal penalty.</param>
     /// <param name="DispatchOrderOptimum">
     /// The best penalty reachable by handing the greedy dispatcher a job order —
-    /// <see cref="ExactDispatchOrderOptimizer"/> over all <c>n!</c> of them. This is
+    /// <see cref="ExhaustiveDispatchOrderSearch"/> over all <c>n!</c> of them. This is
     /// the reference the project used to measure against.
     /// </param>
     /// <param name="Heuristic">What <see cref="SchedulingEngine"/> found.</param>
@@ -215,7 +215,7 @@ public static class OptimalityStudy
                 .RunCancellable(instance.Context, cancellationToken)
                 .Evaluation.Penalty;
 
-            double dispatchOrder = ExactDispatchOrderOptimizer
+            double dispatchOrder = ExhaustiveDispatchOrderSearch
                 .Run(instance.Context, cancellationToken)
                 .Result.Evaluation.Penalty;
 

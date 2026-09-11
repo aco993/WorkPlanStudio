@@ -11,7 +11,7 @@ namespace WorkPlanStudio.Scheduling.Tests;
 /// which shares the problem definition with the engine and none of the machinery
 /// that turns a problem into a schedule. That is what makes it an oracle.</item>
 /// <item><b>The best dispatch order</b> comes from
-/// <see cref="ExactDispatchOrderOptimizer"/>, which enumerates every job order and
+/// <see cref="ExhaustiveDispatchOrderSearch"/>, which enumerates every job order and
 /// hands each to the same dispatcher the engine uses. It is a bound on the
 /// <i>search</i> and nothing else.</item>
 /// </list>
@@ -33,7 +33,7 @@ public class OptimalityTests
 
     /// <summary>The lowest penalty any job order can produce through the dispatcher.</summary>
     private static double BestDispatchOrder(SchedulingContext context) =>
-        ExactDispatchOrderOptimizer.Run(context, Ct).Result.Evaluation.Penalty;
+        ExhaustiveDispatchOrderSearch.Run(context, Ct).Result.Evaluation.Penalty;
 
     private static double EnginePenalty(SchedulingContext context) =>
         new SchedulingEngine().RunCancellable(context, Ct).Evaluation.Penalty;

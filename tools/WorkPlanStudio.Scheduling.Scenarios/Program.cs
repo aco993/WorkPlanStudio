@@ -232,7 +232,7 @@ static void Optimality()
                 {
                     var context = SevenJobInstance(seed, rule, acceptance, starts);
                     double found = new SchedulingEngine().Run(context).Evaluation.Penalty;
-                    double optimum = ExactDispatchOrderOptimizer.Run(context).Result.Evaluation.Penalty;
+                    double optimum = ExhaustiveDispatchOrderSearch.Run(context).Result.Evaluation.Penalty;
                     double gap = optimum <= 0 ? 0 : (found - optimum) / optimum;
 
                     gapSum += gap;

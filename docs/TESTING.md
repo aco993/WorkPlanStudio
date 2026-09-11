@@ -76,7 +76,7 @@ test rather than left to discipline.
 This is the part of the suite that used to be circular, and it is worth reading
 the fix.
 
-`OptimalityTests` previously measured the engine against `ExactDispatchOrderOptimizer`,
+`OptimalityTests` previously measured the engine against `ExhaustiveDispatchOrderSearch`,
 which hands every one of the `n!` job orders to **the same dispatcher and the same
 evaluator** the engine uses. Both sides of the assertion ran the same placement
 code, so any bug in placement or scoring cancelled exactly — and eight documents
@@ -86,7 +86,7 @@ which computes neither number on no such set.
 There are now three implementations and the tests name which is which:
 
 - `DispatchScheduler` — the engine's own placement;
-- `ExactDispatchOrderOptimizer` — the permutation enumerator, kept as a second
+- `ExhaustiveDispatchOrderSearch` — the permutation enumerator, kept as a second
   opinion on the **search**;
 - `ExactJobShopSolver` — a disjunctive branch-and-bound that shares no code with
   either and is the authority on the **optimum**.

@@ -45,7 +45,7 @@ public class ExactSolverTests
             Job(1, Step(10, 1, 10), Step(20, 2, 10), Step(30, 3, 10)),
             Job(2, Step(10, 3, 10), Step(20, 2, 10), Step(30, 1, 10)));
 
-        long overEveryJobOrder = ExactDispatchOrderOptimizer.Run(context, Ct).Result.Schedule.MakespanSeconds;
+        long overEveryJobOrder = ExhaustiveDispatchOrderSearch.Run(context, Ct).Result.Schedule.MakespanSeconds;
         var exact = ExactJobShopSolver.Solve(context, cancellationToken: Ct);
 
         Assert.Equal(60, overEveryJobOrder);
@@ -78,7 +78,7 @@ public class ExactSolverTests
         {
             var context = SingleWorkCentreInstance(seed, jobCount);
 
-            double byEnumeration = ExactDispatchOrderOptimizer.Run(context, Ct).Result.Evaluation.Penalty;
+            double byEnumeration = ExhaustiveDispatchOrderSearch.Run(context, Ct).Result.Evaluation.Penalty;
             var exact = ExactJobShopSolver.Solve(context, cancellationToken: Ct);
 
             Assert.Equal(ExactSolutionStatus.Optimal, exact.Status);

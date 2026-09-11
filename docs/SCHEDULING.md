@@ -297,7 +297,7 @@ and needs a change-over.
 
 ## 6b. Exhaustive search over dispatch orders
 
-`ExactDispatchOrderOptimizer` evaluates all `n!` job orders, up to 9 jobs
+`ExhaustiveDispatchOrderSearch` evaluates all `n!` job orders, up to 9 jobs
 (362 880 dispatches, about a second).
 
 Be precise about what it proves. It is exact **within the dispatch-order model**:

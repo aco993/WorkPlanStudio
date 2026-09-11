@@ -2,7 +2,7 @@
 
 - **Status:** Accepted
 - **Date:** 2026-09-11
-- **Replaces** the role `ExactDispatchOrderOptimizer` played as the optimality oracle; that class
+- **Replaces** the role `ExhaustiveDispatchOrderSearch` played as the optimality oracle; that class
   stays, as a second opinion on the *search*
 - **Related:** [ADR 0008](0008-insertion-neighbourhood.md) and
   [ADR 0022](0022-local-search-acceptance.md), whose measurements are against the dispatch-order
@@ -12,7 +12,7 @@
 
 ## Context
 
-The library shipped a class called `ExactDispatchOrderOptimizer`. It enumerates all `n!` **job
+The library shipped a class called `ExhaustiveDispatchOrderSearch`. It enumerates all `n!` **job
 orders** and hands each one to the same greedy dispatcher the heuristic uses, then returns the best.
 Within that model it is exact. The model is the problem: the dispatcher places one whole job at a
 time and never back-fills, so the schedules it can emit are a small, awkwardly shaped subset of the
@@ -348,6 +348,8 @@ loose.
 - ➖ A third scheduling implementation now has to stay in step with the model: a new constraint has
   to reach the dispatcher, the exact solver and — if it is expressible — the LP writer. The
   feasibility checker in the test suite is what keeps the first two honest about each other.
-- ➖ `ExactDispatchOrderOptimizer` now has a narrower job than its name suggests. Renaming it is a
-  public API break for a class whose doc-comment already states the limitation in full; it is left
-  alone and the tests name the reference explicitly instead.
+- ➕ The older class was renamed, from `ExactDispatchOrderOptimizer` to
+  `ExhaustiveDispatchOrderSearch`. It is a public API break on a pre-1.0 library, and worth it: the
+  word "exact" is the one that made a 50 % gap readable as an optimality result, and a doc-comment
+  stating the limitation does not help a reader who only ever sees the call site. "Exhaustive" is
+  what it actually is — it enumerates every dispatch order — and it no longer claims the rest.

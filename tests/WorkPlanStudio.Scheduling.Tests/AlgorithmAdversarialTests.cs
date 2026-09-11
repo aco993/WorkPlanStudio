@@ -91,7 +91,7 @@ public sealed class AlgorithmAdversarialTests
         foreach (var permutation in Permutations([.. Enumerable.Range(0, context.Jobs.Count)]))
             oracle = Math.Min(oracle, ScheduleEvaluator.Evaluate(scheduler.Run(context, permutation, due, Ct), context).Penalty);
 
-        Assert.Equal(oracle, ExactDispatchOrderOptimizer.Run(context, TestContext.Current.CancellationToken)
+        Assert.Equal(oracle, ExhaustiveDispatchOrderSearch.Run(context, TestContext.Current.CancellationToken)
             .Result.Evaluation.Penalty, 9);
     }
 

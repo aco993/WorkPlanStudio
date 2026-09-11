@@ -313,7 +313,7 @@ der jetzt frei ist und erst gerüstet werden muss.
 
 ## 6b. Vollständige Aufzählung der Auftragsreihenfolgen
 
-`ExactDispatchOrderOptimizer` bewertet alle `n!` Auftragsreihenfolgen, bis neun
+`ExhaustiveDispatchOrderSearch` bewertet alle `n!` Auftragsreihenfolgen, bis neun
 Aufträge (362 880 Einplanungen, etwa eine Sekunde).
 
 Was das beweist, muss man genau sagen. Es ist exakt **innerhalb des

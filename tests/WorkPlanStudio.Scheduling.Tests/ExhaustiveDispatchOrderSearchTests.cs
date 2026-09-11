@@ -4,7 +4,7 @@ namespace WorkPlanStudio.Scheduling.Tests;
 /// The exhaustive optimizer. Its value is that it is exact within a stated model,
 /// so these tests pin both the exactness and the limits of the claim.
 /// </summary>
-public class ExactDispatchOrderOptimizerTests
+public class ExhaustiveDispatchOrderSearchTests
 {
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
@@ -14,7 +14,7 @@ public class ExactDispatchOrderOptimizerTests
         var context = Context(RuleOnly(DispatchRule.Fifo), [Machine(1)],
             Job(1, Step(10, 1, 100)), Job(2, Step(10, 1, 200)), Job(3, Step(10, 1, 300)));
 
-        Assert.Equal(6, ExactDispatchOrderOptimizer.Run(context, Ct).EvaluatedOrders);   // 3! = 6
+        Assert.Equal(6, ExhaustiveDispatchOrderSearch.Run(context, Ct).EvaluatedOrders);   // 3! = 6
     }
 
     [Fact]
@@ -28,7 +28,7 @@ public class ExactDispatchOrderOptimizerTests
             DueAt(2, 100_000, Step(10, 1, 1000)),
             DueAt(3, 1_100, Step(10, 1, 1000)));
 
-        var exact = ExactDispatchOrderOptimizer.Run(context, Ct);
+        var exact = ExhaustiveDispatchOrderSearch.Run(context, Ct);
 
         Assert.Equal(0, exact.Result.Evaluation.LateJobCount);
     }
@@ -52,7 +52,7 @@ public class ExactDispatchOrderOptimizerTests
         var due = DueDateAssigner.Assign(context);
         var scheduler = new DispatchScheduler();
 
-        double exact = ExactDispatchOrderOptimizer.Run(context, Ct).Result.Evaluation.Penalty;
+        double exact = ExhaustiveDispatchOrderSearch.Run(context, Ct).Result.Evaluation.Penalty;
 
         var sampled = new List<double>();
         for (int seed = 1; seed <= 400; seed++)
@@ -71,7 +71,7 @@ public class ExactDispatchOrderOptimizerTests
     }
 
     /// <summary>
-    /// Nine jobs — <see cref="ExactDispatchOrderOptimizer.MaxJobs"/>, the size the
+    /// Nine jobs — <see cref="ExhaustiveDispatchOrderSearch.MaxJobs"/>, the size the
     /// XML doc claims is "roughly a second". 362 880 dispatches.
     /// </summary>
     private static SchedulingContext NineJobInstance()
@@ -79,7 +79,7 @@ public class ExactDispatchOrderOptimizerTests
         var rng = new DeterministicRandom(4242);
         var machines = Enumerable.Range(1, 3).Select(id => Machine(id)).ToArray();
 
-        var jobs = new ProductionJob[ExactDispatchOrderOptimizer.MaxJobs];
+        var jobs = new ProductionJob[ExhaustiveDispatchOrderSearch.MaxJobs];
         for (int j = 0; j < jobs.Length; j++)
         {
             var steps = new List<JobStep>();
@@ -115,10 +115,10 @@ public class ExactDispatchOrderOptimizerTests
     public void It_enumerates_the_largest_instance_it_accepts()
     {
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-        var result = ExactDispatchOrderOptimizer.Run(NineJobInstance(), Ct);
+        var result = ExhaustiveDispatchOrderSearch.Run(NineJobInstance(), Ct);
         stopwatch.Stop();
 
-        long factorial = Enumerable.Range(1, ExactDispatchOrderOptimizer.MaxJobs).Aggregate(1L, (a, b) => a * b);
+        long factorial = Enumerable.Range(1, ExhaustiveDispatchOrderSearch.MaxJobs).Aggregate(1L, (a, b) => a * b);
         Assert.Equal(factorial, result.EvaluatedOrders);
         Assert.True(stopwatch.ElapsedMilliseconds < 20_000,
             $"9! = {factorial} orders took {stopwatch.ElapsedMilliseconds} ms");
@@ -127,19 +127,19 @@ public class ExactDispatchOrderOptimizerTests
     [Fact]
     public void It_refuses_instances_it_cannot_enumerate()
     {
-        var jobs = Enumerable.Range(1, ExactDispatchOrderOptimizer.MaxJobs + 1)
+        var jobs = Enumerable.Range(1, ExhaustiveDispatchOrderSearch.MaxJobs + 1)
             .Select(i => Job(i, Step(10, 1, 100)))
             .ToArray();
         var context = Context(RuleOnly(DispatchRule.Fifo), [Machine(1)], jobs);
 
-        Assert.False(ExactDispatchOrderOptimizer.CanEnumerate(context.Jobs.Count));
-        Assert.Throws<ArgumentOutOfRangeException>(() => ExactDispatchOrderOptimizer.Run(context, Ct));
+        Assert.False(ExhaustiveDispatchOrderSearch.CanEnumerate(context.Jobs.Count));
+        Assert.Throws<ArgumentOutOfRangeException>(() => ExhaustiveDispatchOrderSearch.Run(context, Ct));
     }
 
     [Fact]
     public void An_empty_instance_is_handled()
     {
-        var result = ExactDispatchOrderOptimizer.Run(
+        var result = ExhaustiveDispatchOrderSearch.Run(
             new SchedulingContext([], [Machine(1)], new SchedulingParameters()), Ct);
 
         Assert.Empty(result.Result.Schedule.Operations);
@@ -149,8 +149,8 @@ public class ExactDispatchOrderOptimizerTests
     [Fact]
     public void It_is_deterministic()
     {
-        var a = ExactDispatchOrderOptimizer.Run(SearchTests.MediumScenario(DispatchRule.LongestProcessingTime), Ct);
-        var b = ExactDispatchOrderOptimizer.Run(SearchTests.MediumScenario(DispatchRule.LongestProcessingTime), Ct);
+        var a = ExhaustiveDispatchOrderSearch.Run(SearchTests.MediumScenario(DispatchRule.LongestProcessingTime), Ct);
+        var b = ExhaustiveDispatchOrderSearch.Run(SearchTests.MediumScenario(DispatchRule.LongestProcessingTime), Ct);
 
         Assert.Equal(a.Result.Schedule.Signature(), b.Result.Schedule.Signature());
     }
@@ -162,6 +162,6 @@ public class ExactDispatchOrderOptimizerTests
         cancelled.Cancel();
 
         Assert.Throws<OperationCanceledException>(() =>
-            ExactDispatchOrderOptimizer.Run(SearchTests.MediumScenario(DispatchRule.Fifo), cancelled.Token));
+            ExhaustiveDispatchOrderSearch.Run(SearchTests.MediumScenario(DispatchRule.Fifo), cancelled.Token));
     }
 }

@@ -3,7 +3,7 @@ namespace WorkPlanStudio.Scheduling.Exact;
 /// <summary>
 /// Solves the job shop as a scheduling problem and says how much it proved.
 /// <para>
-/// This is what <see cref="ExactDispatchOrderOptimizer"/> is not. That class is
+/// This is what <see cref="ExhaustiveDispatchOrderSearch"/> is not. That class is
 /// exact over the <i>n!</i> orders the greedy dispatcher can be handed, which is
 /// a small and awkwardly shaped subset of the feasible schedules — on a
 /// two-job, three-work-center instance its answer is 50 % worse than the real

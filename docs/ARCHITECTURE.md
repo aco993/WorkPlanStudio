@@ -199,7 +199,7 @@ currently on screen under a wall-clock budget, and the page reports only what wa
 or the gap to a better schedule, or the proved lower bound when the budget ran out. It is a separate,
 user-initiated act and is not on the path a normal run takes.
 
-`ExactDispatchOrderOptimizer` — the older class — enumerates all `n!` orders for instances up to nine
+`ExhaustiveDispatchOrderSearch` — the older class — enumerates all `n!` orders for instances up to nine
 jobs. It is exact *within the dispatch-order model* and is kept as a second opinion on the search,
 not as an optimality oracle: on a two-job, three-work-center instance its answer is 60 seconds where
 the optimum is 40.

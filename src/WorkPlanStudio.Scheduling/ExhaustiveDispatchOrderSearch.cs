@@ -18,7 +18,7 @@ namespace WorkPlanStudio.Scheduling;
 /// the heuristic is measured against in <c>OptimalityTests</c>.
 /// </para>
 /// </summary>
-public static class ExactDispatchOrderOptimizer
+public static class ExhaustiveDispatchOrderSearch
 {
     /// <summary>
     /// Largest instance this will attempt. 9! = 362 880 dispatches is roughly a
@@ -31,7 +31,7 @@ public static class ExactDispatchOrderOptimizer
 
     /// <summary>Evaluates every job order and returns the best, with the count of orders tried.</summary>
     /// <exception cref="ArgumentOutOfRangeException">The instance is too large to enumerate.</exception>
-    public static ExactDispatchOrderResult Run(SchedulingContext context, CancellationToken cancellationToken = default)
+    public static DispatchOrderSearchResult Run(SchedulingContext context, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(context);
         if (!CanEnumerate(context.Jobs.Count))
@@ -46,7 +46,7 @@ public static class ExactDispatchOrderOptimizer
         if (context.Jobs.Count == 0)
         {
             var empty = scheduler.Materialise(context, [], workspace);
-            return new ExactDispatchOrderResult(
+            return new DispatchOrderSearchResult(
                 new SchedulingResult(empty, ScheduleEvaluator.Evaluate(empty, context), dueByJob, 0)
                 {
                     EquivalentRules = PriorityOrdering.EquivalentRules(context, dueByJob)
@@ -65,7 +65,7 @@ public static class ExactDispatchOrderOptimizer
         scheduler.Score(context, bestOrder, workspace, cancellationToken);
         var bestSchedule = scheduler.Materialise(context, bestOrder, workspace);
 
-        return new ExactDispatchOrderResult(
+        return new DispatchOrderSearchResult(
             new SchedulingResult(bestSchedule, ScheduleEvaluator.Evaluate(bestSchedule, context), dueByJob, 0)
             {
                 EquivalentRules = PriorityOrdering.EquivalentRules(context, dueByJob)
@@ -110,4 +110,4 @@ public static class ExactDispatchOrderOptimizer
 /// </summary>
 /// <param name="Result">The winning schedule and its evaluation.</param>
 /// <param name="EvaluatedOrders">Complete job orders evaluated — <c>n!</c> for a finished run.</param>
-public sealed record ExactDispatchOrderResult(SchedulingResult Result, long EvaluatedOrders);
+public sealed record DispatchOrderSearchResult(SchedulingResult Result, long EvaluatedOrders);

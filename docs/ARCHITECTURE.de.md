@@ -221,7 +221,7 @@ Zeitschranke auf den gerade angezeigten Plan laufen, und die Seite berichtet nur
 nicht reichte. Es ist ein eigener, vom Benutzer ausgelöster Schritt und liegt nicht auf dem Weg eines
 gewöhnlichen Laufs.
 
-`ExactDispatchOrderOptimizer` — die ältere Klasse — zählt alle `n!` Reihenfolgen für Instanzen bis
+`ExhaustiveDispatchOrderSearch` — die ältere Klasse — zählt alle `n!` Reihenfolgen für Instanzen bis
 neun Aufträge auf. Sie ist exakt *innerhalb des Dispatch-Order-Modells* und bleibt als Zweitmeinung
 zur Suche erhalten, nicht als Orakel für das Optimum: Auf einer Instanz mit zwei Aufträgen und drei
 Arbeitsplätzen nennt sie 60 Sekunden, wo das Optimum 40 ist.

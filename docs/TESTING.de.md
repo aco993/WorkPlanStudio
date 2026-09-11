@@ -79,7 +79,7 @@ Disziplin überlassen.
 Das ist der Teil der Suite, der früher zirkulär war, und die Korrektur lohnt das
 Lesen.
 
-`OptimalityTests` maß die Engine bisher gegen `ExactDispatchOrderOptimizer`, der
+`OptimalityTests` maß die Engine bisher gegen `ExhaustiveDispatchOrderSearch`, der
 jede der `n!` Auftragsreihenfolgen an **denselben Dispatcher und denselben
 Bewerter** gibt, die auch die Engine benutzt. Beide Seiten der Behauptung liefen
 durch denselben Belegungscode, ein Fehler in Belegung oder Bewertung hob sich also
@@ -90,7 +90,7 @@ keinem solchen Satz.
 Jetzt gibt es drei Umsetzungen, und die Tests benennen, welche welche ist:
 
 - `DispatchScheduler` — die Belegung der Engine selbst;
-- `ExactDispatchOrderOptimizer` — die Permutationsaufzählung, als Zweitmeinung zur
+- `ExhaustiveDispatchOrderSearch` — die Permutationsaufzählung, als Zweitmeinung zur
   **Suche** behalten;
 - `ExactJobShopSolver` — ein disjunktives Branch-and-Bound, das mit keinem von
   beiden Code teilt und die Instanz für das **Optimum** ist.
