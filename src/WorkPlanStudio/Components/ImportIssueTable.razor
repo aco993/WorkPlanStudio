@@ -1,0 +1,64 @@
+@using WorkPlanStudio.Services.Import
+@inject IStringLocalizer<SharedResource> L
+
+@*
+    The rejected rows and the warnings, as a table rather than a paragraph.
+
+    Each row names the line, the column and the reason, and links back to that
+    line in the preview table above. The first issue on a line carries an id the
+    preview links to, so the two tables point at each other: a reader who starts
+    from either one can reach the other without scrolling for it.
+*@
+
+<TableScroll Label="@Caption">
+    <table class="data-table">
+        <caption class="sr-only">@Caption</caption>
+        <thead>
+            <tr>
+                <th scope="col">@L["Import_Col_Line"]</th>
+                <th scope="col">@L["Import_Col_Column"]</th>
+                <th scope="col">@L["Import_Col_Reason"]</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var (issue, index) in Issues.Select((issue, index) => (issue, index)))
+            {
+                <tr @key="index" id="@AnchorFor(issue, index)">
+                    <th scope="row" class="num">
+                        <a href="@($"#import-row-{issue.Line}")" aria-label="@string.Format(L["Import_Row_Back"], issue.Line)">@issue.Line</a>
+                    </th>
+                    <td><span class="mono">@issue.Column</span></td>
+                    <td>@Describe(issue)</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</TableScroll>
+
+@code {
+    /// <summary>What this table is, for the caption and the scroll region's name.</summary>
+    [Parameter, EditorRequired] public string Caption { get; set; } = "";
+
+    /// <summary>The issues, already in line order.</summary>
+    [Parameter, EditorRequired] public IReadOnlyList<ImportIssue> Issues { get; set; } = [];
+
+    /// <summary>Turns an issue into a sentence. The page owns the localizer, not this.</summary>
+    [Parameter, EditorRequired] public Func<ImportIssue, string> Describe { get; set; } = _ => "";
+
+    /// <summary>Prefix for the anchor the preview table links to.</summary>
+    [Parameter] public string IdPrefix { get; set; } = "import-issue";
+
+    private readonly HashSet<int> _firstOfLine = [];
+
+    protected override void OnParametersSet()
+    {
+        _firstOfLine.Clear();
+        var seen = new HashSet<int>();
+        for (var index = 0; index < Issues.Count; index++)
+            if (seen.Add(Issues[index].Line))
+                _firstOfLine.Add(index);
+    }
+
+    private string? AnchorFor(ImportIssue issue, int index) =>
+        _firstOfLine.Contains(index) ? $"{IdPrefix}-{issue.Line}" : null;
+}

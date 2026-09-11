@@ -1,0 +1,48 @@
+@using Microsoft.AspNetCore.Components.Forms
+@using WorkPlanStudio.Services.Import
+@inject IStringLocalizer<SharedResource> L
+
+@*
+    A file picker that also accepts a drop.
+
+    The <InputFile> covers the whole zone at zero opacity, so the drop is handled
+    by the browser's own file input: a hand-written drop handler would need JS
+    interop to reach DataTransfer.files, and would then have to reimplement the
+    filtering, the multi-file rules and the cancel behaviour the platform control
+    already has. The dragenter/dragleave handlers here only change how it looks.
+
+    Accessibility comes from that same choice: there is a real <label for>, the
+    control is in the tab order, Enter and Space open the picker, and the hint is
+    tied to the input with aria-describedby rather than being decorative text
+    next to it. The focus ring is drawn on the zone via :focus-within, because
+    the input itself is invisible.
+*@
+
+<div class="import-drop @(_dragging ? "over" : null)"
+     @ondragenter="() => _dragging = true"
+     @ondragover:preventDefault="true"
+     @ondragleave="() => _dragging = false"
+     @ondrop="() => _dragging = false">
+
+    <svg class="import-drop-icon" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 16V4" />
+        <path d="m7 9 5-5 5 5" />
+        <path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" />
+    </svg>
+
+    <label for="import-file">@L["Import_Drop_Label"]</label>
+    <p id="import-drop-hint" class="field-hint">@string.Format(L["Import_Drop_Hint"], CsvImportService.MaxFileBytes / (1024 * 1024))</p>
+
+    <InputFile id="import-file" accept=".csv,.txt,text/csv" aria-describedby="import-drop-hint"
+               disabled="@Disabled" OnChange="OnChange" />
+</div>
+
+@code {
+    /// <summary>Raised with the chosen file. The page decides what to do with it.</summary>
+    [Parameter] public EventCallback<InputFileChangeEventArgs> OnChange { get; set; }
+
+    /// <summary>Locks the control while a file is being read.</summary>
+    [Parameter] public bool Disabled { get; set; }
+
+    private bool _dragging;
+}

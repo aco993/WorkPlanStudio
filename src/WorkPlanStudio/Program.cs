@@ -89,6 +89,10 @@ builder.Services.AddScoped<WorkPlanStudio.Services.Scheduling.IScheduleYield,
     WorkPlanStudio.Services.Scheduling.BrowserScheduleYield>();
 builder.Services.AddScoped<WorkPlanStudio.Services.Scheduling.IScheduleRunner,
     WorkPlanStudio.Services.Scheduling.CooperativeScheduleRunner>();
+// CSV import: a dry run by default, one atomic write on commit (docs/adr/0018).
+builder.Services.AddScoped<WorkPlanStudio.Services.Import.CsvImportService>();
+builder.Services.AddScoped<WorkPlanStudio.Services.Import.IImportMappingStore,
+    WorkPlanStudio.Services.Import.JsImportMappingStore>();
 
 var host = builder.Build();
 

@@ -1,0 +1,74 @@
+@using WorkPlanStudio.Services.Import
+@inject IStringLocalizer<SharedResource> L
+
+@*
+    Which column of the uploaded file feeds which field.
+
+    A native <select> per field rather than drag-and-drop between two lists: the
+    same reasoning as EntityPicker. A file has tens of columns, the platform's
+    own control is keyboard- and screen-reader-correct everywhere, and a custom
+    listbox here would have to reimplement all of it to be worse.
+
+    A required field with no column renders its own error next to it and is also
+    counted by the page, which is what stops the dry run — the message can never
+    be the only thing standing between the user and a silent import of nothing.
+*@
+
+<div class="import-map-grid">
+    @foreach (var entry in Map.Schema.Fields)
+    {
+        var key = entry.Key;
+        var id = "map-" + key;
+        var missing = entry.Required && Map[key] == ColumnMap.Unmapped;
+
+        <div class="field">
+            <label for="@id">
+                @L[entry.LabelKey]
+                @if (entry.Required)
+                {
+                    <span class="muted">&#160;· @L["Import_Mapping_Required"]</span>
+                }
+            </label>
+            <select id="@id" class="input @(missing ? "error" : null)"
+                    aria-invalid="@(missing ? "true" : "false")"
+                    aria-describedby="@(missing ? id + "-error" : null)"
+                    disabled="@Disabled"
+                    @onchange="args => ChooseAsync(key, args)">
+                <option value="-1" selected="@(Map[key] == ColumnMap.Unmapped)">@L["Import_Mapping_None"]</option>
+                @for (var index = 0; index < Map.Header.Count; index++)
+                {
+                    <option value="@index" selected="@(Map[key] == index)">@ColumnLabel(index)</option>
+                }
+            </select>
+            @if (missing)
+            {
+                <span id="@(id + "-error")" class="field-error">@L["Import_Mapping_Missing"]</span>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    /// <summary>The mapping being edited. The page owns it; this only renders it.</summary>
+    [Parameter, EditorRequired] public ColumnMap Map { get; set; } = default!;
+
+    /// <summary>Raised after every change, so the page can forget a stale dry run.</summary>
+    [Parameter] public EventCallback OnChanged { get; set; }
+
+    /// <summary>Locks the controls while a file is being read.</summary>
+    [Parameter] public bool Disabled { get; set; }
+
+    private string ColumnLabel(int index)
+    {
+        var header = Map.Header[index];
+        return string.IsNullOrWhiteSpace(header)
+            ? string.Format(L["Import_Mapping_Column"], index + 1)
+            : header.Trim();
+    }
+
+    private async Task ChooseAsync(string fieldKey, ChangeEventArgs args)
+    {
+        Map.Set(fieldKey, int.TryParse(args.Value?.ToString(), out var column) ? column : ColumnMap.Unmapped);
+        await OnChanged.InvokeAsync();
+    }
+}

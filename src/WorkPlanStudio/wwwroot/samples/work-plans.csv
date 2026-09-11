@@ -1,0 +1,6 @@
+Plan no.;Part no.;Part name;Revision;Status;Lot size;Operation no.;Operation description;Work center;Setup minutes;Minutes per piece;Remarks
+WP-5001;P-8840;Bearing housing;B;Released;25;10;Rough grind;GRD-100;30;4,5;
+WP-5001;P-8840;Bearing housing;B;Released;25;20;Drill oil holes;DRL-200;15;2,25;4 holes
+WP-5001;P-8840;Bearing housing;B;Released;25;30;Wash and dry;WSH-300;5;1;
+WP-5002;P-8841;Cover plate;A;Draft;100;10;Drill fixing holes;DRL-200;12;0,75;
+WP-5002;P-8841;Cover plate;A;Draft;100;20;Wash and dry;WSH-300;5;0,5;
