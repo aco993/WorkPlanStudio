@@ -1,5 +1,6 @@
 @page "/work-plans/new"
 @page "/work-plans/{Id:int}"
+@using WorkPlanStudio.Validation
 @inject IStringLocalizer<SharedResource> L
 @inject WorkPlanService Plans
 @inject WorkCenterService Centers
@@ -29,10 +30,29 @@
 }
 else
 {
-    @if (_saveError is not null)
-    {
-        <div class="form-banner error" role="alert">@_saveError</div>
-    }
+    <MdErrorSummary State="_errors" />
+
+    @*
+        Part numbers and revisions are offered, not enforced. Both are copied
+        verbatim into every routing snapshot, so two plans for the same part must
+        agree letter for letter - but this app has no part master to pick from,
+        and a closed list of revisions would refuse the numeric schemes some shops
+        use. A datalist over what already exists converges the spellings while
+        still letting the first plan for a new part be typed.
+    *@
+    <datalist id="wp-part-numbers">
+        @foreach (var partNumber in _partNumbers)
+        {
+            <option value="@partNumber"></option>
+        }
+    </datalist>
+    <datalist id="wp-revisions">
+        @foreach (var revision in Revisions)
+        {
+            <option value="@revision"></option>
+        }
+    </datalist>
+
     <div class="editor-grid">
         <section class="card">
             <div class="card-head"><h2>@L["Editor_HeaderSection"]</h2></div>
@@ -40,47 +60,71 @@ else
                 <div class="form-grid">
                     <label class="field">
                         <span>@L["Field_PlanNumber"]</span>
-                        <input id="wp-number" aria-invalid="@(_errors.ContainsKey("PlanNumber") ? "true" : "false")" aria-describedby="@(_errors.ContainsKey("PlanNumber") ? "wp-number-error" : null)" class="input @(_errors.ContainsKey("PlanNumber") ? "error" : null)" @bind="_model.PlanNumber" @bind:event="oninput" />
-                        @if (_errors.TryGetValue("PlanNumber", out var pe))
+                        <input id="wp-number" class="input @_errors.Style("PlanNumber")" maxlength="20"
+                               autocomplete="off" spellcheck="false" autocapitalize="characters"
+                               aria-invalid="@_errors.Invalid("PlanNumber")" aria-describedby="@_errors.DescribedBy("PlanNumber")"
+                               @bind="_model.PlanNumber" @bind:event="oninput" />
+                        @if (_errors["PlanNumber"] is { } planNumberError)
                         {
-                            <span id="wp-number-error" class="field-error">@pe</span>
+                            <span id="@_errors.ErrorId("PlanNumber")" class="field-error">@planNumberError</span>
                         }
                     </label>
                     <label class="field">
                         <span>@L["Field_Status"]</span>
-                        <select class="input @(_errors.ContainsKey("Status") ? "error" : null)" @bind="_model.Status">
+                        <select id="wp-status" class="input @_errors.Style("Status")"
+                                aria-invalid="@_errors.Invalid("Status")" aria-describedby="@_errors.DescribedBy("Status")"
+                                @bind="_model.Status">
                             @foreach (var s in Enum.GetValues<WorkPlanStatus>())
                             {
                                 <option value="@s">@StatusLabel(s)</option>
                             }
                         </select>
-                        @if (_errors.TryGetValue("Status", out var se))
+                        @if (_errors["Status"] is { } statusError)
                         {
-                            <span class="field-error">@se</span>
+                            <span id="@_errors.ErrorId("Status")" class="field-error">@statusError</span>
                         }
                     </label>
                     <label class="field">
                         <span>@L["Field_PartNumber"]</span>
-                        <input class="input" @bind="_model.PartNumber" @bind:event="oninput" />
+                        <input id="wp-part-number" class="input @_errors.Style("PartNumber")" list="wp-part-numbers"
+                               maxlength="40" autocomplete="off" spellcheck="false" autocapitalize="characters"
+                               aria-invalid="@_errors.Invalid("PartNumber")" aria-describedby="@_errors.DescribedBy("PartNumber")"
+                               @bind="_model.PartNumber" @bind:event="oninput" />
+                        @if (_errors["PartNumber"] is { } partNumberError)
+                        {
+                            <span id="@_errors.ErrorId("PartNumber")" class="field-error">@partNumberError</span>
+                        }
                     </label>
                     <label class="field">
                         <span>@L["Field_Revision"]</span>
-                        <input class="input" @bind="_model.Revision" @bind:event="oninput" />
+                        <input id="wp-revision" class="input @_errors.Style("Revision")" list="wp-revisions"
+                               maxlength="10" autocomplete="off" spellcheck="false" autocapitalize="characters"
+                               aria-invalid="@_errors.Invalid("Revision")" aria-describedby="@_errors.DescribedBy("Revision")"
+                               @bind="_model.Revision" @bind:event="oninput" />
+                        @if (_errors["Revision"] is { } revisionError)
+                        {
+                            <span id="@_errors.ErrorId("Revision")" class="field-error">@revisionError</span>
+                        }
                     </label>
                     <label class="field wide">
                         <span>@L["Field_PartName"]</span>
-                        <input id="wp-part" aria-invalid="@(_errors.ContainsKey("PartName") ? "true" : "false")" aria-describedby="@(_errors.ContainsKey("PartName") ? "wp-part-error" : null)" class="input @(_errors.ContainsKey("PartName") ? "error" : null)" @bind="_model.PartName" @bind:event="oninput" />
-                        @if (_errors.TryGetValue("PartName", out var ne))
+                        <input id="wp-part" class="input @_errors.Style("PartName")" maxlength="120"
+                               aria-invalid="@_errors.Invalid("PartName")" aria-describedby="@_errors.DescribedBy("PartName")"
+                               @bind="_model.PartName" @bind:event="oninput" />
+                        @if (_errors["PartName"] is { } partNameError)
                         {
-                            <span id="wp-part-error" class="field-error">@ne</span>
+                            <span id="@_errors.ErrorId("PartName")" class="field-error">@partNameError</span>
                         }
                     </label>
                     <label class="field">
                         <span>@L["Field_LotSize"]</span>
-                        <input id="wp-lot" aria-invalid="@(_errors.ContainsKey("LotSize") ? "true" : "false")" aria-describedby="@(_errors.ContainsKey("LotSize") ? "wp-lot-error" : null)" class="input @(_errors.ContainsKey("LotSize") ? "error" : null)" type="number" min="1" max="1000000" @bind="_model.LotSize" @bind:event="oninput" />
-                        @if (_errors.TryGetValue("LotSize", out var le))
+                        <input id="wp-lot" class="input @_errors.Style("LotSize")"
+                               type="number" min="1" max="1000000" inputmode="numeric"
+                               aria-invalid="@_errors.Invalid("LotSize")" aria-describedby="@_errors.DescribedBy("LotSize")"
+                               @bind="_lotSize" @bind:event="oninput" />
+                        @if (_errors["LotSize"] is { } lotSizeError)
                         {
-                            <span id="wp-lot-error" class="field-error">@le</span>
+                            <span id="@_errors.ErrorId("LotSize")" class="field-error">@lotSizeError</span>
                         }
                     </label>
                 </div>
@@ -100,7 +144,7 @@ else
         </section>
     </div>
 
-    <section class="card no-pad">
+    <section id="wp-operations" class="card no-pad">
         <div class="card-head pad">
             <h2>@L["Editor_OperationsSection"]</h2>
             <button class="btn btn-outline" @onclick="AddOperation">
@@ -108,12 +152,12 @@ else
             </button>
         </div>
 
-        @if (_errors.TryGetValue("Operations", out var oe))
+        @if (_errors["Operations"] is { } operationsError)
         {
-            <div class="form-banner error">@oe</div>
+            <div class="form-banner error">@operationsError</div>
         }
 
-        @if (_model.Operations.Count == 0)
+        @if (_rows.Count == 0)
         {
             <div class="empty-state small">
                 <p>@L["Editor_NoOperations"]</p>
@@ -130,29 +174,48 @@ else
                         <th scope="col" class="num">@L["Field_SetupTime"]</th>
                         <th scope="col" class="num">@L["Field_TimePerPiece"]</th>
                         <th scope="col">@L["Field_Remarks"]</th>
-                        <th scope="col"></th>
+                        <th scope="col"><span class="sr-only">@L["Common_Actions"]</span></th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var op in _model.Operations)
+                    @foreach (var row in _rows)
                     {
-                        <tr>
-                            <td class="num narrow"><input class="input mini num" type="number" min="0" step="10" @bind="op.OperationNumber" @bind:event="oninput" /></td>
-                            <td class="wc-col">
-                                <select class="input" @bind="op.WorkCenterId">
-                                    <option value="0">—</option>
-                                    @foreach (var wc in _workCenters)
-                                    {
-                                        <option value="@wc.Id">@wc.Code — @wc.Name</option>
-                                    }
-                                </select>
+                        <tr @key="row.Key">
+                            <td class="num narrow">
+                                <input class="input mini num" type="number" min="1" step="10" inputmode="numeric"
+                                       aria-label="@L["Field_OperationNo"]"
+                                       @bind="row.OperationNumber" @bind:event="oninput" />
                             </td>
-                            <td><input class="input" @bind="op.Description" @bind:event="oninput" /></td>
-                            <td class="num"><input class="input mini num" type="number" min="0" step="0.1" @bind="op.SetupTimeMinutes" @bind:event="oninput" /></td>
-                            <td class="num"><input class="input mini num" type="number" min="0" step="0.1" @bind="op.TimePerPieceMinutes" @bind:event="oninput" /></td>
-                            <td><input class="input" @bind="op.Remarks" @bind:event="oninput" /></td>
+                            <td class="wc-col">
+                                <EntityPicker TItem="WorkCenter" Id="@($"op-{row.Key}-center")"
+                                              Items="_workCenters"
+                                              Value="row.WorkCenterId"
+                                              ValueChanged="value => row.WorkCenterId = value"
+                                              IdOf="w => w.Id"
+                                              LabelOf="CenterLabel"
+                                              IsActive="w => w.IsActive"
+                                              AriaLabel="@L["Field_WorkCenter"]" />
+                            </td>
+                            <td>
+                                <input class="input" maxlength="120" aria-label="@L["Field_Description"]"
+                                       @bind="row.Description" @bind:event="oninput" />
+                            </td>
+                            <td class="num">
+                                <input class="input mini num" type="number" min="0" step="0.01" inputmode="decimal"
+                                       aria-label="@L["Field_SetupTime"]"
+                                       @bind="row.SetupTimeMinutes" @bind:event="oninput" />
+                            </td>
+                            <td class="num">
+                                <input class="input mini num" type="number" min="0" step="0.01" inputmode="decimal"
+                                       aria-label="@L["Field_TimePerPiece"]"
+                                       @bind="row.TimePerPieceMinutes" @bind:event="oninput" />
+                            </td>
+                            <td>
+                                <input class="input" maxlength="250" aria-label="@L["Field_Remarks"]"
+                                       @bind="row.Remarks" @bind:event="oninput" />
+                            </td>
                             <td class="actions-col">
-                                <button class="icon-btn danger" aria-label="@L["Common_Delete"]" title="@L["Common_Delete"]" @onclick="() => RemoveOperation(op)">
+                                <button class="icon-btn danger" aria-label="@L["Common_Delete"]" title="@L["Common_Delete"]" @onclick="() => RemoveOperation(row)">
                                     <svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" /></svg>
                                 </button>
                             </td>
@@ -167,19 +230,80 @@ else
 @code {
     [Parameter] public int? Id { get; set; }
 
+    /// <summary>
+    /// One row of the operations table. Its numbers are nullable so that clearing
+    /// a box means "empty" rather than "keep whatever was there" — with a
+    /// non-nullable target Blazor reverts the unparsable empty string, the DOM
+    /// keeps showing nothing, and the old value is what gets saved.
+    /// </summary>
+    private sealed class OperationRow
+    {
+        private static int _nextKey;
+
+        public int Key { get; } = ++_nextKey;
+        public int? OperationNumber { get; set; }
+        public int? WorkCenterId { get; set; }
+        public string Description { get; set; } = "";
+        public decimal? SetupTimeMinutes { get; set; }
+        public decimal? TimePerPieceMinutes { get; set; }
+        public string? Remarks { get; set; }
+
+        public Operation ToOperation() => new()
+        {
+            OperationNumber = OperationNumber ?? 0,
+            WorkCenterId = WorkCenterId ?? 0,
+            Description = Description,
+            SetupTimeMinutes = SetupTimeMinutes ?? 0m,
+            TimePerPieceMinutes = TimePerPieceMinutes ?? 0m,
+            Remarks = Remarks
+        };
+
+        public static OperationRow From(Operation operation) => new()
+        {
+            OperationNumber = operation.OperationNumber,
+            WorkCenterId = operation.WorkCenterId == 0 ? null : operation.WorkCenterId,
+            Description = operation.Description,
+            SetupTimeMinutes = operation.SetupTimeMinutes,
+            TimePerPieceMinutes = operation.TimePerPieceMinutes,
+            Remarks = operation.Remarks
+        };
+    }
+
     private bool _loading = true;
     private WorkPlan _model = new() { Status = WorkPlanStatus.Draft, LotSize = 1 };
+    private readonly List<OperationRow> _rows = [];
+    private int? _lotSize;
     private List<WorkCenter> _workCenters = new();
-    private readonly Dictionary<string, string> _errors = new();
+    private List<string> _partNumbers = [];
+    private readonly FormErrorState _errors = new();
     private bool _saving;
-    private string? _saveError;
 
     private bool IsNew => Id is null;
     private string Title => IsNew ? L["Editor_NewTitle"] : L["Editor_EditTitle"];
 
+    /// <summary>Revision letters offered by the datalist, plus anything already in use.</summary>
+    private IEnumerable<string> Revisions =>
+        Enumerable.Range(0, 26).Select(i => ((char)('A' + i)).ToString())
+            .Concat(string.IsNullOrWhiteSpace(_model.Revision) ? Array.Empty<string>() : [_model.Revision])
+            .Distinct(StringComparer.OrdinalIgnoreCase);
+
+    private static string CenterLabel(WorkCenter center) => $"{center.Code} — {center.Name}";
+
+    protected override void OnInitialized()
+    {
+        _errors.Declare("PlanNumber", "wp-number");
+        _errors.Declare("Status", "wp-status");
+        _errors.Declare("PartNumber", "wp-part-number");
+        _errors.Declare("Revision", "wp-revision");
+        _errors.Declare("PartName", "wp-part");
+        _errors.Declare("LotSize", "wp-lot");
+        _errors.Declare("Operations", "wp-operations");
+    }
+
     protected override async Task OnInitializedAsync()
     {
         _workCenters = await Centers.GetAllAsync();
+        _partNumbers = await Plans.GetPartNumbersAsync();
 
         if (IsNew)
         {
@@ -195,17 +319,20 @@ else
             _model = await Plans.GetAsync(Id!.Value) ?? new WorkPlan { Status = WorkPlanStatus.Draft, LotSize = 1 };
         }
 
+        _lotSize = _model.LotSize;
+        _rows.Clear();
+        _rows.AddRange(_model.Operations.OrderBy(o => o.OperationNumber).Select(OperationRow.From));
         _loading = false;
     }
 
     // ----- live summary -----
-    private decimal SetupSum => _model.Operations.Sum(o => o.SetupTimeMinutes);
-    private decimal UnitSum => _model.Operations.Sum(o => o.TimePerPieceMinutes);
-    private decimal LotTime => _model.Operations.Sum(o => o.SetupTimeMinutes + o.TimePerPieceMinutes * _model.LotSize);
-    private decimal LotCost => _model.Operations.Sum(o =>
-        (o.SetupTimeMinutes + o.TimePerPieceMinutes * _model.LotSize) / 60m * RateOf(o.WorkCenterId));
+    private decimal SetupSum => _rows.Sum(o => o.SetupTimeMinutes ?? 0m);
+    private decimal UnitSum => _rows.Sum(o => o.TimePerPieceMinutes ?? 0m);
+    private decimal LotTime => _rows.Sum(o => (o.SetupTimeMinutes ?? 0m) + (o.TimePerPieceMinutes ?? 0m) * (_lotSize ?? 0));
+    private decimal LotCost => _rows.Sum(o =>
+        ((o.SetupTimeMinutes ?? 0m) + (o.TimePerPieceMinutes ?? 0m) * (_lotSize ?? 0)) / 60m * RateOf(o.WorkCenterId));
 
-    private decimal RateOf(int workCenterId) =>
+    private decimal RateOf(int? workCenterId) =>
         _workCenters.FirstOrDefault(w => w.Id == workCenterId)?.HourlyRate ?? 0m;
 
     private string StatusLabel(WorkPlanStatus s) => s switch
@@ -218,40 +345,52 @@ else
 
     private void AddOperation()
     {
-        var next = _model.Operations.Count == 0 ? 10 : _model.Operations.Max(o => o.OperationNumber) + 10;
-        _model.Operations.Add(new Operation { OperationNumber = next });
+        var next = _rows.Count == 0 ? 10 : _rows.Max(o => o.OperationNumber ?? 0) + 10;
+        _rows.Add(new OperationRow { OperationNumber = next, SetupTimeMinutes = 0m, TimePerPieceMinutes = 0m });
     }
 
-    private void RemoveOperation(Operation op) => _model.Operations.Remove(op);
+    private void RemoveOperation(OperationRow row) => _rows.Remove(row);
 
     private async Task SaveAsync()
     {
-        _errors.Clear();
-        _saveError = null;
         _saving = true;
 
         try
         {
+            if (_lotSize is null)
+            {
+                _errors.Apply(
+                    ApplicationResult<int>.Validation([new ValidationIssue(nameof(WorkPlan.LotSize), "Val_Required")]),
+                    L);
+                return;
+            }
+
+            _model.LotSize = _lotSize.Value;
+            _model.Operations = _rows.Select(row => row.ToOperation()).ToList();
+
             var result = IsNew
                 ? await Plans.CreateAsync(_model)
                 : await Plans.UpdateAsync(_model);
 
             if (result.IsSuccess)
             {
+                _errors.Clear();
                 Nav.NavigateTo("work-plans");
                 return;
             }
 
-            ApplyResult(result);
+            // Per-operation issues are keyed "Operations[n]" and share one banner
+            // above the table; the summary still lists each of them in full.
+            _errors.Apply(Regroup(result), L);
         }
         catch (OperationCanceledException)
         {
-            _saveError = L["Error_Cancelled"];
+            _errors.Fail(L["Error_Cancelled"]);
         }
         catch (Exception exception)
         {
             Logger.LogError(exception, "Saving work plan {WorkPlanId} failed", _model.Id);
-            _saveError = L["Error_SaveFailed"];
+            _errors.Fail(L["Error_SaveFailed"]);
         }
         finally
         {
@@ -259,26 +398,15 @@ else
         }
     }
 
-    private void ApplyResult(ApplicationResult<int> result)
-    {
-        if (result.ValidationIssues is { Count: > 0 })
+    private static ApplicationResult<int> Regroup(ApplicationResult<int> result) =>
+        result with
         {
-            foreach (var issue in result.ValidationIssues)
-            {
-                var field = issue.Field.StartsWith("Operations", StringComparison.Ordinal)
-                    ? "Operations"
-                    : issue.Field;
-                _errors.TryAdd(field, L[issue.MessageKey, issue.Arguments]);
-            }
-        }
-
-        if (result.Status == ApplicationResultStatus.NotFound)
-            _saveError = L["Error_NotFound"];
-        else if (result.Status == ApplicationResultStatus.PersistenceFailed)
-            _saveError = L["Error_SaveFailed"];
-        else if (result.Status == ApplicationResultStatus.Forbidden)
-            _saveError = L["Error_Forbidden"];
-    }
+            ValidationIssues = result.ValidationIssues?
+                .Select(issue => issue.Field.StartsWith("Operations", StringComparison.Ordinal)
+                    ? issue with { Field = "Operations" }
+                    : issue)
+                .ToList()
+        };
 
     private void Cancel() => Nav.NavigateTo("work-plans");
 }

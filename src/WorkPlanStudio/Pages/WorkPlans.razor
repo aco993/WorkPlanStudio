@@ -14,6 +14,11 @@
     </AuthorizeView>
 </div>
 
+@if (_error is not null)
+{
+    <div class="form-banner error" role="alert">@_error</div>
+}
+
 <div class="toolbar">
     <div class="search">
         <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
@@ -104,6 +109,7 @@ else
     private List<WorkPlan> _plans = new();
     private string _search = "";
     private WorkPlanStatus? _statusFilter;
+    private string? _error;
 
     private bool _showDelete;
     private WorkPlan? _pendingDelete;
@@ -147,10 +153,32 @@ else
         _showDelete = true;
     }
 
+    /// <summary>
+    /// Deletes, and says what happened.
+    /// </summary>
+    /// <remarks>
+    /// The result used to be discarded entirely, so three different outcomes
+    /// rendered identically: a Guest saw an unchanged list, a quota failure saw
+    /// the row gone and back after a reload, and a plan an order was raised from
+    /// replaced the whole application with the error boundary.
+    /// </remarks>
     private async Task ConfirmDeleteAsync()
     {
+        _error = null;
         if (_pendingDelete is not null)
-            await Plans.DeleteAsync(_pendingDelete.Id);
+        {
+            var result = await Plans.DeleteAsync(_pendingDelete.Id);
+            if (!result.IsSuccess)
+                _error = result.ValidationIssues is [var issue, ..]
+                    ? L[issue.MessageKey, issue.Arguments]
+                    : L[result.Status switch
+                    {
+                        ApplicationResultStatus.Forbidden => "Error_Forbidden",
+                        ApplicationResultStatus.PersistenceFailed => "Error_SaveFailed",
+                        ApplicationResultStatus.NotFound => "Error_NotFound",
+                        _ => "Error_ActionFailed"
+                    }];
+        }
 
         _showDelete = false;
         _pendingDelete = null;

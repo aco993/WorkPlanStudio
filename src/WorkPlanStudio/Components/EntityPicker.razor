@@ -1,0 +1,99 @@
+@typeparam TItem
+@inject IStringLocalizer<SharedResource> L
+
+@*
+    A picker over master data: code and name in one control, retired entries
+    marked rather than hidden, and a way to create the row you are missing
+    without losing the form you are filling in.
+
+    It is a native <select>. A custom ARIA 1.2 combobox would have to reimplement
+    arrow keys, type-ahead, Home/End, Escape, aria-activedescendant and the
+    mobile picker sheet - and would still be worse with a screen reader than the
+    control every platform already ships. The one thing a select cannot do is
+    filter, and master-data lists here are tens of rows, not thousands. If that
+    changes, this is the single place to change it.
+*@
+
+<select id="@Id"
+        class="input @(Invalid ? "error" : null)"
+        aria-invalid="@(Invalid ? "true" : "false")"
+        aria-describedby="@DescribedBy"
+        aria-label="@AriaLabel"
+        disabled="@Disabled"
+        value="@(Value?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "")"
+        @onchange="OnChangedAsync">
+    <option value="">@(EmptyLabel ?? L["Md_Picker_None"])</option>
+    @foreach (var item in Items)
+    {
+        var id = IdOf(item);
+        <option value="@id.ToString(System.Globalization.CultureInfo.InvariantCulture)">
+            @LabelOf(item)@(IsActive(item) ? "" : " " + L["Md_Picker_InactiveSuffix"])
+        </option>
+    }
+</select>
+
+@if (Items.Count == 0 && EmptyHint is not null)
+{
+    <span class="field-hint">@EmptyHint</span>
+}
+
+@if (OnCreateRequested.HasDelegate)
+{
+    <button type="button" class="link" style="background:none;border:0;padding:.2rem 0;font:inherit;cursor:pointer;text-align:left;"
+            @onclick="OnCreateRequested">
+        @(CreateLabel ?? L["Md_Picker_Create"])
+    </button>
+}
+
+@code {
+    /// <summary>The control's id, so a label and an error message can point at it.</summary>
+    [Parameter, EditorRequired] public string Id { get; set; } = "";
+
+    /// <summary>What the picker offers. The caller decides what "selectable" means.</summary>
+    [Parameter, EditorRequired] public IReadOnlyList<TItem> Items { get; set; } = [];
+
+    /// <summary>The selected key, or <c>null</c> for none.</summary>
+    [Parameter] public int? Value { get; set; }
+
+    [Parameter] public EventCallback<int?> ValueChanged { get; set; }
+
+    /// <summary>The key of an item.</summary>
+    [Parameter, EditorRequired] public Func<TItem, int> IdOf { get; set; } = _ => 0;
+
+    /// <summary>How an item reads in the list - code first, then name.</summary>
+    [Parameter, EditorRequired] public Func<TItem, string> LabelOf { get; set; } = _ => "";
+
+    /// <summary>
+    /// Whether an item is still in use. Inactive entries are kept in the list
+    /// with a suffix rather than removed: dropping the one a row already points
+    /// at would silently rewrite that row the next time anyone pressed Save.
+    /// </summary>
+    [Parameter] public Func<TItem, bool> IsActive { get; set; } = _ => true;
+
+    /// <summary>Label for the "nothing selected" option.</summary>
+    [Parameter] public string? EmptyLabel { get; set; }
+
+    /// <summary>Explains an empty list, which otherwise looks like a broken control.</summary>
+    [Parameter] public string? EmptyHint { get; set; }
+
+    /// <summary>Raised by the "create new" affordance. Omit it and no button is rendered.</summary>
+    [Parameter] public EventCallback OnCreateRequested { get; set; }
+
+    [Parameter] public string? CreateLabel { get; set; }
+
+    /// <summary>An accessible name, for the rows of a table where a visible label would not fit.</summary>
+    [Parameter] public string? AriaLabel { get; set; }
+
+    [Parameter] public bool Invalid { get; set; }
+
+    [Parameter] public string? DescribedBy { get; set; }
+
+    [Parameter] public bool Disabled { get; set; }
+
+    private async Task OnChangedAsync(ChangeEventArgs args)
+    {
+        var raw = args.Value?.ToString();
+        Value = int.TryParse(raw, System.Globalization.CultureInfo.InvariantCulture, out var id) ? id : null;
+        await ValueChanged.InvokeAsync(Value);
+    }
+}

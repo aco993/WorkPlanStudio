@@ -494,4 +494,46 @@
   <data name="Provider_Anthropic" xml:space="preserve"><value>Anthropic (Claude)</value></data>
   <data name="Provider_Gemini" xml:space="preserve"><value>Google Gemini</value></data>
   <data name="Sched_Ai_CorsNote" xml:space="preserve"><value>Die Anfrage geht aus Ihrem Browser an den Endpunkt; der Anbieter muss Browser-Aufrufe (CORS) erlauben. OpenAI, Anthropic (mit seinem Direktzugriffs-Header, automatisch gesetzt), Gemini, OpenRouter und lokale Server tun das; manche Proxys nicht.</value></data>
+  <data name="Val_SingleLine" xml:space="preserve"><value>Dies muss eine einzelne Textzeile sein.</value></data>
+  <data name="Val_Scale" xml:space="preserve"><value>Höchstens {0} Nachkommastellen.</value></data>
+  <data name="Val_CostCenterCodeTaken" xml:space="preserve"><value>Eine andere Kostenstelle verwendet diesen Schlüssel bereits.</value></data>
+  <data name="Val_CostCenterInUse" xml:space="preserve"><value>Es buchen noch Arbeitsplätze auf diese Kostenstelle.</value></data>
+  <data name="Val_CostCenterMissing" xml:space="preserve"><value>Diese Kostenstelle gibt es nicht mehr.</value></data>
+  <data name="Val_WorkCenterOrderUse" xml:space="preserve"><value>Ein freigegebener Fertigungsauftrag läuft noch über diesen Arbeitsplatz.</value></data>
+  <data name="Val_WorkPlanInUse" xml:space="preserve"><value>Zu diesem Arbeitsplan wurde ein Fertigungsauftrag angelegt.</value></data>
+  <data name="Val_PlanNotReleased" xml:space="preserve"><value>Der Arbeitsplan muss freigegeben sein, bevor ein Auftrag ihn verwenden kann.</value></data>
+  <data name="Storage_Failure_QuotaExceeded" xml:space="preserve"><value>Der Speicher dieses Browsers reicht für die Datenbank nicht mehr aus. Exportieren Sie die Daten und geben Sie Speicher frei oder setzen Sie zurück.</value></data>
+  <data name="Storage_Failure_UpgradeFailed" xml:space="preserve"><value>Die gespeicherten Daten stammen aus Schema-Version {0} und konnten nicht aktualisiert werden. Exportieren Sie sie vor dem Zurücksetzen.</value></data>
+  <data name="Storage_Failure_Forbidden" xml:space="preserve"><value>Die aktuelle Rolle darf das nicht.</value></data>
+  <data name="Md_Nav_CostCenters" xml:space="preserve"><value>Kostenstellen</value></data>
+  <data name="Md_CostCenters_Title" xml:space="preserve"><value>Kostenstellen</value></data>
+  <data name="Md_CostCenters_Subtitle" xml:space="preserve"><value>Die Verrechnungseinheiten, auf die Arbeitsplätze ihre Maschinenstunden buchen.</value></data>
+  <data name="Md_CostCenters_New" xml:space="preserve"><value>Neue Kostenstelle</value></data>
+  <data name="Md_CostCenters_NewTitle" xml:space="preserve"><value>Neue Kostenstelle</value></data>
+  <data name="Md_CostCenters_EditTitle" xml:space="preserve"><value>Kostenstelle bearbeiten</value></data>
+  <data name="Md_CostCenters_Empty" xml:space="preserve"><value>Noch keine Kostenstellen. Legen Sie die erste an, um sie einem Arbeitsplatz zuzuordnen.</value></data>
+  <data name="Md_CostCenters_InUse" xml:space="preserve"><value>Wird von Arbeitsplätzen verwendet</value></data>
+  <data name="Md_CostCenters_SearchPlaceholder" xml:space="preserve"><value>Schlüssel oder Name suchen</value></data>
+  <data name="Md_Confirm_DeleteCostCenterTitle" xml:space="preserve"><value>Kostenstelle löschen?</value></data>
+  <data name="Md_Confirm_DeleteCostCenterBody" xml:space="preserve"><value>Die Kostenstelle {0} wird entfernt. Das lässt sich nicht rückgängig machen.</value></data>
+  <data name="Md_Field_Description" xml:space="preserve"><value>Beschreibung</value></data>
+  <data name="Md_Field_WorkCenters" xml:space="preserve"><value>Arbeitsplätze</value></data>
+  <data name="Md_CostCenter_None" xml:space="preserve"><value>Nicht zugeordnet</value></data>
+  <data name="Md_CostCenter_NoneDefined" xml:space="preserve"><value>Es sind noch keine Kostenstellen angelegt.</value></data>
+  <data name="Md_CostCenter_CreateNew" xml:space="preserve"><value>Kostenstelle anlegen</value></data>
+  <data name="Md_Picker_None" xml:space="preserve"><value>—</value></data>
+  <data name="Md_Picker_InactiveSuffix" xml:space="preserve"><value>(inaktiv)</value></data>
+  <data name="Md_Picker_Create" xml:space="preserve"><value>Neu anlegen</value></data>
+  <data name="Md_FormErrorsLead" xml:space="preserve"><value>Bitte korrigieren Sie Folgendes, bevor Sie speichern.</value></data>
+  <data name="Md_WorkCenters_SearchPlaceholder" xml:space="preserve"><value>Schlüssel oder Name suchen</value></data>
+  <data name="Md_WorkCenters_FilterCostCenter" xml:space="preserve"><value>Nach Kostenstelle filtern</value></data>
+  <data name="Md_Orders_SearchPlaceholder" xml:space="preserve"><value>Auftrag, Teil oder Arbeitsplan suchen</value></data>
+  <data name="Md_Orders_NoReleasedPlans" xml:space="preserve"><value>Es ist noch kein Arbeitsplan freigegeben, also gibt es nichts zu beauftragen.</value></data>
+  <data name="Md_Priority_1" xml:space="preserve"><value>1 — normal</value></data>
+  <data name="Md_Priority_2" xml:space="preserve"><value>2 — erhöht</value></data>
+  <data name="Md_Priority_3" xml:space="preserve"><value>3 — hoch</value></data>
+  <data name="Md_Priority_4" xml:space="preserve"><value>4 — dringend</value></data>
+  <data name="Md_Priority_5" xml:space="preserve"><value>5 — Eilauftrag</value></data>
+  <data name="Md_Storage_Import" xml:space="preserve"><value>Sicherung einspielen</value></data>
+  <data name="Md_Storage_ImportFailed" xml:space="preserve"><value>Diese Datei konnte nicht als WorkPlan-Studio-Export gelesen werden.</value></data>
 </root>

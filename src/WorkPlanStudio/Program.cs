@@ -40,14 +40,22 @@ builder.Logging.SetMinimumLevel(LogLevel.Warning);
 #endif
 
 // EF Core + SQLite, running entirely in the browser.
-// Schema 5: plant working-time settings, shift pattern per work center and
-// work-center absences (holidays and the ArbZG rules now shape capacity).
-var databaseOptions = new BrowserDatabaseOptions("/data/workplan.db", SchemaVersion: 5);
+// Schema 6: cost centres as master data, the work centres a released order still
+// depends on as real rows, and decimals stored as text so they survive the trip.
+// A schema 5 payload is upgraded on load instead of being refused - the version
+// lives beside the upgrade steps so adding one and forgetting the bump is a
+// single edit rather than two (see Data/SchemaUpgrades.cs).
+var databaseOptions = new BrowserDatabaseOptions("/data/workplan.db", SchemaUpgrades.CurrentVersion);
 builder.Services.AddSingleton(databaseOptions);
 builder.Services.AddDbContextFactory<AppDbContext>(options =>
     options.UseSqlite($"Data Source={databaseOptions.DatabasePath}"));
 builder.Services.AddSingleton<IBrowserDatabaseStorage, JsBrowserDatabaseStorage>();
-builder.Services.AddSingleton<BrowserDatabase>();
+// Scoped, not a singleton: reset and import destroy or replace every row in the
+// browser, so BrowserDatabase asks IPermissionGuard the way the services do - and
+// the guard is scoped because it reads the current persona. WebAssembly has one
+// scope, so this is still one instance; registering it as a singleton fails the
+// container's own scope validation, which is the right answer.
+builder.Services.AddScoped<BrowserDatabase>();
 builder.Services.AddScoped<WorkPlanService>();
 builder.Services.AddScoped<WorkCenterService>();
 builder.Services.AddScoped<ProductionOrderService>();
@@ -61,6 +69,9 @@ builder.Services.AddScoped<IAssistantConfig, AssistantSettingsService>();
 builder.Services.AddScoped<ScheduleAssistant>();
 builder.Services.AddScoped<WorkPlanStudio.Services.Chat.OfflineScheduleAnswerer>();
 builder.Services.AddScoped<WorkPlanStudio.Services.Chat.ScheduleChat>();
+
+// Cost centres: master data in their own right since schema 6 (docs/adr/0016).
+builder.Services.AddScoped<CostCenterService>();
 
 var host = builder.Build();
 
