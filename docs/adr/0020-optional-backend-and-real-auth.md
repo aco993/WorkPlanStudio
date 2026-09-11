@@ -138,6 +138,31 @@ that the signature from the HTTP round trip equals the one from running
 the mapper and engine in process on the same rows — which is what turns
 "the server schedules the same way" from a claim into a test.
 
+### The server follows the domain rather than freezing a copy of it
+
+This backend was written while the master-data work was in flight, so by the
+time it merged the model underneath it had moved: a work centre's cost centre
+had become an entity with a foreign key, an order's two planning dates had been
+renamed to say what they always were — plant-local wall clock, not UTC — and a
+join table had been added so SQL can see the work centres named inside a routing
+snapshot.
+
+The tempting answer is to leave the wire alone and translate at the boundary.
+That is how a server and a client start disagreeing about what a valid work plan
+is, which is the failure this ADR exists to avoid. So the shape reached the
+contracts: `CostCenterDto` is a resource of its own under the same policies as
+the other master data, `WorkCenterDto` names it by id with code and name for
+display only, and `ReleaseLocal`/`DueLocal` are documented as readings a caller
+must not convert. The single migration — never shipped, never applied anywhere —
+was regenerated rather than patched, and the decimal columns moved to `TEXT`
+with `CAST` in their range checks for the same reason the browser's did: SQLite
+read `decimal(10,2)` as NUMERIC affinity and stored money as a double.
+
+The client's pull is the one place where the two models could be quietly
+reconciled with a fiction, and it refuses to. A work centre naming a cost centre
+the server did not return arrives unassigned rather than with a locally invented
+one, and an index row is written only for a machine the pull actually brought.
+
 ## Consequences
 
 - ✅ The personas become real where a server exists: a 403 now means the
@@ -148,11 +173,12 @@ the mapper and engine in process on the same rows — which is what turns
 - ✅ The seam ADR 0013 predicted turned out to be exactly one class:
   `RemoteAuthenticationStateProvider` replaced
   `DemoAuthenticationStateProvider` and no page, policy or guard changed.
-- ✅ Testable end to end: 73 integration tests against the shipping
+- ✅ Testable end to end: 88 integration tests against the shipping
   composition root and a real SQLite file, covering lockout, rate
-  limiting, rotation, reuse detection, concurrency and every endpoint's
-  refusals; plus client tests for the provider swap, the renewal path and
-  the persona switcher disappearing.
+  limiting, rotation, reuse detection, concurrency, the cost-centre
+  relationship, the routing index and every endpoint's refusals; plus
+  client tests for the provider swap, the renewal path, the persona
+  switcher disappearing and what a pull declines to invent.
 - ➖ **Offline writes are not solved.** Connected mode reads from the
   server and writes through it. A browser that loses the network keeps a
   read-only copy; it does not queue changes.
