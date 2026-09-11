@@ -47,7 +47,9 @@ public sealed class ProductionOrderE2ETests : IClassFixture<PlaywrightFixture>
         // The released order is now schedulable, and this is where it lands.
         var schedule = new SchedulePage(page, _fixture.BaseUrl);
         await schedule.GotoAsync();
-        var job = page.GetByRole(AriaRole.Row).Filter(new LocatorFilterOptions { HasText = orderNumber });
+        // Scoped to the jobs table: the chart's text equivalent also lists this
+        // order, once per operation, and an unscoped row filter is ambiguous.
+        var job = page.Locator(".jobs-table tbody tr").Filter(new LocatorFilterOptions { HasText = orderNumber });
         await job.WaitForAsync();
         var scheduledBefore = await job.InnerTextAsync();
         var makespanBefore = await schedule.MakespanTextAsync();
@@ -82,7 +84,12 @@ public sealed class ProductionOrderE2ETests : IClassFixture<PlaywrightFixture>
 
         var schedule = new SchedulePage(page, _fixture.BaseUrl);
         await schedule.GotoAsync();
-        Assert.Equal(1, await page.GetByRole(AriaRole.Row).Filter(new LocatorFilterOptions { HasText = orderNumber }).CountAsync());
+
+        // Scoped to the jobs table on purpose: the chart's text equivalent lists
+        // one row per operation, so an unscoped row filter counts the same order
+        // six times and would pass for the wrong reason.
+        var jobRows = page.Locator(".jobs-table tbody tr").Filter(new LocatorFilterOptions { HasText = orderNumber });
+        Assert.Equal(1, await jobRows.CountAsync());
 
         await AppReady.GotoAsync(page, $"{_fixture.BaseUrl}/production-orders");
         await order.GetByRole(AriaRole.Button, new() { Name = "Cancel order" }).ClickAsync();
@@ -90,7 +97,8 @@ public sealed class ProductionOrderE2ETests : IClassFixture<PlaywrightFixture>
             .GetByText("Cancelled").WaitForAsync();
 
         await schedule.GotoAsync();
-        Assert.Equal(0, await page.GetByRole(AriaRole.Row).Filter(new LocatorFilterOptions { HasText = orderNumber }).CountAsync());
+        Assert.Equal(0, await jobRows.CountAsync());
+        Assert.Equal(0, await page.Locator(".chart-table tbody tr").Filter(new LocatorFilterOptions { HasText = orderNumber }).CountAsync());
     }
 
     /// <summary>

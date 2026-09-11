@@ -77,7 +77,6 @@ public sealed class AccessibilityE2ETests : IClassFixture<PlaywrightFixture>
     /// </summary>
     private static Dictionary<string, string[]> OpenViolations { get; } = new(StringComparer.Ordinal)
     {
-        ["/work-plans/1"] = ["empty-table-header", "label", "select-name"],
         ["dialog"] = ["heading-order"]
     };
 

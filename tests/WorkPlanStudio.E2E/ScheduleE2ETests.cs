@@ -219,7 +219,13 @@ public sealed class ScheduleE2ETests : IClassFixture<PlaywrightFixture>
         await page.GetByRole(AriaRole.Button, new() { Name = "Save" }).ClickAsync();
 
         Assert.EndsWith("/work-plans/new", page.Url, StringComparison.Ordinal);
-        await page.GetByText("Lot size must be between 1 and 1000000.").WaitForAsync();
+
+        // The message now appears twice on purpose: once in the error summary
+        // that takes focus, and once beside the control it belongs to. Asserting
+        // both is what stops the summary from drifting away from the fields.
+        await page.Locator("#wp-lot-error").WaitForAsync();
+        Assert.Equal("Lot size must be between 1 and 1000000.", await page.Locator("#wp-lot-error").InnerTextAsync());
+        await page.GetByRole(AriaRole.Link, new() { Name = "Lot size must be between 1 and 1000000." }).WaitForAsync();
         Assert.Equal(0, await page.Locator("#blazor-error-ui.show").CountAsync());
     }
 
@@ -284,8 +290,10 @@ public sealed class ScheduleE2ETests : IClassFixture<PlaywrightFixture>
         Assert.Contains("Spindle service", await page.Locator(".gantt-closed.closed-absence").First.GetAttributeAsync("title") ?? "");
         Assert.True(await page.Locator(".gantt-bar.paused").CountAsync() > 0, "expected an operation paused across a break");
 
+        // The axis labels are culture-formatted; English no longer renders the
+        // ambiguous numeric form this used to pin.
         var ticks = await page.Locator(".gantt-tick").AllInnerTextsAsync();
-        Assert.Contains(ticks, t => t.Contains("Thu 4.6.", StringComparison.Ordinal));
+        Assert.Contains(ticks, t => t.Contains("4 Jun", StringComparison.Ordinal));
     }
 
     [Fact]
