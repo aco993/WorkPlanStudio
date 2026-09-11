@@ -3,7 +3,6 @@
 @inject BrowserDatabase Db
 @inject NavigationManager Nav
 @inject ILogger<About> Logger
-@inject IPermissionGuard Guard
 
 <PageTitle>@L["Nav_About"] · WorkPlan Studio</PageTitle>
 
@@ -94,17 +93,15 @@
         _resetError = null;
         try
         {
-            // The button is hidden for other personas, but the check that counts is this one.
-            if (!await Guard.CanAsync(Permissions.ResetData))
-            {
-                _resetError = L["Error_Forbidden"];
-                return;
-            }
-
+            // No pre-check: the service refuses a persona that may not reset, and
+            // says so in its own result. Asking twice used to be the only proof the
+            // rule existed at all; now it would just be a second place to forget.
             var readiness = await Db.ResetAsync();
             if (!readiness.IsReady)
             {
-                _resetError = L["Storage_ResetFailed"];
+                _resetError = readiness.Failure == BrowserDatabaseFailure.Forbidden
+                    ? L["Error_Forbidden"]
+                    : L["Storage_ResetFailed"];
                 return;
             }
 
