@@ -550,4 +550,24 @@
   <data name="Md_Priority_5" xml:space="preserve"><value>5 — rush</value></data>
   <data name="Md_Storage_Import" xml:space="preserve"><value>Import a payload</value></data>
   <data name="Md_Storage_ImportFailed" xml:space="preserve"><value>That file could not be read as a WorkPlan Studio export.</value></data>
+  <data name="Account_Title" xml:space="preserve"><value>Account</value></data>
+  <data name="Account_SignIn" xml:space="preserve"><value>Sign in</value></data>
+  <data name="Account_SignOut" xml:space="preserve"><value>Sign out</value></data>
+  <data name="Account_UserName" xml:space="preserve"><value>User name</value></data>
+  <data name="Account_Password" xml:space="preserve"><value>Password</value></data>
+  <data name="Account_Required" xml:space="preserve"><value>This field is required.</value></data>
+  <data name="Account_SignInIntro" xml:space="preserve"><value>Signing in replaces the persona with the roles your account really has. They come from the server and cannot be changed here.</value></data>
+  <data name="Account_SignInFailed" xml:space="preserve"><value>The user name or password was not accepted.</value></data>
+  <data name="Account_SigningIn" xml:space="preserve"><value>Signing in…</value></data>
+  <data name="Account_SignedInAs" xml:space="preserve"><value>Signed in as {0}</value></data>
+  <data name="Account_Roles" xml:space="preserve"><value>Roles</value></data>
+  <data name="Account_Server" xml:space="preserve"><value>Server</value></data>
+  <data name="Account_ScheduleOnServer" xml:space="preserve"><value>Schedules are generated on the server, by the same engine this app carries.</value></data>
+  <data name="Account_OfflineTitle" xml:space="preserve"><value>No server configured</value></data>
+  <data name="Account_Offline" xml:space="preserve"><value>This build runs entirely in your browser. There is no server and there are no accounts: the persona in the top bar demonstrates the permission model, it does not protect anything.</value></data>
+  <data name="Account_Pull" xml:space="preserve"><value>Fetch master data from the server</value></data>
+  <data name="Account_Pulling" xml:space="preserve"><value>Fetching…</value></data>
+  <data name="Account_PullBoundary" xml:space="preserve"><value>Fetching replaces the local copy with the server's. Local changes are not sent back: this is a one-way import, not a two-way sync.</value></data>
+  <data name="Account_PullDone" xml:space="preserve"><value>Replaced the local copy with {0} cost centers, {1} work centers, {2} work plans and {3} production orders.</value></data>
+  <data name="Account_PullFailed" xml:space="preserve"><value>The master data could not be fetched from the server.</value></data>
 </root>

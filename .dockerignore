@@ -1,0 +1,20 @@
+# Keep the build context small and free of anything that must not reach an image.
+**/bin/
+**/obj/
+**/publish/
+**/TestResults/
+**/e2e-artifacts/
+**/.vs/
+**/.vscode/
+**/.idea/
+**/.claude/
+.git/
+.github/
+docs/
+tests/
+tools/
+**/*.db
+**/*.db-shm
+**/*.db-wal
+**/*.user
+**/node_modules/

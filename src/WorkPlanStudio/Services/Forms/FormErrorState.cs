@@ -1,8 +1,7 @@
 using Microsoft.Extensions.Localization;
 using WorkPlanStudio.Resources;
-using WorkPlanStudio.Services;
 
-namespace WorkPlanStudio.Validation;
+namespace WorkPlanStudio.Services.Forms;
 
 /// <summary>One message, and the control it belongs to when the page renders one.</summary>
 /// <param name="Field">The validator's field name.</param>
@@ -28,6 +27,14 @@ public sealed record FormError(string Field, string? InputId, string Message);
 /// rather than dropped, so a message can no longer have nowhere to go — and a
 /// test can assert that a page renders a slot for every field its validator can
 /// name.
+/// </para>
+/// <para>
+/// It lives beside the services rather than under <c>Validation/</c> because it is
+/// not a validator: it holds rendering state — control ids, a focus generation, a
+/// localised sentence per slot — and so depends on the resource assembly and on
+/// <see cref="ApplicationResult{T}"/>. <c>Validation/</c> is compiled into the API
+/// as well, where neither of those exists, and keeping that folder free of UI
+/// concerns is what lets the rules be shared instead of duplicated.
 /// </para>
 /// </summary>
 public sealed class FormErrorState

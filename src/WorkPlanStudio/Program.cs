@@ -9,6 +9,7 @@ using WorkPlanStudio;
 using WorkPlanStudio.Data;
 using WorkPlanStudio.Services;
 using WorkPlanStudio.Services.Auth;
+using WorkPlanStudio.Services.Remote;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
@@ -72,6 +73,13 @@ builder.Services.AddScoped<WorkPlanStudio.Services.Chat.ScheduleChat>();
 
 // Cost centres: master data in their own right since schema 6 (docs/adr/0016).
 builder.Services.AddScoped<CostCenterService>();
+
+// Optional backend. With no wwwroot/appsettings.json (the default, and what
+// GitHub Pages gets) this registers one value object and nothing else changes:
+// personas, the in-browser database and the local scheduler as before. With
+// Api:BaseAddress configured it replaces the persona provider with a real
+// sign-in and runs the schedule on the server - see docs/adr/0020.
+builder.Services.AddOptionalApi(builder.Configuration);
 
 var host = builder.Build();
 

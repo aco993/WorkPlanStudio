@@ -1,0 +1,563 @@
+using System;
+using Microsoft.EntityFrameworkCore.Migrations;
+
+#nullable disable
+
+namespace WorkPlanStudio.Api.Data.Migrations;
+
+/// <inheritdoc />
+public partial class InitialSchema : Migration
+{
+    /// <inheritdoc />
+    protected override void Up(MigrationBuilder migrationBuilder)
+    {
+        migrationBuilder.CreateTable(
+            name: "AspNetRoles",
+            columns: table => new
+            {
+                Id = table.Column<string>(type: "TEXT", nullable: false),
+                Name = table.Column<string>(type: "TEXT", maxLength: 256, nullable: true),
+                NormalizedName = table.Column<string>(type: "TEXT", maxLength: 256, nullable: true),
+                ConcurrencyStamp = table.Column<string>(type: "TEXT", nullable: true)
+            },
+            constraints: table =>
+            {
+                table.PrimaryKey("PK_AspNetRoles", x => x.Id);
+            });
+
+        migrationBuilder.CreateTable(
+            name: "AspNetUsers",
+            columns: table => new
+            {
+                Id = table.Column<string>(type: "TEXT", nullable: false),
+                DisplayName = table.Column<string>(type: "TEXT", nullable: false),
+                UserName = table.Column<string>(type: "TEXT", maxLength: 256, nullable: true),
+                NormalizedUserName = table.Column<string>(type: "TEXT", maxLength: 256, nullable: true),
+                Email = table.Column<string>(type: "TEXT", maxLength: 256, nullable: true),
+                NormalizedEmail = table.Column<string>(type: "TEXT", maxLength: 256, nullable: true),
+                EmailConfirmed = table.Column<bool>(type: "INTEGER", nullable: false),
+                PasswordHash = table.Column<string>(type: "TEXT", nullable: true),
+                SecurityStamp = table.Column<string>(type: "TEXT", nullable: true),
+                ConcurrencyStamp = table.Column<string>(type: "TEXT", nullable: true),
+                PhoneNumber = table.Column<string>(type: "TEXT", nullable: true),
+                PhoneNumberConfirmed = table.Column<bool>(type: "INTEGER", nullable: false),
+                TwoFactorEnabled = table.Column<bool>(type: "INTEGER", nullable: false),
+                LockoutEnd = table.Column<DateTimeOffset>(type: "TEXT", nullable: true),
+                LockoutEnabled = table.Column<bool>(type: "INTEGER", nullable: false),
+                AccessFailedCount = table.Column<int>(type: "INTEGER", nullable: false)
+            },
+            constraints: table =>
+            {
+                table.PrimaryKey("PK_AspNetUsers", x => x.Id);
+            });
+
+        migrationBuilder.CreateTable(
+            name: "CostCenters",
+            columns: table => new
+            {
+                Id = table.Column<int>(type: "INTEGER", nullable: false)
+                    .Annotation("Sqlite:Autoincrement", true),
+                Code = table.Column<string>(type: "TEXT", maxLength: 20, nullable: false, collation: "NOCASE"),
+                Name = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
+                Description = table.Column<string>(type: "TEXT", maxLength: 250, nullable: true),
+                IsActive = table.Column<bool>(type: "INTEGER", nullable: false),
+                ConcurrencyStamp = table.Column<string>(type: "TEXT", maxLength: 32, nullable: false, defaultValue: "")
+            },
+            constraints: table =>
+            {
+                table.PrimaryKey("PK_CostCenters", x => x.Id);
+                table.CheckConstraint("CK_CostCenter_Code", "length(trim(Code)) BETWEEN 1 AND 20");
+                table.CheckConstraint("CK_CostCenter_Description", "Description IS NULL OR length(Description) <= 250");
+                table.CheckConstraint("CK_CostCenter_Name", "length(trim(Name)) BETWEEN 1 AND 100");
+            });
+
+        migrationBuilder.CreateTable(
+            name: "PlantSettings",
+            columns: table => new
+            {
+                Id = table.Column<int>(type: "INTEGER", nullable: false)
+                    .Annotation("Sqlite:Autoincrement", true),
+                State = table.Column<string>(type: "TEXT", maxLength: 2, nullable: false),
+                IncludePartialHolidays = table.Column<bool>(type: "INTEGER", nullable: false),
+                AllowExtendedDay = table.Column<bool>(type: "INTEGER", nullable: false),
+                AllowExtendedNight = table.Column<bool>(type: "INTEGER", nullable: false),
+                SundayWorkAllowed = table.Column<bool>(type: "INTEGER", nullable: false),
+                HolidayWorkAllowed = table.Column<bool>(type: "INTEGER", nullable: false),
+                SundayBoundaryShiftHours = table.Column<int>(type: "INTEGER", nullable: false),
+                MinimumRestHours = table.Column<int>(type: "INTEGER", nullable: false),
+                ModifiedUtc = table.Column<DateTime>(type: "TEXT", nullable: false)
+            },
+            constraints: table =>
+            {
+                table.PrimaryKey("PK_PlantSettings", x => x.Id);
+                table.CheckConstraint("CK_PlantSettings_Rest", "MinimumRestHours BETWEEN 10 AND 11");
+                table.CheckConstraint("CK_PlantSettings_Singleton", "Id = 1");
+                table.CheckConstraint("CK_PlantSettings_SundayShift", "SundayBoundaryShiftHours BETWEEN 0 AND 6");
+            });
+
+        migrationBuilder.CreateTable(
+            name: "WorkPlans",
+            columns: table => new
+            {
+                Id = table.Column<int>(type: "INTEGER", nullable: false)
+                    .Annotation("Sqlite:Autoincrement", true),
+                PlanNumber = table.Column<string>(type: "TEXT", maxLength: 20, nullable: false, collation: "NOCASE"),
+                PartNumber = table.Column<string>(type: "TEXT", maxLength: 40, nullable: false, collation: "NOCASE"),
+                PartName = table.Column<string>(type: "TEXT", maxLength: 120, nullable: false),
+                Revision = table.Column<string>(type: "TEXT", maxLength: 10, nullable: true, collation: "NOCASE"),
+                Status = table.Column<int>(type: "INTEGER", nullable: false),
+                LotSize = table.Column<int>(type: "INTEGER", nullable: false),
+                CreatedUtc = table.Column<DateTime>(type: "TEXT", nullable: false),
+                ModifiedUtc = table.Column<DateTime>(type: "TEXT", nullable: false),
+                ConcurrencyStamp = table.Column<string>(type: "TEXT", maxLength: 32, nullable: false, defaultValue: "")
+            },
+            constraints: table =>
+            {
+                table.PrimaryKey("PK_WorkPlans", x => x.Id);
+                table.CheckConstraint("CK_WorkPlan_LotSize", "LotSize >= 1 AND LotSize <= 1000000");
+                table.CheckConstraint("CK_WorkPlan_PartName", "length(trim(PartName)) BETWEEN 1 AND 120");
+                table.CheckConstraint("CK_WorkPlan_PartNumber", "length(PartNumber) <= 40");
+                table.CheckConstraint("CK_WorkPlan_PlanNumber", "length(trim(PlanNumber)) BETWEEN 1 AND 20");
+                table.CheckConstraint("CK_WorkPlan_Revision", "Revision IS NULL OR length(Revision) <= 10");
+                table.CheckConstraint("CK_WorkPlan_Status", "Status >= 0 AND Status <= 2");
+            });
+
+        migrationBuilder.CreateTable(
+            name: "AspNetRoleClaims",
+            columns: table => new
+            {
+                Id = table.Column<int>(type: "INTEGER", nullable: false)
+                    .Annotation("Sqlite:Autoincrement", true),
+                RoleId = table.Column<string>(type: "TEXT", nullable: false),
+                ClaimType = table.Column<string>(type: "TEXT", nullable: true),
+                ClaimValue = table.Column<string>(type: "TEXT", nullable: true)
+            },
+            constraints: table =>
+            {
+                table.PrimaryKey("PK_AspNetRoleClaims", x => x.Id);
+                table.ForeignKey(
+                    name: "FK_AspNetRoleClaims_AspNetRoles_RoleId",
+                    column: x => x.RoleId,
+                    principalTable: "AspNetRoles",
+                    principalColumn: "Id",
+                    onDelete: ReferentialAction.Cascade);
+            });
+
+        migrationBuilder.CreateTable(
+            name: "AspNetUserClaims",
+            columns: table => new
+            {
+                Id = table.Column<int>(type: "INTEGER", nullable: false)
+                    .Annotation("Sqlite:Autoincrement", true),
+                UserId = table.Column<string>(type: "TEXT", nullable: false),
+                ClaimType = table.Column<string>(type: "TEXT", nullable: true),
+                ClaimValue = table.Column<string>(type: "TEXT", nullable: true)
+            },
+            constraints: table =>
+            {
+                table.PrimaryKey("PK_AspNetUserClaims", x => x.Id);
+                table.ForeignKey(
+                    name: "FK_AspNetUserClaims_AspNetUsers_UserId",
+                    column: x => x.UserId,
+                    principalTable: "AspNetUsers",
+                    principalColumn: "Id",
+                    onDelete: ReferentialAction.Cascade);
+            });
+
+        migrationBuilder.CreateTable(
+            name: "AspNetUserLogins",
+            columns: table => new
+            {
+                LoginProvider = table.Column<string>(type: "TEXT", nullable: false),
+                ProviderKey = table.Column<string>(type: "TEXT", nullable: false),
+                ProviderDisplayName = table.Column<string>(type: "TEXT", nullable: true),
+                UserId = table.Column<string>(type: "TEXT", nullable: false)
+            },
+            constraints: table =>
+            {
+                table.PrimaryKey("PK_AspNetUserLogins", x => new { x.LoginProvider, x.ProviderKey });
+                table.ForeignKey(
+                    name: "FK_AspNetUserLogins_AspNetUsers_UserId",
+                    column: x => x.UserId,
+                    principalTable: "AspNetUsers",
+                    principalColumn: "Id",
+                    onDelete: ReferentialAction.Cascade);
+            });
+
+        migrationBuilder.CreateTable(
+            name: "AspNetUserRoles",
+            columns: table => new
+            {
+                UserId = table.Column<string>(type: "TEXT", nullable: false),
+                RoleId = table.Column<string>(type: "TEXT", nullable: false)
+            },
+            constraints: table =>
+            {
+                table.PrimaryKey("PK_AspNetUserRoles", x => new { x.UserId, x.RoleId });
+                table.ForeignKey(
+                    name: "FK_AspNetUserRoles_AspNetRoles_RoleId",
+                    column: x => x.RoleId,
+                    principalTable: "AspNetRoles",
+                    principalColumn: "Id",
+                    onDelete: ReferentialAction.Cascade);
+                table.ForeignKey(
+                    name: "FK_AspNetUserRoles_AspNetUsers_UserId",
+                    column: x => x.UserId,
+                    principalTable: "AspNetUsers",
+                    principalColumn: "Id",
+                    onDelete: ReferentialAction.Cascade);
+            });
+
+        migrationBuilder.CreateTable(
+            name: "AspNetUserTokens",
+            columns: table => new
+            {
+                UserId = table.Column<string>(type: "TEXT", nullable: false),
+                LoginProvider = table.Column<string>(type: "TEXT", nullable: false),
+                Name = table.Column<string>(type: "TEXT", nullable: false),
+                Value = table.Column<string>(type: "TEXT", nullable: true)
+            },
+            constraints: table =>
+            {
+                table.PrimaryKey("PK_AspNetUserTokens", x => new { x.UserId, x.LoginProvider, x.Name });
+                table.ForeignKey(
+                    name: "FK_AspNetUserTokens_AspNetUsers_UserId",
+                    column: x => x.UserId,
+                    principalTable: "AspNetUsers",
+                    principalColumn: "Id",
+                    onDelete: ReferentialAction.Cascade);
+            });
+
+        migrationBuilder.CreateTable(
+            name: "RefreshTokens",
+            columns: table => new
+            {
+                Id = table.Column<int>(type: "INTEGER", nullable: false)
+                    .Annotation("Sqlite:Autoincrement", true),
+                UserId = table.Column<string>(type: "TEXT", maxLength: 450, nullable: false),
+                TokenHash = table.Column<string>(type: "TEXT", maxLength: 64, nullable: false),
+                CreatedUtc = table.Column<DateTime>(type: "TEXT", nullable: false),
+                ExpiresUtc = table.Column<DateTime>(type: "TEXT", nullable: false),
+                RevokedUtc = table.Column<DateTime>(type: "TEXT", nullable: true),
+                ReplacedByHash = table.Column<string>(type: "TEXT", maxLength: 64, nullable: true),
+                RevokedReason = table.Column<string>(type: "TEXT", maxLength: 60, nullable: true)
+            },
+            constraints: table =>
+            {
+                table.PrimaryKey("PK_RefreshTokens", x => x.Id);
+                table.ForeignKey(
+                    name: "FK_RefreshTokens_AspNetUsers_UserId",
+                    column: x => x.UserId,
+                    principalTable: "AspNetUsers",
+                    principalColumn: "Id",
+                    onDelete: ReferentialAction.Cascade);
+            });
+
+        migrationBuilder.CreateTable(
+            name: "WorkCenters",
+            columns: table => new
+            {
+                Id = table.Column<int>(type: "INTEGER", nullable: false)
+                    .Annotation("Sqlite:Autoincrement", true),
+                Code = table.Column<string>(type: "TEXT", maxLength: 20, nullable: false, collation: "NOCASE"),
+                Name = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
+                CostCenterId = table.Column<int>(type: "INTEGER", nullable: true),
+                HourlyRate = table.Column<decimal>(type: "TEXT", nullable: false),
+                ParallelCapacity = table.Column<int>(type: "INTEGER", nullable: false),
+                ShiftPatternKey = table.Column<string>(type: "TEXT", maxLength: 40, nullable: false),
+                IsActive = table.Column<bool>(type: "INTEGER", nullable: false),
+                ConcurrencyStamp = table.Column<string>(type: "TEXT", maxLength: 32, nullable: false, defaultValue: "")
+            },
+            constraints: table =>
+            {
+                table.PrimaryKey("PK_WorkCenters", x => x.Id);
+                table.CheckConstraint("CK_WorkCenter_Code", "length(trim(Code)) BETWEEN 1 AND 20");
+                table.CheckConstraint("CK_WorkCenter_HourlyRate", "CAST(HourlyRate AS REAL) BETWEEN 0 AND 1000000");
+                table.CheckConstraint("CK_WorkCenter_Name", "length(trim(Name)) BETWEEN 1 AND 100");
+                table.CheckConstraint("CK_WorkCenter_ParallelCapacity", "ParallelCapacity >= 1 AND ParallelCapacity <= 64");
+                table.CheckConstraint("CK_WorkCenter_ShiftPattern", "length(trim(ShiftPatternKey)) BETWEEN 1 AND 40");
+                table.ForeignKey(
+                    name: "FK_WorkCenters_CostCenters_CostCenterId",
+                    column: x => x.CostCenterId,
+                    principalTable: "CostCenters",
+                    principalColumn: "Id",
+                    onDelete: ReferentialAction.Restrict);
+            });
+
+        migrationBuilder.CreateTable(
+            name: "ProductionOrders",
+            columns: table => new
+            {
+                Id = table.Column<int>(type: "INTEGER", nullable: false)
+                    .Annotation("Sqlite:Autoincrement", true),
+                OrderNumber = table.Column<string>(type: "TEXT", maxLength: 30, nullable: false, collation: "NOCASE"),
+                WorkPlanId = table.Column<int>(type: "INTEGER", nullable: false),
+                Quantity = table.Column<int>(type: "INTEGER", nullable: false),
+                ReleaseLocal = table.Column<DateTime>(type: "TEXT", nullable: false),
+                DueLocal = table.Column<DateTime>(type: "TEXT", nullable: false),
+                Priority = table.Column<int>(type: "INTEGER", nullable: false),
+                Status = table.Column<int>(type: "INTEGER", nullable: false),
+                RoutingRevision = table.Column<string>(type: "TEXT", maxLength: 10, nullable: false, collation: "NOCASE"),
+                RoutingSnapshotJson = table.Column<string>(type: "TEXT", nullable: false),
+                CreatedUtc = table.Column<DateTime>(type: "TEXT", nullable: false),
+                ModifiedUtc = table.Column<DateTime>(type: "TEXT", nullable: false),
+                ConcurrencyStamp = table.Column<string>(type: "TEXT", maxLength: 32, nullable: false, defaultValue: "")
+            },
+            constraints: table =>
+            {
+                table.PrimaryKey("PK_ProductionOrders", x => x.Id);
+                table.CheckConstraint("CK_ProductionOrder_Dates", "\"DueLocal\" > \"ReleaseLocal\"");
+                table.CheckConstraint("CK_ProductionOrder_OrderNumber", "length(trim(OrderNumber)) BETWEEN 1 AND 30");
+                table.CheckConstraint("CK_ProductionOrder_Priority", "Priority BETWEEN 1 AND 5");
+                table.CheckConstraint("CK_ProductionOrder_Quantity", "Quantity >= 1 AND Quantity <= 1000000");
+                table.CheckConstraint("CK_ProductionOrder_Revision", "length(RoutingRevision) <= 10");
+                table.CheckConstraint("CK_ProductionOrder_Status", "Status BETWEEN 0 AND 2");
+                table.ForeignKey(
+                    name: "FK_ProductionOrders_WorkPlans_WorkPlanId",
+                    column: x => x.WorkPlanId,
+                    principalTable: "WorkPlans",
+                    principalColumn: "Id",
+                    onDelete: ReferentialAction.Restrict);
+            });
+
+        migrationBuilder.CreateTable(
+            name: "Operations",
+            columns: table => new
+            {
+                Id = table.Column<int>(type: "INTEGER", nullable: false)
+                    .Annotation("Sqlite:Autoincrement", true),
+                WorkPlanId = table.Column<int>(type: "INTEGER", nullable: false),
+                OperationNumber = table.Column<int>(type: "INTEGER", nullable: false),
+                Description = table.Column<string>(type: "TEXT", maxLength: 120, nullable: false),
+                WorkCenterId = table.Column<int>(type: "INTEGER", nullable: false),
+                SetupTimeMinutes = table.Column<decimal>(type: "TEXT", nullable: false),
+                TimePerPieceMinutes = table.Column<decimal>(type: "TEXT", nullable: false),
+                Remarks = table.Column<string>(type: "TEXT", maxLength: 250, nullable: true)
+            },
+            constraints: table =>
+            {
+                table.PrimaryKey("PK_Operations", x => x.Id);
+                table.CheckConstraint("CK_Operation_Description", "length(trim(Description)) BETWEEN 1 AND 120");
+                table.CheckConstraint("CK_Operation_Number", "OperationNumber >= 1 AND OperationNumber <= 1000000");
+                table.CheckConstraint("CK_Operation_Remarks", "Remarks IS NULL OR length(Remarks) <= 250");
+                table.CheckConstraint("CK_Operation_RunTime", "CAST(TimePerPieceMinutes AS REAL) BETWEEN 0 AND 1000000");
+                table.CheckConstraint("CK_Operation_SetupTime", "CAST(SetupTimeMinutes AS REAL) BETWEEN 0 AND 1000000");
+                table.ForeignKey(
+                    name: "FK_Operations_WorkCenters_WorkCenterId",
+                    column: x => x.WorkCenterId,
+                    principalTable: "WorkCenters",
+                    principalColumn: "Id",
+                    onDelete: ReferentialAction.Restrict);
+                table.ForeignKey(
+                    name: "FK_Operations_WorkPlans_WorkPlanId",
+                    column: x => x.WorkPlanId,
+                    principalTable: "WorkPlans",
+                    principalColumn: "Id",
+                    onDelete: ReferentialAction.Cascade);
+            });
+
+        migrationBuilder.CreateTable(
+            name: "WorkCenterAbsences",
+            columns: table => new
+            {
+                Id = table.Column<int>(type: "INTEGER", nullable: false)
+                    .Annotation("Sqlite:Autoincrement", true),
+                WorkCenterId = table.Column<int>(type: "INTEGER", nullable: false),
+                Start = table.Column<DateTime>(type: "TEXT", nullable: false),
+                End = table.Column<DateTime>(type: "TEXT", nullable: false),
+                Kind = table.Column<int>(type: "INTEGER", nullable: false),
+                Label = table.Column<string>(type: "TEXT", maxLength: 80, nullable: false)
+            },
+            constraints: table =>
+            {
+                table.PrimaryKey("PK_WorkCenterAbsences", x => x.Id);
+                table.CheckConstraint("CK_Absence_Kind", "Kind >= 0 AND Kind <= 3");
+                table.CheckConstraint("CK_Absence_Range", "\"End\" > \"Start\"");
+                table.ForeignKey(
+                    name: "FK_WorkCenterAbsences_WorkCenters_WorkCenterId",
+                    column: x => x.WorkCenterId,
+                    principalTable: "WorkCenters",
+                    principalColumn: "Id",
+                    onDelete: ReferentialAction.Cascade);
+            });
+
+        migrationBuilder.CreateTable(
+            name: "OrderRoutingCenters",
+            columns: table => new
+            {
+                ProductionOrderId = table.Column<int>(type: "INTEGER", nullable: false),
+                WorkCenterId = table.Column<int>(type: "INTEGER", nullable: false)
+            },
+            constraints: table =>
+            {
+                table.PrimaryKey("PK_OrderRoutingCenters", x => new { x.ProductionOrderId, x.WorkCenterId });
+                table.ForeignKey(
+                    name: "FK_OrderRoutingCenters_ProductionOrders_ProductionOrderId",
+                    column: x => x.ProductionOrderId,
+                    principalTable: "ProductionOrders",
+                    principalColumn: "Id",
+                    onDelete: ReferentialAction.Cascade);
+                table.ForeignKey(
+                    name: "FK_OrderRoutingCenters_WorkCenters_WorkCenterId",
+                    column: x => x.WorkCenterId,
+                    principalTable: "WorkCenters",
+                    principalColumn: "Id",
+                    onDelete: ReferentialAction.Restrict);
+            });
+
+        migrationBuilder.CreateIndex(
+            name: "IX_AspNetRoleClaims_RoleId",
+            table: "AspNetRoleClaims",
+            column: "RoleId");
+
+        migrationBuilder.CreateIndex(
+            name: "RoleNameIndex",
+            table: "AspNetRoles",
+            column: "NormalizedName",
+            unique: true);
+
+        migrationBuilder.CreateIndex(
+            name: "IX_AspNetUserClaims_UserId",
+            table: "AspNetUserClaims",
+            column: "UserId");
+
+        migrationBuilder.CreateIndex(
+            name: "IX_AspNetUserLogins_UserId",
+            table: "AspNetUserLogins",
+            column: "UserId");
+
+        migrationBuilder.CreateIndex(
+            name: "IX_AspNetUserRoles_RoleId",
+            table: "AspNetUserRoles",
+            column: "RoleId");
+
+        migrationBuilder.CreateIndex(
+            name: "EmailIndex",
+            table: "AspNetUsers",
+            column: "NormalizedEmail");
+
+        migrationBuilder.CreateIndex(
+            name: "UserNameIndex",
+            table: "AspNetUsers",
+            column: "NormalizedUserName",
+            unique: true);
+
+        migrationBuilder.CreateIndex(
+            name: "IX_CostCenters_Code",
+            table: "CostCenters",
+            column: "Code",
+            unique: true);
+
+        migrationBuilder.CreateIndex(
+            name: "IX_Operations_WorkCenterId",
+            table: "Operations",
+            column: "WorkCenterId");
+
+        migrationBuilder.CreateIndex(
+            name: "IX_Operations_WorkPlanId_OperationNumber",
+            table: "Operations",
+            columns: new[] { "WorkPlanId", "OperationNumber" },
+            unique: true);
+
+        migrationBuilder.CreateIndex(
+            name: "IX_OrderRoutingCenters_WorkCenterId",
+            table: "OrderRoutingCenters",
+            column: "WorkCenterId");
+
+        migrationBuilder.CreateIndex(
+            name: "IX_ProductionOrders_OrderNumber",
+            table: "ProductionOrders",
+            column: "OrderNumber",
+            unique: true);
+
+        migrationBuilder.CreateIndex(
+            name: "IX_ProductionOrders_WorkPlanId",
+            table: "ProductionOrders",
+            column: "WorkPlanId");
+
+        migrationBuilder.CreateIndex(
+            name: "IX_RefreshTokens_TokenHash",
+            table: "RefreshTokens",
+            column: "TokenHash",
+            unique: true);
+
+        migrationBuilder.CreateIndex(
+            name: "IX_RefreshTokens_UserId_ExpiresUtc",
+            table: "RefreshTokens",
+            columns: new[] { "UserId", "ExpiresUtc" });
+
+        migrationBuilder.CreateIndex(
+            name: "IX_WorkCenterAbsences_WorkCenterId_Start",
+            table: "WorkCenterAbsences",
+            columns: new[] { "WorkCenterId", "Start" });
+
+        migrationBuilder.CreateIndex(
+            name: "IX_WorkCenters_Code",
+            table: "WorkCenters",
+            column: "Code",
+            unique: true);
+
+        migrationBuilder.CreateIndex(
+            name: "IX_WorkCenters_CostCenterId",
+            table: "WorkCenters",
+            column: "CostCenterId");
+
+        migrationBuilder.CreateIndex(
+            name: "IX_WorkPlans_PlanNumber",
+            table: "WorkPlans",
+            column: "PlanNumber",
+            unique: true);
+    }
+
+    /// <inheritdoc />
+    protected override void Down(MigrationBuilder migrationBuilder)
+    {
+        migrationBuilder.DropTable(
+            name: "AspNetRoleClaims");
+
+        migrationBuilder.DropTable(
+            name: "AspNetUserClaims");
+
+        migrationBuilder.DropTable(
+            name: "AspNetUserLogins");
+
+        migrationBuilder.DropTable(
+            name: "AspNetUserRoles");
+
+        migrationBuilder.DropTable(
+            name: "AspNetUserTokens");
+
+        migrationBuilder.DropTable(
+            name: "Operations");
+
+        migrationBuilder.DropTable(
+            name: "OrderRoutingCenters");
+
+        migrationBuilder.DropTable(
+            name: "PlantSettings");
+
+        migrationBuilder.DropTable(
+            name: "RefreshTokens");
+
+        migrationBuilder.DropTable(
+            name: "WorkCenterAbsences");
+
+        migrationBuilder.DropTable(
+            name: "AspNetRoles");
+
+        migrationBuilder.DropTable(
+            name: "ProductionOrders");
+
+        migrationBuilder.DropTable(
+            name: "AspNetUsers");
+
+        migrationBuilder.DropTable(
+            name: "WorkCenters");
+
+        migrationBuilder.DropTable(
+            name: "WorkPlans");
+
+        migrationBuilder.DropTable(
+            name: "CostCenters");
+    }
+}
