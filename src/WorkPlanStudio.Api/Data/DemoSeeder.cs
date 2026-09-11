@@ -122,10 +122,10 @@ public static class DemoSeeder
         // plant into the in-browser database recognises CC-2000 as "Machining"
         // rather than as a second, differently-worded catalogue. Two work centres
         // sharing CC-2000 is the case a free-text column could never answer.
-        var cutting = new CostCenter { Code = "CC-1000", Name = "Sawing" };
-        var machining = new CostCenter { Code = "CC-2000", Name = "Machining" };
-        var finishing = new CostCenter { Code = "CC-3000", Name = "Finishing" };
-        var quality = new CostCenter { Code = "CC-9000", Name = "Quality assurance" };
+        var cutting = new CostCenter { Code = "CC-1000", Name = "Sawing", Description = "Cutting stock to length before machining." };
+        var machining = new CostCenter { Code = "CC-2000", Name = "Machining", Description = "CNC turning and milling. The plant's most expensive hours." };
+        var finishing = new CostCenter { Code = "CC-3000", Name = "Finishing", Description = "Grinding and surface work after machining." };
+        var quality = new CostCenter { Code = "CC-9000", Name = "Quality assurance", Description = "Inspection and measurement, booked separately from production." };
 
         db.CostCenters.AddRange(cutting, machining, finishing, quality);
 

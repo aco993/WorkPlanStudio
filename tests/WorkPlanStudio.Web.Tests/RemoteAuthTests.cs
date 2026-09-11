@@ -26,7 +26,7 @@ namespace WorkPlanStudio.Web.Tests;
 /// token without spending two refresh tokens on it.
 /// </para>
 /// </summary>
-public sealed class RemoteAuthTests : BunitContext
+public sealed class RemoteAuthTests : AppBunitContext
 {
     private static readonly Uri Api = new("https://api.example.invalid/");
 
