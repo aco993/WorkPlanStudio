@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Hand-written CSV, SpreadsheetML (.xlsx) and PDF writers with no package
+    references at all. The app is a Blazor WebAssembly site on a static host, so
+    every candidate library was out: SkiaSharp and QuestPDF carry native code
+    that would have to be relinked into WASM, ClosedXML and EPPlus pull a large
+    managed tree (and EPPlus a commercial licence). Writing the three formats by
+    hand costs a bounded feature set and buys a zero-dependency, fully testable
+    export that runs offline in the browser - see docs/adr/0017.
+
+    Pure like the scheduling engine: no Blazor, no Entity Framework, no JS
+    interop, no reference to the app. Everything here is a function from a
+    plain input record to bytes, which is what makes it testable without a
+    browser.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+</Project>

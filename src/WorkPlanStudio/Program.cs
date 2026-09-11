@@ -94,6 +94,13 @@ builder.Services.AddScoped<WorkPlanStudio.Services.Import.CsvImportService>();
 builder.Services.AddScoped<WorkPlanStudio.Services.Import.IImportMappingStore,
     WorkPlanStudio.Services.Import.JsImportMappingStore>();
 
+// Export: the schedule as a PDF report, an Excel workbook or a CSV file. The
+// writers are hand-written and dependency-free, so this costs the download
+// nothing - see docs/adr/0017.
+builder.Services.AddScoped<ScheduleExportBuilder>();
+builder.Services.AddScoped<FileDownloadService>();
+builder.Services.AddScoped<ScheduleExportService>();
+
 var host = builder.Build();
 
 // Apply the language the user picked last time (stored in the browser).

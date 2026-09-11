@@ -152,6 +152,24 @@ internal static class Sample
     };
 }
 
+internal static class ExportTestSupport
+{
+    /// <summary>
+    /// The three services the scheduling page's export control resolves. They
+    /// live here rather than being repeated in every arrangement: the page owns
+    /// the control, so every test that renders the page needs them, and a new
+    /// one should not have to find that out from a render-time exception.
+    /// </summary>
+    public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddScheduleExport(
+        this Microsoft.Extensions.DependencyInjection.IServiceCollection services)
+    {
+        Microsoft.Extensions.DependencyInjection.ServiceCollectionServiceExtensions.AddSingleton<ScheduleExportBuilder>(services);
+        Microsoft.Extensions.DependencyInjection.ServiceCollectionServiceExtensions.AddSingleton<FileDownloadService>(services);
+        Microsoft.Extensions.DependencyInjection.ServiceCollectionServiceExtensions.AddSingleton<ScheduleExportService>(services);
+        return services;
+    }
+}
+
 /// <summary>A persona store that never touches the browser.</summary>
 internal sealed class FakePersonaStore : WorkPlanStudio.Services.Auth.IPersonaStore
 {

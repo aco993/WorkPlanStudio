@@ -778,4 +778,31 @@
   <data name="Ai_KeyForget" xml:space="preserve"><value>Schlüssel löschen</value></data>
   <data name="Ai_KeyForgotten" xml:space="preserve"><value>Der Schlüssel für {0} wurde aus diesem Browser entfernt.</value></data>
   <data name="Ai_KeyRisk" xml:space="preserve"><value>Der Schlüssel liegt im Speicher dieses Browsers, und der ist kein Tresor: Jedes Skript auf dieser Seite und jede Browser-Erweiterung mit Zugriff darauf kann ihn lesen. Nur einen Schlüssel verwenden, den Sie widerrufen können, und auf gemeinsam genutzten Rechnern kein Modell aktivieren.</value></data>
+  <data name="Export_Menu" xml:space="preserve"><value>Export</value></data>
+  <data name="Export_Busy" xml:space="preserve"><value>Wird erstellt…</value></data>
+  <data name="Export_Pdf" xml:space="preserve"><value>PDF-Bericht</value></data>
+  <data name="Export_Excel" xml:space="preserve"><value>Excel-Arbeitsmappe</value></data>
+  <data name="Export_Csv" xml:space="preserve"><value>CSV-Datei</value></data>
+  <data name="Export_Hint" xml:space="preserve"><value>Die Datei entsteht in Ihrem Browser; nichts wird hochgeladen.</value></data>
+  <data name="Export_Ready" xml:space="preserve"><value>{0} steht zum Herunterladen bereit.</value></data>
+  <data name="Export_Failed" xml:space="preserve"><value>Der Export konnte nicht erstellt werden. Bitte erneut versuchen oder ein anderes Format wählen.</value></data>
+  <data name="Export_Title" xml:space="preserve"><value>Produktionsplan</value></data>
+  <data name="Export_Subtitle" xml:space="preserve"><value>Prioritätsregel: {0} · Zieltermin-Regel: {1}</value></data>
+  <data name="Export_PageNumber" xml:space="preserve"><value>Seite {0} von {1}</value></data>
+  <data name="Export_Operations" xml:space="preserve"><value>Arbeitsgänge</value></data>
+  <data name="Export_Utilization" xml:space="preserve"><value>Auslastung je Arbeitsplatz</value></data>
+  <data name="Export_Parameters" xml:space="preserve"><value>Laufparameter</value></data>
+  <data name="Export_Setting" xml:space="preserve"><value>Einstellung</value></data>
+  <data name="Export_Value" xml:space="preserve"><value>Wert</value></data>
+  <data name="Export_Start" xml:space="preserve"><value>Beginn</value></data>
+  <data name="Export_End" xml:space="preserve"><value>Ende</value></data>
+  <data name="Export_Duration" xml:space="preserve"><value>Dauer</value></data>
+  <data name="Export_Generated" xml:space="preserve"><value>Erstellt</value></data>
+  <data name="Export_Horizon" xml:space="preserve"><value>Planbeginn</value></data>
+  <data name="Export_LocalSearchTaken" xml:space="preserve"><value>Ausgeführte Verbesserungsschritte</value></data>
+  <data name="Export_HoursUnit" xml:space="preserve"><value>Std.</value></data>
+  <data name="Export_Summary" xml:space="preserve"><value>Zusammenfassung</value></data>
+  <data name="Export_Figure" xml:space="preserve"><value>Kennzahl</value></data>
+  <data name="Export_True" xml:space="preserve"><value>WAHR</value></data>
+  <data name="Export_False" xml:space="preserve"><value>FALSCH</value></data>
 </root>

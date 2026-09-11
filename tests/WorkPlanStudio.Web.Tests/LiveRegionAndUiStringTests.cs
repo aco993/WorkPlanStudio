@@ -34,6 +34,7 @@ public sealed class LiveRegionAndUiStringTests : AppBunitContext
         Services.AddSingleton<ScheduleAssistant>();
         Services.AddSingleton<OfflineScheduleAnswerer>();
         Services.AddSingleton<ScheduleChat>();
+        Services.AddScheduleExport();
         Services.AddSingleton(new PlantSettingsService(_files.CreateDatabase("live-region.db", new FakeStorage())));
         return fake;
     }

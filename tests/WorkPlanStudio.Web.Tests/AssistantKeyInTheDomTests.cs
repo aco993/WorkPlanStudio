@@ -40,6 +40,9 @@ public sealed class AssistantKeyInTheDomTests : AppBunitContext
         Services.AddSingleton<OfflineScheduleAnswerer>();
         Services.AddSingleton<ScheduleChat>();
         Services.AddSingleton(new PlantSettingsService(_files.CreateDatabase("assistant-dom.db", new FakeStorage())));
+
+        // The schedule page renders the export menu, which has its own dependencies.
+        Services.AddScheduleExport();
     }
 
     protected override void Dispose(bool disposing)

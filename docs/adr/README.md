@@ -23,6 +23,7 @@ the decision and its consequences, in the spirit of
 | [0014](0014-schedule-chat-on-device-first-with-pluggable-models.md) | A conversation over the schedule: on-device first, models pluggable | Accepted |
 | [0015](0015-exact-solver.md) | Prove the optimum with a disjunctive branch-and-bound, and label what was not proved | Accepted |
 | [0016](0016-cost-centre-master-data.md) | Promote the cost centre from a string to master data | Accepted |
+| [0017](0017-in-browser-export.md) | Write the CSV, the workbook and the PDF by hand, in the browser | Accepted |
 | [0018](0018-csv-import.md) | A CSV import that refuses to write before you have read the preview | Accepted |
 | [0019](0019-off-thread-scheduling.md) | Slice the scheduling run on the one thread there is, rather than pretend to leave it | Accepted |
 | [0020](0020-optional-backend-and-real-auth.md) | An optional backend, and the first real authentication | Accepted |

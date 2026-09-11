@@ -37,6 +37,9 @@
          records; the API itself is never referenced from here, so a build of
          the browser app knows nothing about the server - see docs/adr/0020. -->
     <ProjectReference Include="..\WorkPlanStudio.Contracts\WorkPlanStudio.Contracts.csproj" />
+    <!-- CSV, xlsx and PDF writers with no package references, so exporting adds
+         nothing to the download the browser has to fetch - see docs/adr/0017. -->
+    <ProjectReference Include="..\WorkPlanStudio.Export\WorkPlanStudio.Export.csproj" />
   </ItemGroup>
 
 </Project>
