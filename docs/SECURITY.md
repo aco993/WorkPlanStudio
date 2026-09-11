@@ -181,12 +181,14 @@ SEC-001's exit criterion was: *"`dotnet list WorkPlanStudio.slnx package
 --vulnerable --include-transitive` no longer reports the advisory with a supported
 package graph, all SQLite/WASM/E2E tests pass, and the suppression is removed in
 the same change."* The first two are met — the graph is clean and every suite is
-green on this tip. **The third is not: the `NuGetAuditSuppress` line is still in
-`Directory.Build.props`**, and removing it is the remaining action. It is one line,
-and the audit will pass without it.
+green on this tip, and the third is met too: the `NuGetAuditSuppress` line is gone
+from `Directory.Build.props`. A restore with the NuGet audit fully strict and
+nothing suppressed reports no advisory, and the solution builds warning-free —
+which is the same check, because warnings are errors here.
 
-Until it is removed, the suppression is harmless but dishonest furniture: it
-suppresses an advisory that no longer fires.
+**SEC-001 is closed.** The record stays because a risk acceptance with a
+falsifiable exit criterion is only worth anything if the exit is written down
+when it happens.
 
 ## Reporting
 

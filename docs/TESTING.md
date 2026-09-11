@@ -377,15 +377,10 @@ Measured on 2026-09-11 on this tip:
 | `WorkPlanStudio.WorkingTime` | `WorkingTime.Tests` | 94.31 % | 90.29 % | 90 % |
 | `WorkPlanStudio` (app: services, mapper, import, assistant, pages) | `Web.Tests` | 79.89 % | 71.28 % | 65 % |
 | `WorkPlanStudio.Api` | `Api.Tests` | 70.19 % | 65.84 % | 60 % |
-| `WorkPlanStudio.Export` | `Export.Tests` | 98.45 % | 90.34 % | not gated — see below |
+| `WorkPlanStudio.Export` | `Export.Tests` | 98.45 % | 90.34 % | 90 % |
 
 The app assembly's number is lower by design: its pages are covered by the browser
 suite, which the collector does not see.
-
-**The export suite is not yet in CI.** `tests/WorkPlanStudio.Export.Tests` runs
-green locally and its 98.45 % is measured, but no workflow invokes it and no gate
-protects it. That is a gap in [`ci.yml`](../.github/workflows/ci.yml), stated here
-rather than left for a reader to discover.
 
 The thresholds live in `ci.yml`'s `env` block and nowhere else, so the
 pull-request check and the production deploy move together. The README badges are

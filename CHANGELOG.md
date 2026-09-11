@@ -202,9 +202,9 @@ and where the code did not, either the code or the claim changed.
 - The tracked SQLite advisory **GHSA-2m69-gcr7-jv3q / CVE-2025-6965 no longer applies**:
   EF Core 10.0.11 brings `SQLitePCLRaw` 2.1.12, and `dotnet list package --vulnerable
   --include-transitive` against that graph with **no suppression at all** reports
-  nothing. SEC-001's exit criterion is met on its first two conditions; the
-  `NuGetAuditSuppress` line in `Directory.Build.props` is now obsolete and removing it
-  is the remaining action. See [docs/SECURITY.md](docs/SECURITY.md).
+  nothing. The `NuGetAuditSuppress` line is removed: a restore with the audit fully
+  strict and nothing suppressed is clean, so **SEC-001 is closed** on all three of its
+  conditions. See [docs/SECURITY.md](docs/SECURITY.md).
 - A root `SECURITY.md` where GitHub looks for it, a `CODEOWNERS` file, and an issue
   template routing a security report to a private advisory.
 

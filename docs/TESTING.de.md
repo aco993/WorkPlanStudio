@@ -403,16 +403,10 @@ am 11.09.2026 auf diesem Stand:
 | `WorkPlanStudio.WorkingTime` | `WorkingTime.Tests` | 94,31 % | 90,29 % | 90 % |
 | `WorkPlanStudio` (App: Dienste, Mapping, Import, Assistent, Seiten) | `Web.Tests` | 79,89 % | 71,28 % | 65 % |
 | `WorkPlanStudio.Api` | `Api.Tests` | 70,19 % | 65,84 % | 60 % |
-| `WorkPlanStudio.Export` | `Export.Tests` | 98,45 % | 90,34 % | nicht abgesichert — siehe unten |
+| `WorkPlanStudio.Export` | `Export.Tests` | 98,45 % | 90,34 % | 90 % |
 
 Die Zahl der App-Assembly liegt aus Entwurfsgründen niedriger: Ihre Seiten deckt die
 Browser-Suite ab, die der Collector nicht sieht.
-
-**Die Export-Suite läuft noch nicht in der CI.** `tests/WorkPlanStudio.Export.Tests`
-ist lokal grün, und die 98,45 % sind gemessen, aber kein Workflow ruft sie auf und
-keine Schwelle schützt sie. Das ist eine Lücke in
-[`ci.yml`](../.github/workflows/ci.yml), hier benannt statt dem Leser zur Entdeckung
-überlassen.
 
 Die Schwellenwerte stehen im `env`-Block von `ci.yml` und sonst nirgends, damit die
 Prüfung im Pull Request und die Auslieferung zusammen wandern. Die Badges im README

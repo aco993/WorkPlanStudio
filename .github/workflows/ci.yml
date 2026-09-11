@@ -5,9 +5,9 @@ name: CI
 # repeating it, so the coverage thresholds below exist in exactly one place.
 #
 # Split into two jobs by what they need:
-#   • library-tests — the two pure libraries (scheduling engine, working time);
-#     no Blazor, no SQLite, no WebAssembly, so they run in seconds. Coverage is
-#     measured and gated per assembly.
+#   • library-tests — the three pure libraries (scheduling engine, working time,
+#     export); no Blazor, no SQLite, no WebAssembly, so they run in seconds.
+#     Coverage is measured and gated per assembly.
 #   • web-tests     — data, mapper, assistant and bUnit component tests; these
 #     reference the Blazor WASM app, so the job installs the wasm-tools workload
 #     to build it. Coverage of the app assembly is measured and gated too.
@@ -50,6 +50,7 @@ env:
   GATE_ENGINE: 90
   GATE_WORKING_TIME: 90
   GATE_APP: 65
+  GATE_EXPORT: 90
   # Floors, not counts: a run that discovers nothing must never be reported as
   # success. Comfortably below the real numbers so adding tests needs no edit,
   # and far enough above zero to catch a suite that silently stopped loading.
@@ -57,6 +58,7 @@ env:
   MIN_TESTS_WORKING_TIME: 88
   MIN_TESTS_WEB: 155
   MIN_TESTS_API: 80
+  MIN_TESTS_EXPORT: 140
   GATE_API: 60
   # The wall-clock budget tests are the only ones in the repo whose outcome
   # depends on a shared two-core runner. They are tripwires with roughly an
@@ -105,18 +107,29 @@ jobs:
           --minimum-expected-tests ${{ env.MIN_TESTS_WORKING_TIME }}
           --coverage --coverage-output-format cobertura --coverage-output workingtime.cobertura.xml
 
+      # The export library writes three file formats by hand, so a regression here
+      # is a corrupt download rather than a wrong pixel. It needs no WebAssembly,
+      # so it rides with the other pure libraries.
+      - name: Test the export library (with coverage)
+        run: >
+          dotnet test tests/WorkPlanStudio.Export.Tests/WorkPlanStudio.Export.Tests.csproj -c Release
+          --minimum-expected-tests ${{ env.MIN_TESTS_EXPORT }}
+          --coverage --coverage-output-format cobertura --coverage-output export.cobertura.xml
+
       - name: Coverage gate
         run: |
           python3 .github/scripts/coverage_gate.py TestResults/engine.cobertura.xml \
             WorkPlanStudio.Scheduling=$GATE_ENGINE $BADGE_ARGS
           python3 .github/scripts/coverage_gate.py TestResults/workingtime.cobertura.xml \
             WorkPlanStudio.WorkingTime=$GATE_WORKING_TIME $BADGE_ARGS
+          python3 .github/scripts/coverage_gate.py TestResults/export.cobertura.xml \
+            WorkPlanStudio.Export=$GATE_EXPORT
 
       - name: Build coverage report
         if: always()
         run: |
           dotnet tool install --global dotnet-reportgenerator-globaltool
-          reportgenerator -reports:'TestResults/*.cobertura.xml' -targetdir:coverage-report -reporttypes:'Html;TextSummary' -assemblyfilters:'+WorkPlanStudio.Scheduling;+WorkPlanStudio.WorkingTime'
+          reportgenerator -reports:'TestResults/*.cobertura.xml' -targetdir:coverage-report -reporttypes:'Html;TextSummary' -assemblyfilters:'+WorkPlanStudio.Scheduling;+WorkPlanStudio.WorkingTime;+WorkPlanStudio.Export'
           echo '### Library coverage report' >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
           cat coverage-report/Summary.txt >> "$GITHUB_STEP_SUMMARY"

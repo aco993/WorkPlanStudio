@@ -190,12 +190,14 @@ Das Ausstiegskriterium von SEC-001 lautete: *„`dotnet list WorkPlanStudio.slnx
 --vulnerable --include-transitive` meldet den Hinweis mit einem unterstützten Paketgraphen
 nicht mehr, alle SQLite-, WASM- und E2E-Tests bestehen, und die Unterdrückung wird in
 derselben Änderung entfernt.“* Die ersten beiden Punkte sind erfüllt — der Graph ist sauber
-und jede Suite ist auf diesem Stand grün. **Der dritte nicht: Die Zeile
-`NuGetAuditSuppress` steht weiterhin in `Directory.Build.props`**, und sie zu entfernen ist
-die verbleibende Aufgabe. Es ist eine Zeile, und die Prüfung besteht auch ohne sie.
+und jede Suite ist auf diesem Stand grün. Auch der dritte ist erfüllt: Die Zeile
+`NuGetAuditSuppress` ist aus `Directory.Build.props` entfernt. Ein Restore mit vollständig
+scharfer NuGet-Prüfung und ohne jede Unterdrückung meldet keinen Hinweis, und die Projektmappe
+baut warnungsfrei — was dieselbe Prüfung ist, denn Warnungen sind hier Fehler.
 
-Bis dahin ist die Unterdrückung harmloses, aber unehrliches Beiwerk: Sie unterdrückt einen
-Hinweis, der gar nicht mehr auslöst.
+**SEC-001 ist abgeschlossen.** Der Eintrag bleibt stehen: Eine Risikoannahme mit einem
+falsifizierbaren Ausstiegskriterium ist nur dann etwas wert, wenn der Ausstieg auch
+festgehalten wird, sobald er eintritt.
 
 ## Meldung
 
