@@ -12,7 +12,6 @@ public class SchedulingParameterLimitTests
         {
             MultiStartRuns = SchedulingParameterLimits.MaxMultiStartRuns,
             LocalSearchMaxSteps = SchedulingParameterLimits.MinLocalSearchSteps,
-            MinutesPerWorkingDay = SchedulingParameterLimits.MaxMinutesPerWorkingDay,
             TwkFlowFactor = SchedulingParameterLimits.MaxTwkFlowFactor,
             NopSecondsPerOp = SchedulingParameterLimits.MaxDueDateSeconds,
             SlackSeconds = SchedulingParameterLimits.MaxDueDateSeconds,

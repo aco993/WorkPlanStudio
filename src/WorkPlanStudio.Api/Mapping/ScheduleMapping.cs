@@ -42,9 +42,20 @@ public static class ScheduleMapping
             Seed = request.Seed ?? defaults.Seed,
             MakespanWeight = request.MakespanWeight ?? defaults.MakespanWeight,
             TardinessWeight = request.TardinessWeight ?? defaults.TardinessWeight,
-            LatePenalty = request.LatePenalty ?? defaults.LatePenalty,
-            MinutesPerWorkingDay = request.MinutesPerWorkingDay ?? defaults.MinutesPerWorkingDay
+            LatePenalty = request.LatePenalty ?? defaults.LatePenalty
         };
+    }
+
+    /// <summary>
+    /// The Gantt's display day for this request. It is a rendering choice, not an
+    /// engine parameter, so it travels beside the parameters rather than inside
+    /// them — the same split the browser makes.
+    /// </summary>
+    /// <param name="request">The run request.</param>
+    public static int MinutesPerWorkingDay(ScheduleRunRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        return request.MinutesPerWorkingDay ?? ScheduleResult.DefaultMinutesPerWorkingDay;
     }
 
     /// <summary>Projects a completed run for the wire.</summary>

@@ -7,16 +7,45 @@ internal sealed class FakeScheduleService : IProductionScheduleService
 {
     public ScheduleResult Result { get; set; } = ScheduleResult.Empty(480);
     public SchedulingParameters? LastParameters { get; private set; }
+    public int LastMinutesPerWorkingDay { get; private set; }
     public int Calls { get; private set; }
     public Exception? ExceptionToThrow { get; set; }
 
-    public Task<ScheduleResult> GenerateAsync(SchedulingParameters parameters, CancellationToken cancellationToken = default)
+    /// <summary>
+    /// Progress values to report before returning, and a gate to hold the call open
+    /// on, so a test can observe the page mid-run — press Cancel, read the
+    /// indicator — instead of only before and after.
+    /// </summary>
+    public IReadOnlyList<ScheduleRunProgress> ProgressToReport { get; set; } = [];
+
+    public TaskCompletionSource Gate { get; } = new();
+
+    public bool UseGate { get; set; }
+
+    public Task<ScheduleResult> GenerateAsync(SchedulingParameters parameters, CancellationToken cancellationToken = default) =>
+        GenerateAsync(parameters, 480, null, cancellationToken);
+
+    public async Task<ScheduleResult> GenerateAsync(
+        SchedulingParameters parameters,
+        int minutesPerWorkingDay,
+        IProgress<ScheduleRunProgress>? progress,
+        CancellationToken cancellationToken)
     {
         LastParameters = parameters;
+        LastMinutesPerWorkingDay = minutesPerWorkingDay;
         Calls++;
+
+        foreach (var step in ProgressToReport)
+            progress?.Report(step);
+
+        if (UseGate)
+            await Gate.Task.WaitAsync(cancellationToken);
+
         if (ExceptionToThrow is not null)
-            return Task.FromException<ScheduleResult>(ExceptionToThrow);
-        return Task.FromResult(Result);
+            throw ExceptionToThrow;
+
+        cancellationToken.ThrowIfCancellationRequested();
+        return Result;
     }
 }
 

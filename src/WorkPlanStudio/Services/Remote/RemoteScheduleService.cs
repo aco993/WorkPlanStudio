@@ -1,5 +1,6 @@
 using WorkPlanStudio.Contracts;
 using WorkPlanStudio.Scheduling;
+using WorkPlanStudio.Services.Scheduling;
 using WorkPlanStudio.WorkingTime;
 
 namespace WorkPlanStudio.Services.Remote;
@@ -24,13 +25,33 @@ public sealed class RemoteScheduleService : IProductionScheduleService
     public RemoteScheduleService(ApiClient api) => _api = api;
 
     /// <inheritdoc />
+    public Task<ScheduleResult> GenerateAsync(
+        SchedulingParameters parameters,
+        CancellationToken cancellationToken = default) =>
+        GenerateAsync(parameters, ScheduleResult.DefaultMinutesPerWorkingDay, progress: null, cancellationToken);
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// A server run reports no intermediate progress: the search happens in one
+    /// request and there is no channel back until it answers. The caller is told
+    /// the run started and then told it finished, which is the truth — inventing
+    /// restart counts for a progress bar would be a lie the UI could not detect.
+    /// </remarks>
     public async Task<ScheduleResult> GenerateAsync(
         SchedulingParameters parameters,
-        CancellationToken cancellationToken = default)
+        int minutesPerWorkingDay,
+        IProgress<ScheduleRunProgress>? progress,
+        CancellationToken cancellationToken)
     {
         SchedulingParameterLimits.Validate(parameters);
-        var response = await _api.RunScheduleAsync(RemoteMapping.ToRequest(parameters), cancellationToken);
-        return RemoteMapping.ToResult(response);
+
+        progress?.Report(new ScheduleRunProgress(0, parameters.MultiStartRuns, double.PositiveInfinity));
+        var response = await _api.RunScheduleAsync(
+            RemoteMapping.ToRequest(parameters, minutesPerWorkingDay), cancellationToken);
+        var result = RemoteMapping.ToResult(response);
+        progress?.Report(new ScheduleRunProgress(
+            parameters.MultiStartRuns, parameters.MultiStartRuns, double.PositiveInfinity));
+        return result;
     }
 }
 
@@ -47,7 +68,8 @@ public static class RemoteMapping
 {
     /// <summary>Flattens the engine parameters for the wire.</summary>
     /// <param name="parameters">The parameters the page produced.</param>
-    public static ScheduleRunRequest ToRequest(SchedulingParameters parameters)
+    /// <param name="minutesPerWorkingDay">The Gantt's display day, a rendering choice that travels beside the parameters.</param>
+    public static ScheduleRunRequest ToRequest(SchedulingParameters parameters, int minutesPerWorkingDay)
     {
         ArgumentNullException.ThrowIfNull(parameters);
 
@@ -65,7 +87,7 @@ public static class RemoteMapping
             MakespanWeight = parameters.MakespanWeight,
             TardinessWeight = parameters.TardinessWeight,
             LatePenalty = parameters.LatePenalty,
-            MinutesPerWorkingDay = parameters.MinutesPerWorkingDay
+            MinutesPerWorkingDay = minutesPerWorkingDay
         };
     }
 

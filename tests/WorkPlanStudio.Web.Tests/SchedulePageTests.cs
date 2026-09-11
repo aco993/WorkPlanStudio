@@ -203,8 +203,10 @@ public class SchedulePageTests : AppBunitContext
         var cut = Render<SchedulePage>();
         cut.WaitForAssertion(() => Assert.NotEmpty(cut.FindAll(".param-grid")));
 
-        // selects are, in order: dispatch rule, then target-date rule
-        cut.FindAll("select")[1].Change(DueDateRule.NumberOfOperations.ToString());
+        // By id, not by position. This used to index the page's selects and say in a
+        // comment which one index 1 was; adding a third select to the form silently
+        // moved it and the test changed a different parameter than it claimed to.
+        cut.Find("#sched-duerule").Change(DueDateRule.NumberOfOperations.ToString());
 
         // the pass-through localizer echoes keys, so the NOP field's label key is now present
         Assert.Contains("Sched_NopMinutes", cut.Markup);

@@ -271,7 +271,8 @@ public class WorkingTimeIntegrationTests
         var centers = new WorkCenterService(database);
         Assert.All(await centers.GetAllAsync(cancellationToken), c => Assert.NotNull(ShiftPatterns.ByKey(c.ShiftPatternKey)));
 
-        var scheduler = new ProductionScheduleService(new ProductionOrderService(database), centers, new PlantSettingsService(database));
+        var scheduler = new ProductionScheduleService(
+            new ProductionOrderService(database), centers, new PlantSettingsService(database), new CooperativeScheduleRunner());
         var result = await scheduler.GenerateAsync(new SchedulingParameters { MultiStartRuns = 1, LocalSearchMaxSteps = 0 }, cancellationToken);
 
         Assert.True(result.HasData);

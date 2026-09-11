@@ -140,7 +140,7 @@ public class ScheduleEndpointTests : IClassFixture<ScheduleFixture>
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var result = await response.Content.ReadFromJsonAsync<ScheduleRunResponse>(Ct);
-        Assert.Equal(new SchedulingParameters().MinutesPerWorkingDay, result?.MinutesPerWorkingDay);
+        Assert.Equal(ScheduleResult.DefaultMinutesPerWorkingDay, result?.MinutesPerWorkingDay);
     }
 
     private static async Task<ScheduleRunResponse> RunAsync(HttpClient client, ScheduleRunRequest request)

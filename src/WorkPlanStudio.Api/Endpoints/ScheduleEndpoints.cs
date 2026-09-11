@@ -2,6 +2,7 @@ using WorkPlanStudio.Api.Http;
 using WorkPlanStudio.Api.Mapping;
 using WorkPlanStudio.Api.Services;
 using WorkPlanStudio.Contracts;
+using WorkPlanStudio.Services;
 
 namespace WorkPlanStudio.Api.Endpoints;
 
@@ -26,11 +27,19 @@ public static class ScheduleEndpoints
             ApiScheduleRunner runner,
             CancellationToken cancellationToken) =>
         {
+            request ??= new ScheduleRunRequest();
+
+            // The display day is no longer an engine parameter, so the engine's
+            // limits no longer police it. The check moved here with the value.
+            var minutesPerWorkingDay = ScheduleMapping.MinutesPerWorkingDay(request);
+            if (!ScheduleResult.IsDrawableDay(minutesPerWorkingDay))
+                return Problems.Validation(nameof(request.MinutesPerWorkingDay), "Val_Range");
+
             var parameters = ScheduleMapping.ToParameters(request);
 
             try
             {
-                return Results.Ok(await runner.RunAsync(parameters, cancellationToken));
+                return Results.Ok(await runner.RunAsync(parameters, minutesPerWorkingDay, cancellationToken));
             }
             catch (ArgumentOutOfRangeException exception)
             {

@@ -270,9 +270,9 @@ public sealed class SchedulingContext
 
     internal MachineCapacity[] MachinesByIndex { get; }
     internal int[] MachineIdsSorted { get; }
-    internal int[] SlotOffsetByMachineIndex { get; }
+    internal int[] SlotOffsetByMachineIndex { get; }   // length machines + 1
     internal int TotalSlots => SlotOffsetByMachineIndex[^1];
-    internal int[] JobStepOffset { get; }
+    internal int[] JobStepOffset { get; }              // length jobs + 1
     internal int[] StepMachineIndex { get; }
     internal long[] StepDuration { get; }
     internal int[] StepFamilyId { get; }

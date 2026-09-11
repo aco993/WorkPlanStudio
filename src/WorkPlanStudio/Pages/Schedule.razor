@@ -1,6 +1,7 @@
 @page "/schedule"
 @using System.Globalization
 @using WorkPlanStudio.Services.Chat
+@using WorkPlanStudio.Services.Scheduling
 @using WorkPlanStudio.WorkingTime
 @implements IDisposable
 @inject IStringLocalizer<SharedResource> L
@@ -19,10 +20,24 @@
         <h1>@L["Sched_Title"]</h1>
         <p class="page-sub">@L["Sched_Subtitle"]</p>
     </div>
-    <button class="btn btn-primary" @onclick="GenerateAsync" disabled="@_running">
-        <svg class="btn-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v2m0 14v2m9-9h-2M5 12H3m14.5-6.5-1.4 1.4M7.9 16.1l-1.4 1.4m12 0-1.4-1.4M7.9 7.9 6.5 6.5"/><circle cx="12" cy="12" r="3.2"/></svg>
-        @(_running ? L["Sched_Generating"] : L["Sched_Generate"])
-    </button>
+    @*
+        Cancel is rendered only while a run is in flight, and pressing it destroys
+        the element that has focus — so the handler puts focus back on Generate
+        rather than letting it fall to <body>. Nothing else on this page moves
+        focus: a run finishing must not pull the reader out of whatever they were
+        reading while it ran.
+    *@
+    <div class="head-actions">
+        @if (_running)
+        {
+            <button id="sched-cancel" type="button" class="btn btn-outline" @onclick="CancelRun">@L["Run_Cancel"]</button>
+        }
+        <button id="sched-generate" class="btn btn-primary" @onclick="GenerateAsync"
+                disabled="@(_running || _form.ExceedsEvaluationBudget)">
+            <svg class="btn-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v2m0 14v2m9-9h-2M5 12H3m14.5-6.5-1.4 1.4M7.9 16.1l-1.4 1.4m12 0-1.4-1.4M7.9 7.9 6.5 6.5"/><circle cx="12" cy="12" r="3.2"/></svg>
+            @(_running ? L["Sched_Generating"] : L["Sched_Generate"])
+        </button>
+    </div>
 </div>
 
 <div class="sched-layout">
@@ -55,15 +70,35 @@
                     }
                 </div>
 
-                <label class="field">
-                    <span>@L["Sched_DueRule"]</span>
-                    <select class="input" @bind="_form.DueDateRule">
+                @*
+                    The acceptance rule sits beside the dispatch rule because the two
+                    together are the strategy: one decides the order the jobs are tried
+                    in, the other how the polish spends its budget. Its explanation is
+                    a sibling of the <select> rather than a child of a wrapping label,
+                    for the reason written above — it changes with the selection, and
+                    inside a label it would rename the control each time.
+                *@
+                <div class="field">
+                    <label for="sched-acceptance">@L["Run_Acceptance"]</label>
+                    <select id="sched-acceptance" class="input" @bind="_form.LocalSearchAcceptance"
+                            aria-describedby="sched-acceptance-hint">
+                        @foreach (var a in Enum.GetValues<LocalSearchAcceptance>())
+                        {
+                            <option value="@a">@AcceptanceLabel(a)</option>
+                        }
+                    </select>
+                    <span id="sched-acceptance-hint" class="field-hint">@AcceptanceHint(_form.LocalSearchAcceptance)</span>
+                </div>
+
+                <div class="field">
+                    <label for="sched-duerule">@L["Sched_DueRule"]</label>
+                    <select id="sched-duerule" class="input" @bind="_form.DueDateRule">
                         @foreach (var r in Enum.GetValues<DueDateRule>())
                         {
                             <option value="@r">@DueLabel(r)</option>
                         }
                     </select>
-                </label>
+                </div>
 
                 @switch (_form.DueDateRule)
                 {
@@ -103,18 +138,37 @@
                         break;
                 }
 
+                @*
+                    These two multiply. Each is inside its own range at 64 and 20 000
+                    and their product is 1.28 million candidate schedules, which the
+                    engine refuses - and refuses by throwing, which the page could
+                    only show as "review the inputs" over a form with eight of them.
+                    The pair is therefore validated here, the error belongs to both
+                    fields, and Generate is unavailable while it stands.
+                *@
                 <div class="field">
                     <label for="sched-multistart">@L["Sched_MultiStart"]</label>
-                    <input id="sched-multistart" class="input num" type="number" inputmode="numeric" min="1" max="@Form.MultiStartMax"
-                           aria-describedby="sched-multistart-hint" @bind="_form.MultiStartRuns" @bind:after="_form.Clamp" />
+                    <input id="sched-multistart" class="input num @BudgetStyle()" type="number" inputmode="numeric" min="1" max="@Form.MultiStartMax"
+                           aria-invalid="@BudgetInvalid()" aria-describedby="@BudgetDescribedBy("sched-multistart-hint")"
+                           @bind="_form.MultiStartRuns" @bind:after="_form.Clamp" />
                     <span id="sched-multistart-hint" class="field-hint">@Range(1, Form.MultiStartMax)</span>
                 </div>
                 <div class="field">
                     <label for="sched-localsearch">@L["Sched_LocalSearch"]</label>
-                    <input id="sched-localsearch" class="input num" type="number" inputmode="numeric" min="0" max="@Form.LocalSearchMax"
-                           aria-describedby="sched-localsearch-hint" @bind="_form.LocalSearchMaxSteps" @bind:after="_form.Clamp" />
+                    <input id="sched-localsearch" class="input num @BudgetStyle()" type="number" inputmode="numeric" min="0" max="@Form.LocalSearchMax"
+                           aria-invalid="@BudgetInvalid()" aria-describedby="@BudgetDescribedBy("sched-localsearch-hint")"
+                           @bind="_form.LocalSearchMaxSteps" @bind:after="_form.Clamp" />
                     <span id="sched-localsearch-hint" class="field-hint">@Range(0, Form.LocalSearchMax)</span>
                 </div>
+                @if (_form.ExceedsEvaluationBudget)
+                {
+                    <p id="sched-budget-error" class="field-error" role="alert">
+                        @string.Format(
+                            L["Run_BudgetExceeded"],
+                            Format.Number(_form.TotalEvaluations),
+                            Format.Number(SchedulingParameterLimits.MaxTotalEvaluations))
+                    </p>
+                }
                 <label class="field">
                     <span>@L["Sched_Seed"]</span>
                     <input class="input num" type="number" inputmode="numeric" min="0" max="@int.MaxValue"
@@ -132,6 +186,28 @@
             re-run is in flight. This region carries the headline of every run.
         *@
         <p class="sr-only" role="status" aria-live="polite">@_runAnnouncement</p>
+        @*
+            A determinate bar, because the run has a real denominator: the number of
+            multi-start descents. It is deliberately plain about where the work
+            happens - the search holds this tab's only thread and gives it back
+            between descents, so the page breathes between them rather than
+            throughout. Claiming a worker here would be a lie; see ADR 0019.
+        *@
+        @if (_progress is { } progress)
+        {
+            <section class="card">
+                <div class="card-body">
+                    <p id="run-progress-label">@ProgressText(progress)</p>
+                    <div class="status-bar" role="progressbar"
+                         aria-labelledby="run-progress-label"
+                         aria-valuemin="0" aria-valuemax="100"
+                         aria-valuenow="@progress.Percent" aria-valuetext="@ProgressText(progress)">
+                        <div class="status-seg" style="width:@Css(progress.Percent)%;background:var(--primary)"></div>
+                    </div>
+                    <p class="field-hint">@L["Run_SameThreadNote"]</p>
+                </div>
+            </section>
+        }
         @if (_runError is not null)
         {
             <div class="form-banner error" role="alert">@_runError</div>
@@ -156,18 +232,21 @@
                 </ul>
             </section>
         }
-        @if (_result is null)
+        @* The indeterminate spinner is for the wait before a run has started at all
+           (the database is still opening). Once the run is under way the bar above
+           says the same thing with a number, so the two never show together. *@
+        @if (_result is null && _progress is null)
         {
             <div class="loading-row" role="status"><span class="spinner" aria-hidden="true"></span><span class="sr-only">@L["Common_Loading"]</span></div>
         }
-        else if (!_result.HasData)
+        else if (_result is { HasData: false })
         {
             <div class="card"><div class="empty-state">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 4v16"/></svg>
                 <p>@L["Sched_Empty"]</p>
             </div></div>
         }
-        else
+        else if (_result is { HasData: true })
         {
             <div class="stat-grid">
                 <div class="stat-card accent-indigo">
@@ -516,6 +595,18 @@
     private string? _runAnnouncement;
     private readonly CancellationTokenSource _lifetimeCancellation = new();
 
+    // ----- one run -----
+
+    /// <summary>
+    /// Cancels the run in flight without cancelling the page. Linked to the
+    /// lifetime source, so navigating away still stops the search — the two
+    /// reasons to stop are different, and only one of them has a user behind it.
+    /// </summary>
+    private CancellationTokenSource? _runCancellation;
+
+    private ScheduleRunProgress? _progress;
+    private bool _focusGenerateOnRender;
+
     // ----- Gantt keyboard state -----
     private ElementReference _chart;
     private bool _chartInstalled;
@@ -554,15 +645,34 @@
 
     private async Task GenerateAsync()
     {
+        // The button is disabled in both cases; a keyboard activation against a
+        // render that has not caught up yet can still arrive here.
+        if (_running || _form.ExceedsEvaluationBudget)
+            return;
+
+        _runCancellation?.Dispose();
+        _runCancellation = CancellationTokenSource.CreateLinkedTokenSource(_lifetimeCancellation.Token);
+
+        // Held so a cancelled run can put back what was on screen. Everything else
+        // the results region reads - the schedule, the chart's lanes, the
+        // conversation - is only written on success, so it survives by itself.
+        var previousNarration = _narration;
+
         _running = true;
         _runError = null;
         _narration = null;
+        _progress = new ScheduleRunProgress(0, _form.MultiStartRuns, double.PositiveInfinity);
+        _runAnnouncement = L["Run_Started"];
         StateHasChanged();
 
         try
         {
             var parameters = _form.ToParameters();
-            _result = await Scheduler.GenerateAsync(parameters, _lifetimeCancellation.Token);
+            _result = await Scheduler.GenerateAsync(
+                parameters,
+                _form.MinutesPerWorkingDay,
+                new InlineProgress<ScheduleRunProgress>(OnProgress),
+                _runCancellation.Token);
             BuildLanes();
             _runAnnouncement = Announcement(_result);
 
@@ -572,20 +682,44 @@
 
             await ResetChatAsync(parameters);
         }
+        catch (OperationCanceledException) when (_lifetimeCancellation.IsCancellationRequested)
+        {
+            // Navigated away mid-run; there is nothing left to render into.
+        }
         catch (OperationCanceledException)
         {
-            _runError = L["Error_Cancelled"];
+            // A cancelled run is an outcome rather than a failure, so it gets the
+            // status region and not the error banner. The schedule on screen is the
+            // one from before the run, and it was never touched.
+            _narration = previousNarration;
+            _runAnnouncement = L["Run_Cancelled"];
+            _focusGenerateOnRender = true;
         }
         catch (Exception exception)
         {
             Logger.LogError(exception, "Schedule generation failed");
             _runError = L["Error_ScheduleFailed"];
+            _runAnnouncement = L["Error_ScheduleFailed"];
         }
         finally
         {
             _running = false;
+            _progress = null;
         }
     }
+
+    /// <summary>
+    /// Reported from inside the search, between descents. Rendering happens when
+    /// the runner hands the thread back on the next line, which is the only reason
+    /// this indicator moves at all.
+    /// </summary>
+    private void OnProgress(ScheduleRunProgress progress)
+    {
+        _progress = progress;
+        StateHasChanged();
+    }
+
+    private void CancelRun() => _runCancellation?.Cancel();
 
     private async Task AskAiAsync()
     {
@@ -668,6 +802,15 @@
             {
                 _focusChartOnRender = false;
                 await JS.InvokeVoidAsync("workplanFocus.byId", CellId(cell));
+            }
+
+            // Cancel removes itself from the page, taking the focus with it. This is
+            // the one place focus is moved without the reader asking, and it is
+            // moved back to the control that replaced the one they pressed.
+            if (_focusGenerateOnRender)
+            {
+                _focusGenerateOnRender = false;
+                await JS.InvokeVoidAsync("workplanFocus.byId", "sched-generate");
             }
 
             if (_scrollChat)
@@ -935,6 +1078,50 @@
                 Hours(result.Kpis.MakespanSeconds))
             : L["Sched_Empty"].Value;
 
+    // ----- the evaluation budget, which belongs to two fields at once -----
+
+    private string? BudgetStyle() => _form.ExceedsEvaluationBudget ? "error" : null;
+
+    private string BudgetInvalid() => _form.ExceedsEvaluationBudget ? "true" : "false";
+
+    /// <summary>
+    /// Both inputs keep their own range hint and gain the shared message, because
+    /// the fault is the pair rather than either value: 64 restarts is legal, 20 000
+    /// steps is legal, and marking only one of them would name the wrong culprit.
+    /// </summary>
+    private string BudgetDescribedBy(string hintId) =>
+        _form.ExceedsEvaluationBudget ? hintId + " sched-budget-error" : hintId;
+
+    // ----- the run in flight -----
+
+    private string ProgressText(ScheduleRunProgress progress) =>
+        progress.HasBest
+            ? string.Format(
+                L["Run_Progress"],
+                progress.RestartsCompleted,
+                progress.TotalRestarts,
+                Format.Number((decimal)progress.BestPenalty))
+            : L["Run_Preparing"].Value;
+
+    /// <summary>A number destined for a `style` attribute, which is not text and has no culture.</summary>
+    private static string Css(int value) => value.ToString(CultureInfo.InvariantCulture);
+
+    private string AcceptanceLabel(LocalSearchAcceptance rule) => rule switch
+    {
+        LocalSearchAcceptance.FirstImprovement => L["Run_Acceptance_First"],
+        LocalSearchAcceptance.BestInsertion => L["Run_Acceptance_Best"],
+        LocalSearchAcceptance.SteepestDescent => L["Run_Acceptance_Steepest"],
+        _ => rule.ToString()
+    };
+
+    private string AcceptanceHint(LocalSearchAcceptance rule) => rule switch
+    {
+        LocalSearchAcceptance.FirstImprovement => L["Run_Acceptance_FirstHint"],
+        LocalSearchAcceptance.BestInsertion => L["Run_Acceptance_BestHint"],
+        LocalSearchAcceptance.SteepestDescent => L["Run_Acceptance_SteepestHint"],
+        _ => rule.ToString()
+    };
+
     /// <summary>The allowed range, spelled out, so it is not hidden in a `max` attribute.</summary>
     private string Range(double min, double max) =>
         string.Format(L["Ui_Range"], Bound(min), Bound(max));
@@ -1047,18 +1234,58 @@
         public const double TwkMin = 0.1;
         public const double TwkMax = 100;
         public const int MinutesMax = 5_256_000;    // ten years, the engine's own ceiling
-        public const int MultiStartMax = 64;
-        public const int LocalSearchMax = 20_000;
+        public const int MultiStartMax = SchedulingParameterLimits.MaxMultiStartRuns;
+        public const int LocalSearchMax = SchedulingParameterLimits.MaxLocalSearchSteps;
 
-        public DispatchRule DispatchRule { get; set; } = DispatchRule.EarliestDueDate;
+        /// <summary>
+        /// The engine's own defaults, so a measurement that changes one of them
+        /// reaches a user instead of being shadowed by a literal copied here once.
+        /// Every value below that is not an app decision comes from this instance.
+        /// </summary>
+        private static readonly SchedulingParameters Defaults = new();
+
+        public DispatchRule DispatchRule { get; set; } = Defaults.DispatchRule;
+
+        /// <summary>
+        /// The one deliberate departure from the library default
+        /// (<see cref="DueDateRule.TotalWorkContent"/>). A production order carries
+        /// the date the customer was promised, so the app does not need to invent
+        /// one; the other four rules stay available for a what-if.
+        /// </summary>
         public DueDateRule DueDateRule { get; set; } = DueDateRule.Explicit;
-        public double TwkFlowFactor { get; set; } = 2.0;
-        public int NopMinutesPerOp { get; set; } = 60;
-        public int SlackMinutes { get; set; } = 120;
-        public int ConMinutes { get; set; } = 480;
-        public int MultiStartRuns { get; set; } = 8;
-        public int LocalSearchMaxSteps { get; set; } = 2000;
-        public int Seed { get; set; } = 20260616;
+
+        public double TwkFlowFactor { get; set; } = Defaults.TwkFlowFactor;
+        public int NopMinutesPerOp { get; set; } = ToMinutes(Defaults.NopSecondsPerOp);
+        public int SlackMinutes { get; set; } = ToMinutes(Defaults.SlackSeconds);
+        public int ConMinutes { get; set; } = ToMinutes(Defaults.ConstantAllowanceSeconds);
+        public int MultiStartRuns { get; set; } = Defaults.MultiStartRuns;
+        public int LocalSearchMaxSteps { get; set; } = Defaults.LocalSearchMaxSteps;
+        public LocalSearchAcceptance LocalSearchAcceptance { get; set; } = Defaults.LocalSearchAcceptance;
+        public int Seed { get; set; } = Defaults.Seed;
+
+        /// <summary>
+        /// Working minutes per calendar day. Display only: it maps work-time onto
+        /// days for the chart and has no effect on capacity or on the schedule.
+        /// <para>
+        /// It used to live on <c>SchedulingParameters</c>, which is a library that
+        /// claims to have no UI concerns, and it is an app value now. It is kept off
+        /// the form on purpose: nothing the page renders reads it yet, and a control
+        /// that visibly changes nothing is worse than no control.
+        /// </para>
+        /// </summary>
+        public int MinutesPerWorkingDay { get; set; } = IProductionScheduleService.DefaultMinutesPerWorkingDay;
+
+        /// <summary>Candidate schedules this run would build: the product is what costs.</summary>
+        public long TotalEvaluations => (long)MultiStartRuns * LocalSearchMaxSteps;
+
+        /// <summary>
+        /// Whether the pair exceeds what the engine accepts. Not folded into
+        /// <see cref="Clamp"/> on purpose: clamping is right for a single field
+        /// whose own limit the user can read off the hint beside it, and wrong here,
+        /// where silently rewriting one of two legal numbers would hide which pair
+        /// was refused and why.
+        /// </summary>
+        public bool ExceedsEvaluationBudget => TotalEvaluations > SchedulingParameterLimits.MaxTotalEvaluations;
 
         /// <summary>Pulls every parameter back inside the range its own field advertises.</summary>
         public void Clamp()
@@ -1082,8 +1309,11 @@
             ConstantAllowanceSeconds = ConMinutes * 60L,
             MultiStartRuns = MultiStartRuns,
             LocalSearchMaxSteps = LocalSearchMaxSteps,
+            LocalSearchAcceptance = LocalSearchAcceptance,
             Seed = Seed
         };
+
+        private static int ToMinutes(long seconds) => (int)(seconds / 60);
     }
 
     /// <summary>Mutable view-model for the AI assistant settings dialog.</summary>
@@ -1101,5 +1331,6 @@
     {
         _lifetimeCancellation.Cancel();
         _lifetimeCancellation.Dispose();
+        _runCancellation?.Dispose();
     }
 }

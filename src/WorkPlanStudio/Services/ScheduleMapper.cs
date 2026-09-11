@@ -127,19 +127,27 @@ public static class ScheduleMapper
                     ToSeconds(o.SetupTimeMinutes, o.TimePerPieceMinutes, order.Quantity)))
                 .ToList();
 
-            // An operation longer than the longest shift (breaks bridged) can never
-            // be placed. Reported here as a rejected order rather than thrown from
-            // the engine's context constructor.
+            // Two ways an operation can be unplaceable, both reported here as a
+            // rejected order rather than thrown from the engine's context
+            // constructor - the page renders a rejection and cannot render an
+            // ArgumentException.
+            //
+            // The second bound is not reachable from the seed data but is reachable
+            // from the form: the validators allow a lot of 1 000 000 pieces, so
+            // anything over about 5.26 minutes a piece is an operation longer than
+            // the engine's ten-year ceiling. On a work center that never closes the
+            // first bound is long.MaxValue and would not catch it.
             var tooLong = snapshot.Operations
                 .OrderBy(o => o.OperationNumber)
                 .Select((o, i) => (Operation: o, Step: steps[i]))
-                .Where(pair => pair.Step.DurationSeconds > machineById[pair.Step.WorkCenterId].LongestPlacementSeconds)
+                .Select(pair => (pair.Operation, pair.Step, Code: UnplaceableReason(pair.Step, machineById)))
+                .Where(pair => pair.Code is not null)
                 .ToList();
             if (tooLong.Count > 0)
             {
                 errors.AddRange(tooLong.Select(pair => new SchedulePreparationIssue(
                     order.Id, order.OrderNumber, pair.Operation.OperationNumber,
-                    SchedulePreparationErrorCode.OperationExceedsShiftWindow,
+                    pair.Code!.Value,
                     centerById[pair.Step.WorkCenterId].Code)));
                 continue;
             }
@@ -162,6 +170,22 @@ public static class ScheduleMapper
 
         return new SchedulePreparationResult(input, errors);
     }
+
+    /// <summary>
+    /// Why an operation can never be placed, or <c>null</c> when it can be.
+    /// </summary>
+    /// <remarks>
+    /// The two reasons carry different messages on purpose. "Longer than the work
+    /// center's longest shift" is false for a work center that never closes, and
+    /// that is exactly the case in which the absolute bound is the one that bites.
+    /// </remarks>
+    private static SchedulePreparationErrorCode? UnplaceableReason(
+        JobStep step, IReadOnlyDictionary<int, MachineCapacity> machineById) =>
+        step.DurationSeconds > SchedulingParameterLimits.MaxStepDurationSeconds
+            ? SchedulePreparationErrorCode.InvalidOperationDuration
+            : step.DurationSeconds > machineById[step.WorkCenterId].LongestPlacementSeconds
+                ? SchedulePreparationErrorCode.OperationExceedsShiftWindow
+                : null;
 
     private static long ToOffsetSeconds(DateTime moment, long horizonTicks) =>
         Math.Max(0, (moment.Ticks - horizonTicks) / TimeSpan.TicksPerSecond);

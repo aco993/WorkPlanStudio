@@ -35,9 +35,11 @@ public sealed class ApiScheduleRunner
 
     /// <summary>Loads the tenant's data, schedules it and projects the result for the wire.</summary>
     /// <param name="parameters">Engine parameters; already range-checked by the endpoint.</param>
+    /// <param name="minutesPerWorkingDay">Working minutes per calendar day, used only to render the chart.</param>
     /// <param name="cancellationToken">Cancels the reads and the search.</param>
     public async Task<ScheduleRunResponse> RunAsync(
         SchedulingParameters parameters,
+        int minutesPerWorkingDay = ScheduleResult.DefaultMinutesPerWorkingDay,
         CancellationToken cancellationToken = default)
     {
         SchedulingParameterLimits.Validate(parameters);
@@ -69,7 +71,7 @@ public sealed class ApiScheduleRunner
 
         if (preparation.Input is null)
         {
-            var empty = ScheduleResult.Empty(parameters.MinutesPerWorkingDay) with
+            var empty = ScheduleResult.Empty(minutesPerWorkingDay) with
             {
                 PreparationErrors = preparation.Errors
             };
@@ -82,7 +84,7 @@ public sealed class ApiScheduleRunner
             result,
             input.Context,
             input.OriginById,
-            parameters.MinutesPerWorkingDay,
+            minutesPerWorkingDay,
             input.Horizon,
             input.TimelineByWorkCenter) with
         {

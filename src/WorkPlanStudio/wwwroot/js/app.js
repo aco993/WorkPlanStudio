@@ -274,3 +274,22 @@ window.workplanSkip = {
         main.scrollIntoView({ block: 'start' });
     }
 };
+
+// One turn of the browser's task queue, for the scheduling run.
+//
+// The run holds the tab's only thread and gives it back between multi-start
+// restarts. What it gives it back *with* decides how much that is worth: a nested
+// setTimeout is clamped to about 4 ms, and Chrome throttles a hidden tab's timers
+// to roughly one wake-up a second - measured on this page as a run that crawled
+// from 25 % to 27 % in ten seconds after the tab went to the background. A message
+// posted to a port is a task and not a timer, so neither clamp applies, and the
+// page still gets to paint between turns (which a microtask would not allow).
+window.workplanYield = {
+    next: function () {
+        return new Promise((resolve) => {
+            const channel = new MessageChannel();
+            channel.port1.onmessage = () => { channel.port1.close(); resolve(); };
+            channel.port2.postMessage(0);
+        });
+    }
+};

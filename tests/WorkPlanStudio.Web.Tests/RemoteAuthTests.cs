@@ -267,11 +267,12 @@ public sealed class RemoteAuthTests : AppBunitContext
             DueDateRule = DueDateRule.EqualSlack,
             Seed = 4242,
             MultiStartRuns = 3,
-            LocalSearchMaxSteps = 17,
-            MinutesPerWorkingDay = 600
+            LocalSearchMaxSteps = 17
         };
 
-        var request = RemoteMapping.ToRequest(parameters);
+        // The display day is a rendering choice and travels beside the engine
+        // parameters, not inside them.
+        var request = RemoteMapping.ToRequest(parameters, minutesPerWorkingDay: 600);
 
         Assert.Equal((int)DispatchRule.WeightedShortestProcessingTime, request.DispatchRule);
         Assert.Equal((int)DueDateRule.EqualSlack, request.DueDateRule);
