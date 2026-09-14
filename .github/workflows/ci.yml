@@ -47,19 +47,40 @@ env:
   DOTNET_CLI_TELEMETRY_OPTOUT: true
   # The advertised quality gate. Change a number here and both the pull-request
   # check and the production deploy move together, because they are the same run.
-  GATE_ENGINE: 90
-  GATE_WORKING_TIME: 90
-  GATE_APP: 65
-  GATE_EXPORT: 90
+  #
+  # Each one sits about two points under what the suite actually measures, so it
+  # defends what has been reached rather than a number from the day it was
+  # written. Measured on d7590bb: engine 96.57, working time 94.18, app 79.95,
+  # export 98.45, api 70.19.
+  GATE_ENGINE: 95
+  GATE_WORKING_TIME: 93
+  GATE_APP: 78
+  GATE_EXPORT: 97
   # Floors, not counts: a run that discovers nothing must never be reported as
-  # success. Comfortably below the real numbers so adding tests needs no edit,
-  # and far enough above zero to catch a suite that silently stopped loading.
-  MIN_TESTS_ENGINE: 145
-  MIN_TESTS_WORKING_TIME: 88
-  MIN_TESTS_WEB: 155
-  MIN_TESTS_API: 80
-  MIN_TESTS_EXPORT: 140
-  GATE_API: 60
+  # success. Kept within about two per cent of the real count, so adding tests
+  # needs no edit and deleting a handful does - a suite that quietly stops
+  # loading half of itself is the failure these exist to catch, and floors far
+  # below the truth cannot see it. Counts on d7590bb, as CI runs them (the
+  # performance budgets are excluded here and run in performance.yml): engine
+  # 291, working time 250, web 867, api 88, export 148.
+  MIN_TESTS_ENGINE: 285
+  MIN_TESTS_WORKING_TIME: 245
+  MIN_TESTS_WEB: 850
+  MIN_TESTS_API: 86
+  MIN_TESTS_EXPORT: 145
+  GATE_API: 68
+
+  # Samples per property, per run. CsCheck reads this variable itself.
+  #
+  # The default is 100, and 100 is not enough: the § 5 rest defect fixed in #46
+  # showed up in two runs out of two hundred, which puts it at roughly one
+  # counterexample in ten thousand draws. At 100 samples a run has a one-in-a-
+  # hundred chance of seeing it — so CI stayed green while a labour-law bug sat
+  # in a released build. At 50 000 the same defect is found with probability
+  # ~99.3 %, and the four suites that use CsCheck pay for it in seconds:
+  # measured locally, engine +4.1 s, working time +3.2 s, export +4.9 s, web
+  # +2.0 s. A property test that only runs a hundred draws is a decoration.
+  CsCheck_Iter: 50000
   # The wall-clock budget tests are the only ones in the repo whose outcome
   # depends on a shared two-core runner. They are tripwires with roughly an
   # order of magnitude of headroom, which is the right design — but a tripwire
