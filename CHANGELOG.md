@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **A work plan that is not there says so.** `/work-plans/9999` — a bookmark from
+  before a delete, or a number someone typed — opened an empty editor and admitted
+  the plan was gone only after Save had been pressed. The page now says which id it
+  could not find and offers the way back, with no form to fill in first.
+- **The plan list states the refusal before the click.** Deleting a work plan an
+  order was raised from asked "this cannot be undone", took the confirmation, and
+  *then* refused. The delete button is disabled with the reason instead, which is
+  what the work-centre and cost-centre lists have always done.
+- **"No room left" is no longer reported as "something went wrong".** The storage
+  layer has always known the difference between a full browser and a broken write;
+  the surface threw it away. A quota failure is now its own result status and says
+  what happened and what to do: *This browser has no room left for the demo
+  database, so the change was undone. Export the data or free some space, then try
+  again.* The other storage failures keep the general sentence.
+- **The import speaks file, not form.** A CSV row naming a plan number nobody has
+  was rejected with "Select a work plan." — there is nothing to select in a file.
+  It now says *No work plan has the number WP-9999.* The form's own message, which
+  sits beside an actual dropdown, is unchanged.
+
 ## [0.3.3] — 2026-09-14
 
 Four findings from driving the published site through all three personas, and

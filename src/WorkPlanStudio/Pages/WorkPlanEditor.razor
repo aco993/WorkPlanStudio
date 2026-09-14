@@ -16,10 +16,13 @@
         <h1>@Title</h1>
     </div>
     <div class="head-actions">
-        <button class="btn btn-ghost" @onclick="Cancel">@L["Common_Cancel"]</button>
-        <AuthorizeView Policy="@Permissions.ManageMasterData">
-            <button class="btn btn-primary" @onclick="SaveAsync" disabled="@_saving">@L["Common_Save"]</button>
-        </AuthorizeView>
+        @if (!_missing)
+        {
+            <button class="btn btn-ghost" @onclick="Cancel">@L["Common_Cancel"]</button>
+            <AuthorizeView Policy="@Permissions.ManageMasterData">
+                <button class="btn btn-primary" @onclick="SaveAsync" disabled="@_saving">@L["Common_Save"]</button>
+            </AuthorizeView>
+        }
     </div>
 </div>
 
@@ -47,6 +50,13 @@
 @if (_loading)
 {
     <div class="loading-row" role="status"><span class="spinner" aria-hidden="true"></span><span class="sr-only">@L["Common_Loading"]</span></div>
+}
+else if (_missing)
+{
+    <div class="empty-state" role="status">
+        <p>@(string.Format(L["Editor_PlanMissing"], Id))</p>
+        <a class="btn btn-primary" href="work-plans">@L["Editor_BackToPlans"]</a>
+    </div>
 }
 else
 {
@@ -292,6 +302,7 @@ else
     }
 
     private bool _loading = true;
+    private bool _missing;
     private WorkPlan _model = new() { Status = WorkPlanStatus.Draft, LotSize = 1 };
     private readonly List<OperationRow> _rows = [];
     private int? _lotSize;
@@ -354,7 +365,18 @@ else
         }
         else
         {
-            _model = await Plans.GetAsync(Id!.Value) ?? new WorkPlan { Status = WorkPlanStatus.Draft, LotSize = 1 };
+            var existing = await Plans.GetAsync(Id!.Value);
+            if (existing is null)
+            {
+                // A bookmark from before a delete, or a number someone typed.
+                // Handing back an empty form pretends the plan is there and only
+                // admits otherwise once Save has been pressed.
+                _missing = true;
+                _loading = false;
+                return;
+            }
+
+            _model = existing;
         }
 
         _lotSize = _model.LotSize;

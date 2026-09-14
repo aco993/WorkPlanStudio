@@ -114,6 +114,7 @@ public sealed class FormErrorState
             ApplicationResultStatus.Forbidden => forbidden ?? localizer["Error_Forbidden"].Value,
             ApplicationResultStatus.NotFound => notFound ?? localizer["Error_NotFound"].Value,
             ApplicationResultStatus.PersistenceFailed => persistenceFailed ?? localizer["Error_SaveFailed"].Value,
+            ApplicationResultStatus.StorageFull => localizer["Error_StorageFull"].Value,
             _ => _all.Count == 0 ? localizer["Error_ActionFailed"].Value : null
         };
     }

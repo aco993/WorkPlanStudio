@@ -20,6 +20,22 @@ public sealed class WorkPlanService
         _guard = guard ?? AllowAllGuard.Instance;
     }
 
+    /// <summary>
+    /// How many production orders were raised from each plan, in one grouped
+    /// query. The list needs it for the same reason the work-centre and
+    /// cost-centre lists need theirs: a delete button that cannot work should
+    /// say so before it is pressed, not after the confirmation.
+    /// </summary>
+    public async Task<Dictionary<int, int>> GetOrderCountsAsync(CancellationToken cancellationToken = default)
+    {
+        await using var db = await _db.CreateContextAsync(cancellationToken);
+
+        return await db.ProductionOrders
+            .GroupBy(order => order.WorkPlanId)
+            .Select(group => new { WorkPlanId = group.Key, Count = group.Count() })
+            .ToDictionaryAsync(row => row.WorkPlanId, row => row.Count, cancellationToken);
+    }
+
     public async Task<List<WorkPlan>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         await using var db = await _db.CreateContextAsync(cancellationToken);

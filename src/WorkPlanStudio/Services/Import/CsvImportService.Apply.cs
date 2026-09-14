@@ -430,7 +430,7 @@ public sealed partial class CsvImportService
             if (!plans.TryGetValue(pending.PlanNumber, out var plan))
             {
                 resolution.Rejected.Add(ImportIssue.At(
-                    pending.Line, Column(staged, "PlanNumber"), "Val_WorkPlanMissing", pending.PlanNumber));
+                    pending.Line, Column(staged, "PlanNumber"), "Imp_WorkPlanNotFound", pending.PlanNumber));
                 continue;
             }
 

@@ -824,4 +824,9 @@
   <data name="Confirm_CancelOrderTitle" xml:space="preserve"><value>Auftrag zurückziehen</value></data>
   <data name="Confirm_CancelOrderBody" xml:space="preserve"><value>Auftrag {0} zurückziehen? Er wird nicht mehr eingeplant, gibt die belegten Arbeitsplätze frei und kann nicht erneut freigegeben werden.</value></data>
   <data name="Orders_KeepOrder" xml:space="preserve"><value>Auftrag behalten</value></data>
+  <data name="Editor_PlanMissing" xml:space="preserve"><value>Es gibt keinen Arbeitsplan mit der Kennung {0}. Möglicherweise wurde er gelöscht.</value></data>
+  <data name="Editor_BackToPlans" xml:space="preserve"><value>Zurück zu den Arbeitsplänen</value></data>
+  <data name="WorkPlans_InUse" xml:space="preserve"><value>Aus diesem Arbeitsplan wurde ein Fertigungsauftrag erzeugt</value></data>
+  <data name="Error_StorageFull" xml:space="preserve"><value>Dieser Browser hat keinen Platz mehr für die Demo-Datenbank; die Änderung wurde zurückgenommen. Exportieren Sie die Daten oder schaffen Sie Platz, dann erneut versuchen.</value></data>
+  <data name="Imp_WorkPlanNotFound" xml:space="preserve"><value>Kein Arbeitsplan trägt die Nummer {0}.</value></data>
 </root>

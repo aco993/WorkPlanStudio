@@ -155,21 +155,24 @@ public sealed class MasterDataFormTests : AppBunitContext
         var cut = Render<WorkPlanStudio.Pages.WorkPlans>();
         cut.WaitForAssertion(() => Assert.NotEmpty(cut.FindAll("tbody tr")));
 
-        await cut.ActAsync(
-            "tbody tr",
-            tr => tr.TextContent.Contains("WP-1001", StringComparison.Ordinal),
-            row => row.QuerySelectorAll("button.icon-btn").Last().Click());
-        cut.WaitForAssertion(() => Assert.NotEmpty(cut.FindAll(".modal-card")));
-        await cut.ActAsync(
-            ".modal-foot .btn", button => button.ClassList.Contains("btn-danger"), confirm => confirm.Click());
+        // The refusal is now stated before the click rather than after the
+        // confirmation: the button is disabled and says why, as the work-centre
+        // and cost-centre lists have always done. (The service still refuses -
+        // see the assertion below, and ProductionOrderService's own tests.)
+        var row = cut.FindAll("tbody tr").Single(tr => tr.TextContent.Contains("WP-1001", StringComparison.Ordinal));
+        var delete = row.QuerySelectorAll("button.icon-btn").Last();
+        Assert.True(delete.HasAttribute("disabled"));
+        Assert.Equal("WorkPlans_InUse", delete.GetAttribute("title"));
+
+        var service = new WorkPlanService(database);
+        var plan = (await service.GetAllAsync(cancellationToken)).Single(p => p.PlanNumber == "WP-1001");
+        var refused = await service.DeleteAsync(plan.Id, cancellationToken);
 
         // The result used to be discarded entirely, and the unhandled
         // DbUpdateException behind it replaced the whole application.
-        cut.WaitForAssertion(() => Assert.Contains("Val_WorkPlanInUse", cut.Markup));
-        Assert.NotNull(await new WorkPlanService(database).GetAsync(
-            (await new WorkPlanService(database).GetAllAsync(cancellationToken))
-                .Single(plan => plan.PlanNumber == "WP-1001").Id,
-            cancellationToken));
+        Assert.Equal(ApplicationResultStatus.Conflict, refused.Status);
+        Assert.Contains(refused.ValidationIssues!, issue => issue.MessageKey == "Val_WorkPlanInUse");
+        Assert.NotNull(await service.GetAsync(plan.Id, cancellationToken));
     }
 
     [Fact]

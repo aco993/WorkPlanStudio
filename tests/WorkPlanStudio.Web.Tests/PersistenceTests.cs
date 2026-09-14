@@ -27,7 +27,10 @@ public sealed class PersistenceTests
         storage.QuotaExceeded = true;
         var result = await centers.SaveAsync(NewCenter("GHOST-1"), cancellationToken);
 
-        Assert.Equal(ApplicationResultStatus.PersistenceFailed, result.Status);
+        // StorageFull rather than PersistenceFailed: the storage layer has always
+        // known which of the two it was, and the surface now carries it, because
+        // "no room left" is the one storage failure a person can act on.
+        Assert.Equal(ApplicationResultStatus.StorageFull, result.Status);
 
         // The commit went to SQLite before the snapshot was attempted. Without the
         // rollback the row is live for the rest of the session and gone after a
