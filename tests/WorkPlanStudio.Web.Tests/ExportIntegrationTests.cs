@@ -610,7 +610,14 @@ public sealed class ExportIntegrationTests : AppBunitContext
         // form's current settings would name settings that were never run.
         var fake = ArrangePage(Sample.OnTime() with { Horizon = new DateTime(2026, 6, 1, 6, 0, 0) });
         var cut = Render<SchedulePage>();
-        cut.WaitForAssertion(() => Assert.NotEmpty(cut.FindAll(".export-trigger")));
+
+        // Wait for the run the page starts by itself to finish, not merely for the
+        // export button to exist. The button is there several awaits earlier, while
+        // the run is still in flight — and a run in flight disables the rule select
+        // and makes GenerateAsync return early, so both steps below would be
+        // dropped in silence and the rule would still read EarliestDueDate. The
+        // export being operable again is the page's own word for "settled".
+        cut.WaitForAssertion(() => Assert.False(cut.Find(".export-trigger").HasAttribute("disabled")));
 
         // Run with one rule, then edit the form to another without running again.
         await cut.ActAsync("#sched-rule", select => select.Change(nameof(DispatchRule.ShortestProcessingTime)));
