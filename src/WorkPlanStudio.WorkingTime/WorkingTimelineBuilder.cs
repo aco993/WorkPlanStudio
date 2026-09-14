@@ -8,7 +8,8 @@ namespace WorkPlanStudio.WorkingTime;
 /// <item>§9 — clip everything that falls on a closed Sunday;</item>
 /// <item>§3 / §6 — cap the working time of each <i>crew and calendar day</i>
 /// (night cap when any of that day's work is night work);</item>
-/// <item>§5 — delay a shift whose crew has not had its rest since their previous shift;</item>
+/// <item>§5 — delay a shift whose crew has not had its rest since their
+/// previous shift, swept until the ring a repeating week makes settles;</item>
 /// <item>§3 / §6 again — a delayed shift can land in a calendar day that already
 /// has its hours;</item>
 /// <item>§4 — carve the owed breaks out of the shift.</item>
@@ -317,43 +318,110 @@ public static class WorkingTimelineBuilder
 
         foreach (var crew in blocks.GroupBy(b => b.Shift.Crew, StringComparer.Ordinal))
         {
-            var ordered = crew.OrderBy(b => b.Start).ToList();
-            if (ordered.Count == 0)
+            var live = crew.Where(b => b.Gross > 0).ToList();
+            if (live.Count == 0)
                 continue;
 
-            // Consecutive pairs, then the wrap from the last shift of the week to
-            // the first of the next: the pattern repeats, so that gap is real too.
-            // "When did this crew last stop working" is the greatest end so far,
-            // not the end of the block that started last - two shifts of one crew
-            // can start together, and the shorter one is not where the rest began.
-            long latestEnd = ordered.Max(b => b.End);
-            long runningEnd = long.MinValue;
-            for (int i = 0; i < ordered.Count; i++)
+            // Where each shift stood before §5 touched it, and the rest it was
+            // first found short of: the planner is told once per shift, however
+            // many sweeps it took to settle.
+            var originalStart = live.ToDictionary(b => b, b => b.Start);
+            var firstGap = new Dictionary<Block, long>();
+            var shortened = new List<Block>();
+
+            // The pattern repeats, so the chain is a ring, and a single pass
+            // measures it against a picture that the pass itself invalidates:
+            // delaying the first shift of the week shortens the rest before the
+            // second, and a shift the delay pushed past its own end is *gone* —
+            // which hands its successor an earlier predecessor and can leave it
+            // with less rest than was just measured for it. (Found by the
+            // property test: a Sunday shift clipped into Monday, the Monday
+            // shift it collided with delayed out of existence, and the 19:00
+            // shift behind it left with ten hours.) So sweep until nothing
+            // moves. Starts only ever grow and a shift that outgrows its own end
+            // is dropped, so this settles; the bound is belt and braces, and the
+            // check after it is what makes the invariant hold either way.
+            int limit = live.Count + 1;
+            for (int sweep = 0; sweep < limit; sweep++)
             {
-                var current = ordered[i];
-                long previousEnd = i == 0 ? latestEnd - Week : runningEnd;
-                runningEnd = Math.Max(runningEnd, current.End);
+                live.Sort(static (a, b) => a.Start.CompareTo(b.Start));
+                bool moved = false;
 
-                long gap = current.Start - previousEnd;
-                if (gap >= rest)
-                    continue;
+                // "When did this crew last stop working" is the greatest end so
+                // far, not the end of the block that started last - two shifts of
+                // one crew can start together, and the shorter one is not where
+                // the rest began.
+                long previousEnd = live.Max(b => b.End) - Week;
+                foreach (var current in live)
+                {
+                    long gap = current.Start - previousEnd;
+                    if (gap < rest)
+                    {
+                        if (firstGap.TryAdd(current, gap))
+                            shortened.Add(current);
 
-                long delayedStart = previousEnd + rest;
-                applications.Add(new RuleApplication(WorkingTimeRuleId.RestPeriod, current.Shift.Key, current.Day,
-                    TimeSpan.FromSeconds(gap), TimeSpan.FromSeconds(rest)));
+                        current.Start = previousEnd + rest;
+                        moved = true;
+                    }
 
-                foreach (var (start, end) in Normalise(current.Start, Math.Min(delayedStart, current.End)))
-                    annotations.Add(new WeekWindow(start, end, SegmentKind.Rest, current.Shift.Key, current.Day));
+                    // A block the delay killed is not where anybody stopped
+                    // working; counting its end would hand the next shift a rest
+                    // it never got.
+                    if (current.Gross > 0)
+                        previousEnd = Math.Max(previousEnd, current.End);
+                }
 
-                current.Start = delayedStart;
+                live.RemoveAll(b => b.Gross <= 0);
+                if (!moved || live.Count == 0)
+                    break;
             }
 
-            var survivors = ordered.Where(b => b.Gross > 0).ToList();
-            ReportRestCompensation(survivors, rules, applications);
-            kept.AddRange(survivors);
+            // Whatever the sweeps could not settle cannot be run: dropping it is
+            // the honest answer, and it only ever lengthens the rest around it -
+            // so one look at the settled ring is enough. The list is read whole
+            // before anything leaves it; RemoveAll would renumber it underfoot.
+            live.Sort(static (a, b) => a.Start.CompareTo(b.Start));
+            var doomed = live.Where(b => GapBefore(b, live) < rest).ToList();
+            foreach (var block in doomed)
+            {
+                if (firstGap.TryAdd(block, GapBefore(block, live)))
+                    shortened.Add(block);
+
+                block.Start = block.End;
+            }
+
+            live.RemoveAll(doomed.Contains);
+
+            foreach (var block in shortened.OrderBy(b => originalStart[b]))
+            {
+                applications.Add(new RuleApplication(WorkingTimeRuleId.RestPeriod, block.Shift.Key, block.Day,
+                    TimeSpan.FromSeconds(firstGap[block]), TimeSpan.FromSeconds(rest)));
+
+                foreach (var (start, end) in Normalise(originalStart[block], Math.Min(block.Start, block.End)))
+                    annotations.Add(new WeekWindow(start, end, SegmentKind.Rest, block.Shift.Key, block.Day));
+            }
+
+            ReportRestCompensation(live, rules, applications);
+            kept.AddRange(live);
         }
 
         return kept.OrderBy(b => b.Start).ToList();
+    }
+
+    /// <summary>
+    /// The rest <paramref name="block"/> gets after the crew's previous shift,
+    /// in <paramref name="ordered"/> — sorted by start, one crew, one week. The
+    /// first shift of the week is measured against the last one of the one
+    /// before, because the pattern repeats.
+    /// </summary>
+    private static long GapBefore(Block block, List<Block> ordered)
+    {
+        int index = ordered.IndexOf(block);
+        long previousEnd = index == 0
+            ? ordered.Max(b => b.End) - Week
+            : ordered.Take(index).Max(b => b.End);
+
+        return block.Start - previousEnd;
     }
 
     /// <summary>
