@@ -404,18 +404,22 @@ Fall nachgestellt.
 Die Abdeckung wird mit dem Collector der Microsoft Testing Platform gemessen und **je
 Assembly in der CI abgesichert**
 ([`.github/scripts/coverage_gate.py`](../.github/scripts/coverage_gate.py)). Gemessen
-am 11.09.2026 auf diesem Stand:
+von der CI auf `0923a0a`:
 
 | Assembly | Gemessen von | Zeilen | Zweige | Schwelle |
 | --- | --- | ---: | ---: | ---: |
-| `WorkPlanStudio.Scheduling` | `Scheduling.Tests` | 96,57 % | 90,45 % | 90 % |
-| `WorkPlanStudio.WorkingTime` | `WorkingTime.Tests` | 94,31 % | 90,29 % | 90 % |
-| `WorkPlanStudio` (App: Dienste, Mapping, Import, Assistent, Seiten) | `Web.Tests` | 79,89 % | 71,28 % | 65 % |
-| `WorkPlanStudio.Api` | `Api.Tests` | 70,19 % | 65,84 % | 60 % |
-| `WorkPlanStudio.Export` | `Export.Tests` | 98,45 % | 90,34 % | 90 % |
+| `WorkPlanStudio.Scheduling` | `Scheduling.Tests` | 96,57 % | 90,45 % | 95 % |
+| `WorkPlanStudio.WorkingTime` | `WorkingTime.Tests` | 94,18 % | 90,28 % | 93 % |
+| `WorkPlanStudio.Domain` (Entitäten, Validierung, Richtlinien, Abbildung) | `Web.Tests` | 89,59 % | 78,37 % | 87 % |
+| `WorkPlanStudio` (App: Dienste, Import, Assistent, Seiten) | `Web.Tests` | 79,42 % | 70,88 % | 78 % |
+| `WorkPlanStudio.Api` | `Api.Tests` | 69,67 % | 68,36 % | 68 % |
+| `WorkPlanStudio.Export` | `Export.Tests` | 98,45 % | 90,34 % | 97 % |
 
 Die Zahl der App-Assembly liegt aus Entwurfsgründen niedriger: Ihre Seiten deckt die
 Browser-Suite ab, die der Collector nicht sieht.
+
+Jede Schwelle liegt rund zwei Punkte unter dem Gemessenen, verteidigt also das
+Erreichte und nicht eine Zahl vom Tag ihrer Entstehung.
 
 Die Schwellenwerte stehen im `env`-Block von `ci.yml` und sonst nirgends, damit die
 Prüfung im Pull Request und die Auslieferung zusammen wandern. Die Badges im README
