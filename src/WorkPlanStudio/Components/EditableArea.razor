@@ -1,0 +1,29 @@
+@*
+    Form controls that only one persona may save.
+
+    A read-only page that still lets you type is a page that throws your work
+    away: the Save button is hidden, so the fields invite an edit nothing will
+    keep. A disabled <fieldset> disables every control inside it natively -
+    inputs, selects and buttons - which is both the honest signal and the
+    accessible one, because a disabled control is announced as disabled and
+    skipped by the tab order.
+
+    The child content is rendered in exactly one branch, so nothing is
+    duplicated, and AuthorizeView re-renders it when the persona changes.
+*@
+<AuthorizeView Policy="@Policy" Context="area">
+    <Authorized>
+        <fieldset class="form-fieldset">@ChildContent</fieldset>
+    </Authorized>
+    <NotAuthorized>
+        <fieldset class="form-fieldset" disabled>@ChildContent</fieldset>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    /// <summary>The policy that makes these controls editable.</summary>
+    [Parameter, EditorRequired] public string Policy { get; set; } = "";
+
+    /// <summary>The controls themselves.</summary>
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

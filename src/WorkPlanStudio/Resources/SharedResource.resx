@@ -332,7 +332,7 @@
   <data name="Sched_Error_OperationExceedsShiftWindow" xml:space="preserve"><value>operation is longer than the work center's longest shift and can never be placed</value></data>
   <data name="Sched_Paused" xml:space="preserve"><value>paused</value></data>
   <data name="Sched_Setup" xml:space="preserve"><value>change-over</value></data>
-  <data name="Sched_ClosedLegend" xml:space="preserve"><value>Shaded: work center closed — hover for the reason</value></data>
+  <data name="Sched_ClosedLegend" xml:space="preserve"><value>Shaded: work center closed — every segment names its reason</value></data>
   <data name="Sched_TotalPaused" xml:space="preserve"><value>{0} paused across breaks</value></data>
   <data name="Segment_Working" xml:space="preserve"><value>Working</value></data>
   <data name="Segment_Break" xml:space="preserve"><value>Break (§ 4 ArbZG)</value></data>
@@ -815,4 +815,13 @@
   <data name="Sched_Proof_Failed" xml:space="preserve"><value>The optimality check could not be completed.</value></data>
   <data name="Sched_Proof_NotProvedNoBound" xml:space="preserve"><value>Not proved within {0}: the search closed neither the gap nor a useful bound.</value></data>
   <data name="Chat_SupersededByNewRun" xml:space="preserve"><value>The schedule changed while that question was being answered, so the answer would have described a plan that is no longer shown. Ask it again.</value></data>
+  <data name="Confirm_LeaveTitle" xml:space="preserve"><value>Leave without saving?</value></data>
+  <data name="Confirm_LeaveBody" xml:space="preserve"><value>This work plan has changes that were never saved. Leaving now throws them away.</value></data>
+  <data name="Confirm_LeaveStay" xml:space="preserve"><value>Keep editing</value></data>
+  <data name="Confirm_LeaveDiscard" xml:space="preserve"><value>Discard changes</value></data>
+  <data name="Confirm_DeleteOrderTitle" xml:space="preserve"><value>Delete order</value></data>
+  <data name="Confirm_DeleteOrderBody" xml:space="preserve"><value>Delete order {0}? It is still a draft, and this cannot be undone.</value></data>
+  <data name="Confirm_CancelOrderTitle" xml:space="preserve"><value>Withdraw order</value></data>
+  <data name="Confirm_CancelOrderBody" xml:space="preserve"><value>Withdraw order {0}? It stops being scheduled, releases the work centers it held, and cannot be released again.</value></data>
+  <data name="Orders_KeepOrder" xml:space="preserve"><value>Keep the order</value></data>
 </root>

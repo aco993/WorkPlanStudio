@@ -332,7 +332,7 @@
   <data name="Sched_Error_OperationExceedsShiftWindow" xml:space="preserve"><value>Arbeitsgang ist länger als die längste Schicht des Arbeitsplatzes und kann nie eingeplant werden</value></data>
   <data name="Sched_Paused" xml:space="preserve"><value>unterbrochen</value></data>
   <data name="Sched_Setup" xml:space="preserve"><value>Rüsten</value></data>
-  <data name="Sched_ClosedLegend" xml:space="preserve"><value>Schraffiert: Arbeitsplatz geschlossen — Grund per Mauszeiger</value></data>
+  <data name="Sched_ClosedLegend" xml:space="preserve"><value>Schraffiert: Arbeitsplatz geschlossen — jeder Abschnitt nennt seinen Grund</value></data>
   <data name="Sched_TotalPaused" xml:space="preserve"><value>{0} Unterbrechung durch Pausen</value></data>
   <data name="Segment_Working" xml:space="preserve"><value>Arbeitszeit</value></data>
   <data name="Segment_Break" xml:space="preserve"><value>Pause (§ 4 ArbZG)</value></data>
@@ -815,4 +815,13 @@
   <data name="Sched_Proof_Failed" xml:space="preserve"><value>Die Optimalitätsprüfung konnte nicht abgeschlossen werden.</value></data>
   <data name="Sched_Proof_NotProvedNoBound" xml:space="preserve"><value>Innerhalb von {0} nicht bewiesen: die Suche hat weder die Lücke geschlossen noch eine brauchbare Schranke gefunden.</value></data>
   <data name="Chat_SupersededByNewRun" xml:space="preserve"><value>Der Plan hat sich geändert, während diese Frage beantwortet wurde — die Antwort hätte einen Plan beschrieben, der nicht mehr angezeigt wird. Bitte erneut fragen.</value></data>
+  <data name="Confirm_LeaveTitle" xml:space="preserve"><value>Ohne Speichern verlassen?</value></data>
+  <data name="Confirm_LeaveBody" xml:space="preserve"><value>Dieser Arbeitsplan hat Änderungen, die nie gespeichert wurden. Wer jetzt geht, wirft sie weg.</value></data>
+  <data name="Confirm_LeaveStay" xml:space="preserve"><value>Weiter bearbeiten</value></data>
+  <data name="Confirm_LeaveDiscard" xml:space="preserve"><value>Änderungen verwerfen</value></data>
+  <data name="Confirm_DeleteOrderTitle" xml:space="preserve"><value>Auftrag löschen</value></data>
+  <data name="Confirm_DeleteOrderBody" xml:space="preserve"><value>Auftrag {0} löschen? Er ist noch ein Entwurf, und das lässt sich nicht rückgängig machen.</value></data>
+  <data name="Confirm_CancelOrderTitle" xml:space="preserve"><value>Auftrag zurückziehen</value></data>
+  <data name="Confirm_CancelOrderBody" xml:space="preserve"><value>Auftrag {0} zurückziehen? Er wird nicht mehr eingeplant, gibt die belegten Arbeitsplätze frei und kann nicht erneut freigegeben werden.</value></data>
+  <data name="Orders_KeepOrder" xml:space="preserve"><value>Auftrag behalten</value></data>
 </root>

@@ -34,124 +34,126 @@ else
         <section class="card wt-rules">
             <div class="card-head"><h2>@L["WorkingTime_PlantRules"]</h2></div>
             <div class="card-body">
-                <div class="form-grid">
-                    <label class="field wide">
-                        <span>@L["WorkingTime_State"]</span>
-                        <select id="wt-state" class="input" @bind="_form.State" @bind:after="Recompute">
-                            @foreach (var state in GermanStates.All)
+                <EditableArea Policy="@Permissions.ManagePlantRules">
+                    <div class="form-grid">
+                        <label class="field wide">
+                            <span>@L["WorkingTime_State"]</span>
+                            <select id="wt-state" class="input" @bind="_form.State" @bind:after="Recompute">
+                                @foreach (var state in GermanStates.All)
+                                {
+                                    <option value="@state">@state.Name() (@state)</option>
+                                }
+                            </select>
+                        </label>
+                        <label class="field check wide">
+                            <input type="checkbox" @bind="_form.IncludePartialHolidays" @bind:after="Recompute" />
+                            <span>@L["WorkingTime_IncludePartial"]</span>
+                        </label>
+                        <label class="field check wide">
+                            <input type="checkbox" @bind="_form.AllowExtendedDay" @bind:after="Recompute" />
+                            <span>@L["WorkingTime_AllowExtendedDay"]</span>
+                        </label>
+                        <label class="field check wide">
+                            <input type="checkbox" @bind="_form.AllowExtendedNight" @bind:after="Recompute" />
+                            <span>@L["WorkingTime_AllowExtendedNight"]</span>
+                        </label>
+                        <label class="field wide">
+                            <span>@L["Wt_AveragingWindow"]</span>
+                            <select id="wt-window" class="input" @bind="_form.AveragingWindow" @bind:after="Recompute">
+                                @foreach (var window in Enum.GetValues<AveragingWindow>())
+                                {
+                                    <option value="@window">@L.WindowName(window)</option>
+                                }
+                            </select>
+                            @if (_formErrors.TryGetValue(nameof(PlantSettings.AveragingWindow), out var windowError))
                             {
-                                <option value="@state">@state.Name() (@state)</option>
-                            }
-                        </select>
-                    </label>
-                    <label class="field check wide">
-                        <input type="checkbox" @bind="_form.IncludePartialHolidays" @bind:after="Recompute" />
-                        <span>@L["WorkingTime_IncludePartial"]</span>
-                    </label>
-                    <label class="field check wide">
-                        <input type="checkbox" @bind="_form.AllowExtendedDay" @bind:after="Recompute" />
-                        <span>@L["WorkingTime_AllowExtendedDay"]</span>
-                    </label>
-                    <label class="field check wide">
-                        <input type="checkbox" @bind="_form.AllowExtendedNight" @bind:after="Recompute" />
-                        <span>@L["WorkingTime_AllowExtendedNight"]</span>
-                    </label>
-                    <label class="field wide">
-                        <span>@L["Wt_AveragingWindow"]</span>
-                        <select id="wt-window" class="input" @bind="_form.AveragingWindow" @bind:after="Recompute">
-                            @foreach (var window in Enum.GetValues<AveragingWindow>())
-                            {
-                                <option value="@window">@L.WindowName(window)</option>
-                            }
-                        </select>
-                        @if (_formErrors.TryGetValue(nameof(PlantSettings.AveragingWindow), out var windowError))
-                        {
-                            <span class="field-error">@windowError</span>
-                        }
-                    </label>
-                    <label class="field check wide">
-                        <input id="wt-sunday" type="checkbox" @bind="_form.SundayWorkAllowed" @bind:after="Recompute" />
-                        <span>@L["WorkingTime_SundayWork"]</span>
-                    </label>
-                    <label class="field check wide">
-                        <input type="checkbox" @bind="_form.HolidayWorkAllowed" @bind:after="Recompute" />
-                        <span>@L["WorkingTime_HolidayWork"]</span>
-                    </label>
-                    <label class="field">
-                        <span>@L["WorkingTime_BoundaryShift"]</span>
-                        <span class="input-unit">
-                            <input class="input num" type="number" inputmode="numeric" min="0" max="6" @bind="_form.SundayBoundaryShiftHours" @bind:after="Recompute" />
-                            <span>@L["WorkingTime_Hours"]</span>
-                        </span>
-                        @if (_formErrors.TryGetValue("SundayBoundaryShiftHours", out var shiftError))
-                        {
-                            <span class="field-error">@shiftError</span>
-                        }
-                    </label>
-                    @*
-                        § 11 (1) divides the year's Sundays by the rota, so the
-                        rota only means anything once Sunday work is permitted at
-                        all. It appears with that permission and is announced.
-                    *@
-                    @if (_form.SundayWorkAllowed)
-                    {
-                        <label class="field">
-                            <span>@L["Wt_SundayRotation"]</span>
-                            <span class="input-unit">
-                                <input id="wt-rotation" class="input num" type="number" inputmode="numeric" min="1" max="52"
-                                       aria-describedby="wt-rotation-hint"
-                                       @bind="_form.SundayRotationWeeks" @bind:after="Recompute" />
-                                <span>@L["Wt_WeeksUnit"]</span>
-                            </span>
-                            @if (_formErrors.TryGetValue(nameof(PlantSettings.SundayRotationWeeks), out var rotationError))
-                            {
-                                <span class="field-error">@rotationError</span>
+                                <span class="field-error">@windowError</span>
                             }
                         </label>
-                        <p id="wt-rotation-hint" class="muted small-text wide">@L["Wt_SundayRotationHint"]</p>
-                    }
-
-                    <label class="field wide">
-                        <span>@L["Wt_RestSector"]</span>
-                        <select id="wt-sector" class="input" @bind="_form.RestExceptionSector" @bind:after="Recompute">
-                            @foreach (var sector in Enum.GetValues<RestExceptionSector>())
+                        <label class="field check wide">
+                            <input id="wt-sunday" type="checkbox" @bind="_form.SundayWorkAllowed" @bind:after="Recompute" />
+                            <span>@L["WorkingTime_SundayWork"]</span>
+                        </label>
+                        <label class="field check wide">
+                            <input type="checkbox" @bind="_form.HolidayWorkAllowed" @bind:after="Recompute" />
+                            <span>@L["WorkingTime_HolidayWork"]</span>
+                        </label>
+                        <label class="field">
+                            <span>@L["WorkingTime_BoundaryShift"]</span>
+                            <span class="input-unit">
+                                <input class="input num" type="number" inputmode="numeric" min="0" max="6" @bind="_form.SundayBoundaryShiftHours" @bind:after="Recompute" />
+                                <span>@L["WorkingTime_Hours"]</span>
+                            </span>
+                            @if (_formErrors.TryGetValue("SundayBoundaryShiftHours", out var shiftError))
                             {
-                                <option value="@sector">@L.SectorName(sector)</option>
+                                <span class="field-error">@shiftError</span>
                             }
-                        </select>
-                        @if (_formErrors.TryGetValue(nameof(PlantSettings.RestExceptionSector), out var sectorError))
-                        {
-                            <span class="field-error">@sectorError</span>
-                        }
-                    </label>
-                    <label class="field">
-                        <span>@L["WorkingTime_MinimumRest"]</span>
+                        </label>
                         @*
-                            Ten hours is not a number a plant may dial in; it is an
-                            entitlement of the sectors § 5 (2) names. So it is not
-                            an option here until one of them is declared — and the
-                            validator and a CHECK constraint say the same, because
-                            a control that is merely hidden still grants it.
+                            § 11 (1) divides the year's Sundays by the rota, so the
+                            rota only means anything once Sunday work is permitted at
+                            all. It appears with that permission and is announced.
                         *@
-                        <select id="wt-rest" class="input" aria-describedby="wt-rest-note"
-                                @bind="_form.MinimumRestHours" @bind:after="Recompute">
-                            <option value="11">11 @L["WorkingTime_Hours"]</option>
-                            @if (_form.RestExceptionSector != RestExceptionSector.None)
-                            {
-                                <option value="10">10 @L["WorkingTime_Hours"]</option>
-                            }
-                        </select>
-                        @if (_formErrors.TryGetValue("MinimumRestHours", out var restError))
+                        @if (_form.SundayWorkAllowed)
                         {
-                            <span class="field-error">@restError</span>
+                            <label class="field">
+                                <span>@L["Wt_SundayRotation"]</span>
+                                <span class="input-unit">
+                                    <input id="wt-rotation" class="input num" type="number" inputmode="numeric" min="1" max="52"
+                                           aria-describedby="wt-rotation-hint"
+                                           @bind="_form.SundayRotationWeeks" @bind:after="Recompute" />
+                                    <span>@L["Wt_WeeksUnit"]</span>
+                                </span>
+                                @if (_formErrors.TryGetValue(nameof(PlantSettings.SundayRotationWeeks), out var rotationError))
+                                {
+                                    <span class="field-error">@rotationError</span>
+                                }
+                            </label>
+                            <p id="wt-rotation-hint" class="muted small-text wide">@L["Wt_SundayRotationHint"]</p>
                         }
-                    </label>
-                    <p id="wt-rest-note" class="muted small-text wide">
-                        @(_form.RestExceptionSector == RestExceptionSector.None
-                            ? L["Wt_RestNoSector"].Value
-                            : string.Format(Culture, L["Wt_RestCompensationNote"], Span(WorkingTimeRules.Statutory.CompensatingRest)))
-                    </p>
-                </div>
+
+                        <label class="field wide">
+                            <span>@L["Wt_RestSector"]</span>
+                            <select id="wt-sector" class="input" @bind="_form.RestExceptionSector" @bind:after="Recompute">
+                                @foreach (var sector in Enum.GetValues<RestExceptionSector>())
+                                {
+                                    <option value="@sector">@L.SectorName(sector)</option>
+                                }
+                            </select>
+                            @if (_formErrors.TryGetValue(nameof(PlantSettings.RestExceptionSector), out var sectorError))
+                            {
+                                <span class="field-error">@sectorError</span>
+                            }
+                        </label>
+                        <label class="field">
+                            <span>@L["WorkingTime_MinimumRest"]</span>
+                            @*
+                                Ten hours is not a number a plant may dial in; it is an
+                                entitlement of the sectors § 5 (2) names. So it is not
+                                an option here until one of them is declared — and the
+                                validator and a CHECK constraint say the same, because
+                                a control that is merely hidden still grants it.
+                            *@
+                            <select id="wt-rest" class="input" aria-describedby="wt-rest-note"
+                                    @bind="_form.MinimumRestHours" @bind:after="Recompute">
+                                <option value="11">11 @L["WorkingTime_Hours"]</option>
+                                @if (_form.RestExceptionSector != RestExceptionSector.None)
+                                {
+                                    <option value="10">10 @L["WorkingTime_Hours"]</option>
+                                }
+                            </select>
+                            @if (_formErrors.TryGetValue("MinimumRestHours", out var restError))
+                            {
+                                <span class="field-error">@restError</span>
+                            }
+                        </label>
+                        <p id="wt-rest-note" class="muted small-text wide">
+                            @(_form.RestExceptionSector == RestExceptionSector.None
+                                ? L["Wt_RestNoSector"].Value
+                                : string.Format(Culture, L["Wt_RestCompensationNote"], Span(WorkingTimeRules.Statutory.CompensatingRest)))
+                        </p>
+                    </div>
+                </EditableArea>
                 <p class="sr-only" role="status" aria-live="polite">@_ruleAnnouncement</p>
                 <div class="head-actions wt-actions">
                     <AuthorizeView Policy="@Permissions.ManagePlantRules">
