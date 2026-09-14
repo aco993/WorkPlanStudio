@@ -63,7 +63,7 @@ public sealed class WorkingTimePageTests : AppBunitContext
         var cut = Render<WorkPlanStudio.Pages.WorkingTimePage>();
         cut.WaitForAssertion(() => Assert.NotEmpty(cut.FindAll("#wt-state")));
 
-        cut.Find("#wt-state").Change("BE");
+        await cut.ActAsync("#wt-state", state => state.Change("BE"));
 
         cut.WaitForAssertion(() => Assert.Contains("Holiday_WomensDay", cut.Markup));
         Assert.DoesNotContain("Holiday_CorpusChristi", cut.Markup);
@@ -77,7 +77,7 @@ public sealed class WorkingTimePageTests : AppBunitContext
         var cut = Render<WorkPlanStudio.Pages.WorkingTimePage>();
         cut.WaitForAssertion(() => Assert.NotEmpty(cut.FindAll("#wt-sunday")));
 
-        cut.Find("#wt-sunday").Change(true);
+        await cut.ActAsync("#wt-sunday", sunday => sunday.Change(true));
 
         cut.WaitForAssertion(() => Assert.DoesNotContain("WorkingTime_FreeSundaysViolation", cut.Markup));
         Assert.DoesNotContain(cut.FindAll(".week-seg"), seg => seg.ClassList.Contains("seg-sunday"));
@@ -92,8 +92,10 @@ public sealed class WorkingTimePageTests : AppBunitContext
         var cut = Render<WorkPlanStudio.Pages.WorkingTimePage>();
         cut.WaitForAssertion(() => Assert.NotEmpty(cut.FindAll("#wt-state")));
 
-        cut.Find("#wt-state").Change("SN");
-        await cut.Find("button.btn-primary").ClickAsync(new());
+        await cut.ActAsync("#wt-state", state => state.Change("SN"));
+        // ClickAsync, not the helper: this one awaits the save handler itself, and
+        // the find moves inside the dispatch for the reason InteractionTestSupport gives.
+        await cut.InvokeAsync(() => cut.Find("button.btn-primary").ClickAsync(new()));
 
         cut.WaitForAssertion(() => Assert.Contains("WorkingTime_Saved", cut.Markup));
         Assert.Equal("SN", (await new PlantSettingsService(database).GetAsync(Xunit.TestContext.Current.CancellationToken)).State);

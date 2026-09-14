@@ -58,12 +58,12 @@ public sealed class FocusManagementTests : AppBunitContext
     }
 
     [Fact]
-    public void Focus_is_returned_exactly_once_when_the_close_button_is_used()
+    public async Task Focus_is_returned_exactly_once_when_the_close_button_is_used()
     {
         var visible = true;
         var cut = RenderModal(value => visible = value);
 
-        cut.Find(".modal-head button").Click();
+        await cut.ActAsync(".modal-head button", close => close.Click());
         cut.Render(parameters => parameters.Add(component => component.Visible, visible));
 
         Assert.False(visible);

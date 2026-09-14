@@ -66,7 +66,7 @@ public sealed class WorkingTimeArbZgPageTests : AppBunitContext, IDisposable
         using var files = new TempDatabaseFiles();
         var cut = await PageAsync(files);
 
-        cut.Find("#wt-pattern").Change(ShiftPatterns.OneShift.Key);
+        await cut.ActAsync("#wt-pattern", pattern => pattern.Change(ShiftPatterns.OneShift.Key));
         cut.WaitForAssertion(() => Assert.Contains("Day shift", cut.Markup, StringComparison.Ordinal));
 
         // 40 h a week over six Werktage is 6.67 h, well inside the eight hours
@@ -90,11 +90,11 @@ public sealed class WorkingTimeArbZgPageTests : AppBunitContext, IDisposable
         using var files = new TempDatabaseFiles();
         var cut = await PageAsync(files);
 
-        cut.Find("#wt-pattern").Change(ShiftPatterns.OneShift.Key);
+        await cut.ActAsync("#wt-pattern", pattern => pattern.Change(ShiftPatterns.OneShift.Key));
         cut.WaitForAssertion(() => Assert.Contains("Day shift", cut.Markup, StringComparison.Ordinal));
-        cut.Find("#wt-sunday").Change(true);
+        await cut.ActAsync("#wt-sunday", sunday => sunday.Change(true));
         cut.WaitForAssertion(() => Assert.NotEmpty(cut.FindAll("#wt-rotation")));
-        cut.Find("#wt-days").Change("WithSunday");
+        await cut.ActAsync("#wt-days", days => days.Change("WithSunday"));
 
         // Seven 8-hour days is 56 h a week. Sunday hours count towards the § 3
         // average but Sunday is not a Werktag, so the divisor stays at six:
@@ -125,7 +125,7 @@ public sealed class WorkingTimeArbZgPageTests : AppBunitContext, IDisposable
         Assert.Equal(["11"], cut.FindAll("#wt-rest option").Select(o => o.GetAttribute("value")));
         Assert.Contains("no entitlement to shorten the rest", cut.Find("#wt-rest-note").TextContent, StringComparison.Ordinal);
 
-        cut.Find("#wt-sector").Change(nameof(RestExceptionSector.HealthCare));
+        await cut.ActAsync("#wt-sector", sector => sector.Change(nameof(RestExceptionSector.HealthCare)));
 
         cut.WaitForAssertion(() => Assert.Equal(["11", "10"], cut.FindAll("#wt-rest option").Select(o => o.GetAttribute("value"))));
 
@@ -143,12 +143,12 @@ public sealed class WorkingTimeArbZgPageTests : AppBunitContext, IDisposable
         using var files = new TempDatabaseFiles();
         var cut = await PageAsync(files);
 
-        cut.Find("#wt-sector").Change(nameof(RestExceptionSector.Hospitality));
+        await cut.ActAsync("#wt-sector", sector => sector.Change(nameof(RestExceptionSector.Hospitality)));
         cut.WaitForAssertion(() => Assert.Equal(2, cut.FindAll("#wt-rest option").Count));
-        cut.Find("#wt-rest").Change("10");
+        await cut.ActAsync("#wt-rest", rest => rest.Change("10"));
         cut.WaitForAssertion(() => Assert.Equal("10", cut.Find("#wt-rest").GetAttribute("value")));
 
-        cut.Find("#wt-sector").Change(nameof(RestExceptionSector.None));
+        await cut.ActAsync("#wt-sector", sector => sector.Change(nameof(RestExceptionSector.None)));
 
         // The entitlement goes and the value goes with it, rather than being left
         // behind for the validator to refuse on the next save.
@@ -236,17 +236,17 @@ public sealed class WorkingTimeArbZgPageTests : AppBunitContext, IDisposable
         using var files = new TempDatabaseFiles();
         var cut = await PageAsync(files);
 
-        cut.Find("#wt-pattern").Change(ShiftPatterns.OneShift.Key);
+        await cut.ActAsync("#wt-pattern", pattern => pattern.Change(ShiftPatterns.OneShift.Key));
         cut.WaitForAssertion(() => Assert.Contains("Day shift", cut.Markup, StringComparison.Ordinal));
-        cut.Find("#wt-sunday").Change(true);
+        await cut.ActAsync("#wt-sunday", sunday => sunday.Change(true));
         cut.WaitForAssertion(() => Assert.NotEmpty(cut.FindAll("#wt-rotation")));
-        cut.Find("#wt-days").Change("WithSunday");
+        await cut.ActAsync("#wt-days", days => days.Change("WithSunday"));
 
         // One crew, no rota: it works all 52 Sundays of 2026 and none stays free.
         cut.WaitForAssertion(() => Assert.Contains("0 free Sundays in 2026", cut.Markup, StringComparison.Ordinal));
         Assert.Contains("Too few Sundays stay free", cut.Markup, StringComparison.Ordinal);
 
-        cut.Find("#wt-rotation").Change("4");
+        await cut.ActAsync("#wt-rotation", rotation => rotation.Change("4"));
 
         // Four crews taking one Sunday in four leave 39 free, which is over the
         // fifteen § 11 (1) asks for — lawful, and no longer reported as a breach.
@@ -263,7 +263,7 @@ public sealed class WorkingTimeArbZgPageTests : AppBunitContext, IDisposable
 
         Assert.Empty(cut.FindAll("#wt-rotation"));
 
-        cut.Find("#wt-sunday").Change(true);
+        await cut.ActAsync("#wt-sunday", sunday => sunday.Change(true));
 
         cut.WaitForAssertion(() => Assert.Single(cut.FindAll("#wt-rotation")));
         Assert.Equal("wt-rotation-hint", cut.Find("#wt-rotation").GetAttribute("aria-describedby"));

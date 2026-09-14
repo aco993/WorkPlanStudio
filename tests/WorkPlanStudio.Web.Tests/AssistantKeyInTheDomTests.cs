@@ -53,22 +53,22 @@ public sealed class AssistantKeyInTheDomTests : AppBunitContext
             _files.Dispose();
     }
 
-    private IRenderedComponent<SchedulePage> OpenSettings()
+    private async Task<IRenderedComponent<SchedulePage>> OpenSettingsAsync()
     {
         var cut = Render<SchedulePage>();
         cut.WaitForAssertion(() => Assert.NotEmpty(cut.FindAll(".assistant-card")));
-        cut.Find(".assistant-card .icon-btn").Click();
+        await cut.ActAsync(".assistant-card .icon-btn", settings => settings.Click());
         cut.WaitForAssertion(() => Assert.NotEmpty(cut.FindAll(".modal-card")));
         return cut;
     }
 
     [Fact]
-    public void A_stored_key_never_reaches_the_markup()
+    public async Task A_stored_key_never_reaches_the_markup()
     {
         Arrange();
         _config.Settings = _config.Settings with { Enabled = true, ApiKey = Secret };
 
-        var cut = OpenSettings();
+        var cut = await OpenSettingsAsync();
 
         Assert.DoesNotContain(Secret, cut.Markup, StringComparison.Ordinal);
         var field = cut.FindAll(".modal-card input[type=password]").Single();
@@ -81,22 +81,22 @@ public sealed class AssistantKeyInTheDomTests : AppBunitContext
     /// again, which is the opposite of the point.
     /// </summary>
     [Fact]
-    public void The_field_says_whether_a_key_is_already_stored()
+    public async Task The_field_says_whether_a_key_is_already_stored()
     {
         Arrange();
         _config.Settings = _config.Settings with { Enabled = true, ApiKey = Secret };
 
-        var stored = OpenSettings().FindAll(".modal-card input[type=password]").Single();
+        var stored = (await OpenSettingsAsync()).FindAll(".modal-card input[type=password]").Single();
         Assert.Equal("Ai_KeyStored", stored.GetAttribute("placeholder"));
     }
 
     [Fact]
-    public void With_no_key_stored_the_field_says_so_and_offers_no_way_to_forget_one()
+    public async Task With_no_key_stored_the_field_says_so_and_offers_no_way_to_forget_one()
     {
         Arrange();
         _config.Settings = _config.Settings with { Enabled = true, ApiKey = "" };
 
-        var cut = OpenSettings();
+        var cut = await OpenSettingsAsync();
 
         Assert.Equal("Ai_KeyNone", cut.FindAll(".modal-card input[type=password]").Single().GetAttribute("placeholder"));
         Assert.DoesNotContain(cut.FindAll(".modal-card button"), b => b.TextContent.Contains("Ai_KeyForget", StringComparison.Ordinal));
@@ -108,7 +108,7 @@ public sealed class AssistantKeyInTheDomTests : AppBunitContext
         Arrange();
         _config.Settings = _config.Settings with { Enabled = true, ApiKey = Secret };
 
-        var cut = OpenSettings();
+        var cut = await OpenSettingsAsync();
         await cut.InvokeAsync(() =>
             cut.FindAll(".modal-card button").Single(b => b.TextContent.Contains("Ai_KeyForget", StringComparison.Ordinal)).Click());
 
@@ -119,9 +119,9 @@ public sealed class AssistantKeyInTheDomTests : AppBunitContext
 
     /// <summary>The risk the app cannot engineer away is stated where the key is entered.</summary>
     [Fact]
-    public void The_dialog_states_the_residual_risk()
+    public async Task The_dialog_states_the_residual_risk()
     {
         Arrange();
-        Assert.Contains("Ai_KeyRisk", OpenSettings().Markup, StringComparison.Ordinal);
+        Assert.Contains("Ai_KeyRisk", (await OpenSettingsAsync()).Markup, StringComparison.Ordinal);
     }
 }

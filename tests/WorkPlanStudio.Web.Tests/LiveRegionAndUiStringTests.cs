@@ -52,7 +52,7 @@ public sealed class LiveRegionAndUiStringTests : AppBunitContext
     /// the first answer of every conversation was silent and the second one was not.
     /// </summary>
     [Fact]
-    public void The_chat_thread_is_a_live_region_before_the_first_question_is_asked()
+    public async Task The_chat_thread_is_a_live_region_before_the_first_question_is_asked()
     {
         Arrange(Sample.OnTime() with { Horizon = new DateTime(2026, 6, 1, 6, 0, 0) });
 
@@ -64,7 +64,7 @@ public sealed class LiveRegionAndUiStringTests : AppBunitContext
         Assert.Equal("additions", thread.GetAttribute("aria-relevant"));
         Assert.Empty(cut.FindAll(".chat-turn"));
 
-        cut.Find(".chat-suggestions .chip").Click();
+        await cut.ActAsync(".chat-suggestions .chip", chip => chip.Click());
 
         // The same element, now with content — not a new element carrying content.
         cut.WaitForAssertion(() => Assert.Equal(2, cut.FindAll(".chat-turn").Count));

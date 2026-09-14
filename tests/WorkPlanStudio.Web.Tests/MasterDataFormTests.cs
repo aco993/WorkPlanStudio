@@ -33,14 +33,14 @@ public sealed class MasterDataFormTests : AppBunitContext
         return database;
     }
 
-    private static void Save(IRenderedComponent<WorkPlanStudio.Pages.WorkCenters> cut) =>
-        cut.FindAll(".modal-foot .btn").First(button => !button.ClassList.Contains("btn-ghost")).Click();
+    private static Task SaveAsync(IRenderedComponent<WorkPlanStudio.Pages.WorkCenters> cut) =>
+        cut.ActAsync(".modal-foot .btn", button => !button.ClassList.Contains("btn-ghost"), save => save.Click());
 
-    private IRenderedComponent<WorkPlanStudio.Pages.WorkCenters> OpenWorkCenterEditor(TempDatabaseFiles files)
+    private async Task<IRenderedComponent<WorkPlanStudio.Pages.WorkCenters>> OpenWorkCenterEditorAsync(TempDatabaseFiles files)
     {
         var cut = Render<WorkPlanStudio.Pages.WorkCenters>();
         cut.WaitForAssertion(() => Assert.NotEmpty(cut.FindAll("tbody tr")));
-        cut.Find(".page-head .btn-primary").Click();
+        await cut.ActAsync(".page-head .btn-primary", newCenter => newCenter.Click());
         cut.WaitForAssertion(() => Assert.NotEmpty(cut.FindAll(".modal-card")));
         return cut;
     }
@@ -52,15 +52,15 @@ public sealed class MasterDataFormTests : AppBunitContext
         var database = Arrange(files);
         Assert.True((await database.EnsureReadyAsync()).IsReady);
 
-        var cut = OpenWorkCenterEditor(files);
-        cut.Find("#wc-code").Input("X1");
-        cut.Find("#wc-name").Input("X");
+        var cut = await OpenWorkCenterEditorAsync(files);
+        await cut.ActAsync("#wc-code", code => code.Input("X1"));
+        await cut.ActAsync("#wc-name", name => name.Input("X"));
 
         // The picker is the fix for the old free-text field: there is no way to
         // type a 25-character cost centre any more, and an id that does not exist
         // is reported rather than swallowed.
-        cut.Find("#wc-cost-center").Change("9999");
-        Save(cut);
+        await cut.ActAsync("#wc-cost-center", picker => picker.Change("9999"));
+        await SaveAsync(cut);
 
         cut.WaitForAssertion(() => Assert.NotEmpty(cut.FindAll("[role=alert]")));
         Assert.Contains("Val_CostCenterMissing", cut.Markup);
@@ -81,12 +81,14 @@ public sealed class MasterDataFormTests : AppBunitContext
         cut.WaitForAssertion(() => Assert.NotEmpty(cut.FindAll("tbody tr")));
 
         // CNC-300 runs operations on a released plan and a released order.
-        var row = cut.FindAll("tbody tr").First(tr => tr.TextContent.Contains("CNC-300", StringComparison.Ordinal));
-        row.QuerySelector("button.icon-btn")!.Click();
+        await cut.ActAsync(
+            "tbody tr",
+            tr => tr.TextContent.Contains("CNC-300", StringComparison.Ordinal),
+            row => row.QuerySelector("button.icon-btn")!.Click());
         cut.WaitForAssertion(() => Assert.NotEmpty(cut.FindAll(".modal-card")));
 
-        cut.Find("#wc-active").Change(false);
-        Save(cut);
+        await cut.ActAsync("#wc-active", active => active.Change(false));
+        await SaveAsync(cut);
 
         // The README advertises this guard; before, the dialog simply sat there.
         cut.WaitForAssertion(() => Assert.Contains("Val_WorkCenterOrderUse", cut.Markup));
@@ -105,14 +107,16 @@ public sealed class MasterDataFormTests : AppBunitContext
 
         var cut = Render<WorkPlanStudio.Pages.WorkCenters>();
         cut.WaitForAssertion(() => Assert.NotEmpty(cut.FindAll("tbody tr")));
-        var row = cut.FindAll("tbody tr").First(tr => tr.TextContent.Contains("SAW-10", StringComparison.Ordinal));
-        row.QuerySelector("button.icon-btn")!.Click();
+        await cut.ActAsync(
+            "tbody tr",
+            tr => tr.TextContent.Contains("SAW-10", StringComparison.Ordinal),
+            row => row.QuerySelector("button.icon-btn")!.Click());
         cut.WaitForAssertion(() => Assert.NotEmpty(cut.FindAll(".modal-card")));
 
         // Selecting the value and pressing Backspace is what a user does. The box
         // is then visibly empty, and it used to save the number that was there.
-        cut.Find("#wc-capacity").Input("");
-        Save(cut);
+        await cut.ActAsync("#wc-capacity", capacity => capacity.Input(""));
+        await SaveAsync(cut);
 
         cut.WaitForAssertion(() => Assert.Contains("Val_Required", cut.Markup));
         var capacity = cut.Find("#wc-capacity");
@@ -128,8 +132,8 @@ public sealed class MasterDataFormTests : AppBunitContext
         var database = Arrange(files);
         Assert.True((await database.EnsureReadyAsync()).IsReady);
 
-        var cut = OpenWorkCenterEditor(files);
-        Save(cut);   // empty form
+        var cut = await OpenWorkCenterEditorAsync(files);
+        await SaveAsync(cut);   // empty form
 
         // The summary is the structural half of the fix: a message with no slot
         // of its own is listed here instead of being dropped on the floor.
@@ -151,10 +155,13 @@ public sealed class MasterDataFormTests : AppBunitContext
         var cut = Render<WorkPlanStudio.Pages.WorkPlans>();
         cut.WaitForAssertion(() => Assert.NotEmpty(cut.FindAll("tbody tr")));
 
-        var row = cut.FindAll("tbody tr").First(tr => tr.TextContent.Contains("WP-1001", StringComparison.Ordinal));
-        row.QuerySelectorAll("button.icon-btn").Last().Click();
+        await cut.ActAsync(
+            "tbody tr",
+            tr => tr.TextContent.Contains("WP-1001", StringComparison.Ordinal),
+            row => row.QuerySelectorAll("button.icon-btn").Last().Click());
         cut.WaitForAssertion(() => Assert.NotEmpty(cut.FindAll(".modal-card")));
-        cut.FindAll(".modal-foot .btn").First(button => button.ClassList.Contains("btn-danger")).Click();
+        await cut.ActAsync(
+            ".modal-foot .btn", button => button.ClassList.Contains("btn-danger"), confirm => confirm.Click());
 
         // The result used to be discarded entirely, and the unhandled
         // DbUpdateException behind it replaced the whole application.
@@ -176,11 +183,12 @@ public sealed class MasterDataFormTests : AppBunitContext
         var cut = Render<WorkPlanStudio.Pages.CostCenters>();
         cut.WaitForAssertion(() => Assert.NotEmpty(cut.FindAll("tbody tr")));
 
-        cut.Find(".page-head .btn-primary").Click();
+        await cut.ActAsync(".page-head .btn-primary", newCostCenter => newCostCenter.Click());
         cut.WaitForAssertion(() => Assert.NotEmpty(cut.FindAll(".modal-card")));
-        cut.Find("#cc-code").Input("cc-4200");
-        cut.Find("#cc-name").Input("Heat treatment");
-        cut.FindAll(".modal-foot .btn").First(button => !button.ClassList.Contains("btn-ghost")).Click();
+        await cut.ActAsync("#cc-code", code => code.Input("cc-4200"));
+        await cut.ActAsync("#cc-name", name => name.Input("Heat treatment"));
+        await cut.ActAsync(
+            ".modal-foot .btn", button => !button.ClassList.Contains("btn-ghost"), save => save.Click());
 
         // The dialog closes only after the save succeeded and the page reloaded
         // from the database, so waiting on that is waiting on the write. Waiting
