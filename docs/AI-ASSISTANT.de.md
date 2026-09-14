@@ -95,6 +95,14 @@ ScheduleResult + Parameter + Regeln ──▶ ScheduleChatContext            (ei
    Beitragsliste nicht verschränken —, und ein neuer Lauf bricht die laufende Anfrage ab
    und verwirft ihre Antwort, statt sie unter dem falschen Plan anzuhängen.
 
+   Die Seite schliesst dieses Fenster, statt damit zu leben: Solange ein Lauf läuft,
+   sind die Vorschläge, das Eingabefeld und Senden deaktiviert — während eines Laufs
+   gibt es keinen Plan, zu dem sich eine Frage ehrlich beantworten liesse. Eine Frage,
+   die beim Eintreffen des Laufs schon unterwegs war, wird im Chat als überholt
+   gemeldet, als Ergebnis und nicht als Fehler. Sie stillschweigend zu verwerfen ist
+   der Grund, warum eine während eines Laufs gestellte Frage früher spurlos verschwand
+   — der Planer drückte einen Vorschlag, und nichts geschah.
+
    Bei **jedem** Anbieterfehler erscheint die Antwort vom Gerät mit einem Hinweis auf den
    Grund, der Chat antwortet also immer. „Jedem“ ist inzwischen wörtlich zu nehmen: Früher
    fing der Code sieben Ausnahmetypen ab, und ein fehlerhafter Rumpf erreichte den Planer
@@ -192,6 +200,9 @@ Die gesamte Funktion ist ohne Netz testbar:
 - `ChatConversationSafetyTests`: zwei Fragen können sich nicht verschränken, ein Zurücksetzen
   bricht die laufende Anfrage ab, die Antwort eines überholten Laufs wird verworfen, und eine
   unbeantwortete Frage wird über die Referenz zurückgezogen und nicht über den Index.
+- `ChatDuringARunTests`: die Seitenhälfte derselben Geschichte — während eines Laufs ist
+  nichts im Gespräch bedienbar, in der Auszeichnung *und* im Behandler, und eine trotzdem
+  überholte Frage wird gemeldet statt verworfen.
 - `AssistantKeyHandlingTests`: der Speichername je Anbieter, die Übernahme aus einem älteren
   gemeinsamen Wert, „leer heißt behalten“ und dass der Schlüssel in den serialisierten
   Einstellungen fehlt.

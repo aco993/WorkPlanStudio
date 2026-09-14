@@ -814,4 +814,5 @@
   <data name="Sched_Proof_Nothing" xml:space="preserve"><value>Nichts zu beweisen — es gibt keinen Plan.</value></data>
   <data name="Sched_Proof_Failed" xml:space="preserve"><value>Die Optimalitätsprüfung konnte nicht abgeschlossen werden.</value></data>
   <data name="Sched_Proof_NotProvedNoBound" xml:space="preserve"><value>Innerhalb von {0} nicht bewiesen: die Suche hat weder die Lücke geschlossen noch eine brauchbare Schranke gefunden.</value></data>
+  <data name="Chat_SupersededByNewRun" xml:space="preserve"><value>Der Plan hat sich geändert, während diese Frage beantwortet wurde — die Antwort hätte einen Plan beschrieben, der nicht mehr angezeigt wird. Bitte erneut fragen.</value></data>
 </root>

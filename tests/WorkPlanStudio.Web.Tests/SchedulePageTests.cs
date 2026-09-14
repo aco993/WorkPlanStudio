@@ -57,7 +57,7 @@ public class SchedulePageTests : AppBunitContext
     {
         Arrange(Sample.OnTime() with { Horizon = new DateTime(2026, 6, 1, 6, 0, 0) });
         var cut = Render<SchedulePage>();
-        cut.WaitForAssertion(() => Assert.NotEmpty(cut.FindAll(".chat-suggestions .chip")));
+        cut.WaitForChatReady();
         Assert.Empty(cut.FindAll(".chat-turn"));
 
         await cut.ActAsync(".chat-suggestions .chip", chip => chip.Click());   // "Which work center is the bottleneck?"
@@ -74,7 +74,7 @@ public class SchedulePageTests : AppBunitContext
     {
         Arrange(Sample.OnTime() with { Horizon = new DateTime(2026, 6, 1, 6, 0, 0) });
         var cut = Render<SchedulePage>();
-        cut.WaitForAssertion(() => Assert.NotEmpty(cut.FindAll("#chat-question")));
+        cut.WaitForChatReady();
 
         await cut.ActAsync("#chat-question", box => box.Input("how is WP-2 doing?"));
         await cut.ActAsync(".chat-input", form => form.Submit());
@@ -90,7 +90,7 @@ public class SchedulePageTests : AppBunitContext
     {
         var fake = Arrange(Sample.OnTime() with { Horizon = new DateTime(2026, 6, 1, 6, 0, 0) });
         var cut = Render<SchedulePage>();
-        cut.WaitForAssertion(() => Assert.NotEmpty(cut.FindAll(".chat-suggestions .chip")));
+        cut.WaitForChatReady();
         await cut.ActAsync(".chat-suggestions .chip", chip => chip.Click());
         cut.WaitForAssertion(() => Assert.Equal(2, cut.FindAll(".chat-turn").Count));
 

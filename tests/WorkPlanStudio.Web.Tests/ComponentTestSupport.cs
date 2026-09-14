@@ -60,6 +60,37 @@ internal static class InteractionTestSupport
         Action<IElement> act)
         where TComponent : IComponent =>
         cut.InvokeAsync(() => act(cut.FindAll(selector).First(matches)));
+
+    /// <summary>
+    /// Waits until the Scheduling page has finished the run it starts on its own,
+    /// so a question asked next is asked about the schedule that is on screen.
+    /// <para>
+    /// The chat card appears as soon as there is a result to show, which is
+    /// several awaits before the page has pointed the conversation at it: the
+    /// narration and the plant settings are still loading, and
+    /// <c>ScheduleChat.Reset</c> has not run yet. A question asked in that window
+    /// is answered into a thread the reset then clears, so the two turns the test
+    /// waits for never arrive — it sees zero and fails the wait out. Reproduced on
+    /// this suite at roughly one run in forty with the web tests running
+    /// twenty-eight ways in parallel.
+    /// </para>
+    /// <para>
+    /// Waiting on the render count, or on the fake scheduler is not enough: the
+    /// scheduler call returns well before the reset that follows it. What the page
+    /// does expose is that nothing in the conversation is operable while a run is
+    /// in flight, so an enabled chip means the run has settled. That is also the
+    /// wait a person performs without thinking about it — a disabled chip cannot
+    /// be clicked.
+    /// </para>
+    /// </summary>
+    public static void WaitForChatReady<TComponent>(this IRenderedComponent<TComponent> cut)
+        where TComponent : IComponent =>
+        cut.WaitForAssertion(() =>
+        {
+            var chips = cut.FindAll(".chat-suggestions .chip");
+            Assert.NotEmpty(chips);
+            Assert.All(chips, chip => Assert.False(chip.HasAttribute("disabled")));
+        });
 }
 
 /// <summary>A test double for the scheduling service: returns a canned result and records the call.</summary>

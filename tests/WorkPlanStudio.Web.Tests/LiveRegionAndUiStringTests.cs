@@ -57,7 +57,7 @@ public sealed class LiveRegionAndUiStringTests : AppBunitContext
         Arrange(Sample.OnTime() with { Horizon = new DateTime(2026, 6, 1, 6, 0, 0) });
 
         var cut = Render<SchedulePage>();
-        cut.WaitForAssertion(() => Assert.NotEmpty(cut.FindAll(".chat-thread")));
+        cut.WaitForChatReady();
 
         var thread = cut.Find(".chat-thread");
         Assert.Equal("polite", thread.GetAttribute("aria-live"));
