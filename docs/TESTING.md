@@ -377,18 +377,22 @@ test prints `CsCheck_Seed=…`; set it to replay the exact case.
 
 Coverage is measured with the Microsoft Testing Platform collector and **gated per
 assembly** in CI ([`.github/scripts/coverage_gate.py`](../.github/scripts/coverage_gate.py)).
-Measured on 2026-09-11 on this tip:
+Measured by CI on `0923a0a`:
 
 | Assembly | Measured by | Lines | Branches | Gate |
 | --- | --- | ---: | ---: | ---: |
-| `WorkPlanStudio.Scheduling` | `Scheduling.Tests` | 96.57 % | 90.45 % | 90 % |
-| `WorkPlanStudio.WorkingTime` | `WorkingTime.Tests` | 94.31 % | 90.29 % | 90 % |
-| `WorkPlanStudio` (app: services, mapper, import, assistant, pages) | `Web.Tests` | 79.89 % | 71.28 % | 65 % |
-| `WorkPlanStudio.Api` | `Api.Tests` | 70.19 % | 65.84 % | 60 % |
-| `WorkPlanStudio.Export` | `Export.Tests` | 98.45 % | 90.34 % | 90 % |
+| `WorkPlanStudio.Scheduling` | `Scheduling.Tests` | 96.57 % | 90.45 % | 95 % |
+| `WorkPlanStudio.WorkingTime` | `WorkingTime.Tests` | 94.18 % | 90.28 % | 93 % |
+| `WorkPlanStudio.Domain` (entities, validation, policies, mapping) | `Web.Tests` | 89.59 % | 78.37 % | 87 % |
+| `WorkPlanStudio` (app: services, import, assistant, pages) | `Web.Tests` | 79.42 % | 70.88 % | 78 % |
+| `WorkPlanStudio.Api` | `Api.Tests` | 69.67 % | 68.36 % | 68 % |
+| `WorkPlanStudio.Export` | `Export.Tests` | 98.45 % | 90.34 % | 97 % |
 
 The app assembly's number is lower by design: its pages are covered by the browser
 suite, which the collector does not see.
+
+Every gate sits about two points under what is measured, so it defends what has
+been reached rather than a number from the day it was written.
 
 The thresholds live in `ci.yml`'s `env` block and nowhere else, so the
 pull-request check and the production deploy move together. The README badges are
