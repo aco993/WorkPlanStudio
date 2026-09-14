@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.2] — 2026-09-14
+
+The three follow-ups the 0.3.1 review left open, and the two things they
+uncovered on the way.
+
 ### Changed
 
 - **The shared domain is a project, not a `<Compile Include>`.** The optional
@@ -15,6 +20,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   SQLite in it cannot be referenced from a server. They now live in
   `WorkPlanStudio.Domain`, which both hosts reference normally. Namespaces are
   unchanged, so no call site moved.
+- **The quality gates defend what has been reached.** Coverage thresholds now sit
+  about two points under what each assembly measures instead of thirteen — the
+  app was gated at 65 % while measuring 79.4 % — and the new domain assembly is
+  gated too, so splitting it out did not shrink the guarded surface. Test floors
+  sit within about two per cent of the real count instead of a fifth of it:
+  `MIN_TESTS_WEB` was 155 against 867 actual, so a suite that lost six hundred
+  tests would still have been reported as a success.
+- **Property tests draw 50 000 cases, not 100.** CsCheck's default hides a defect
+  of the rarity of the § 5 bug released in 0.3.0: it appeared in two runs out of
+  two hundred, roughly one counterexample in ten thousand draws, so a
+  hundred-draw run had about a one per cent chance of seeing it. At 50 000 that
+  is ~99.3 %, measured to cost the four suites that use CsCheck a few seconds
+  each.
+- Both READMEs advertised the thresholds from before this release and said the
+  export library was "not yet wired into CI", which had not been true for a
+  while. Every coverage figure in the READMEs and in `TESTING.md`/`.de.md` is now
+  what CI measured, with the domain assembly among them.
 
 ### Fixed
 
@@ -26,6 +48,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   enum checks, and **no § 5 (2) rule**, so a ten-hour rest went through with no
   sector to justify it. The copy is deleted and the endpoint calls the
   validator; a test now puts that row over the wire and expects the refusal.
+- The deployment asserts how many coverage badges arrive, and gating the new
+  assembly made it four while the assertion still said three. The guard was
+  right and the number was stale; the published site was never affected.
 
 ## [0.3.1] — 2026-09-14
 
@@ -402,7 +427,8 @@ Initial public release.
 - **CI/CD** — per-layer test workflows on pull requests and a test-gated
   GitHub Pages deployment.
 
-[Unreleased]: https://github.com/aco993/WorkPlanStudio/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/aco993/WorkPlanStudio/compare/v0.3.2...HEAD
+[0.3.2]: https://github.com/aco993/WorkPlanStudio/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/aco993/WorkPlanStudio/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/aco993/WorkPlanStudio/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/aco993/WorkPlanStudio/compare/v0.1.0...v0.2.0
