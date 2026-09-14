@@ -574,8 +574,12 @@ public sealed class ExportIntegrationTests : AppBunitContext
         ArrangePage(Sample.OnTime() with { Horizon = new DateTime(2026, 6, 1, 6, 0, 0) });
         var cut = Render<SchedulePage>();
 
+        // The condition belongs inside the wait. The trigger renders disabled on
+        // the first paint and is enabled once the result arrives, so waiting only
+        // for it to exist can observe the disabled paint on a slow runner — which
+        // is what it did.
         cut.WaitForAssertion(() => Assert.NotEmpty(cut.FindAll(".head-actions .export-trigger")));
-        Assert.False(cut.Find(".export-trigger").HasAttribute("disabled"));
+        cut.WaitForAssertion(() => Assert.False(cut.Find(".export-trigger").HasAttribute("disabled")));
     }
 
     [Fact]

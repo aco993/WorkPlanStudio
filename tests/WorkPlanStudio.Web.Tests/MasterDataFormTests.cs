@@ -182,7 +182,15 @@ public sealed class MasterDataFormTests : AppBunitContext
         cut.Find("#cc-name").Input("Heat treatment");
         cut.FindAll(".modal-foot .btn").First(button => !button.ClassList.Contains("btn-ghost")).Click();
 
-        cut.WaitForAssertion(() => Assert.Contains("CC-4200", cut.Markup));
+        // The dialog closes only after the save succeeded and the page reloaded
+        // from the database, so waiting on that is waiting on the write. Waiting
+        // on the code appearing in the markup is not the same thing — a rejected
+        // save puts the code in an error banner, which is how this read as a
+        // flake on a slower runner.
+        cut.WaitForAssertion(() => Assert.Empty(cut.FindAll(".modal-card")));
+        Assert.Empty(cut.FindAll(".form-banner.error"));
+        Assert.Contains("CC-4200", cut.Markup);
+
         Assert.Contains(
             await new CostCenterService(database).GetAllAsync(cancellationToken),
             costCenter => costCenter.Code == "CC-4200" && costCenter.Name == "Heat treatment");
