@@ -1,7 +1,97 @@
+using AngleSharp.Dom;
+using Bunit;
+using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Localization;
 using WorkPlanStudio.Services.Chat;
 
 namespace WorkPlanStudio.Web.Tests;
+
+/// <summary>
+/// The one way this suite raises a DOM event: locate the element and trigger it
+/// in a single step, inside the renderer's own dispatch loop.
+/// <para>
+/// bUnit hands back a real DOM node, and the event raised on it carries the
+/// handler id that node was rendered with. Written as two statements —
+/// <c>var save = cut.Find(".save"); save.Click();</c>, or with a
+/// <c>WaitForAssertion</c> in between, or an element kept in a local from
+/// several lines earlier — the component can finish a piece of asynchronous
+/// work in the gap, re-render, and retire that handler id. The event then
+/// arrives for a handler that no longer exists and the renderer throws
+/// <c>UnknownEventHandlerIdException</c>.
+/// </para>
+/// <para>
+/// It reads as flakiness and it is not. The element is stale, not slow, so
+/// raising <see cref="AppBunitContext"/>'s wait timeout does not fix it: nothing
+/// is being waited for. The window sits between two statements, and no amount of
+/// time closes a window that time did not open. What closes it is doing both
+/// halves inside one <c>InvokeAsync</c>, which runs on the renderer's
+/// dispatcher — no render can land in the middle of it. The suite lost this race
+/// three times on CI (twice in the Gantt keyboard tests, once in the chat live
+/// region) and never once on a developer machine, which is exactly what a
+/// two-statement race looks like on a loaded runner.
+/// </para>
+/// <para>
+/// Two shapes, because two are all the suite needs: an element named by a CSS
+/// selector, and one picked out of <c>FindAll</c> by a predicate. Anything more
+/// particular — a descendant of the matched row, the last button inside it —
+/// goes in <c>act</c>, which already runs inside the safe window.
+/// </para>
+/// </summary>
+internal static class InteractionTestSupport
+{
+    /// <summary>Triggers <paramref name="act"/> on the element matching <paramref name="selector"/>.</summary>
+    public static Task ActAsync<TComponent>(
+        this IRenderedComponent<TComponent> cut,
+        string selector,
+        Action<IElement> act)
+        where TComponent : IComponent =>
+        cut.InvokeAsync(() => act(cut.Find(selector)));
+
+    /// <summary>
+    /// Triggers <paramref name="act"/> on the first element matching
+    /// <paramref name="selector"/> that satisfies <paramref name="matches"/> —
+    /// the shape for "the row that says CNC-300" and "the button that is not the
+    /// ghost one", where a selector alone cannot say which.
+    /// </summary>
+    public static Task ActAsync<TComponent>(
+        this IRenderedComponent<TComponent> cut,
+        string selector,
+        Func<IElement, bool> matches,
+        Action<IElement> act)
+        where TComponent : IComponent =>
+        cut.InvokeAsync(() => act(cut.FindAll(selector).First(matches)));
+
+    /// <summary>
+    /// Waits until the Scheduling page has finished the run it starts on its own,
+    /// so a question asked next is asked about the schedule that is on screen.
+    /// <para>
+    /// The chat card appears as soon as there is a result to show, which is
+    /// several awaits before the page has pointed the conversation at it: the
+    /// narration and the plant settings are still loading, and
+    /// <c>ScheduleChat.Reset</c> has not run yet. A question asked in that window
+    /// is answered into a thread the reset then clears, so the two turns the test
+    /// waits for never arrive — it sees zero and fails the wait out. Reproduced on
+    /// this suite at roughly one run in forty with the web tests running
+    /// twenty-eight ways in parallel.
+    /// </para>
+    /// <para>
+    /// Waiting on the render count, or on the fake scheduler is not enough: the
+    /// scheduler call returns well before the reset that follows it. What the page
+    /// does expose is that nothing in the conversation is operable while a run is
+    /// in flight, so an enabled chip means the run has settled. That is also the
+    /// wait a person performs without thinking about it — a disabled chip cannot
+    /// be clicked.
+    /// </para>
+    /// </summary>
+    public static void WaitForChatReady<TComponent>(this IRenderedComponent<TComponent> cut)
+        where TComponent : IComponent =>
+        cut.WaitForAssertion(() =>
+        {
+            var chips = cut.FindAll(".chat-suggestions .chip");
+            Assert.NotEmpty(chips);
+            Assert.All(chips, chip => Assert.False(chip.HasAttribute("disabled")));
+        });
+}
 
 /// <summary>A test double for the scheduling service: returns a canned result and records the call.</summary>
 internal sealed class FakeScheduleService : IProductionScheduleService

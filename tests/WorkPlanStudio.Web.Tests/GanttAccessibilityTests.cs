@@ -200,7 +200,7 @@ public sealed class GanttAccessibilityTests : AppBunitContext
         Assert.Equal("status", live.GetAttribute("role"));
         Assert.Equal("", live.TextContent.Trim());
 
-        await ActAsync(cut, ".gantt-closed", element => element.Click());
+        await cut.ActAsync(".gantt-closed", element => element.Click());
 
         cut.WaitForAssertion(() => Assert.Contains("Holiday_CorpusChristi", cut.Find(".gantt-detail").TextContent, StringComparison.Ordinal));
         Assert.Equal("true", cut.Find(".gantt-closed").GetAttribute("aria-pressed"));
@@ -213,10 +213,10 @@ public sealed class GanttAccessibilityTests : AppBunitContext
 
         var cut = Render<SchedulePage>();
         cut.WaitForAssertion(() => Assert.NotEmpty(cut.FindAll(".gantt-closed")));
-        await ActAsync(cut, ".gantt-closed", element => element.Click());
+        await cut.ActAsync(".gantt-closed", element => element.Click());
         cut.WaitForAssertion(() => Assert.NotEqual("", cut.Find(".gantt-detail").TextContent.Trim()));
 
-        await ActAsync(cut, ".gantt-closed", element => element.KeyDown("Escape"));
+        await cut.ActAsync(".gantt-closed", element => element.KeyDown("Escape"));
 
         cut.WaitForAssertion(() => Assert.Equal("", cut.Find(".gantt-detail").TextContent.Trim()));
         Assert.Equal("false", cut.Find(".gantt-closed").GetAttribute("aria-pressed"));
@@ -251,7 +251,7 @@ public sealed class GanttAccessibilityTests : AppBunitContext
         Assert.Equal("false", cut.Find(".gantt-table-toggle").GetAttribute("aria-expanded"));
         Assert.Contains("sr-only", cut.Find("#gantt-table").ClassList);
 
-        await ActAsync(cut, ".gantt-table-toggle", element => element.Click());
+        await cut.ActAsync(".gantt-table-toggle", element => element.Click());
 
         cut.WaitForAssertion(() => Assert.Equal("true", cut.Find(".gantt-table-toggle").GetAttribute("aria-expanded")));
         Assert.DoesNotContain("sr-only", cut.Find("#gantt-table").ClassList);
@@ -301,21 +301,10 @@ public sealed class GanttAccessibilityTests : AppBunitContext
         cut.FindAll(".gantt-bar, .gantt-closed").Single(c => c.GetAttribute("tabindex") == "0");
 
     /// <summary>
-    /// Finds the mark that currently holds the roving tabindex and presses a key on
-    /// it, both inside the renderer's own dispatch loop.
-    /// <para>
-    /// Doing it in two statements is a race the suite actually lost, about once in
-    /// four full runs and never in isolation: the page finishes its asynchronous
-    /// work between the find and the key press, the tree re-renders, and the
-    /// handler id the found element carried no longer exists —
-    /// <c>UnknownEventHandlerIdException</c>. It reads as flakiness and is not; it
-    /// is a stale element. <c>InvokeAsync</c> closes the window.
-    /// </para>
+    /// Presses a key on the mark that currently holds the roving tabindex, finding
+    /// it and pressing in one step. See <see cref="InteractionTestSupport"/> for
+    /// why every trigger in this suite is written that way.
     /// </summary>
     private static Task PressAsync(IRenderedComponent<SchedulePage> cut, string key) =>
-        cut.InvokeAsync(() => Focused(cut).KeyDown(key));
-
-    /// <summary>The same guard for a mark located by selector rather than by focus.</summary>
-    private static Task ActAsync(IRenderedComponent<SchedulePage> cut, string selector, Action<AngleSharp.Dom.IElement> act) =>
-        cut.InvokeAsync(() => act(cut.Find(selector)));
+        cut.ActAsync(".gantt-bar, .gantt-closed", c => c.GetAttribute("tabindex") == "0", cell => cell.KeyDown(key));
 }

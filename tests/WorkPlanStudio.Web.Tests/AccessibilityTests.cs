@@ -12,7 +12,7 @@ namespace WorkPlanStudio.Web.Tests;
 public sealed class AccessibilityTests : AppBunitContext
 {
     [Fact]
-    public void Modal_has_dialog_semantics_localized_close_name_and_escape_behavior()
+    public async Task Modal_has_dialog_semantics_localized_close_name_and_escape_behavior()
     {
         JSInterop.Mode = JSRuntimeMode.Loose;
         Services.AddSingleton<IStringLocalizer<SharedResource>>(new PassThroughLocalizer<SharedResource>());
@@ -30,7 +30,7 @@ public sealed class AccessibilityTests : AppBunitContext
         Assert.Equal("Accessible title", cut.Find($"#{titleId}").TextContent);
         Assert.Equal("Common_Close", cut.Find(".modal-head button").GetAttribute("aria-label"));
 
-        cut.Find(".modal-backdrop-custom").KeyDown("Escape");
+        await cut.ActAsync(".modal-backdrop-custom", backdrop => backdrop.KeyDown("Escape"));
 
         Assert.True(closed);
         Assert.Empty(cut.FindAll("[role=dialog]"));
@@ -99,9 +99,10 @@ public sealed class AccessibilityTests : AppBunitContext
         var cut = Render<WorkPlanStudio.Pages.WorkCenters>();
         cut.WaitForAssertion(() => Assert.NotEmpty(cut.FindAll(".page-head .btn-primary")));
 
-        cut.Find(".page-head .btn-primary").Click();                       // open the editor
+        await cut.ActAsync(".page-head .btn-primary", button => button.Click());   // open the editor
         cut.WaitForAssertion(() => Assert.NotEmpty(cut.FindAll(".modal-card")));
-        cut.FindAll(".modal-foot .btn").First(b => !b.ClassList.Contains("btn-ghost")).Click();   // save it empty
+        // save it empty
+        await cut.ActAsync(".modal-foot .btn", b => !b.ClassList.Contains("btn-ghost"), save => save.Click());
 
         cut.WaitForAssertion(() => Assert.NotEmpty(cut.FindAll(".field-error")));
 

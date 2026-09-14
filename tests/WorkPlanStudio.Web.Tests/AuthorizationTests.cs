@@ -218,7 +218,10 @@ public sealed class AuthorizationTests : AppBunitContext
         Assert.Equal(3, options.Count);
         Assert.Equal("true", options[0].GetAttribute("aria-checked"));   // Planner first and current
 
-        await cut.InvokeAsync(() => options[2].Click());
+        // By position rather than by selector, so neither ActAsync shape fits: the
+        // list is read again inside the dispatch instead of reusing the one above,
+        // which is the same guard for the same reason — see InteractionTestSupport.
+        await cut.InvokeAsync(() => cut.FindAll("[role=menuitemradio]")[2].Click());
 
         Assert.Equal(WorkspaceRole.Guest, provider.CurrentRole);
         cut.WaitForAssertion(() => Assert.Equal("true", cut.FindAll("[role=menuitemradio]")[2].GetAttribute("aria-checked")));

@@ -549,11 +549,21 @@
                         {
                             <div class="form-banner error" role="alert">@_chatError</div>
                         }
+                        @*
+                            A question the page had to drop is an outcome, not a
+                            failure — the same distinction a cancelled run gets — so
+                            it uses the card's own note style and a status role,
+                            not the red banner and an alert.
+                        *@
+                        @if (_chatNotice is not null)
+                        {
+                            <p class="assistant-note chat-note" role="status">@_chatNotice</p>
+                        }
 
                         <div class="chat-suggestions">
                             @foreach (var suggestion in Chat.Suggestions)
                             {
-                                <button type="button" class="chip" disabled="@_chatBusy" @onclick="() => AskAsync(suggestion)">@suggestion</button>
+                                <button type="button" class="chip" disabled="@(_chatBusy || Chat.IsBusy || _running)" @onclick="() => AskAsync(suggestion)">@suggestion</button>
                             }
                         </div>
 
@@ -563,8 +573,8 @@
                                refuses a longer question anyway, and without this the
                                field accepts a pasted megabyte and re-renders it. *@
                             <input id="chat-question" class="input" autocomplete="off" maxlength="1000" placeholder="@L["Chat_Placeholder"]"
-                                   disabled="@(_chatBusy || Chat.IsBusy)" @bind="_question" @bind:event="oninput" />
-                            <button type="submit" class="btn btn-primary" disabled="@(_chatBusy || Chat.IsBusy || string.IsNullOrWhiteSpace(_question))">@L["Chat_Send"]</button>
+                                   disabled="@(_chatBusy || Chat.IsBusy || _running)" @bind="_question" @bind:event="oninput" />
+                            <button type="submit" class="btn btn-primary" disabled="@(_chatBusy || Chat.IsBusy || _running || string.IsNullOrWhiteSpace(_question))">@L["Chat_Send"]</button>
                             @if (Chat.Turns.Count > 0)
                             {
                                 @* Chat.IsBusy is the authority: _chatBusy only knows about
@@ -693,6 +703,9 @@
     private string _question = "";
     private bool _chatBusy;
     private string? _chatError;
+
+    /// <summary>Something the reader should know that is not a failure; see the supersede case in <see cref="AskAsync"/>.</summary>
+    private string? _chatNotice;
     private bool _scrollChat;
 
     protected override async Task OnInitializedAsync()
@@ -801,6 +814,7 @@
     private async Task ResetChatAsync(SchedulingParameters parameters)
     {
         _chatError = null;
+        _chatNotice = null;
         if (_result is not { HasData: true, Horizon: { } horizon })
         {
             Chat.Reset(null);
@@ -820,11 +834,18 @@
 
     private async Task AskAsync(string question)
     {
-        if (_chatBusy || string.IsNullOrWhiteSpace(question))
+        // Every one of these is already disabled in the markup; a keyboard
+        // activation against a render that has not caught up yet can still
+        // arrive here, the same way it can at Generate. _running is the one that
+        // matters most: the run about to land will point the conversation at a
+        // different schedule, so a question let through now is answered into a
+        // thread that is about to be cleared.
+        if (_chatBusy || Chat.IsBusy || _running || string.IsNullOrWhiteSpace(question))
             return;
 
         _chatBusy = true;
         _chatError = null;
+        _chatNotice = null;
         _question = "";
         StateHasChanged();
         try
@@ -832,9 +853,26 @@
             await Chat.AskAsync(question, _lifetimeCancellation.Token);
             _scrollChat = true;
         }
+        catch (OperationCanceledException) when (_lifetimeCancellation.IsCancellationRequested)
+        {
+            // Navigated away; there is nothing left to render into.
+        }
         catch (OperationCanceledException)
         {
-            // page is going away
+            // Not the page going away: a run landed while this question was in
+            // flight and pointed the conversation at the new schedule, so the
+            // answer would have described a plan that is no longer on screen.
+            // The chat controls are disabled for the length of a run precisely
+            // so this is hard to reach, but a question started a moment before
+            // Generate is still in flight when the run resets the thread.
+            //
+            // Say so rather than re-ask. Re-asking would spend a model call the
+            // reader did not ask for a second time, and a what-if would re-run
+            // the scheduler again seconds after a run just finished; worse, the
+            // question may not even mean the same thing about the new plan.
+            // Dropping it silently is what made a question asked during a run
+            // vanish with no trace at all.
+            _chatNotice = L["Chat_SupersededByNewRun"];
         }
         catch (Exception exception)
         {
@@ -888,6 +926,7 @@
     {
         Chat.Reset(Chat.Context);
         _chatError = null;
+        _chatNotice = null;
     }
 
     private string PreparationError(SchedulePreparationErrorCode code) =>

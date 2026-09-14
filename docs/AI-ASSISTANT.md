@@ -94,6 +94,14 @@ ScheduleResult + parameters + rules ──▶ ScheduleChatContext            (on
    cancels the one in flight and drops its answer rather than appending it under
    the wrong schedule.
 
+   The page closes that window rather than living with it: for the length of a run
+   the chips, the box and Send are disabled, because while a run is in flight there
+   is no schedule a question could honestly be answered about. A question that was
+   already in flight when the run landed is reported in the chat as superseded, as
+   an outcome and not as a failure. Dropping it in silence is what once made a
+   question asked during a run vanish with no trace at all — the planner pressed a
+   chip and nothing happened.
+
    On **any** provider failure the on-device answer is shown with a note naming the
    reason, so the chat always answers. "Any" is now literal: the old code caught
    seven exception types and a malformed body reached the planner as a red banner.
@@ -190,6 +198,10 @@ The whole feature is testable without a network:
 - `ChatConversationSafetyTests`: two questions cannot interleave, a reset cancels
   the request in flight, an answer from a superseded run is dropped, and an
   unanswered question is withdrawn by reference rather than by index.
+- `ChatDuringARunTests`: the page half of the same story — nothing in the
+  conversation is operable while a run is in flight, in the markup *and* in the
+  handler, and a question that was superseded anyway is reported rather than
+  dropped.
 - `AssistantKeyHandlingTests`: the per-provider storage name, the migration out of
   an older combined value, blank-means-keep, and that the key is absent from the
   serialised settings.

@@ -38,7 +38,7 @@ public sealed class HomeAndThemeTests : AppBunitContext
     }
 
     [Fact]
-    public void The_theme_toggle_cycles_system_light_dark_and_persists_through_js()
+    public async Task The_theme_toggle_cycles_system_light_dark_and_persists_through_js()
     {
         Services.AddSingleton<IStringLocalizer<SharedResource>>(new PassThroughLocalizer<SharedResource>());
         JSInterop.Setup<string>("workplanTheme.get").SetResult("system");
@@ -47,11 +47,11 @@ public sealed class HomeAndThemeTests : AppBunitContext
         var cut = Render<ThemeToggle>();
         cut.WaitForAssertion(() => Assert.Equal("system", cut.Find("button").GetAttribute("data-theme-mode")));
 
-        cut.Find("button").Click();
+        await cut.ActAsync("button", toggle => toggle.Click());
         Assert.Equal("light", cut.Find("button").GetAttribute("data-theme-mode"));
-        cut.Find("button").Click();
+        await cut.ActAsync("button", toggle => toggle.Click());
         Assert.Equal("dark", cut.Find("button").GetAttribute("data-theme-mode"));
-        cut.Find("button").Click();
+        await cut.ActAsync("button", toggle => toggle.Click());
         Assert.Equal("system", cut.Find("button").GetAttribute("data-theme-mode"));
 
         var sets = JSInterop.Invocations.Where(i => i.Identifier == "workplanTheme.set").Select(i => i.Arguments[0]).ToList();

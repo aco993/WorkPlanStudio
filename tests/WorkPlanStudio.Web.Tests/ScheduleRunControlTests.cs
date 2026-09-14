@@ -12,10 +12,12 @@ namespace WorkPlanStudio.Web.Tests;
 /// page refuses to start in the first place. The run itself is a fake here; these
 /// tests are about the controls around it.
 /// <para>
-/// Every interaction goes through <see cref="ActAsync"/>. Finding an element and
-/// raising an event on it in two statements is a race in bUnit: a re-render between
-/// the two invalidates the handler id the found element carries, and the failure
-/// looks like flakiness rather than like the stale element it is.
+/// Every interaction goes through
+/// <see cref="InteractionTestSupport.ActAsync{TComponent}(Bunit.IRenderedComponent{TComponent}, string, Action{AngleSharp.Dom.IElement})"/>,
+/// which locates and triggers in one step. Doing it in two statements is a race in
+/// bUnit: a re-render between the two invalidates the handler id the found element
+/// carries, and the failure looks like flakiness rather than like the stale element
+/// it is.
 /// </para>
 /// </summary>
 public sealed class ScheduleRunControlTests : AppBunitContext
@@ -47,9 +49,6 @@ public sealed class ScheduleRunControlTests : AppBunitContext
             _files.Dispose();
     }
 
-    private static Task ActAsync(IRenderedComponent<SchedulePage> cut, string selector, Action<AngleSharp.Dom.IElement> act) =>
-        cut.InvokeAsync(() => act(cut.Find(selector)));
-
     private static IRenderedComponent<SchedulePage> Loaded(ScheduleRunControlTests owner)
     {
         var cut = owner.Render<SchedulePage>();
@@ -69,8 +68,8 @@ public sealed class ScheduleRunControlTests : AppBunitContext
 
         // 64 is a legal restart count and 20 000 a legal step budget; together they
         // are 1.28 million candidate schedules, which the engine rejects by throwing.
-        await ActAsync(cut, "#sched-multistart", input => input.Change("64"));
-        await ActAsync(cut, "#sched-localsearch", input => input.Change("20000"));
+        await cut.ActAsync("#sched-multistart", input => input.Change("64"));
+        await cut.ActAsync("#sched-localsearch", input => input.Change("20000"));
 
         var error = cut.Find("#sched-budget-error");
         Assert.Equal("alert", error.GetAttribute("role"));
@@ -87,7 +86,7 @@ public sealed class ScheduleRunControlTests : AppBunitContext
         Assert.True(cut.Find("#sched-generate").HasAttribute("disabled"));
 
         // And pressing it anyway does not reach the service.
-        await ActAsync(cut, "#sched-generate", button => button.Click());
+        await cut.ActAsync("#sched-generate", button => button.Click());
         Assert.Equal(callsAfterLoad, fake.Calls);
     }
 
@@ -98,18 +97,18 @@ public sealed class ScheduleRunControlTests : AppBunitContext
         var cut = Loaded(this);
         cut.WaitForAssertion(() => Assert.True(fake.Calls >= 1));
 
-        await ActAsync(cut, "#sched-multistart", input => input.Change("64"));
-        await ActAsync(cut, "#sched-localsearch", input => input.Change("20000"));
+        await cut.ActAsync("#sched-multistart", input => input.Change("64"));
+        await cut.ActAsync("#sched-localsearch", input => input.Change("20000"));
         Assert.NotEmpty(cut.FindAll("#sched-budget-error"));
 
-        await ActAsync(cut, "#sched-localsearch", input => input.Change("3000"));
+        await cut.ActAsync("#sched-localsearch", input => input.Change("3000"));
 
         Assert.Empty(cut.FindAll("#sched-budget-error"));
         Assert.Equal("false", cut.Find("#sched-multistart").GetAttribute("aria-invalid"));
         Assert.False(cut.Find("#sched-generate").HasAttribute("disabled"));
 
         var callsBefore = fake.Calls;
-        await ActAsync(cut, "#sched-generate", button => button.Click());
+        await cut.ActAsync("#sched-generate", button => button.Click());
         cut.WaitForAssertion(() => Assert.True(fake.Calls > callsBefore));
         Assert.Equal(64, fake.LastParameters!.MultiStartRuns);
         Assert.Equal(3000, fake.LastParameters.LocalSearchMaxSteps);
@@ -165,10 +164,10 @@ public sealed class ScheduleRunControlTests : AppBunitContext
         // The next run hangs, and is cancelled from the page's own button.
         fake.UseGate = true;
         fake.Result = Sample.WithLateJob();
-        await ActAsync(cut, "#sched-generate", button => button.Click());
+        await cut.ActAsync("#sched-generate", button => button.Click());
         cut.WaitForAssertion(() => Assert.NotEmpty(cut.FindAll("#sched-cancel")));
 
-        await ActAsync(cut, "#sched-cancel", button => button.Click());
+        await cut.ActAsync("#sched-cancel", button => button.Click());
 
         cut.WaitForAssertion(() => Assert.Empty(cut.FindAll("#sched-cancel")));
         Assert.Empty(cut.FindAll("[role=progressbar]"));
@@ -207,14 +206,14 @@ public sealed class ScheduleRunControlTests : AppBunitContext
         Assert.Equal("sched-acceptance-hint", select.GetAttribute("aria-describedby"));
         Assert.Contains("Run_Acceptance_BestHint", cut.Find("#sched-acceptance-hint").TextContent, StringComparison.Ordinal);
 
-        await ActAsync(cut, "#sched-acceptance", s => s.Change(nameof(LocalSearchAcceptance.SteepestDescent)));
+        await cut.ActAsync("#sched-acceptance", s => s.Change(nameof(LocalSearchAcceptance.SteepestDescent)));
 
         // The explanation follows the selection; it is a sibling of the select and
         // not a child, so it describes the control without renaming it.
         Assert.Contains("Run_Acceptance_SteepestHint", cut.Find("#sched-acceptance-hint").TextContent, StringComparison.Ordinal);
 
         var callsBefore = fake.Calls;
-        await ActAsync(cut, "#sched-generate", button => button.Click());
+        await cut.ActAsync("#sched-generate", button => button.Click());
         cut.WaitForAssertion(() => Assert.True(fake.Calls > callsBefore));
         Assert.Equal(LocalSearchAcceptance.SteepestDescent, fake.LastParameters.LocalSearchAcceptance);
     }

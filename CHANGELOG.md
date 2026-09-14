@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.3.0] — 2026-09-11
+## [0.3.0] — 2026-09-14
 
 A hardening and expansion release. The theme is that several claims this project
 made about itself were checked against the code that was supposed to support them,

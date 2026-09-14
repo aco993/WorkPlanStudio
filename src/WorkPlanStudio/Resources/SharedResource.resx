@@ -814,4 +814,5 @@
   <data name="Sched_Proof_Nothing" xml:space="preserve"><value>Nothing to prove — there is no schedule.</value></data>
   <data name="Sched_Proof_Failed" xml:space="preserve"><value>The optimality check could not be completed.</value></data>
   <data name="Sched_Proof_NotProvedNoBound" xml:space="preserve"><value>Not proved within {0}: the search closed neither the gap nor a useful bound.</value></data>
+  <data name="Chat_SupersededByNewRun" xml:space="preserve"><value>The schedule changed while that question was being answered, so the answer would have described a plan that is no longer shown. Ask it again.</value></data>
 </root>
