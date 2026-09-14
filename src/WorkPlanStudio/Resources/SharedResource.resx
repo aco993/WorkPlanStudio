@@ -494,4 +494,324 @@
   <data name="Provider_Anthropic" xml:space="preserve"><value>Anthropic (Claude)</value></data>
   <data name="Provider_Gemini" xml:space="preserve"><value>Google Gemini</value></data>
   <data name="Sched_Ai_CorsNote" xml:space="preserve"><value>The request goes from your browser to the endpoint, so the provider must allow browser (CORS) calls. OpenAI, Anthropic (with its direct-browser header, sent automatically), Gemini, OpenRouter and local servers do; some proxies do not.</value></data>
+  <data name="Ui_NavMenu" xml:space="preserve"><value>Menu</value></data>
+  <data name="Ui_Language" xml:space="preserve"><value>Language</value></data>
+  <data name="Ui_GanttHelp" xml:space="preserve"><value>Arrow keys move between operations and closed stretches, Enter reads the one in focus, Escape clears it.</value></data>
+  <data name="Ui_GanttShowTable" xml:space="preserve"><value>Show as table</value></data>
+  <data name="Ui_GanttHideTable" xml:space="preserve"><value>Hide the table</value></data>
+  <data name="Ui_GanttTableCaption" xml:space="preserve"><value>Every operation and closed stretch on the chart, work center by work center</value></data>
+  <data name="Ui_ColStart" xml:space="preserve"><value>Start</value></data>
+  <data name="Ui_ColEnd" xml:space="preserve"><value>End</value></data>
+  <data name="Ui_ColDuration" xml:space="preserve"><value>Duration</value></data>
+  <data name="Ui_ColDetail" xml:space="preserve"><value>Detail</value></data>
+  <data name="Ui_ColDay" xml:space="preserve"><value>Day</value></data>
+  <data name="Ui_ScheduleAnnounced" xml:space="preserve"><value>Schedule generated: {0} of {1} orders on time, makespan {2}.</value></data>
+  <data name="Ui_Range" xml:space="preserve"><value>{0} to {1}</value></data>
+  <data name="Ui_WeekDayClosed" xml:space="preserve"><value>closed all day</value></data>
+  <data name="Val_SingleLine" xml:space="preserve"><value>This must be a single line of text.</value></data>
+  <data name="Val_Scale" xml:space="preserve"><value>At most {0} decimal places.</value></data>
+  <data name="Val_CostCenterCodeTaken" xml:space="preserve"><value>Another cost center already uses this code.</value></data>
+  <data name="Val_CostCenterInUse" xml:space="preserve"><value>Work centers still book against this cost center.</value></data>
+  <data name="Val_CostCenterMissing" xml:space="preserve"><value>That cost center no longer exists.</value></data>
+  <data name="Val_WorkCenterOrderUse" xml:space="preserve"><value>A released production order is still routed through this work center.</value></data>
+  <data name="Val_WorkPlanInUse" xml:space="preserve"><value>A production order was raised from this work plan.</value></data>
+  <data name="Val_PlanNotReleased" xml:space="preserve"><value>The work plan must be released before an order can use it.</value></data>
+  <data name="Storage_Failure_QuotaExceeded" xml:space="preserve"><value>This browser has run out of storage for the database. Export the data, then remove other site data or reset.</value></data>
+  <data name="Storage_Failure_UpgradeFailed" xml:space="preserve"><value>The stored data is from schema version {0} and could not be upgraded. Export it before resetting.</value></data>
+  <data name="Storage_Failure_Forbidden" xml:space="preserve"><value>The current persona may not do that.</value></data>
+  <data name="Md_Nav_CostCenters" xml:space="preserve"><value>Cost centers</value></data>
+  <data name="Md_CostCenters_Title" xml:space="preserve"><value>Cost centers</value></data>
+  <data name="Md_CostCenters_Subtitle" xml:space="preserve"><value>The accounting units work centers book their machine hours against.</value></data>
+  <data name="Md_CostCenters_New" xml:space="preserve"><value>New cost center</value></data>
+  <data name="Md_CostCenters_NewTitle" xml:space="preserve"><value>New cost center</value></data>
+  <data name="Md_CostCenters_EditTitle" xml:space="preserve"><value>Edit cost center</value></data>
+  <data name="Md_CostCenters_Empty" xml:space="preserve"><value>No cost centers yet. Add the first one to assign it to a work center.</value></data>
+  <data name="Md_CostCenters_InUse" xml:space="preserve"><value>In use by work centers</value></data>
+  <data name="Md_CostCenters_SearchPlaceholder" xml:space="preserve"><value>Search code or name</value></data>
+  <data name="Md_Confirm_DeleteCostCenterTitle" xml:space="preserve"><value>Delete cost center?</value></data>
+  <data name="Md_Confirm_DeleteCostCenterBody" xml:space="preserve"><value>Cost center {0} will be removed. This cannot be undone.</value></data>
+  <data name="Md_Field_Description" xml:space="preserve"><value>Description</value></data>
+  <data name="Md_Field_WorkCenters" xml:space="preserve"><value>Work centers</value></data>
+  <data name="Md_CostCenter_None" xml:space="preserve"><value>Not assigned</value></data>
+  <data name="Md_CostCenter_NoneDefined" xml:space="preserve"><value>No cost centers are defined yet.</value></data>
+  <data name="Md_CostCenter_CreateNew" xml:space="preserve"><value>Create a cost center</value></data>
+  <data name="Md_Picker_None" xml:space="preserve"><value>—</value></data>
+  <data name="Md_Picker_InactiveSuffix" xml:space="preserve"><value>(inactive)</value></data>
+  <data name="Md_Picker_Create" xml:space="preserve"><value>Create new</value></data>
+  <data name="Md_FormErrorsLead" xml:space="preserve"><value>Please correct the following before saving.</value></data>
+  <data name="Md_WorkCenters_SearchPlaceholder" xml:space="preserve"><value>Search code or name</value></data>
+  <data name="Md_WorkCenters_FilterCostCenter" xml:space="preserve"><value>Filter by cost center</value></data>
+  <data name="Md_Orders_SearchPlaceholder" xml:space="preserve"><value>Search order, part or routing</value></data>
+  <data name="Md_Orders_NoReleasedPlans" xml:space="preserve"><value>No work plan is released yet, so there is nothing to order against.</value></data>
+  <data name="Md_Priority_1" xml:space="preserve"><value>1 — normal</value></data>
+  <data name="Md_Priority_2" xml:space="preserve"><value>2 — raised</value></data>
+  <data name="Md_Priority_3" xml:space="preserve"><value>3 — high</value></data>
+  <data name="Md_Priority_4" xml:space="preserve"><value>4 — urgent</value></data>
+  <data name="Md_Priority_5" xml:space="preserve"><value>5 — rush</value></data>
+  <data name="Md_Storage_Import" xml:space="preserve"><value>Import a payload</value></data>
+  <data name="Md_Storage_ImportFailed" xml:space="preserve"><value>That file could not be read as a WorkPlan Studio export.</value></data>
+  <data name="Account_Title" xml:space="preserve"><value>Account</value></data>
+  <data name="Account_SignIn" xml:space="preserve"><value>Sign in</value></data>
+  <data name="Account_SignOut" xml:space="preserve"><value>Sign out</value></data>
+  <data name="Account_UserName" xml:space="preserve"><value>User name</value></data>
+  <data name="Account_Password" xml:space="preserve"><value>Password</value></data>
+  <data name="Account_Required" xml:space="preserve"><value>This field is required.</value></data>
+  <data name="Account_SignInIntro" xml:space="preserve"><value>Signing in replaces the persona with the roles your account really has. They come from the server and cannot be changed here.</value></data>
+  <data name="Account_SignInFailed" xml:space="preserve"><value>The user name or password was not accepted.</value></data>
+  <data name="Account_SigningIn" xml:space="preserve"><value>Signing in…</value></data>
+  <data name="Account_SignedInAs" xml:space="preserve"><value>Signed in as {0}</value></data>
+  <data name="Account_Roles" xml:space="preserve"><value>Roles</value></data>
+  <data name="Account_Server" xml:space="preserve"><value>Server</value></data>
+  <data name="Account_ScheduleOnServer" xml:space="preserve"><value>Schedules are generated on the server, by the same engine this app carries.</value></data>
+  <data name="Account_OfflineTitle" xml:space="preserve"><value>No server configured</value></data>
+  <data name="Account_Offline" xml:space="preserve"><value>This build runs entirely in your browser. There is no server and there are no accounts: the persona in the top bar demonstrates the permission model, it does not protect anything.</value></data>
+  <data name="Account_Pull" xml:space="preserve"><value>Fetch master data from the server</value></data>
+  <data name="Account_Pulling" xml:space="preserve"><value>Fetching…</value></data>
+  <data name="Account_PullBoundary" xml:space="preserve"><value>Fetching replaces the local copy with the server's. Local changes are not sent back: this is a one-way import, not a two-way sync.</value></data>
+  <data name="Account_PullDone" xml:space="preserve"><value>Replaced the local copy with {0} cost centers, {1} work centers, {2} work plans and {3} production orders.</value></data>
+  <data name="Account_PullFailed" xml:space="preserve"><value>The master data could not be fetched from the server.</value></data>
+  <data name="Run_Cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="Run_Started" xml:space="preserve"><value>Generating the schedule.</value></data>
+  <data name="Run_Cancelled" xml:space="preserve"><value>The run was cancelled. The previous schedule is unchanged.</value></data>
+  <data name="Run_Preparing" xml:space="preserve"><value>Preparing the run.</value></data>
+  <data name="Run_Progress" xml:space="preserve"><value>Restart {0} of {1} — best objective so far {2}, lower is better.</value></data>
+  <data name="Run_SameThreadNote" xml:space="preserve"><value>The search runs on this tab's own thread and hands it back between restarts, so the page stays usable while it works.</value></data>
+  <data name="Run_BudgetExceeded" xml:space="preserve"><value>Multi-start runs times local-search steps is {0} candidate schedules, and at most {1} are allowed. Lower either value.</value></data>
+  <data name="Run_Acceptance" xml:space="preserve"><value>Improvement rule</value></data>
+  <data name="Run_Acceptance_First" xml:space="preserve"><value>First improvement</value></data>
+  <data name="Run_Acceptance_Best" xml:space="preserve"><value>Best position per job</value></data>
+  <data name="Run_Acceptance_Steepest" xml:space="preserve"><value>Steepest descent</value></data>
+  <data name="Run_Acceptance_FirstHint" xml:space="preserve"><value>Takes the first move that helps and carries straight on. Spends the budget on moves rather than on comparisons.</value></data>
+  <data name="Run_Acceptance_BestHint" xml:space="preserve"><value>Moves each job to its best position in turn. The measured default: about 7% better than steepest descent over 25 test instances.</value></data>
+  <data name="Run_Acceptance_SteepestHint" xml:space="preserve"><value>Compares every move before taking the best one. Thorough on small plans; on large ones the budget runs out after one or two moves.</value></data>
+  <data name="Import_Nav" xml:space="preserve"><value>Import</value></data>
+  <data name="Import_Title" xml:space="preserve"><value>Import data</value></data>
+  <data name="Import_Subtitle" xml:space="preserve"><value>Read master data from a CSV file. Nothing is written until you have seen what would change.</value></data>
+  <data name="Import_Kind_CostCenters" xml:space="preserve"><value>Cost centers</value></data>
+  <data name="Import_Kind_WorkCenters" xml:space="preserve"><value>Work centers</value></data>
+  <data name="Import_Kind_WorkPlans" xml:space="preserve"><value>Work plans and operations</value></data>
+  <data name="Import_Kind_Orders" xml:space="preserve"><value>Production orders</value></data>
+  <data name="Import_Kind_Label" xml:space="preserve"><value>What does the file contain?</value></data>
+  <data name="Import_Samples" xml:space="preserve"><value>Example files</value></data>
+  <data name="Import_Samples_Hint" xml:space="preserve"><value>Each example shows the columns and the exact number and date formats this page reads.</value></data>
+  <data name="Import_Sample_Download" xml:space="preserve"><value>Download the {0} example</value></data>
+  <data name="Import_Drop_Label" xml:space="preserve"><value>Choose a CSV file, or drop one here</value></data>
+  <data name="Import_Drop_Hint" xml:space="preserve"><value>Up to {0} MB. UTF-8, UTF-16 or Windows-1252; comma, semicolon or tab separated — all detected automatically.</value></data>
+  <data name="Import_Drop_Replace" xml:space="preserve"><value>Choose a different file</value></data>
+  <data name="Import_File_Summary" xml:space="preserve"><value>{0} — {1} data rows, {2}, separator “{3}”</value></data>
+  <data name="Import_Mapping_Title" xml:space="preserve"><value>Columns</value></data>
+  <data name="Import_Mapping_Hint" xml:space="preserve"><value>Matched from the header row. Correct anything that is wrong — the mapping is remembered for this kind of file.</value></data>
+  <data name="Import_Mapping_None" xml:space="preserve"><value>— not imported —</value></data>
+  <data name="Import_Mapping_Required" xml:space="preserve"><value>required</value></data>
+  <data name="Import_Mapping_Missing" xml:space="preserve"><value>This column is required and has not been matched.</value></data>
+  <data name="Import_Mapping_Blocked" xml:space="preserve"><value>Assign a column to every required field before checking the file.</value></data>
+  <data name="Import_Mapping_Column" xml:space="preserve"><value>Column {0}</value></data>
+  <data name="Import_Field_Code" xml:space="preserve"><value>Code</value></data>
+  <data name="Import_Field_Name" xml:space="preserve"><value>Name</value></data>
+  <data name="Import_Field_Description" xml:space="preserve"><value>Description</value></data>
+  <data name="Import_Field_Active" xml:space="preserve"><value>Active</value></data>
+  <data name="Import_Field_CostCenter" xml:space="preserve"><value>Cost center code</value></data>
+  <data name="Import_Field_HourlyRate" xml:space="preserve"><value>Hourly rate</value></data>
+  <data name="Import_Field_Capacity" xml:space="preserve"><value>Parallel capacity</value></data>
+  <data name="Import_Field_ShiftPattern" xml:space="preserve"><value>Shift pattern</value></data>
+  <data name="Import_Field_PlanNumber" xml:space="preserve"><value>Plan no.</value></data>
+  <data name="Import_Field_PartNumber" xml:space="preserve"><value>Part no.</value></data>
+  <data name="Import_Field_PartName" xml:space="preserve"><value>Part name</value></data>
+  <data name="Import_Field_Revision" xml:space="preserve"><value>Revision</value></data>
+  <data name="Import_Field_Status" xml:space="preserve"><value>Status</value></data>
+  <data name="Import_Field_LotSize" xml:space="preserve"><value>Lot size</value></data>
+  <data name="Import_Field_OperationNumber" xml:space="preserve"><value>Operation no.</value></data>
+  <data name="Import_Field_OperationDescription" xml:space="preserve"><value>Operation</value></data>
+  <data name="Import_Field_WorkCenter" xml:space="preserve"><value>Work center code</value></data>
+  <data name="Import_Field_SetupMinutes" xml:space="preserve"><value>Setup minutes</value></data>
+  <data name="Import_Field_RunMinutes" xml:space="preserve"><value>Minutes per piece</value></data>
+  <data name="Import_Field_Remarks" xml:space="preserve"><value>Remarks</value></data>
+  <data name="Import_Field_OrderNumber" xml:space="preserve"><value>Order no.</value></data>
+  <data name="Import_Field_Quantity" xml:space="preserve"><value>Quantity</value></data>
+  <data name="Import_Field_Release" xml:space="preserve"><value>Release date</value></data>
+  <data name="Import_Field_Due" xml:space="preserve"><value>Due date</value></data>
+  <data name="Import_Field_Priority" xml:space="preserve"><value>Priority</value></data>
+  <data name="Import_Options_Title" xml:space="preserve"><value>Options</value></data>
+  <data name="Import_Option_Update" xml:space="preserve"><value>Update rows that already exist</value></data>
+  <data name="Import_Option_UpdateHint" xml:space="preserve"><value>Off: an existing code is left alone and counted as skipped. On: it is overwritten, and every such row is listed as a warning first.</value></data>
+  <data name="Import_Option_CreateCostCenters" xml:space="preserve"><value>Create cost centers the file names but the app does not have</value></data>
+  <data name="Import_Option_CreateCostCentersHint" xml:space="preserve"><value>Off: a work center pointing at an unknown cost center is rejected, because that is usually a typo.</value></data>
+  <data name="Import_Option_Separator" xml:space="preserve"><value>Separator</value></data>
+  <data name="Import_Separator_Detected" xml:space="preserve"><value>Detected: {0}</value></data>
+  <data name="Import_Action_DryRun" xml:space="preserve"><value>Check the file</value></data>
+  <data name="Import_Action_Commit" xml:space="preserve"><value>Import</value></data>
+  <data name="Import_Action_Again" xml:space="preserve"><value>Start again</value></data>
+  <data name="Import_Progress_Reading" xml:space="preserve"><value>Reading the file: {0} rows so far.</value></data>
+  <data name="Import_Progress_Done" xml:space="preserve"><value>Dry run finished: {0} would be added, {1} changed, {2} skipped, {3} rejected. Nothing has been written.</value></data>
+  <data name="Import_Busy" xml:space="preserve"><value>Working</value></data>
+  <data name="Import_Preview_Title" xml:space="preserve"><value>Dry run</value></data>
+  <data name="Import_Preview_Caption" xml:space="preserve"><value>Every row of the file and what would happen to it</value></data>
+  <data name="Import_Preview_Nothing" xml:space="preserve"><value>This file would change nothing.</value></data>
+  <data name="Import_Count_Create" xml:space="preserve"><value>to add</value></data>
+  <data name="Import_Count_Update" xml:space="preserve"><value>to change</value></data>
+  <data name="Import_Count_Skip" xml:space="preserve"><value>skipped</value></data>
+  <data name="Import_Count_Reject" xml:space="preserve"><value>rejected</value></data>
+  <data name="Import_Row_Create" xml:space="preserve"><value>Add</value></data>
+  <data name="Import_Row_Update" xml:space="preserve"><value>Change</value></data>
+  <data name="Import_Row_Skip" xml:space="preserve"><value>Skip</value></data>
+  <data name="Import_Row_Reject" xml:space="preserve"><value>Reject</value></data>
+  <data name="Import_Col_Line" xml:space="preserve"><value>Line</value></data>
+  <data name="Import_Col_Action" xml:space="preserve"><value>Action</value></data>
+  <data name="Import_Col_Key" xml:space="preserve"><value>Key</value></data>
+  <data name="Import_Col_Detail" xml:space="preserve"><value>Detail</value></data>
+  <data name="Import_Col_Column" xml:space="preserve"><value>Column</value></data>
+  <data name="Import_Col_Reason" xml:space="preserve"><value>Reason</value></data>
+  <data name="Import_Row_Why" xml:space="preserve"><value>why</value></data>
+  <data name="Import_Row_Back" xml:space="preserve"><value>back to line {0}</value></data>
+  <data name="Import_Rejected_Title" xml:space="preserve"><value>Rejected rows</value></data>
+  <data name="Import_Rejected_Caption" xml:space="preserve"><value>Rows that cannot be imported, with the column and the reason</value></data>
+  <data name="Import_Rejected_Download" xml:space="preserve"><value>Download the rejected rows</value></data>
+  <data name="Import_Warnings_Title" xml:space="preserve"><value>Warnings</value></data>
+  <data name="Import_Warnings_Caption" xml:space="preserve"><value>Things this import would change or assume</value></data>
+  <data name="Import_Storage_Note" xml:space="preserve"><value>Estimated browser storage after this import: {0} of {1} characters.</value></data>
+  <data name="Import_Result" xml:space="preserve"><value>Imported: {0} added, {1} changed, {2} skipped, {3} rejected.</value></data>
+  <data name="Import_Result_CostCenters" xml:space="preserve"><value>{0} cost centers were created as well.</value></data>
+  <data name="Import_Result_Failed" xml:space="preserve"><value>Nothing was imported. The database is exactly as it was.</value></data>
+  <data name="Import_Error_Empty" xml:space="preserve"><value>The file is empty, or it has no rows below the header.</value></data>
+  <data name="Import_Error_TooLarge" xml:space="preserve"><value>The file is larger than {0} MB. The whole database lives in this browser's storage, so a file that size could not be stored even if it were read.</value></data>
+  <data name="Import_Error_NotText" xml:space="preserve"><value>This is not a text file. Save the sheet as CSV and try again.</value></data>
+  <data name="Import_Error_RequiredColumn" xml:space="preserve"><value>{0} is required and has no column.</value></data>
+  <data name="Import_Error_Quota" xml:space="preserve"><value>This import would need about {0} characters of browser storage, and the limit is {1}. Nothing was written.</value></data>
+  <data name="Import_Error_NothingToDo" xml:space="preserve"><value>There is nothing to import.</value></data>
+  <data name="Import_Error_Changed" xml:space="preserve"><value>The data changed while the dry run was on screen, so the import was not applied. Check the file again.</value></data>
+  <data name="Import_Error_Constraint" xml:space="preserve"><value>The database refused a row. Nothing was imported.</value></data>
+  <data name="Import_Parse_UnterminatedQuote" xml:space="preserve"><value>Line {0} opens a quoted field that is never closed.</value></data>
+  <data name="Import_Parse_FieldTooLong" xml:space="preserve"><value>Line {0} has a field longer than {1} characters.</value></data>
+  <data name="Import_Parse_TooManyColumns" xml:space="preserve"><value>Line {0} has more than {1} columns.</value></data>
+  <data name="Import_Parse_TooManyRows" xml:space="preserve"><value>The file has more than {1} rows (reached at line {0}).</value></data>
+  <data name="Import_Error_ColumnCount" xml:space="preserve"><value>The header has {0} columns and this row has {1}.</value></data>
+  <data name="Import_Error_NotANumber" xml:space="preserve"><value>“{0}” is not a number. Use 1234.56 or 1234,56.</value></data>
+  <data name="Import_Error_NotAWholeNumber" xml:space="preserve"><value>“{0}” is not a whole number.</value></data>
+  <data name="Import_Error_NotABoolean" xml:space="preserve"><value>“{0}” is not a yes or a no.</value></data>
+  <data name="Import_Error_NotADate" xml:space="preserve"><value>“{0}” is not a date this page reads. Accepted: {1}.</value></data>
+  <data name="Import_Error_UnknownStatus" xml:space="preserve"><value>“{0}” is not a work-plan status.</value></data>
+  <data name="Import_Error_DuplicateKey" xml:space="preserve"><value>“{0}” is already in this file, at line {1}.</value></data>
+  <data name="Import_Error_DuplicateOperation" xml:space="preserve"><value>Operation {0} appears twice in plan {1}.</value></data>
+  <data name="Import_Error_UnknownWorkCenter" xml:space="preserve"><value>There is no work center with the code “{0}”.</value></data>
+  <data name="Import_Error_UnknownCostCenter" xml:space="preserve"><value>There is no cost center with the code “{0}”. Tick the option above to create it.</value></data>
+  <data name="Import_Error_PlanHeaderConflict" xml:space="preserve"><value>This row disagrees with line {1} about plan {0}.</value></data>
+  <data name="Import_Warn_Overwrite" xml:space="preserve"><value>“{0}” exists and would be overwritten.</value></data>
+  <data name="Import_Warn_NewCostCenter" xml:space="preserve"><value>Cost center “{0}” would be created, with its code as its name.</value></data>
+  <data name="Import_Warn_PlanHasOrders" xml:space="preserve"><value>Plan {0} has {1} production orders. Replacing its operations changes what they were raised from.</value></data>
+  <data name="Import_Preview_Truncated" xml:space="preserve"><value>Showing the first {0} of {1} rows. The counts above and the downloadable report cover all of them.</value></data>
+  <data name="Import_Error_ReadFailed" xml:space="preserve"><value>The file could not be read.</value></data>
+  <data name="Import_Row_Why_Label" xml:space="preserve"><value>why line {0} was rejected</value></data>
+  <data name="Rule_RestCompensation_Title" xml:space="preserve"><value>Compensating rest</value></data>
+  <data name="Rule_RestCompensation_Text" xml:space="preserve"><value>§ 5 (2) reserves a rest shortened to 10 hours for hospitals and other institutions for treatment and care, catering and accommodation, transport undertakings, broadcasting, agriculture and animal husbandry — and even there only where every shortening is made good within a calendar month or four weeks by extending another rest to at least 12 hours.</value></data>
+  <data name="Rule_MultiShiftRequirement_Title" xml:space="preserve"><value>Multi-shift operation</value></data>
+  <data name="Rule_MultiShiftRequirement_Text" xml:space="preserve"><value>The start and end of the Sunday and holiday rest may be moved by up to six hours, forward or back — but only in multi-shift plants running a regular day and night shift. A pattern with only one of the two claims a permission § 9 (2) does not give it.</value></data>
+  <data name="Rule_ReplacementRestDay_Title" xml:space="preserve"><value>Replacement rest day</value></data>
+  <data name="Rule_ReplacementRestDay_Text" xml:space="preserve"><value>§ 11 (3) gives a crew that works a Sunday a replacement rest day within a two-week period that includes the Sunday worked; § 11 (2) gives one within eight weeks for work on a public holiday that falls on a working day. The permission to work those days brings the obligation with it.</value></data>
+  <data name="Applied_RestCompensation" xml:space="preserve"><value>{0} on {1}: rest shortened to {2}; the statute requires at least {3} here (§ 5 (2)).</value></data>
+  <data name="Applied_MultiShiftRequirement" xml:space="preserve"><value>{0}: the Sunday and holiday rest is moved by {2}, which § 9 (2) allows only in a multi-shift plant with a regular day and night shift.</value></data>
+  <data name="Applied_ReplacementRestDay" xml:space="preserve"><value>{0} on {1}: a replacement rest day is owed for it, within {3} (§ 11 (2), (3)).</value></data>
+  <data name="Wt_Days" xml:space="preserve"><value>{0} days</value></data>
+  <data name="Wt_Weeks" xml:space="preserve"><value>{0} weeks</value></data>
+  <data name="Wt_WeeksUnit" xml:space="preserve"><value>weeks</value></data>
+  <data name="Wt_AveragingWindow" xml:space="preserve"><value>Reference period for the average (§ 3 s. 2)</value></data>
+  <data name="Wt_Window_TwentyFourWeeks" xml:space="preserve"><value>24 weeks</value></data>
+  <data name="Wt_Window_SixCalendarMonths" xml:space="preserve"><value>Six calendar months</value></data>
+  <data name="Wt_RestSector" xml:space="preserve"><value>Sector under § 5 (2)</value></data>
+  <data name="Wt_Sector_None" xml:space="preserve"><value>None — the full 11 hours apply</value></data>
+  <data name="Wt_Sector_HealthCare" xml:space="preserve"><value>Hospitals, treatment and care</value></data>
+  <data name="Wt_Sector_Hospitality" xml:space="preserve"><value>Catering and accommodation</value></data>
+  <data name="Wt_Sector_Transport" xml:space="preserve"><value>Transport undertakings</value></data>
+  <data name="Wt_Sector_Broadcasting" xml:space="preserve"><value>Broadcasting</value></data>
+  <data name="Wt_Sector_Agriculture" xml:space="preserve"><value>Agriculture and animal husbandry</value></data>
+  <data name="Wt_RestNoSector" xml:space="preserve"><value>Outside the sectors § 5 (2) names there is no entitlement to shorten the rest, so 11 hours is the only value on offer.</value></data>
+  <data name="Wt_RestSectorOpened" xml:space="preserve"><value>A sector is declared, so the shortened rest of 10 hours is now on offer — and with it the duty to compensate.</value></data>
+  <data name="Wt_RestCompensationNote" xml:space="preserve"><value>Every rest shortened this way has to be made good within a calendar month or four weeks by extending another rest of the same crew to at least {0} (§ 5 (2)).</value></data>
+  <data name="Wt_SundayRotation" xml:space="preserve"><value>Length of the crew rota (§ 11 (1))</value></data>
+  <data name="Wt_SundayRotationHint" xml:space="preserve"><value>A rota of four weeks means each crew works every fourth Sunday; a rota of one week means the same crew works all of them.</value></data>
+  <data name="Wt_SundayRotationOpened" xml:space="preserve"><value>Sunday work is permitted, so the crew rota now decides how many Sundays stay free.</value></data>
+  <data name="Wt_OperatingDays" xml:space="preserve"><value>Operating days in this preview</value></data>
+  <data name="Wt_Days_AsDefined" xml:space="preserve"><value>As the pattern defines them</value></data>
+  <data name="Wt_Days_WithSaturday" xml:space="preserve"><value>Also on Saturdays</value></data>
+  <data name="Wt_Days_WithSunday" xml:space="preserve"><value>Also on Saturdays and Sundays</value></data>
+  <data name="Wt_PreviewPeriod" xml:space="preserve"><value>Preview period {0} – {1}</value></data>
+  <data name="Wt_Averaging" xml:space="preserve"><value>Averaging period</value></data>
+  <data name="Wt_AveragingNote" xml:space="preserve"><value>§ 3 s. 2 allows the ten-hour working day only while the average stays at eight hours per Werktag — Monday to Saturday — across the reference period. § 6 (2) asks the same of night work over four weeks. Both are computed from the pattern above.</value></data>
+  <data name="Wt_ColRule" xml:space="preserve"><value>Provision</value></data>
+  <data name="Wt_ColCrew" xml:space="preserve"><value>Crew</value></data>
+  <data name="Wt_ColAverage" xml:space="preserve"><value>Average per Werktag</value></data>
+  <data name="Wt_ColState" xml:space="preserve"><value>Status</value></data>
+  <data name="Wt_ColFirstBreach" xml:space="preserve"><value>First exceeded on</value></data>
+  <data name="Wt_ColCompensation" xml:space="preserve"><value>Days still to be compensated</value></data>
+  <data name="Wt_ColPeriod" xml:space="preserve"><value>Period measured</value></data>
+  <data name="Wt_AveragingKept" xml:space="preserve"><value>kept</value></data>
+  <data name="Wt_AveragingBreached" xml:space="preserve"><value>exceeded</value></data>
+  <data name="Wt_AveragingOf" xml:space="preserve"><value>{0} of at most {1}</value></data>
+  <data name="Wt_AveragingWerktage" xml:space="preserve"><value>over {0} Werktage</value></data>
+  <data name="Wt_AveragingMeasured" xml:space="preserve"><value>measured across the period</value></data>
+  <data name="Wt_AveragingProjected" xml:space="preserve"><value>projected from the repeating week</value></data>
+  <data name="Wt_AveragingNone" xml:space="preserve"><value>This pattern staffs nobody, so there is no working time to average.</value></data>
+  <data name="Wt_AveragingNotBreached" xml:space="preserve"><value>not in this period</value></data>
+  <data name="Wt_AnnounceAveraging" xml:space="preserve"><value>Averaging period: the highest average is {0} per Werktag, for crew {1} — {2}.</value></data>
+  <data name="Wt_SundayRest" xml:space="preserve"><value>Free Sundays (§ 11 (1))</value></data>
+  <data name="Wt_FreeSundays" xml:space="preserve"><value>{0} free Sundays in {1}; § 11 (1) requires at least {2}.</value></data>
+  <data name="Wt_SundayStatus_NotApplicable" xml:space="preserve"><value>§ 11 protects people, and this pattern staffs none.</value></data>
+  <data name="Wt_SundayStatus_Intact" xml:space="preserve"><value>No crew works a Sunday.</value></data>
+  <data name="Wt_SundayStatus_Rotated" xml:space="preserve"><value>The declared rota keeps enough Sundays free.</value></data>
+  <data name="Wt_SundayStatus_Breach" xml:space="preserve"><value>Too few Sundays stay free.</value></data>
+  <data name="Wt_WeekClosed" xml:space="preserve"><value>The rules leave this pattern no working time at all, so the work centre may not run.</value></data>
+  <data name="Wt_WeekClosedBy" xml:space="preserve"><value>Closed by {0}.</value></data>
+  <data name="Wt_WeekClosedUnattributed" xml:space="preserve"><value>No rule recorded itself as the cause.</value></data>
+  <data name="Wt_Val_RestNeedsSector" xml:space="preserve"><value>The shortened rest needs one of the sectors § 5 (2) names.</value></data>
+  <data name="Wt_Val_SectorInvalid" xml:space="preserve"><value>Choose one of the sectors § 5 (2) names.</value></data>
+  <data name="Wt_Val_AveragingWindowInvalid" xml:space="preserve"><value>Choose a reference period.</value></data>
+  <data name="Wt_Range" xml:space="preserve"><value>{0} – {1}</value></data>
+  <data name="Holiday_EasterSunday" xml:space="preserve"><value>Easter Sunday</value></data>
+  <data name="Holiday_WhitSunday" xml:space="preserve"><value>Whit Sunday</value></data>
+  <data name="Ai_QuestionTooLong" xml:space="preserve"><value>That question is longer than {0} characters. Shorten it and ask again — the schedule facts are already in the prompt, so the question itself can be short.</value></data>
+  <data name="Ai_UnknownOrder" xml:space="preserve"><value>I cannot find {0} in this schedule. Only released orders are scheduled, so check the number, or release the order and generate again.</value></data>
+  <data name="Ai_AmbiguousOrder" xml:space="preserve"><value>{0} matches {1} orders in this schedule, so I cannot tell which one you mean. Order numbers that differ only in capitalisation are stored as different orders.</value></data>
+  <data name="Ai_UnknownWorkCenter" xml:space="preserve"><value>I cannot find work center {0} in this schedule. It contains: {1}.</value></data>
+  <data name="Ai_AmbiguousWorkCenter" xml:space="preserve"><value>{0} matches {1} work centers in this schedule, so I cannot tell which one you mean.</value></data>
+  <data name="Ai_BottleneckWithoutClosed" xml:space="preserve"><value>{0} is the bottleneck: {1} utilisation of its open time across {2} operations. Its closed time cannot be attributed to a single lane on the chart, so this answer quotes no figure for it.</value></data>
+  <data name="Ai_KeyStored" xml:space="preserve"><value>A key for {0} is stored in this browser. Leave this field empty to keep it, or type a new one to replace it.</value></data>
+  <data name="Ai_KeyNone" xml:space="preserve"><value>No key is stored for this provider yet.</value></data>
+  <data name="Ai_KeyForget" xml:space="preserve"><value>Forget this key</value></data>
+  <data name="Ai_KeyForgotten" xml:space="preserve"><value>The key for {0} was removed from this browser.</value></data>
+  <data name="Ai_KeyRisk" xml:space="preserve"><value>The key is kept in this browser's storage, which is not a vault: any script running on this page, and any browser extension with access to it, can read it. Use a key you are able to revoke, and do not enable a model on a shared computer.</value></data>
+  <data name="Export_Menu" xml:space="preserve"><value>Export</value></data>
+  <data name="Export_Busy" xml:space="preserve"><value>Preparing…</value></data>
+  <data name="Export_Pdf" xml:space="preserve"><value>PDF report</value></data>
+  <data name="Export_Excel" xml:space="preserve"><value>Excel workbook</value></data>
+  <data name="Export_Csv" xml:space="preserve"><value>CSV file</value></data>
+  <data name="Export_Hint" xml:space="preserve"><value>The file is produced in your browser; nothing is uploaded.</value></data>
+  <data name="Export_Ready" xml:space="preserve"><value>{0} is ready to download.</value></data>
+  <data name="Export_Failed" xml:space="preserve"><value>The export could not be produced. Try again, or pick another format.</value></data>
+  <data name="Export_Title" xml:space="preserve"><value>Production schedule</value></data>
+  <data name="Export_Subtitle" xml:space="preserve"><value>Dispatch rule: {0} · target-date rule: {1}</value></data>
+  <data name="Export_PageNumber" xml:space="preserve"><value>Page {0} of {1}</value></data>
+  <data name="Export_Operations" xml:space="preserve"><value>Operations</value></data>
+  <data name="Export_Utilization" xml:space="preserve"><value>Utilization per work center</value></data>
+  <data name="Export_Parameters" xml:space="preserve"><value>Run parameters</value></data>
+  <data name="Export_Setting" xml:space="preserve"><value>Setting</value></data>
+  <data name="Export_Value" xml:space="preserve"><value>Value</value></data>
+  <data name="Export_Start" xml:space="preserve"><value>Start</value></data>
+  <data name="Export_End" xml:space="preserve"><value>End</value></data>
+  <data name="Export_Duration" xml:space="preserve"><value>Duration</value></data>
+  <data name="Export_Generated" xml:space="preserve"><value>Generated</value></data>
+  <data name="Export_Horizon" xml:space="preserve"><value>Schedule starts</value></data>
+  <data name="Export_LocalSearchTaken" xml:space="preserve"><value>Local-search steps taken</value></data>
+  <data name="Export_HoursUnit" xml:space="preserve"><value>h</value></data>
+  <data name="Export_Summary" xml:space="preserve"><value>Summary</value></data>
+  <data name="Export_Figure" xml:space="preserve"><value>Figure</value></data>
+  <data name="Export_True" xml:space="preserve"><value>TRUE</value></data>
+  <data name="Export_False" xml:space="preserve"><value>FALSE</value></data>
+  <data name="Sched_Proof_Action" xml:space="preserve"><value>Prove this is optimal</value></data>
+  <data name="Sched_Proof_Busy" xml:space="preserve"><value>Proving…</value></data>
+  <data name="Sched_Proof_Optimal" xml:space="preserve"><value>Proved optimal: no schedule scores better under these parameters. {0} search nodes, {1}.</value></data>
+  <data name="Sched_Proof_Better" xml:space="preserve"><value>A better schedule exists: this one is {0} % above the proved optimum. {1} search nodes, {2}.</value></data>
+  <data name="Sched_Proof_NotProved" xml:space="preserve"><value>Not proved within {0}: the search could not close the gap. It did prove the schedule is at most {1} % above the best possible — the optimum lies between that bound and the plan shown.</value></data>
+  <data name="Sched_Proof_TooLarge" xml:space="preserve"><value>Too large to settle here: {0} operations. The exact solver is offered only where it can finish while you wait.</value></data>
+  <data name="Sched_Proof_Nothing" xml:space="preserve"><value>Nothing to prove — there is no schedule.</value></data>
+  <data name="Sched_Proof_Failed" xml:space="preserve"><value>The optimality check could not be completed.</value></data>
+  <data name="Sched_Proof_NotProvedNoBound" xml:space="preserve"><value>Not proved within {0}: the search closed neither the gap nor a useful bound.</value></data>
 </root>

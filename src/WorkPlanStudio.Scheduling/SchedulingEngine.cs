@@ -11,6 +11,11 @@ namespace WorkPlanStudio.Scheduling;
 /// Restart 0 is always the rule order and the descent never regresses, so the
 /// result can never be worse than the pure rule schedule, and it is fully
 /// reproducible for a given seed.
+/// <para>
+/// Every restart shares one <see cref="SchedulingWorkspace"/> and only the
+/// winning order is turned into a <see cref="Schedule"/>, so a run allocates a
+/// fixed amount regardless of how many candidates it evaluates.
+/// </para>
 /// </summary>
 public sealed class SchedulingEngine
 {
@@ -28,55 +33,34 @@ public sealed class SchedulingEngine
     {
         ArgumentNullException.ThrowIfNull(context);
         cancellationToken.ThrowIfCancellationRequested();
-
-        var dueByJob = DueDateAssigner.Assign(context);
-
-        if (context.Jobs.Count == 0)
-        {
-            var emptySchedule = _scheduler.RunCancellable(context, [], dueByJob, cancellationToken);
-            return new SchedulingResult(emptySchedule, ScheduleEvaluator.Evaluate(emptySchedule, context), dueByJob, 0);
-        }
-
-        var baseOrder = PriorityOrdering.For(context, dueByJob);
-        int restarts = Math.Max(1, context.Parameters.MultiStartRuns);
-        int budget = context.Parameters.LocalSearchMaxSteps;
-
-        Schedule? bestSchedule = null;
-        ScheduleEvaluation? bestEvaluation = null;
-        int totalSteps = 0;
-
-        // A descent from every restart, not just from the best raw shuffle: the
-        // starting point of a descent matters much less than how far it can walk,
-        // and polishing only the best shuffle wastes the other restarts entirely.
-        for (int restart = 0; restart < restarts; restart++)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            // Restart 0 is the pure rule order, so the chosen schedule can never be
-            // worse than what the dispatch rule alone produces.
-            var order = (int[])baseOrder.Clone();
-            if (restart > 0)
-                DeterministicRandom.ForRun(context.Parameters.Seed, restart).Shuffle(order);
-
-            var schedule = _scheduler.RunCancellable(context, order, dueByJob, cancellationToken);
-            var evaluation = ScheduleEvaluator.Evaluate(schedule, context);
-
-            var polished = LocalSearch.ImproveCancellable(
-                _scheduler, context, dueByJob, order, schedule, evaluation, budget, cancellationToken);
-            totalSteps += polished.StepsUsed;
-
-            // Strict improvement, so restart 0 keeps ties and the result does not
-            // depend on how many restarts were configured.
-            if (bestEvaluation is null || polished.Evaluation.Penalty < bestEvaluation.Penalty)
-            {
-                bestSchedule = polished.Schedule;
-                bestEvaluation = polished.Evaluation;
-            }
-        }
-
-        return new SchedulingResult(bestSchedule!, bestEvaluation!, dueByJob, totalSteps)
-        {
-            EquivalentRules = PriorityOrdering.EquivalentRules(context, dueByJob)
-        };
+        return Begin(context).Complete(cancellationToken);
     }
+
+    /// <summary>
+    /// Prepares the same run but hands the restart boundary back to the caller —
+    /// see <see cref="MultiStartRun"/>, which is what a single-threaded host needs
+    /// in order to stay responsive, report progress and honour cancellation.
+    /// </summary>
+    /// <remarks>
+    /// A descent from every restart, not just from the best raw shuffle: the
+    /// starting point of a descent matters much less than how far it can walk, and
+    /// polishing only the best shuffle wastes the other restarts entirely. Target
+    /// dates are assigned here, once, before any restart runs.
+    /// </remarks>
+    public MultiStartRun Begin(SchedulingContext context)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        return new MultiStartRun(_scheduler, context, DueDateAssigner.Assign(context));
+    }
+
+    /// <summary>The search without the equivalent-rule roll-up, for callers that only need the score.</summary>
+    internal SearchOutcome Search(
+        SchedulingContext context, IReadOnlyDictionary<int, long> dueByJob, CancellationToken cancellationToken) =>
+        new MultiStartRun(_scheduler, context, dueByJob).CompleteOutcome(cancellationToken);
+
+    /// <summary>What one multi-start search produced.</summary>
+    /// <param name="Schedule">The winning schedule.</param>
+    /// <param name="Evaluation">Its KPIs and penalty.</param>
+    /// <param name="StepsUsed">Neighbours evaluated across every restart.</param>
+    internal readonly record struct SearchOutcome(Schedule Schedule, ScheduleEvaluation Evaluation, int StepsUsed);
 }

@@ -4,6 +4,10 @@ name: Quality
 # lot of cross-referencing Markdown; neither was enforced, so both could drift
 # silently. Kept out of ci.yml so a formatting failure is distinguishable at a
 # glance from a test failure.
+#
+# The checks themselves live in .github/scripts as ordinary Python files with
+# their own tests, so a contributor can run them before pushing instead of
+# discovering the result in a workflow log.
 
 on:
   push:
@@ -28,16 +32,19 @@ jobs:
   quality:
     name: Formatting + documentation integrity
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v6
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68  # v6.0.0
         with:
           global-json-file: global.json
 
       - name: Cache NuGet packages
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
         with:
           path: ~/.nuget/packages
           key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', 'Directory.Packages.props') }}
@@ -46,61 +53,19 @@ jobs:
       - name: Verify formatting
         run: dotnet format WorkPlanStudio.slnx --verify-no-changes --severity warn
 
-      # Every relative Markdown link must resolve. The docs cross-reference ADRs,
-      # workflows and source files heavily, and a rename silently breaks them -
-      # a dead link in the README is the first thing a reader hits.
+      # The checks are tested before they are trusted: a link checker that
+      # silently stopped finding anything would otherwise report success.
+      - name: Test the repository checks
+        run: python3 -m unittest discover -s .github/scripts -p 'test_*.py' -v
+
+      # Every relative Markdown link must resolve, anchor included. The docs
+      # cross-reference ADRs, workflows and source files heavily, and a renamed
+      # heading breaks the README's coverage badges without touching a filename.
       - name: Verify documentation links
-        run: |
-          python3 - <<'PY'
-          import os, re, sys, urllib.parse
-
-          link = re.compile(r'\[[^\]]*\]\(([^)]+)\)')
-          broken = []
-
-          for root, dirs, files in os.walk('.'):
-              dirs[:] = [d for d in dirs if d not in {'.git', 'bin', 'obj', 'node_modules'}]
-              for name in files:
-                  if not name.endswith('.md'):
-                      continue
-                  path = os.path.join(root, name)
-                  with open(path, encoding='utf-8') as handle:
-                      text = handle.read()
-
-                  for target in link.findall(text):
-                      target = target.split(' ')[0].strip()
-                      if not target or target.startswith(('http://', 'https://', 'mailto:', '#')):
-                          continue
-                      target = urllib.parse.unquote(target.split('#')[0])
-                      if not target:
-                          continue
-                      resolved = os.path.normpath(os.path.join(root, target))
-                      if not os.path.exists(resolved):
-                          broken.append(f'{path} -> {target}')
-
-          if broken:
-              print('Broken relative links:')
-              for entry in sorted(broken):
-                  print('  ' + entry)
-              sys.exit(1)
-
-          print('All relative Markdown links resolve.')
-          PY
+        run: python3 .github/scripts/check_doc_links.py
 
       # The two resource files drift silently: a missing key does not throw, it
       # renders the key name. The parity assertions live in LocalizationTests,
-      # which the CI workflow runs - this is only a fast pre-check that both
-      # files are well-formed XML before the slower suite starts.
-      - name: Verify resource files parse
-        run: |
-          python3 - <<'PY'
-          import sys, xml.etree.ElementTree as ET
-
-          for path in ('src/WorkPlanStudio/Resources/SharedResource.resx',
-                       'src/WorkPlanStudio/Resources/SharedResource.de.resx'):
-              try:
-                  count = len(ET.parse(path).getroot().findall('data'))
-              except ET.ParseError as error:
-                  print(f'{path}: {error}')
-                  sys.exit(1)
-              print(f'{path}: {count} entries')
-          PY
+      # which the CI workflow runs — this is the fast pre-check.
+      - name: Verify resource files parse and match
+        run: python3 .github/scripts/check_resources.py

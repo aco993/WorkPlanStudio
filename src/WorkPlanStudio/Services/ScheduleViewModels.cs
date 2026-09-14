@@ -42,6 +42,31 @@ public sealed record ScheduleResult(
     public IReadOnlyDictionary<string, double> UtilizationByWorkCenter { get; init; } = new Dictionary<string, double>();
 
     /// <summary>The result shown when there is nothing to schedule.</summary>
+    /// <summary>
+    /// The Gantt's display day when no caller names one: eight hours. It lives
+    /// on the view model because the view model is the one type both hosts
+    /// compile — the browser and the API — so the two cannot drift apart. It
+    /// used to sit on <c>SchedulingParameters</c>, which was a rendering
+    /// constant inside a library that advertises having no UI concerns.
+    /// </summary>
+    public const int DefaultMinutesPerWorkingDay = 480;
+
+    /// <summary>The narrowest display day the chart can draw: one minute.</summary>
+    public const int MinMinutesPerWorkingDay = 1;
+
+    /// <summary>The widest: a full calendar day. Beyond that the axis stops meaning anything.</summary>
+    public const int MaxMinutesPerWorkingDay = 1440;
+
+    /// <summary>
+    /// Whether <paramref name="minutesPerWorkingDay"/> can be drawn. This used to
+    /// be enforced by the engine's parameter limits, because the value lived on
+    /// <c>SchedulingParameters</c>; moving it out of the library moved the check
+    /// with it rather than dropping it.
+    /// </summary>
+    /// <param name="minutesPerWorkingDay">Working minutes per calendar day.</param>
+    public static bool IsDrawableDay(int minutesPerWorkingDay) =>
+        minutesPerWorkingDay is >= MinMinutesPerWorkingDay and <= MaxMinutesPerWorkingDay;
+
     public static ScheduleResult Empty(int minutesPerWorkingDay) =>
         new(false, new ScheduleKpis(0, 1, 0, 0, 0, 0), [], [], 0, minutesPerWorkingDay, 0);
 }

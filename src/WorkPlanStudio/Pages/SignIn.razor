@@ -1,0 +1,214 @@
+@page "/sign-in"
+@using WorkPlanStudio.Services.Remote
+@inject IStringLocalizer<SharedResource> L
+@inject ApiOptions Api
+@inject IServiceProvider Services
+
+@*
+    The account page. It is one route in both modes rather than two, so a link
+    to it is never broken: with no server configured it explains that there is
+    nothing to sign in to, which is the honest answer and also the page a
+    curious reader of the deployed demo should land on.
+*@
+
+<PageTitle>@L["Account_Title"] · WorkPlan Studio</PageTitle>
+
+<div class="page-head">
+    <h1>@L["Account_Title"]</h1>
+</div>
+
+@if (!Api.IsConnected)
+{
+    <section class="card">
+        <div class="card-head"><h2>@L["Account_OfflineTitle"]</h2></div>
+        <div class="card-body">
+            <p class="lead">@L["Account_Offline"]</p>
+        </div>
+    </section>
+}
+else if (_user is null)
+{
+    <section class="card sign-in-card">
+        <div class="card-head"><h2>@L["Account_SignIn"]</h2></div>
+        <div class="card-body">
+            <p class="muted small-text">@L["Account_SignInIntro"]</p>
+
+            @if (_error is not null)
+            {
+                <div class="form-banner error" role="alert">@_error</div>
+            }
+
+            <EditForm Model="_form" OnValidSubmit="SubmitAsync" FormName="sign-in">
+                <div class="form-grid">
+                    <label class="field wide">
+                        <span>@L["Account_UserName"]</span>
+                        <input id="sign-in-user" class="input @(_userNameMissing ? "error" : null)" autocomplete="username"
+                               aria-invalid="@(_userNameMissing ? "true" : "false")"
+                               aria-describedby="@(_userNameMissing ? "sign-in-user-error" : null)"
+                               @bind="_form.UserName" @bind:event="oninput" />
+                        @if (_userNameMissing)
+                        {
+                            <span id="sign-in-user-error" class="field-error">@L["Account_Required"]</span>
+                        }
+                    </label>
+                    <label class="field wide">
+                        <span>@L["Account_Password"]</span>
+                        <input id="sign-in-password" class="input @(_passwordMissing ? "error" : null)" type="password"
+                               autocomplete="current-password"
+                               aria-invalid="@(_passwordMissing ? "true" : "false")"
+                               aria-describedby="@(_passwordMissing ? "sign-in-password-error" : null)"
+                               @bind="_form.Password" @bind:event="oninput" />
+                        @if (_passwordMissing)
+                        {
+                            <span id="sign-in-password-error" class="field-error">@L["Account_Required"]</span>
+                        }
+                    </label>
+                </div>
+
+                <div class="head-actions">
+                    <button class="btn btn-primary" type="submit" disabled="@_busy">
+                        @(_busy ? L["Account_SigningIn"] : L["Account_SignIn"])
+                    </button>
+                </div>
+            </EditForm>
+        </div>
+    </section>
+}
+else
+{
+    <section class="card">
+        <div class="card-head"><h2>@L["Account_SignedInAs", _user.UserName]</h2></div>
+        <div class="card-body">
+            <dl class="glance-list">
+                <dt>@L["Account_Roles"]</dt>
+                <dd>@string.Join(", ", _user.Roles)</dd>
+                <dt>@L["Account_Server"]</dt>
+                <dd>@Api.Address?.Host</dd>
+            </dl>
+            <p class="muted small-text">@L["Account_ScheduleOnServer"]</p>
+
+            <div class="head-actions">
+                <button class="btn btn-outline" @onclick="SignOutAsync" disabled="@_busy">@L["Account_SignOut"]</button>
+            </div>
+        </div>
+    </section>
+
+    <section class="card">
+        <div class="card-head"><h2>@L["Account_Pull"]</h2></div>
+        <div class="card-body">
+            <p class="muted small-text">@L["Account_PullBoundary"]</p>
+
+            @if (_pullMessage is not null)
+            {
+                <div class="form-banner @(_pullFailed ? "error" : null)" role="status">@_pullMessage</div>
+            }
+
+            <div class="head-actions">
+                <button class="btn btn-outline" @onclick="PullAsync" disabled="@_pulling">
+                    @(_pulling ? L["Account_Pulling"] : L["Account_Pull"])
+                </button>
+            </div>
+        </div>
+    </section>
+}
+
+@code {
+    private readonly Credentials _form = new();
+    private WorkPlanStudio.Contracts.UserInfo? _user;
+    private string? _error;
+    private string? _pullMessage;
+    private bool _pullFailed;
+    private bool _busy;
+    private bool _pulling;
+    private bool _userNameMissing;
+    private bool _passwordMissing;
+
+    /// <summary>The form's own model. Bound with <c>oninput</c>, so the error clears as the user types.</summary>
+    private sealed class Credentials
+    {
+        public string UserName { get; set; } = "";
+        public string Password { get; set; } = "";
+    }
+
+    private RemoteAuthenticationStateProvider? Provider =>
+        Api.IsConnected ? Services.GetService<RemoteAuthenticationStateProvider>() : null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Provider is { } provider)
+        {
+            await provider.GetAuthenticationStateAsync();
+            _user = provider.User;
+        }
+    }
+
+    private async Task SubmitAsync()
+    {
+        _userNameMissing = string.IsNullOrWhiteSpace(_form.UserName);
+        _passwordMissing = string.IsNullOrEmpty(_form.Password);
+        _error = null;
+
+        if (_userNameMissing || _passwordMissing || Provider is not { } provider)
+            return;
+
+        _busy = true;
+        try
+        {
+            if (await provider.SignInAsync(_form.UserName.Trim(), _form.Password))
+            {
+                _user = provider.User;
+                _form.Password = "";
+            }
+            else
+            {
+                // One message for a wrong name and a wrong password, matching what
+                // the server says: the difference only helps someone guessing.
+                _error = L["Account_SignInFailed"];
+            }
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task SignOutAsync()
+    {
+        if (Provider is not { } provider)
+            return;
+
+        _busy = true;
+        try
+        {
+            await provider.SignOutAsync();
+            _user = null;
+            _pullMessage = null;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task PullAsync()
+    {
+        var sync = Services.GetService<RemoteMasterDataSync>();
+        if (sync is null)
+            return;
+
+        _pulling = true;
+        _pullMessage = null;
+        try
+        {
+            var result = await sync.PullAsync();
+            _pullFailed = !result.IsSuccess;
+            _pullMessage = result is { IsSuccess: true, Value: { } summary }
+                ? L["Account_PullDone", summary.CostCenters, summary.WorkCenters, summary.WorkPlans, summary.ProductionOrders]
+                : L["Account_PullFailed"];
+        }
+        finally
+        {
+            _pulling = false;
+        }
+    }
+}

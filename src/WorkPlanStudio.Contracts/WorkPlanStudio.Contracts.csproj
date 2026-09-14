@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The wire format, and nothing else. No package references on purpose: the API
+    and the WebAssembly client both take a dependency on this assembly, so every
+    type in it has to compile in a browser as happily as it does on a server.
+    Keeping it empty of dependencies is what makes that guarantee cheap to hold.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>WorkPlanStudio.Contracts</RootNamespace>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+</Project>

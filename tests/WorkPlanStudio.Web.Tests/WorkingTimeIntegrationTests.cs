@@ -22,8 +22,18 @@ public class WorkingTimeIntegrationTests
     private static WorkPlan Plan(int id, params Operation[] ops) =>
         new() { Id = id, PlanNumber = $"WP-{id}", PartName = $"Part {id}", Status = WorkPlanStatus.Released, LotSize = 1, Operations = ops.ToList() };
 
+    // The work centre is attached, not just its id: RoutingSnapshot.Capture now
+    // refuses to freeze an empty lane label rather than writing one forever.
     private static Operation Op(int number, int workCenterId, decimal minutes) =>
-        new() { OperationNumber = number, WorkCenterId = workCenterId, Description = $"Op {number}", SetupTimeMinutes = minutes, TimePerPieceMinutes = 0 };
+        new()
+        {
+            OperationNumber = number,
+            WorkCenterId = workCenterId,
+            WorkCenter = Center(workCenterId, ShiftPatterns.Continuous.Key),
+            Description = $"Op {number}",
+            SetupTimeMinutes = minutes,
+            TimePerPieceMinutes = 0
+        };
 
     private static ProductionOrder Released(WorkPlan plan, int dueDays = 10) => new()
     {
@@ -31,8 +41,8 @@ public class WorkingTimeIntegrationTests
         OrderNumber = $"PO-{plan.Id}",
         WorkPlanId = plan.Id,
         Quantity = 1,
-        ReleaseUtc = Horizon,
-        DueUtc = Horizon.AddDays(dueDays),
+        ReleaseLocal = Horizon,
+        DueLocal = Horizon.AddDays(dueDays),
         Status = ProductionOrderStatus.Released,
         RoutingSnapshotJson = RoutingSnapshot.Capture(plan).Serialize()
     };
@@ -167,7 +177,19 @@ public class WorkingTimeIntegrationTests
         var seeded = await service.GetAsync(cancellationToken);
         Assert.Equal("NW", seeded.State);   // the seed row
 
-        var saved = await service.SaveAsync(new PlantSettings { State = "by", SundayWorkAllowed = true, SundayBoundaryShiftHours = 6, MinimumRestHours = 10 }, cancellationToken);
+        // The ten-hour rest needs the § 5 (2) sector to go with it. This row used
+        // to name none, which is the permission-without-its-conditions the page
+        // no longer offers; the round trip is the same, the row is now lawful.
+        var saved = await service.SaveAsync(
+            new PlantSettings
+            {
+                State = "by",
+                SundayWorkAllowed = true,
+                SundayBoundaryShiftHours = 6,
+                RestExceptionSector = RestExceptionSector.HealthCare,
+                MinimumRestHours = 10
+            },
+            cancellationToken);
         Assert.True(saved.IsSuccess);
 
         var reloaded = await new PlantSettingsService(files.CreateDatabase("settings-2.db", storage)).GetAsync(cancellationToken);
@@ -175,6 +197,7 @@ public class WorkingTimeIntegrationTests
         Assert.True(reloaded.SundayWorkAllowed);
         Assert.Equal(GermanState.BY, reloaded.ToRules().State);
         Assert.Equal(TimeSpan.FromHours(6), reloaded.ToRules().SundayBoundaryShift);
+        Assert.Equal(RestExceptionSector.HealthCare, reloaded.RestExceptionSector);
         Assert.Equal(TimeSpan.FromHours(10), reloaded.ToRules().MinimumRest);
     }
 
@@ -261,7 +284,8 @@ public class WorkingTimeIntegrationTests
         var centers = new WorkCenterService(database);
         Assert.All(await centers.GetAllAsync(cancellationToken), c => Assert.NotNull(ShiftPatterns.ByKey(c.ShiftPatternKey)));
 
-        var scheduler = new ProductionScheduleService(new ProductionOrderService(database), centers, new PlantSettingsService(database));
+        var scheduler = new ProductionScheduleService(
+            new ProductionOrderService(database), centers, new PlantSettingsService(database), new CooperativeScheduleRunner());
         var result = await scheduler.GenerateAsync(new SchedulingParameters { MultiStartRuns = 1, LocalSearchMaxSteps = 0 }, cancellationToken);
 
         Assert.True(result.HasData);

@@ -27,6 +27,15 @@ public enum ChatIntent
 {
     /// <summary>Nothing recognised; the answer lists what can be asked.</summary>
     Unknown,
+
+    /// <summary>
+    /// An order or work-centre reference was recognised but does not exist in
+    /// this schedule, or matches more than one row. Distinct from
+    /// <see cref="Unknown"/>: the question *was* understood, and saying so is the
+    /// difference between "I cannot find PO-9999" and a summary of a different
+    /// schedule delivered as if it were the answer.
+    /// </summary>
+    UnknownReference,
     Summary,
     Bottleneck,
     LateOrders,
@@ -63,11 +72,46 @@ public sealed record ScheduleChatContext(
     WorkingTime.WorkingTimeRules Rules,
     IReadOnlyList<WorkingTime.PublicHoliday> HolidaysInHorizon)
 {
-    /// <summary>The order rows by reference, case-insensitive.</summary>
-    public JobRow? FindOrder(string reference) =>
-        Schedule.Jobs.FirstOrDefault(j => string.Equals(j.Reference, reference, StringComparison.OrdinalIgnoreCase));
+    /// <summary>The separator <c>ScheduleMapper</c> puts between a work centre's code and its name.</summary>
+    private const string LaneSeparator = " — ";
 
-    /// <summary>The Gantt lane whose work-center name starts with <paramref name="code"/> (e.g. "CNC-300").</summary>
-    public GanttRow? FindWorkCenter(string code) =>
-        Schedule.Rows.FirstOrDefault(r => r.WorkCenterName.StartsWith(code, StringComparison.OrdinalIgnoreCase));
+    /// <summary>
+    /// Every order row matching <paramref name="reference"/> exactly, ignoring
+    /// case. More than one is possible: the database's unique index on the order
+    /// number is case-sensitive, so <c>PO-2000</c> and <c>po-2000</c> can both
+    /// exist, and answering about "whichever sorts first" would be a wrong answer
+    /// delivered confidently.
+    /// </summary>
+    public IReadOnlyList<JobRow> FindOrders(string reference) =>
+        Schedule.Jobs.Where(j => string.Equals(j.Reference, reference, StringComparison.OrdinalIgnoreCase)).ToList();
+
+    /// <summary>The single order row for <paramref name="reference"/>, or null when there is none or more than one.</summary>
+    public JobRow? FindOrder(string reference) => Single(FindOrders(reference));
+
+    /// <summary>
+    /// Every Gantt lane whose work-centre <b>code</b> is exactly
+    /// <paramref name="code"/>. It used to be a prefix match, which meant a
+    /// question about <c>CNC-3000</c> could be answered with <c>CNC-300</c>'s
+    /// numbers — the worst shape of wrong, because the sentence names the right
+    /// machine and the figure belongs to another one.
+    /// </summary>
+    public IReadOnlyList<GanttRow> FindWorkCenters(string code) =>
+        Schedule.Rows.Where(r => string.Equals(CodeOf(r.WorkCenterName), code, StringComparison.OrdinalIgnoreCase)
+                              || string.Equals(r.WorkCenterName, code, StringComparison.OrdinalIgnoreCase)).ToList();
+
+    /// <summary>The single lane for <paramref name="code"/>, or null when there is none or more than one.</summary>
+    public GanttRow? FindWorkCenter(string code) => Single(FindWorkCenters(code));
+
+    /// <summary>The lane with exactly this display name, used to attach a figure to the lane it came from.</summary>
+    public GanttRow? FindLane(string workCenterName) =>
+        Schedule.Rows.FirstOrDefault(r => string.Equals(r.WorkCenterName, workCenterName, StringComparison.Ordinal));
+
+    /// <summary>The code part of a lane label ("CNC-300 — Machining centre" → "CNC-300").</summary>
+    internal static string CodeOf(string workCenterName)
+    {
+        int separator = workCenterName.IndexOf(LaneSeparator, StringComparison.Ordinal);
+        return separator < 0 ? workCenterName : workCenterName[..separator];
+    }
+
+    private static T? Single<T>(IReadOnlyList<T> matches) where T : class => matches.Count == 1 ? matches[0] : null;
 }

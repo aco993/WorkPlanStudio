@@ -1,0 +1,25 @@
+# Code owners — GitHub requests a review from the owner of every path a pull
+# request touches. One maintainer, so the rules are short; they exist so that
+# review is requested automatically rather than remembered, and so that the
+# paths where a mistake is expensive are visible in one place.
+#
+# The last matching rule wins, so the specific ones come after the catch-all.
+
+*                       @aco993
+
+# The two pure libraries are the substance of the project and the only code with
+# an enforced architectural boundary.
+/src/WorkPlanStudio.Scheduling/   @aco993
+/src/WorkPlanStudio.WorkingTime/  @aco993
+
+# Build, release and supply chain: a change here can publish the site or grant a
+# token, and is the least likely to be caught by a test.
+/.github/               @aco993
+/Directory.Build.props  @aco993
+/Directory.Packages.props @aco993
+/global.json            @aco993
+
+# The decision log. Changing a recorded decision should be deliberate.
+/docs/adr/              @aco993
+/SECURITY.md            @aco993
+/docs/SECURITY.md       @aco993

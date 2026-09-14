@@ -12,7 +12,7 @@ public class EvaluatorTests
         var due = new Dictionary<int, long> { [1] = 1000, [2] = 150 };
 
         // Order A then B: A 0–100 (target 1000, early); B 100–300 (target 150, late by 150).
-        var schedule = new DispatchScheduler().Run(ctx, new[] { 0, 1 }, due);
+        var schedule = new DispatchScheduler().Run(ctx, new[] { 0, 1 }, due, Ct);
         var eval = ScheduleEvaluator.Evaluate(schedule, ctx);
 
         Assert.Equal(300, eval.MakespanSeconds);
@@ -36,7 +36,7 @@ public class EvaluatorTests
         var ctx = Context(new SchedulingParameters(), machines, Job(1, Step(10, 1, 100)));
         var due = new Dictionary<int, long> { [1] = 1000 };
 
-        var schedule = new DispatchScheduler().Run(ctx, new[] { 0 }, due);
+        var schedule = new DispatchScheduler().Run(ctx, new[] { 0 }, due, Ct);
         var job = schedule.Jobs.Single();
 
         Assert.Equal(-900, job.LatenessSeconds);
@@ -54,8 +54,8 @@ public class EvaluatorTests
             DueAt(2, 150, Step(10, 1, 100)));        // urgent, short
         var due = new Dictionary<int, long> { [1] = 100_000, [2] = 150 };
 
-        var urgentFirst = new DispatchScheduler().Run(ctx, new[] { 1, 0 }, due);
-        var looseFirst = new DispatchScheduler().Run(ctx, new[] { 0, 1 }, due);
+        var urgentFirst = new DispatchScheduler().Run(ctx, new[] { 1, 0 }, due, Ct);
+        var looseFirst = new DispatchScheduler().Run(ctx, new[] { 0, 1 }, due, Ct);
 
         Assert.True(ScheduleEvaluator.Evaluate(urgentFirst, ctx).Penalty
                   < ScheduleEvaluator.Evaluate(looseFirst, ctx).Penalty);

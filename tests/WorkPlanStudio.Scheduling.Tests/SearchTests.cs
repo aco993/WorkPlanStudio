@@ -37,10 +37,10 @@ public class SearchTests
         var scheduler = new DispatchScheduler();
 
         var startOrder = new[] { 0, 1 };             // loose first → urgent finishes late
-        var startSchedule = scheduler.Run(ctx, startOrder, due);
+        var startSchedule = scheduler.Run(ctx, startOrder, due, Ct);
         var startEval = ScheduleEvaluator.Evaluate(startSchedule, ctx);
 
-        var result = LocalSearch.Improve(scheduler, ctx, due, startOrder, startSchedule, startEval, maxSteps: 100);
+        var result = LocalSearch.Improve(scheduler, ctx, due, startOrder, startSchedule, startEval, maxSteps: 100, Ct);
 
         Assert.True(result.Evaluation.Penalty < startEval.Penalty);
         Assert.Equal(0, result.Schedule.Operations.Single(o => o.JobId == 2).StartSeconds); // urgent now first
@@ -53,10 +53,10 @@ public class SearchTests
         var due = DueDateAssigner.Assign(ctx);
         var scheduler = new DispatchScheduler();
         var order = PriorityOrdering.For(ctx, due);
-        var schedule = scheduler.Run(ctx, order, due);
+        var schedule = scheduler.Run(ctx, order, due, Ct);
         var eval = ScheduleEvaluator.Evaluate(schedule, ctx);
 
-        var result = LocalSearch.Improve(scheduler, ctx, due, order, schedule, eval, maxSteps: 0);
+        var result = LocalSearch.Improve(scheduler, ctx, due, order, schedule, eval, maxSteps: 0, Ct);
 
         Assert.Equal(0, result.StepsUsed);
         Assert.Equal(schedule.Signature(), result.Schedule.Signature());
@@ -70,10 +70,10 @@ public class SearchTests
         var due = DueDateAssigner.Assign(ctx);
         var scheduler = new DispatchScheduler();
         var order = PriorityOrdering.For(ctx, due);
-        var schedule = scheduler.Run(ctx, order, due);
+        var schedule = scheduler.Run(ctx, order, due, Ct);
         var eval = ScheduleEvaluator.Evaluate(schedule, ctx);
 
-        var result = LocalSearch.Improve(scheduler, ctx, due, order, schedule, eval, maxSteps: 500);
+        var result = LocalSearch.Improve(scheduler, ctx, due, order, schedule, eval, maxSteps: 500, Ct);
 
         Assert.True(result.Evaluation.Penalty <= eval.Penalty + 1e-9);
     }
@@ -86,7 +86,7 @@ public class SearchTests
             var ctx = MediumScenario(rule);
             var due = DueDateAssigner.Assign(ctx);
             double rulePenalty = ScheduleEvaluator
-                .Evaluate(new DispatchScheduler().Run(ctx, PriorityOrdering.For(ctx, due), due), ctx).Penalty;
+                .Evaluate(new DispatchScheduler().Run(ctx, PriorityOrdering.For(ctx, due), due, Ct), ctx).Penalty;
 
             var result = new SchedulingEngine().Run(ctx);
 
@@ -100,5 +100,94 @@ public class SearchTests
         var one = new SchedulingEngine().Run(MediumScenario(DispatchRule.Fifo, multiStart: 1, localSearch: 0));
         var many = new SchedulingEngine().Run(MediumScenario(DispatchRule.Fifo, multiStart: 16, localSearch: 0));
         Assert.True(many.Evaluation.Penalty <= one.Evaluation.Penalty + 1e-9);
+    }
+
+    /// <summary>
+    /// "Never hurt" is true by construction — restart 0 is always the rule order
+    /// and ties are kept — so on its own it cannot tell a working multi-start from
+    /// a loop that does nothing. This is the other half: over a fixed set of
+    /// instances, eight restarts must find a <b>strictly</b> better schedule than
+    /// one on at least one of them, or the default is paying eight times over for
+    /// a guarantee it already had.
+    /// </summary>
+    [Fact]
+    public void More_starts_sometimes_strictly_help()
+    {
+        int helped = 0;
+        var worse = new List<int>();
+
+        foreach (int seed in RestartFixtureSeeds)
+        {
+            double one = new SchedulingEngine().Run(RestartFixture(seed, multiStart: 1)).Evaluation.Penalty;
+            double many = new SchedulingEngine().Run(RestartFixture(seed, multiStart: 8)).Evaluation.Penalty;
+
+            if (many < one - 1e-9) helped++;
+            if (many > one + 1e-9) worse.Add(seed);
+        }
+
+        Assert.Empty(worse);
+        Assert.True(helped > 0,
+            $"eight restarts matched one restart on all {RestartFixtureSeeds.Length} fixtures — the extra seven bought nothing");
+    }
+
+    /// <summary>
+    /// And the gain has to survive to the end: the restart that found it must be
+    /// the one the engine keeps.
+    /// </summary>
+    [Fact]
+    public void The_best_restart_is_the_one_reported()
+    {
+        foreach (int seed in RestartFixtureSeeds)
+        {
+            var context = RestartFixture(seed, multiStart: 8);
+            var result = new SchedulingEngine().Run(context);
+
+            double best = double.PositiveInfinity;
+            for (int starts = 1; starts <= 8; starts++)
+                best = Math.Min(best, new SchedulingEngine().Run(RestartFixture(seed, starts)).Evaluation.Penalty);
+
+            Assert.Equal(best, result.Evaluation.Penalty, 9);
+        }
+    }
+
+    private static readonly int[] RestartFixtureSeeds = [1, 3, 7, 19, 42, 55];
+
+    /// <summary>
+    /// Seven jobs on four work centers — small enough that a descent converges
+    /// well inside the budget, so a restart is the only thing left that can move
+    /// the incumbent. This is the size where multi-start earns its keep; at 100
+    /// jobs the budget runs out long before the descent converges and the extra
+    /// restarts measure nothing.
+    /// </summary>
+    private static SchedulingContext RestartFixture(int seed, int multiStart)
+    {
+        var rng = new DeterministicRandom(seed);
+        var machines = Enumerable.Range(1, 4).Select(id => Machine(id)).ToArray();
+
+        var jobs = new ProductionJob[7];
+        for (int j = 0; j < jobs.Length; j++)
+        {
+            var steps = new List<JobStep>();
+            int stepCount = 2 + rng.NextInt(3);
+            for (int s = 0; s < stepCount; s++)
+                steps.Add(new JobStep(s + 1, 1 + rng.NextInt(machines.Length), 600 + rng.NextInt(9000)));
+
+            jobs[j] = new ProductionJob
+            {
+                Id = j + 1,
+                Reference = $"J{j + 1}",
+                Weight = 1 + rng.NextInt(4),
+                Steps = steps
+            };
+        }
+
+        return new SchedulingContext(jobs, machines, new SchedulingParameters
+        {
+            DispatchRule = DispatchRule.Fifo,
+            DueDateRule = DueDateRule.TotalWorkContent,
+            TwkFlowFactor = 1.5,
+            MultiStartRuns = multiStart,
+            Seed = seed
+        });
     }
 }

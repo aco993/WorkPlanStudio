@@ -31,7 +31,18 @@ public class Operation
     /// <summary>Total time in minutes to run this operation for a whole lot.</summary>
     public decimal TotalTimeMinutes(int lotSize) => SetupTimeMinutes + TimePerPieceMinutes * lotSize;
 
-    /// <summary>Estimated cost of this operation for a lot, using the work-center rate.</summary>
+    /// <summary>
+    /// Estimated cost of this operation for a lot, using the work-center rate.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">
+    /// The work centre was not loaded. This used to return <c>0 €</c> instead,
+    /// which conflates "this operation is free" with "I was not told where it
+    /// runs" — one forgotten <c>ThenInclude</c> away from a confident zero on a
+    /// costing screen. A missing navigation is a programming error, so it says so.
+    /// </exception>
     public decimal Cost(int lotSize) =>
-        WorkCenter is null ? 0m : TotalTimeMinutes(lotSize) / 60m * WorkCenter.HourlyRate;
+        TotalTimeMinutes(lotSize) / 60m
+        * (WorkCenter ?? throw new InvalidOperationException(
+            $"Operation {OperationNumber} was loaded without its work center, so its cost cannot be computed."))
+        .HourlyRate;
 }

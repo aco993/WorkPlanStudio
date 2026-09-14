@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The generated problem instances, in one place. The unit tests, the
+    benchmarks and the scenario tool all report numbers for "the medium
+    problem"; PERFORMANCE.md compares those numbers across the three, which is
+    only meaningful if the three build the same instance. They used to hold
+    three byte-for-byte copies of the generator and nothing guaranteed it.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>WorkPlanStudio.Scheduling.Testing</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>false</IsTestProject>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\WorkPlanStudio.Scheduling\WorkPlanStudio.Scheduling.csproj" />
+  </ItemGroup>
+
+</Project>

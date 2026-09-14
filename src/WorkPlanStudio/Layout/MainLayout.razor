@@ -6,10 +6,19 @@
 @* Blazor intercepts in-page links, so the jump to <main> is done explicitly. *@
 <a class="skip-link" href="#main" @onclick="SkipToContentAsync" @onclick:preventDefault="true">@L["Skip_ToContent"]</a>
 
-<div class="app-shell @(_navOpen ? "nav-open" : null)">
-    <aside class="sidebar">
+<div class="app-shell @(_navOpen ? "nav-open" : null)" @onkeydown="OnShellKeyDownAsync">
+    @*
+        Below 720 px the drawer is hidden with `visibility: hidden`, not only with a
+        transform: a transform slides it off-screen but leaves its seven links in the
+        tab order, so tabbing from the skip link walked through an invisible menu
+        before reaching anything on the page. Visibility is the one property that
+        removes them from both the tab order and the accessibility tree, and it does
+        so only inside the media query — the sidebar on a desktop stays a normal
+        landmark. That is why there is no `inert` here: it would need the viewport.
+    *@
+    <aside class="sidebar" id="app-nav">
         <div class="brand">
-            <span class="brand-mark">WP</span>
+            <span class="brand-mark" aria-hidden="true">WP</span>
             <span class="brand-text">
                 <span class="brand-name">WorkPlan Studio</span>
                 <span class="brand-tag">@L["AppTagline"]</span>
@@ -19,15 +28,20 @@
         <div class="sidebar-footer">@L["Footer_Note"]</div>
     </aside>
 
-    <div class="scrim" @onclick="CloseNav"></div>
+    @* Decorative: it duplicates the hamburger and Escape, both of which are reachable. *@
+    <div class="scrim" aria-hidden="true" @onclick="CloseNav"></div>
 
     <div class="content-area">
         <header class="topbar">
-            <button class="hamburger" type="button" aria-label="Menu" @onclick="ToggleNav">
-                <svg viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18" /></svg>
+            <button class="hamburger" type="button" @ref="_hamburger"
+                    aria-label="@L["Ui_NavMenu"]" aria-controls="app-nav" aria-expanded="@(_navOpen ? "true" : "false")"
+                    data-testid="nav-toggle" @onclick="ToggleNavAsync">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" /></svg>
             </button>
             <div class="topbar-spacer"></div>
-            <PersonaMenu />
+            @* The persona switcher offline, the signed-in account when an API is
+               configured. One component decides, so the top bar has one slot. *@
+            <AccountMenu />
             <ThemeToggle />
             <CultureSelector />
         </header>
@@ -40,10 +54,45 @@
 
 @code {
     private bool _navOpen;
+    private ElementReference _hamburger;
+    private bool _focusNavOnRender;
 
     protected override void OnInitialized() => Nav.LocationChanged += OnLocationChanged;
 
-    private void ToggleNav() => _navOpen = !_navOpen;
+    private async Task ToggleNavAsync()
+    {
+        _navOpen = !_navOpen;
+        if (_navOpen)
+            _focusNavOnRender = true;    // focus follows the drawer in
+        else
+            await _hamburger.FocusAsync();
+    }
+
+    /// <summary>
+    /// Opening a drawer that the keyboard cannot reach is the same as not opening it,
+    /// so focus moves to the first navigation link. It has to wait for the render that
+    /// makes the drawer visible: <c>visibility: hidden</c> refuses focus.
+    /// </summary>
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!_focusNavOnRender)
+            return;
+        _focusNavOnRender = false;
+        try
+        {
+            await JS.InvokeVoidAsync("workplanNav.focusFirst");
+        }
+        catch (JSException)
+        {
+            // cosmetic; the drawer is open and reachable by Tab either way
+        }
+    }
+
+    private async Task OnShellKeyDownAsync(KeyboardEventArgs args)
+    {
+        if (args.Key == "Escape" && _navOpen)
+            await ToggleNavAsync();
+    }
 
     private void CloseNav()
     {

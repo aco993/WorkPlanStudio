@@ -8,8 +8,7 @@ namespace WorkPlanStudio.E2E;
 /// the engine, the mapping and the rendering work together — and that a change to
 /// the parameters is visibly reflected in the schedule.
 /// </summary>
-[Collection(nameof(PlaywrightCollection))]
-public sealed class ScheduleE2ETests
+public sealed class ScheduleE2ETests : IClassFixture<PlaywrightFixture>
 {
     private readonly PlaywrightFixture _fixture;
 
@@ -176,7 +175,7 @@ public sealed class ScheduleE2ETests
         var context = await _fixture.Browser.NewContextAsync();
         await using var _ = context;
         var page = await context.NewPageAsync();
-        await page.GotoAsync($"{_fixture.BaseUrl}/work-plans/new");
+        await AppReady.GotoAsync(page, $"{_fixture.BaseUrl}/work-plans/new");
         await page.GetByRole(AriaRole.Heading, new() { Name = "New work plan" }).WaitForAsync();
 
         await page.GetByLabel("Part name").FillAsync("E2E review part");
@@ -207,7 +206,7 @@ public sealed class ScheduleE2ETests
         var context = await _fixture.Browser.NewContextAsync();
         await using var _ = context;
         var page = await context.NewPageAsync();
-        await page.GotoAsync($"{_fixture.BaseUrl}/work-plans/new");
+        await AppReady.GotoAsync(page, $"{_fixture.BaseUrl}/work-plans/new");
         await page.GetByRole(AriaRole.Heading, new() { Name = "New work plan" }).WaitForAsync();
 
         await page.GetByLabel("Part name").FillAsync("Invalid E2E part");
@@ -220,7 +219,13 @@ public sealed class ScheduleE2ETests
         await page.GetByRole(AriaRole.Button, new() { Name = "Save" }).ClickAsync();
 
         Assert.EndsWith("/work-plans/new", page.Url, StringComparison.Ordinal);
-        await page.GetByText("Lot size must be between 1 and 1000000.").WaitForAsync();
+
+        // The message now appears twice on purpose: once in the error summary
+        // that takes focus, and once beside the control it belongs to. Asserting
+        // both is what stops the summary from drifting away from the fields.
+        await page.Locator("#wp-lot-error").WaitForAsync();
+        Assert.Equal("Lot size must be between 1 and 1000000.", await page.Locator("#wp-lot-error").InnerTextAsync());
+        await page.GetByRole(AriaRole.Link, new() { Name = "Lot size must be between 1 and 1000000." }).WaitForAsync();
         Assert.Equal(0, await page.Locator("#blazor-error-ui.show").CountAsync());
     }
 
@@ -230,7 +235,7 @@ public sealed class ScheduleE2ETests
         var context = await _fixture.Browser.NewContextAsync();
         await using var _ = context;
         var page = await context.NewPageAsync();
-        await page.GotoAsync($"{_fixture.BaseUrl}/work-centers");
+        await AppReady.GotoAsync(page, $"{_fixture.BaseUrl}/work-centers");
         var open = page.GetByRole(AriaRole.Button, new() { Name = "New work center" });
         await open.ClickAsync();
 
@@ -249,7 +254,7 @@ public sealed class ScheduleE2ETests
         var context = await _fixture.Browser.NewContextAsync();
         await using var _ = context;
         var page = await context.NewPageAsync();
-        await page.GotoAsync($"{_fixture.BaseUrl}/work-centers");
+        await AppReady.GotoAsync(page, $"{_fixture.BaseUrl}/work-centers");
         await page.GetByRole(AriaRole.Button, new() { Name = "New work center" }).ClickAsync();
         var editor = page.GetByRole(AriaRole.Dialog, new() { Name = "New work center" });
         await editor.GetByLabel("Code").FillAsync("RESET-E2E");
@@ -285,8 +290,10 @@ public sealed class ScheduleE2ETests
         Assert.Contains("Spindle service", await page.Locator(".gantt-closed.closed-absence").First.GetAttributeAsync("title") ?? "");
         Assert.True(await page.Locator(".gantt-bar.paused").CountAsync() > 0, "expected an operation paused across a break");
 
+        // The axis labels are culture-formatted; English no longer renders the
+        // ambiguous numeric form this used to pin.
         var ticks = await page.Locator(".gantt-tick").AllInnerTextsAsync();
-        Assert.Contains(ticks, t => t.Contains("Thu 4.6.", StringComparison.Ordinal));
+        Assert.Contains(ticks, t => t.Contains("4 Jun", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -295,8 +302,8 @@ public sealed class ScheduleE2ETests
         var context = await _fixture.Browser.NewContextAsync();
         await using var _ = context;
         var page = await context.NewPageAsync();
-        await page.GotoAsync($"{_fixture.BaseUrl}/working-time");
-        await page.GetByRole(AriaRole.Heading, new() { Name = "Working Time & Labour Law" }).WaitForAsync(new() { Timeout = 60_000 });
+        await AppReady.GotoAsync(page, $"{_fixture.BaseUrl}/working-time");
+        await page.GetByRole(AriaRole.Heading, new() { Name = "Working Time & Labour Law" }).WaitForAsync();
 
         // NW today: Corpus Christi is in the table; Berlin: it is not, Women's Day is.
         await page.GetByText("Corpus Christi").First.WaitForAsync();
@@ -322,9 +329,9 @@ public sealed class ScheduleE2ETests
         var context = await _fixture.Browser.NewContextAsync();
         await using var _ = context;
         var page = await context.NewPageAsync();
-        await page.GotoAsync($"{_fixture.BaseUrl}/work-centers");
+        await AppReady.GotoAsync(page, $"{_fixture.BaseUrl}/work-centers");
         var newCenter = page.GetByRole(AriaRole.Button, new() { Name = "New work center" });
-        await newCenter.WaitForAsync(new() { Timeout = 60_000 });   // a first visit is the planner
+        await newCenter.WaitForAsync();   // a first visit is the planner
 
         // Guest: the action disappears and a notice explains who could do it.
         // (<summary> is not a button in the accessibility tree, so it is addressed by class.)
@@ -354,8 +361,8 @@ public sealed class ScheduleE2ETests
         var context = await _fixture.Browser.NewContextAsync(new BrowserNewContextOptions { ColorScheme = ColorScheme.Light });
         await using var _ = context;
         var page = await context.NewPageAsync();
-        await page.GotoAsync($"{_fixture.BaseUrl}/");
-        await page.GetByRole(AriaRole.Heading, new() { Name = "Dashboard" }).WaitForAsync(new() { Timeout = 60_000 });
+        await AppReady.GotoAsync(page, $"{_fixture.BaseUrl}/");
+        await page.GetByRole(AriaRole.Heading, new() { Name = "Dashboard" }).WaitForAsync();
         Assert.Equal("light", await page.EvaluateAsync<string>("() => document.documentElement.dataset.theme"));
 
         var toggle = page.Locator(".theme-toggle");
@@ -390,9 +397,8 @@ public sealed class ScheduleE2ETests
             ViewportSize = new ViewportSize { Width = width, Height = 1080 }
         });
         var page = await context.NewPageAsync();
-        await page.GotoAsync($"{_fixture.BaseUrl}{route}");
-        await page.WaitForSelectorAsync("main h1", new() { Timeout = 60_000 });
-        await page.WaitForSelectorAsync(wideElement, new() { Timeout = 60_000 });
+        await AppReady.GotoAsync(page, $"{_fixture.BaseUrl}{route}");
+        await page.WaitForSelectorAsync(wideElement, new() { Timeout = AppReady.BootTimeoutMilliseconds });
 
         var main = await page.Locator("main").BoundingBoxAsync();
         var wide = await page.Locator(wideElement).First.BoundingBoxAsync();
@@ -413,8 +419,8 @@ public sealed class ScheduleE2ETests
         var context = await _fixture.Browser.NewContextAsync();
         await using var _ = context;
         var page = await context.NewPageAsync();
-        await page.GotoAsync($"{_fixture.BaseUrl}/work-centers");
-        await page.GetByRole(AriaRole.Heading, new() { Name = "Work Centers" }).WaitForAsync(new() { Timeout = 60_000 });
+        await AppReady.GotoAsync(page, $"{_fixture.BaseUrl}/work-centers");
+        await page.GetByRole(AriaRole.Heading, new() { Name = "Work Centers" }).WaitForAsync();
 
         // The skip link is the first element in the document. It is off-screen
         // until focused, becomes visible on focus, and Enter moves focus to <main>.
@@ -447,8 +453,8 @@ public sealed class ScheduleE2ETests
         });
         await using var _ = context;
         var page = await context.NewPageAsync();
-        await page.GotoAsync($"{_fixture.BaseUrl}/schedule");
-        await page.GetByRole(AriaRole.Heading, new() { Name = "Production Scheduling" }).WaitForAsync(new() { Timeout = 60_000 });
+        await AppReady.GotoAsync(page, $"{_fixture.BaseUrl}/schedule");
+        await page.GetByRole(AriaRole.Heading, new() { Name = "Production Scheduling" }).WaitForAsync();
 
         await page.GetByRole(AriaRole.Button, new() { Name = "Menu" }).ClickAsync();
         await page.GetByRole(AriaRole.Link, new() { Name = "Work Centers" }).ClickAsync();

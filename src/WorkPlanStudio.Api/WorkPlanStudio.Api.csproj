@@ -1,0 +1,73 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!--
+    The optional server. The WebAssembly app is the product; this exists so the
+    same product can be run with real accounts behind it when someone is willing
+    to host something. Nothing in src/WorkPlanStudio depends on this project.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>WorkPlanStudio.Api</RootNamespace>
+    <UserSecretsId>workplanstudio-api</UserSecretsId>
+
+    <!-- No XML documentation file. The two pure libraries generate one because
+         they are consumed as libraries; this is an application, its endpoint
+         descriptions come from WithSummary(), and switching it on would demand
+         member docs from the shared source files linked in below, which belong
+         to a project that does not ask for them. -->
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+
+    <!-- No launch profile: the port is chosen with the urls switch or with
+         ASPNETCORE_URLS, so nothing in the repository claims one. -->
+    <NoDefaultLaunchSettingsFile>true</NoDefaultLaunchSettingsFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+
+    <!-- Only the UI half of Swashbuckle: the document itself comes from the
+         framework's own AddOpenApi(). The package ships its assets embedded, so
+         the Development-only doc page pulls nothing from a CDN. -->
+    <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\WorkPlanStudio.Contracts\WorkPlanStudio.Contracts.csproj" />
+    <ProjectReference Include="..\WorkPlanStudio.Scheduling\WorkPlanStudio.Scheduling.csproj" />
+    <ProjectReference Include="..\WorkPlanStudio.WorkingTime\WorkPlanStudio.WorkingTime.csproj" />
+  </ItemGroup>
+
+  <!--
+    Shared domain source, compiled into this assembly rather than copied.
+
+    The browser app cannot be referenced from here: it is a Blazor WebAssembly
+    project and dragging it (and the relinked native SQLite) into a server build
+    would be absurd. But the entities, the business rules and the EF→engine
+    mapping are pure C# with no Blazor and no browser in them, and duplicating
+    them is how a server and a client quietly start disagreeing about what a
+    valid work plan is — precisely the bug this stream exists to prevent.
+
+    So the files are linked. Persistence mapping is not shared (this context is
+    an IdentityDbContext and owns concurrency tokens the browser has no use for),
+    and neither is anything that talks to storage. The follow-up, once the
+    parallel streams have merged and files can be moved again, is to lift these
+    into a WorkPlanStudio.Domain project that both sides reference normally.
+  -->
+  <ItemGroup>
+    <Compile Include="..\WorkPlanStudio\Models\**\*.cs" LinkBase="Shared\Models" />
+    <Compile Include="..\WorkPlanStudio\Validation\**\*.cs" LinkBase="Shared\Validation" />
+    <Compile Include="..\WorkPlanStudio\Services\Auth\Permissions.cs" Link="Shared\Auth\Permissions.cs" />
+    <Compile Include="..\WorkPlanStudio\Services\ScheduleMapper.cs" Link="Shared\Scheduling\ScheduleMapper.cs" />
+    <Compile Include="..\WorkPlanStudio\Services\ScheduleViewModels.cs" Link="Shared\Scheduling\ScheduleViewModels.cs" />
+    <Compile Include="..\WorkPlanStudio\Services\SchedulePreparationResult.cs" Link="Shared\Scheduling\SchedulePreparationResult.cs" />
+    <Compile Include="..\WorkPlanStudio\Services\ShopCalendar.cs" Link="Shared\Scheduling\ShopCalendar.cs" />
+  </ItemGroup>
+
+</Project>

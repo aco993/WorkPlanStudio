@@ -4,6 +4,14 @@ namespace WorkPlanStudio.Scheduling;
 /// One operation placed on the timeline: which job/step it belongs to, the work
 /// center and parallel slot it occupies, and its start/end in seconds from the
 /// horizon. This is the unit a Gantt bar is drawn from.
+/// <para>
+/// A value type, and every field is a constructor parameter. A schedule of 600
+/// operations is 600 objects otherwise, allocated and collected for every
+/// candidate the search looks at; and with the change-over and pause figures
+/// settable after construction, <c>ProcessingSeconds</c> could be handed back
+/// negative. Both problems disappear when the record is a struct the dispatcher
+/// fills in one go.
+/// </para>
 /// </summary>
 /// <param name="JobId">Owning job.</param>
 /// <param name="StepNumber">Step within the job.</param>
@@ -11,28 +19,25 @@ namespace WorkPlanStudio.Scheduling;
 /// <param name="SlotIndex">Which parallel slot of the work center (0-based).</param>
 /// <param name="StartSeconds">Start time in seconds from the horizon.</param>
 /// <param name="EndSeconds">End time in seconds from the horizon.</param>
-public sealed record ScheduledOperation(
+/// <param name="SetupSeconds">
+/// Change-over time included in this placement. The bar on the Gantt chart covers
+/// setup plus processing; this says how much of it was setup.
+/// </param>
+/// <param name="PausedSeconds">
+/// Time inside this placement during which the work center was closed and the
+/// operation waited — a crew break the job paused across. Zero unless the work
+/// center allows bridging (<see cref="MachineCapacity.MaxBridgeableGapSeconds"/>).
+/// </param>
+public readonly record struct ScheduledOperation(
     int JobId,
     int StepNumber,
     int WorkCenterId,
     int SlotIndex,
     long StartSeconds,
-    long EndSeconds)
+    long EndSeconds,
+    long SetupSeconds = 0,
+    long PausedSeconds = 0)
 {
-    /// <summary>
-    /// Change-over time included in this placement, in seconds. The bar on the
-    /// Gantt chart covers setup plus processing; this says how much of it was
-    /// setup.
-    /// </summary>
-    public long SetupSeconds { get; init; }
-
-    /// <summary>
-    /// Time inside this placement during which the work center was closed and the
-    /// operation waited — a crew break the job paused across. Zero unless the
-    /// work center allows bridging (<see cref="MachineCapacity.MaxBridgeableGapSeconds"/>).
-    /// </summary>
-    public long PausedSeconds { get; init; }
-
     /// <summary>Total elapsed time from start to end, setup and pauses included.</summary>
     public long DurationSeconds => EndSeconds - StartSeconds;
 

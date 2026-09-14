@@ -10,7 +10,19 @@ public enum BrowserDatabaseFailure
     ReadFailed,
     WriteFailed,
     ExportFailed,
-    ResetFailed
+    ResetFailed,
+
+    /// <summary>
+    /// The origin's storage budget is full. Separate from <see cref="WriteFailed"/>
+    /// because it is the one write failure the visitor can do something about.
+    /// </summary>
+    QuotaExceeded,
+
+    /// <summary>A stored payload one or more versions old could not be upgraded to the current schema.</summary>
+    UpgradeFailed,
+
+    /// <summary>The current persona may not perform this operation.</summary>
+    Forbidden
 }
 
 public sealed record BrowserDatabaseReadiness(

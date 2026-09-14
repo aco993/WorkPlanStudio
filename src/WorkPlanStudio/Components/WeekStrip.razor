@@ -6,33 +6,86 @@
     weekday, coloured by segment kind. Pure rendering: the timeline is computed
     elsewhere, so this component has no state and no services beyond the
     localizer. Widths are percentages of a day, written invariant-culture.
+
+    The strip used to be `role="img"` with the alt text "Weekly pattern". That role
+    tells assistive technology to treat the whole subtree as one image and ignore
+    everything inside it, so the alt text was the *name of the widget* and the seven
+    days, every segment and every tooltip were thrown away — on the page the README
+    calls the live preview of the week. The picture is now marked decorative and the
+    same information is rendered as a table that only a screen reader reads.
 *@
-<div class="week-strip" role="img" aria-label="@L["WorkingTime_Preview"]">
-    @for (int day = 0; day < 7; day++)
-    {
-        var dayStart = day * DaySeconds;
-        var pieces = Pieces(dayStart);
-        <div class="week-row">
-            <span class="week-day">@Culture.DateTimeFormat.GetAbbreviatedDayName((DayOfWeek)((day + 1) % 7))</span>
+<div class="week-preview">
+    <div class="week-strip" aria-hidden="true">
+        @for (int day = 0; day < 7; day++)
+        {
+            var dayStart = day * DaySeconds;
+            var pieces = Pieces(dayStart);
+            <div class="week-row">
+                <span class="week-day">@Culture.DateTimeFormat.GetAbbreviatedDayName(WeekdayOf(day))</span>
+                <div class="week-track">
+                    @foreach (var piece in pieces)
+                    {
+                        <span class="week-seg seg-@piece.Kind.ToString().ToLowerInvariant()"
+                              style="left:@Pct(piece.StartSeconds - dayStart)%;width:@Pct(piece.DurationSeconds)%"
+                              title="@Title(piece)"></span>
+                    }
+                </div>
+            </div>
+        }
+        <div class="week-axis">
+            <span></span>
             <div class="week-track">
-                @foreach (var piece in pieces)
+                @for (int hour = 0; hour <= 24; hour += 6)
                 {
-                    <span class="week-seg seg-@piece.Kind.ToString().ToLowerInvariant()"
-                          style="left:@Pct(piece.StartSeconds - dayStart)%;width:@Pct(piece.DurationSeconds)%"
-                          title="@Title(piece)"></span>
+                    <span class="week-tick" style="left:@Pct(hour * 3600L)%">@hour:00</span>
                 }
             </div>
         </div>
-    }
-    <div class="week-axis">
-        <span></span>
-        <div class="week-track">
-            @for (int hour = 0; hour <= 24; hour += 6)
-            {
-                <span class="week-tick" style="left:@Pct(hour * 3600L)%">@hour:00</span>
-            }
-        </div>
     </div>
+
+    @*
+        The wrapper, not the table, carries `sr-only`. A table box grows to its
+        min-content width whatever `width` says, and `overflow: hidden` on the table
+        itself does not stop that — applied directly, this 1,550 px-wide table pushed
+        the whole document into a horizontal scroll at a 640 px viewport. A div clips.
+    *@
+    <div class="sr-only">
+        <table class="data-table week-table">
+            <caption>@L["WorkingTime_Preview"]</caption>
+            <thead>
+                <tr>
+                    <th scope="col">@L["Ui_ColDay"]</th>
+                    <th scope="col">@L["Ui_ColDetail"]</th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (int day = 0; day < 7; day++)
+                {
+                    var weekday = WeekdayOf(day);
+                    <tr @key="weekday">
+                        <th scope="row">@Culture.DateTimeFormat.GetDayName(weekday)</th>
+                        <td>@DayText(day * DaySeconds)</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @*
+        A closed week draws as seven empty tracks, which looks exactly like a week
+        nobody has configured yet. It is not: the pattern was staffed and the rules
+        took all of it. The capacity carries the rules that did it, so the strip
+        can name them instead of leaving the planner to guess.
+    *@
+    @if (Timeline.Capacity is WeekCapacity.Closed closed)
+    {
+        <p class="assistant-note week-closed">
+            @L["Wt_WeekClosed"]
+            <span> @(closed.Causes.Count == 0
+                        ? L["Wt_WeekClosedUnattributed"].Value
+                        : string.Format(Culture, L["Wt_WeekClosedBy"], CauseNames(closed)))</span>
+        </p>
+    }
 </div>
 
 @code {
@@ -42,6 +95,30 @@
     [Parameter, EditorRequired] public WorkingTimeline Timeline { get; set; } = default!;
 
     private static CultureInfo Culture => CultureInfo.CurrentUICulture;
+
+    /// <summary>The strip starts on Monday; <see cref="DayOfWeek"/> starts on Sunday.</summary>
+    private static DayOfWeek WeekdayOf(int day) => (DayOfWeek)((day + 1) % 7);
+
+    /// <summary>
+    /// One day of the pattern in words — the same sentences the segments carry as
+    /// tooltips, joined. A day with nothing on it says so rather than rendering empty,
+    /// which would read as missing data instead of a closed day.
+    /// </summary>
+    private string DayText(long dayStart)
+    {
+        var text = string.Join("; ", Pieces(dayStart).Select(Title));
+        return string.IsNullOrEmpty(text) ? L["Ui_WeekDayClosed"].Value : text;
+    }
+
+    /// <summary>
+    /// The rules that emptied the week, by title and section — "§ 9 ArbZG
+    /// Sonntagsruhe", not "SundayRest". Distinct because two shifts cut by the
+    /// same rule are one reason, not two.
+    /// </summary>
+    private string CauseNames(WeekCapacity.Closed closed) =>
+        string.Join(", ", closed.Causes
+            .Distinct()
+            .Select(cause => $"{WorkingTimeText.LegalReference(cause)} — {L.RuleTitle(cause)}"));
 
     private static string Pct(long seconds) =>
         (seconds * 100.0 / DaySeconds).ToString("0.###", CultureInfo.InvariantCulture);
@@ -62,7 +139,7 @@
         }
 
         // A continuous pattern has no windows at all: draw the whole day as work.
-        if (Timeline.WeekWindows.Count == 0 && Timeline.Pattern.IsContinuous)
+        if (Timeline.Capacity.IsUnconstrained)
             yield return new WeekWindow(dayStart, dayEnd, SegmentKind.Working, "", DayOfWeek.Monday);
     }
 

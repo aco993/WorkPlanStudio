@@ -1,6 +1,9 @@
 name: Performance
 
-# Two measurements, both published as artifacts and into the job summary:
+# Three measurements, all published as artifacts and into the job summary:
+#   • budgets    — the wall-clock tripwires the pull-request gate deliberately
+#     does not run (see ci.yml). Here a slow result is a signal worth reading,
+#     not a re-run.
 #   • benchmarks — BenchmarkDotNet over the two pure libraries (short job, so
 #     the numbers are indicative; run the full job locally for precision).
 #   • lighthouse — Lighthouse CI against the published site, served the way
@@ -31,19 +34,56 @@ env:
   DOTNET_CLI_TELEMETRY_OPTOUT: true
 
 jobs:
-  benchmarks:
-    name: BenchmarkDotNet (short job)
+  budgets:
+    name: Wall-clock budget tripwires
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v6
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68  # v6.0.0
         with:
           global-json-file: global.json
 
       - name: Cache NuGet packages
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', 'Directory.Packages.props') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      # The budgets themselves are unchanged and still assert; only where they
+      # run has moved. --minimum-expected-tests keeps the filter honest: a typo
+      # that matched no class would otherwise pass as an empty run.
+      - name: Scheduling engine budgets
+        run: >
+          dotnet test tests/WorkPlanStudio.Scheduling.Tests/WorkPlanStudio.Scheduling.Tests.csproj -c Release
+          --filter-class *.PerformanceBudgetTests --minimum-expected-tests 3
+
+      - name: Working-time budgets
+        run: >
+          dotnet test tests/WorkPlanStudio.WorkingTime.Tests/WorkPlanStudio.WorkingTime.Tests.csproj -c Release
+          --filter-class *.PerformanceBudgetTests --minimum-expected-tests 2
+
+  benchmarks:
+    name: BenchmarkDotNet (short job)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68  # v6.0.0
+        with:
+          global-json-file: global.json
+
+      - name: Cache NuGet packages
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
         with:
           path: ~/.nuget/packages
           key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', 'Directory.Packages.props') }}
@@ -59,25 +99,30 @@ jobs:
 
       - name: Upload results
         continue-on-error: true   # the gate is the check; a hiccup in the artifact service is not a failed build
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:
           name: benchmark-results
           path: benchmark-results/results
+          if-no-files-found: ignore
           retention-days: 14
+          overwrite: true
 
   lighthouse:
     name: Lighthouse CI on the published site
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v6
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68  # v6.0.0
         with:
           global-json-file: global.json
 
       - name: Setup Node
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
           node-version: 22
 
@@ -99,7 +144,7 @@ jobs:
           echo "site did not start"; exit 1
 
       - name: Lighthouse CI
-        uses: treosh/lighthouse-ci-action@v12
+        uses: treosh/lighthouse-ci-action@3e7e23fb74242897f95c0ba9cabad3d0227b9b18  # v12.6.2
         with:
           configPath: .lighthouserc.json
           uploadArtifacts: true

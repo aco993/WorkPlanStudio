@@ -1,0 +1,62 @@
+@inject IStringLocalizer<SharedResource> L
+
+@*
+    The form-level summary of a failed save. It exists because the pages could
+    not previously show one at all: each rendered a dictionary of messages at
+    hand-placed slots, and an issue with no slot vanished - Save did nothing,
+    said nothing, and saved nothing.
+
+    It takes focus when it appears, which is what a keyboard or screen-reader
+    user needs after pressing a button that looked like it did nothing.
+*@
+
+@if (State.HasAny)
+{
+    <div class="form-banner error" role="alert" tabindex="-1" @ref="_summary">
+        <p>@(State.Summary ?? L["Md_FormErrorsLead"])</p>
+        @if (State.All.Count > 0)
+        {
+            <ul class="error-summary-list">
+                @foreach (var error in State.All)
+                {
+                    <li>
+                        @if (error.InputId is not null)
+                        {
+                            <a href="#@error.InputId">@error.Message</a>
+                        }
+                        else
+                        {
+                            @error.Message
+                        }
+                    </li>
+                }
+            </ul>
+        }
+    </div>
+}
+
+@code {
+    /// <summary>The form's errors. The page owns the instance; this only renders it.</summary>
+    [Parameter, EditorRequired] public FormErrorState State { get; set; } = new();
+
+    private ElementReference _summary;
+    private int _focused;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        // Only on a new failure, not on every keystroke that re-renders the form.
+        if (!State.HasAny || _focused == State.Generation)
+            return;
+
+        _focused = State.Generation;
+        try
+        {
+            await _summary.FocusAsync();
+        }
+        catch (InvalidOperationException)
+        {
+            // The element went away between render and focus (the dialog was
+            // closed). Losing the focus move is not worth failing the render.
+        }
+    }
+}

@@ -3,9 +3,20 @@ using Microsoft.Playwright;
 namespace WorkPlanStudio.E2E;
 
 /// <summary>
-/// Shared Playwright + browser for the whole E2E run. The base URL points at an
+/// One Playwright instance and one browser per test class. The base URL points at an
 /// already-running app (E2E_BASE_URL, default localhost:5235); set HEADED=1 to
 /// watch the browser locally.
+///
+/// This is an <c>IClassFixture</c>, not a collection fixture, on purpose: xUnit
+/// parallelises across collections and a class without an explicit
+/// <c>[Collection]</c> is its own collection. Each class therefore gets its own
+/// browser and the classes run concurrently, while the tests inside one class
+/// stay sequential. Every test still opens its own <see cref="IBrowserContext"/>,
+/// so storage, the SQLite snapshot and the persona remain isolated — the browser
+/// is shared, the state is not. <c>xunit.runner.json</c> caps the run at three
+/// classes at once: these tests spend most of their time waiting on the app
+/// rather than on the local CPU, and three browsers is what bounds memory on a
+/// large developer machine.
 /// </summary>
 public sealed class PlaywrightFixture : IAsyncLifetime
 {
@@ -31,6 +42,3 @@ public sealed class PlaywrightFixture : IAsyncLifetime
         _playwright?.Dispose();
     }
 }
-
-[CollectionDefinition(nameof(PlaywrightCollection))]
-public sealed class PlaywrightCollection : ICollectionFixture<PlaywrightFixture>;

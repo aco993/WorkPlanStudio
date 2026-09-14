@@ -7,6 +7,233 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] — 2026-09-11
+
+A hardening and expansion release. The theme is that several claims this project
+made about itself were checked against the code that was supposed to support them,
+and where the code did not, either the code or the claim changed.
+
+### Added
+
+- **An exact solver, and a real answer about optimality.** A disjunctive-graph
+  **branch-and-bound** (`WorkPlanStudio.Scheduling.Exact`) that solves the job shop
+  rather than the dispatch-order problem, sharing no code with the heuristic: its own
+  placement, relaxation bounds, propagation and search. It honours the whole model —
+  releases, parallel capacity, sequence-dependent change-over, calendars with phases
+  and bridgeable gaps, blackouts, every due-date rule — and refuses by size rather
+  than approximating. It also **emits the instance as a CPLEX LP file** so an outside
+  solver can check it. A fixed twenty-instance study is committed, reproducible with
+  one command and pinned by `OptimalityStudyTests`. The Scheduling page can ask for
+  the proof on the plan currently on screen and reports only what was proved.
+  ([ADR 0015](docs/adr/0015-exact-solver.md))
+- **CSV import with a dry run that is the default.** Reads what a spreadsheet
+  actually writes — UTF-8, UTF-16 and Windows-1252, comma/semicolon/tab detected by
+  column-count consistency, mixed line endings — and runs the same code path twice:
+  the preview writes nothing, the commit replays that exact plan and refuses if the
+  database moved underneath it. Every rejected row carries line, column and reason
+  and can be downloaded; the whole file lands as one atomic write or none of it.
+  ([ADR 0018](docs/adr/0018-csv-import.md))
+- **Export to PDF, Excel and CSV**, written by hand with **no package reference**: a
+  PDF with its own object table, page tree, WinAnsi text and a vector Gantt; an xlsx
+  as OOXML parts zipped in order; a CSV with formula-injection escaping and a BOM.
+  Both languages get their own date rule, sheet labels and axis units.
+  ([ADR 0017](docs/adr/0017-in-browser-export.md))
+- **An optional ASP.NET Core backend with real accounts.** Identity, JWT access
+  tokens with rotating refresh tokens stored only as SHA-256 (reuse of a spent token
+  revokes the whole family), lockout, rate limiting, real EF Core migrations,
+  ProblemDetails, a configured CORS origin list, a start-up that refuses a weak or
+  sample signing key, and a Dockerfile. The **same policy table as the client**,
+  compiled in by linked source. Off unless `Api:BaseAddress` is configured, which the
+  published demo does not do. ([ADR 0020](docs/adr/0020-optional-backend-and-real-auth.md))
+- **Cost centres as master data** with a code, a name, a description and referential
+  integrity at the database, plus a generic `EntityPicker`, a cost-centre page and a
+  cost-centre filter on the work-centre list. ([ADR 0016](docs/adr/0016-cost-centre-master-data.md))
+- **A real schema migration.** Schema version 7, upgradable in place from 5 and 6,
+  reading the old database through a frozen description of the old shape and writing
+  rows back **with their original primary keys** — a released order has frozen
+  work-centre ids into its routing snapshot, and a key that moves turns a live order
+  into a missing work centre.
+- **The ArbZG averaging periods, computed and shown.** § 3 sentence 2 and § 6 (2) are
+  no longer honoured only as caps: the page shows a card per crew per averaged
+  section with the average per Werktag, the reference period, the first breach date,
+  the Werktage divisor and the compensation days owed.
+  ([ADR 0024](docs/adr/0024-arbzg-in-the-ui.md))
+- **The scheduling run leaves the UI thread's critical path**, sliced across browser
+  turns with a real progress bar and a Cancel that leaves the previous schedule
+  untouched. The yield is a `MessageChannel` task rather than a timer, because a
+  background tab throttles timers and the same run stalled at 25 % for ten seconds.
+  ([ADR 0019](docs/adr/0019-off-thread-scheduling.md))
+- **A Gantt chart that works without a mouse**: every bar and closed stretch is a
+  button with an accessible name, arrow keys walk a lane, up and down change lane, a
+  roving tabindex makes the chart two tab stops rather than 137, and a text
+  equivalent is always in the DOM behind a "Show as table" toggle.
+  ([ADR 0023](docs/adr/0023-accessible-gantt-and-responsive-tables.md))
+- **A third local-search acceptance rule, and a measurement that chose the default.**
+  `BestInsertion` is 6.8 % better than steepest descent over 5 sizes × 5 instances ×
+  3 budgets, and the one size where steepest descent wins every row is reported as
+  measured. ([ADR 0022](docs/adr/0022-local-search-acceptance.md))
+- German documentation for architecture, performance, security, the assistant and
+  contributing, plus a German ADR index and the two sections `SCHEDULING.de.md` was
+  missing. The ADR bodies stay English by design, and the index says so.
+
+### Changed
+
+- **The optimality claim.** This project said in eight places that the search "lands
+  0.2 % from optimal on average and solves 19 of 20 random instances exactly — a
+  tested property, not a claim", and attributed it to `OptimalityTests`. That test
+  computed neither figure on no such set, and its oracle enumerated dispatch orders
+  through the same dispatcher and the same evaluator the engine uses, so any bug in
+  placement or scoring cancelled exactly. The measured numbers are now: **18 of 20**
+  exact against the best dispatch order (mean gap 0.27 %) and **7 of 20** exact
+  against the true optimum (median 5.34 %). The search was never the problem; the
+  dispatch-order model is. Every document now says so, and names the study.
+- **Zero allocation per scored candidate.** The search scores into a workspace it
+  reuses for the whole run and materialises one `Schedule` instead of one per
+  candidate. The medium benchmark went from about a gigabyte to **91.7 KB for the
+  whole run** and from 281 ms to 91 ms. `PERFORMANCE.md`'s "about 0.5 MB per
+  candidate" was 7.6× wrong even before that — it divided by the per-restart budget
+  rather than by the candidates — and every figure in that document has been
+  re-derived from the committed benchmarks.
+- **A guard on every mutating service method is now a closed set**, discovered by
+  reflection from the codebase's own discriminator rather than a hand-written list —
+  which found one mutating method the old list had missed. `BrowserDatabase`'s reset
+  and import ask the same guard.
+- **One time model.** `ProductionOrder.ReleaseUtc`/`DueUtc` are `ReleaseLocal`/`DueLocal`
+  and are plant-local wall clock; `PlantTime` states the contract and a source-level
+  test asserts nothing in the app converts.
+- **The engine refuses what it used to accept**: duplicate job or work-centre ids, a
+  job with no target date, a negative release, a non-finite weight, a same-family
+  change-over, and a step longer than its duration bound — which used to overflow
+  into a negative penalty the search then minimised towards. `SchedulingParameterLimits`
+  also bounds the **product** of the multi-start and local-search budgets at 200 000
+  candidates; the two factors were bounded independently, so a form could ask for
+  1.28 million.
+- **Public holidays are year-aware.** `GermanHolidays` tables the law rather than the
+  dates over 1990–2200: Reformationstag nationwide in 2017 only, Buß- und Bettag
+  nationwide through 1994 and Saxon after, Berlin's Tag der Befreiung in 2020 and
+  2025, Brandenburg's Ostersonntag and Pfingstsonntag.
+- **§ 3 is capped per crew calendar day**, not per shift label; the § 5 rest is
+  measured from the greatest end rather than the last start; and the 10-hour rest of
+  § 5 (2) is gated on a declared sector and states the 12-hour compensating rest it
+  incurs.
+- **An emptied shift pattern is a closed plant, not a 24/7 machine.** `WeekCapacity`
+  is a closed sum type, so the ambiguous state cannot be constructed.
+- **The assistant survives a hostile response.** All three provider clients are
+  null-safe against malformed bodies, bounded by a 1 MiB response ceiling and an
+  output cap, and covered by one 20-second budget that includes reading the body.
+  Every provider failure — not a list of seven exception types — falls back to the
+  on-device answer. The Gemini model name is validated and escaped, because it is a
+  path segment. The API key is stored per provider, is never read back into the
+  settings dialog, and can be forgotten in one click.
+  ([ADR 0025](docs/adr/0025-hostile-input-on-the-model-path.md))
+- **The on-device answerer admits what it did not understand.** A recognised but
+  unresolvable reference gets "I cannot find PO-9999" instead of falling through to a
+  different intent; the old prefix match answered `CNC-30` with `CNC-300`'s figures.
+- **The explainer ranks its recommendation by the objective**, not by tardiness alone,
+  so it can no longer suggest a rule that cuts tardiness and raises the penalty.
+- **Every date, number and duration goes through one culture-aware formatter.**
+  `6/4/2026` is gone; currency keeps its cents and moves its symbol by culture.
+- **Wide tables scroll instead of being clipped**, inside a labelled, focusable
+  region.
+- **Contrast tokens were measured and given margin**, including a red that was a
+  3.95:1 outright AA failure in the light theme that nothing had checked.
+- **The E2E suite runs its classes in parallel** — 135 s to about 75 s while growing
+  from 49 tests to 76 — addresses controls by role, accessible name or label rather
+  than by CSS class and position, and waits on conditions instead of sleeping.
+- **axe now runs in German too**, and the dialog scan uses the same tag set as the
+  page scans instead of a lower bar.
+- **CI/CD**: `deploy.yml` calls `ci.yml` and `e2e.yml` instead of copying them, so
+  six coverage thresholds live in one place; every job has a timeout; every action is
+  pinned to a commit SHA; every checkout sets `persist-credentials: false`; the job
+  that runs third-party test code no longer holds deployment credentials; the Pages
+  deployment no longer cancels in progress; CodeQL no longer breaks on fork pull
+  requests; and the two inline Python scripts became real files with their own unit
+  tests, with the link checker now validating `#anchor` as well as the file.
+- **`.editorconfig` went from 4 enforced rules to 25**, after fixing a naming rule
+  that claimed every private field including `const` and `static readonly` ones and
+  reported 54 violations of a convention the project does not have.
+- `docs/INTERVIEW.md` is **deleted**. It was a rehearsal script that handed a reader
+  the prepared answers, and it did not survive its own grep: it named an interface
+  that does not exist, said "three interfaces" and "two projects" when there were
+  eight and three, and contradicted itself on test counts inside one file. The
+  engineering content it held has a home — limitations in the README, decisions in
+  the ADRs, the WAL story in ADR 0006.
+
+### Fixed
+
+- **Browser storage is atomic.** One JSON value under one key, read back before
+  success is reported; a quota failure is a typed persistence failure rather than a
+  silent loss; the WAL checkpoint runs only when the journal really is WAL and a busy
+  checkpoint fails the snapshot instead of being discarded; the schema probe touches
+  all eight `DbSet`s instead of one of six; and concurrent persists are serialised.
+- **One commit path for every mutation**, capturing the pre-image and restoring it
+  when either the write or the snapshot fails.
+- **Money survives the round trip.** `decimal(10,2)` columns had NUMERIC affinity and
+  stored prices as doubles; they are `TEXT` with `CAST(... AS REAL)` inside every
+  range check.
+- **Deleting a work plan an order came from** returns a typed conflict instead of
+  throwing an unhandled `DbUpdateException` at the error boundary, and a work centre a
+  **released order** still needs can no longer be retired by putting its plan back to
+  Draft.
+- **Validation issues can no longer have nowhere to render.** A page declares the
+  fields it draws an error slot for, and anything else lands in a summary that takes
+  focus — five previously silent failures now render, tied to their control.
+- **Numeric fields no longer keep their old value silently** when cleared; an empty
+  box parses to null and becomes a visible "required".
+- **A missing visual baseline fails** instead of being written and passing green, and
+  the committed file names must be exactly the screen matrix, so a renamed route
+  cannot silently lose its guard. Windows baselines, which nothing ever compared, are
+  removed. ([ADR 0021](docs/adr/0021-visual-baselines-linux-only.md))
+- **The Gantt range is clamped to the timeline**, so a makespan reaching past the
+  400-day lookahead no longer throws.
+- **A `role="img"` on the weekly preview** made assistive technology discard all seven
+  days and announce only the widget's own name; the strip is now hidden and a table
+  beside it lists each day's segments in words.
+- **The chat's first answer was never announced** — the live region was created
+  together with its first two turns; it is now rendered before the first turn.
+- **Dialog focus returns to the control that opened it on every close path**,
+  including Cancel and Save, which never reached the close handler.
+- An operation longer than any open window of its work centre, or longer than the
+  engine's duration bound, is refused with its own sentence rather than a generic
+  banner or an exception.
+
+### Security
+
+- The tracked SQLite advisory **GHSA-2m69-gcr7-jv3q / CVE-2025-6965 no longer applies**:
+  EF Core 10.0.11 brings `SQLitePCLRaw` 2.1.12, and `dotnet list package --vulnerable
+  --include-transitive` against that graph with **no suppression at all** reports
+  nothing. The `NuGetAuditSuppress` line is removed: a restore with the audit fully
+  strict and nothing suppressed is clean, so **SEC-001 is closed** on all three of its
+  conditions. See [docs/SECURITY.md](docs/SECURITY.md).
+- A root `SECURITY.md` where GitHub looks for it, a `CODEOWNERS` file, and an issue
+  template routing a security report to a private advisory.
+
+### Measured
+
+- **1 649 unit and integration tests** (294 scheduling / 254 working time / 865 app /
+  88 backend / 148 export) and **76 browser tests**, of which ten are the Linux-only
+  pixel comparisons. Up from 452 at 0.2.0.
+- **Coverage**: engine 96.57 % lines / 90.45 % branches, working time 94.31 % /
+  90.29 %, app 79.89 % / 71.28 %, backend 70.19 % / 65.84 %, export 98.45 % /
+  90.34 %. The export suite is measured but not yet wired into CI.
+- **Lighthouse** on the published site, desktop preset: performance 36, accessibility
+  100, best practices 100, SEO 100, on all three measured routes.
+- Numbers, the machines they were measured on and the commands that reproduce them
+  are in [docs/PERFORMANCE.md](docs/PERFORMANCE.md) and
+  [docs/TESTING.md](docs/TESTING.md).
+
+### Known limitations introduced or confirmed by this release
+
+- The heuristic is a median **5.3 %** from the true optimum, and gap back-filling —
+  the thing that would close it — is a redesign rather than a tuning exercise.
+- The exact solver has a cliff at about twenty-one operations, and size is not the
+  predictor.
+- Proving optimality freezes the tab for up to its two-second budget.
+- No external MILP solver was run against the emitted LP files.
+- Connected-mode master-data editing is not wired into the pages; the pull is one-way.
+- Mutation testing remains blocked upstream (Stryker does not support the Microsoft
+  Testing Platform), and no mutation score is claimed.
+
 ## [0.2.0] — 2026-09-08
 
 ### Added
@@ -62,7 +289,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 - Interview cheat-sheets and hardening notes in a third language; the
-  English `docs/INTERVIEW.md` remains.
+  English `docs/INTERVIEW.md` remained until 0.3.0, which deleted it.
 
 ### Also in this release (landed on `main` between 0.1.0 and 0.2.0)
 
@@ -73,7 +300,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   operation family in the engine. ([ADR 0010](docs/adr/0010-periodic-calendars-and-setup-families.md))
 - **Insertion-neighbourhood local search** and an **exact dispatch-order
   optimizer** for small instances, with optimality tests against brute-force
-  enumeration (0.2 % mean gap, 19 of 20 instances exact).
+  enumeration of all `n!` dispatch orders (0.2 % mean gap to the best dispatch
+  order, 19 of 20 instances matched). *Corrected in 0.3.0: that reference is the
+  search's own ceiling, not the optimum of the scheduling problem — see
+  [ADR 0015](docs/adr/0015-exact-solver.md).*
   ([ADR 0008](docs/adr/0008-insertion-neighbourhood.md))
 - **Dispatch-rule equivalences reported** instead of hidden.
   ([ADR 0009](docs/adr/0009-report-rule-equivalences.md))
@@ -119,6 +349,7 @@ Initial public release.
 - **CI/CD** — per-layer test workflows on pull requests and a test-gated
   GitHub Pages deployment.
 
-[Unreleased]: https://github.com/aco993/WorkPlanStudio/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/aco993/WorkPlanStudio/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/aco993/WorkPlanStudio/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/aco993/WorkPlanStudio/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/aco993/WorkPlanStudio/releases/tag/v0.1.0

@@ -30,7 +30,12 @@ TestResults/
 # .NET
 project.lock.json
 project.fragment.lock.json
-artifacts/
+# The .NET build output folder, at the repository root only. Not a blanket
+# "artifacts" rule: the E2E run writes its evidence — screenshots, visual
+# diffs — under artifacts/e2e, and a screenshot the docs refer to should be
+# visible to git status rather than silently invisible.
+/artifacts/*
+!/artifacts/e2e/
 *.nupkg
 *.snupkg
 .packages/
@@ -43,6 +48,14 @@ wwwroot/_framework/
 *.db
 *.db-shm
 *.db-wal
+
+# Python bytecode from the repository checks in .github/scripts
+__pycache__/
+*.py[cod]
+
+# BenchmarkDotNet writes its reports to the working directory, which for
+# `dotnet run --project tests/WorkPlanStudio.Benchmarks` is the repository root.
+BenchmarkDotNet.Artifacts/
 
 # OS files
 .DS_Store

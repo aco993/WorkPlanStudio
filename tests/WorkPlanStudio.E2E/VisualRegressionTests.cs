@@ -4,20 +4,26 @@ namespace WorkPlanStudio.E2E;
 
 /// <summary>
 /// Visual regression: full-page screenshots of the key screens, in three
-/// profiles, compared pixel-wise against baselines committed per operating
-/// system (fonts and anti-aliasing differ between Windows and Linux, so one
-/// baseline cannot serve both). The comparison runs inside the browser on two
-/// canvases — no image library, no native dependency.
+/// profiles, compared pixel-wise against committed baselines. The comparison
+/// runs inside the browser on two canvases — no image library, no native
+/// dependency.
 ///
-/// - A missing baseline is written and the test passes with a note, so a new
-///   profile or a new OS bootstraps itself; the CI job uploads the folder so
-///   the baselines can be committed.
-/// - <c>VISUAL_UPDATE=1</c> rewrites every baseline (after an intended change).
-/// - The diff image of a failure lands next to the baseline as <c>*.diff.png</c>
-///   and in <c>E2E_ARTIFACTS</c>.
+/// <para><b>Baselines are maintained for Linux only</b> (see ADR 0021). Fonts and
+/// anti-aliasing differ per operating system, so one baseline cannot serve
+/// several; and a baseline that no automation ever compares is maintenance
+/// without a consumer. CI runs <c>ubuntu-latest</c>, so <c>visual-baselines/linux</c>
+/// is the one set anything checks and the one set that is committed. On any
+/// other operating system these tests skip loudly rather than compare against
+/// something unverified or quietly invent a new baseline.</para>
+///
+/// <para>On Linux a missing baseline is a <b>failure</b>, not a bootstrap: renaming
+/// a route or a profile used to make its guard disappear silently. The actual
+/// screenshot is still written to <c>E2E_ARTIFACTS</c> so the new baseline can be
+/// downloaded and committed, and only an explicit
+/// <c>UPDATE_VISUAL_BASELINES=1</c> (legacy alias: <c>VISUAL_UPDATE=1</c>)
+/// writes into the committed folder.</para>
 /// </summary>
-[Collection(nameof(PlaywrightCollection))]
-public sealed class VisualRegressionTests
+public sealed class VisualRegressionTests : IClassFixture<PlaywrightFixture>
 {
     /// <summary>Share of pixels allowed to differ beyond the per-channel tolerance.</summary>
     private const double AllowedDifferentPixelShare = 0.002;
@@ -26,22 +32,31 @@ public sealed class VisualRegressionTests
 
     public VisualRegressionTests(PlaywrightFixture fixture) => _fixture = fixture;
 
+    /// <summary>The screen/profile matrix, and the single source of the baseline file names.</summary>
+    private static IEnumerable<(string Route, string Device, string Theme)> Matrix =>
+        from route in new[] { "/", "/schedule", "/working-time" }
+        from profile in new[] { ("desktop", "light"), ("desktop", "dark"), ("mobile", "light") }
+        select (route, profile.Item1, profile.Item2);
+
     public static TheoryData<string, string, string> Screens()
     {
         var data = new TheoryData<string, string, string>();
-        foreach (var route in new[] { "/", "/schedule", "/working-time" })
-        {
-            data.Add(route, "desktop", "light");
-            data.Add(route, "desktop", "dark");
-            data.Add(route, "mobile", "light");
-        }
+        foreach (var (route, device, theme) in Matrix)
+            data.Add(route, device, theme);
         return data;
     }
+
+    private static string BaselineName(string route, string device, string theme) =>
+        $"{(route == "/" ? "home" : route.Trim('/').Replace('/', '-'))}-{device}-{theme}";
 
     [Theory]
     [MemberData(nameof(Screens))]
     public async Task The_screen_matches_its_baseline(string route, string device, string theme)
     {
+        Assert.SkipUnless(BaselinesAreMaintainedHere,
+            $"visual baselines are maintained for {string.Join("/", MaintainedBaselineDirectories)} only (ADR 0021); " +
+            $"this run is on {CurrentOperatingSystem}. Run the suite on Linux, or in CI, to compare pixels.");
+
         var (width, height) = device == "mobile" ? (390, 844) : (1320, 980);
         await using var context = await _fixture.Browser.NewContextAsync(new BrowserNewContextOptions
         {
@@ -55,18 +70,16 @@ public sealed class VisualRegressionTests
         var page = await context.NewPageAsync();
         await page.GotoAsync($"{_fixture.BaseUrl}/");
         await page.EvaluateAsync("t => localStorage.setItem('workplanstudio.settings.theme', t)", theme);
-        await page.GotoAsync($"{_fixture.BaseUrl}{route}");
-        await page.WaitForSelectorAsync("main h1", new() { Timeout = 60_000 });
-        await page.WaitForSelectorAsync(".gantt, .empty-state, .data-table, .glance-kpis, .form-grid", new() { Timeout = 60_000 });
+        await AppReady.GotoAsync(page, $"{_fixture.BaseUrl}{route}");
+        await page.WaitForSelectorAsync(".gantt, .empty-state, .data-table, .glance-kpis, .form-grid", new() { Timeout = AppReady.BootTimeoutMilliseconds });
         await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
-        await page.EvaluateAsync("document.fonts.ready.then(() => true)");
-        await page.WaitForTimeoutAsync(400);
+        await AppReady.SettledAsync(page);
 
-        var name = $"{(route == "/" ? "home" : route.Trim('/').Replace('/', '-'))}-{device}-{theme}";
+        var name = BaselineName(route, device, theme);
         var baselinePath = Path.Combine(BaselineDirectory, name + ".png");
         var current = await page.ScreenshotAsync(new() { FullPage = true, Animations = ScreenshotAnimations.Disabled, Caret = ScreenshotCaret.Hide });
 
-        if (!File.Exists(baselinePath) || Environment.GetEnvironmentVariable("VISUAL_UPDATE") == "1")
+        if (UpdatingBaselines)
         {
             Directory.CreateDirectory(BaselineDirectory);
             await File.WriteAllBytesAsync(baselinePath, current, Xunit.TestContext.Current.CancellationToken);
@@ -74,25 +87,93 @@ public sealed class VisualRegressionTests
             return;
         }
 
+        if (!File.Exists(baselinePath))
+        {
+            var written = await WriteArtifactAsync(name + ".actual.png", current);
+            Assert.Fail(
+                $"{name}: no committed baseline at {baselinePath}. " +
+                $"If this screen is new or was renamed, take {written} from the run artifacts, " +
+                $"commit it as that baseline (or re-run with UPDATE_VISUAL_BASELINES=1 locally on Linux) — " +
+                "a screen without a baseline is a screen nothing guards.");
+        }
+
         var baseline = await File.ReadAllBytesAsync(baselinePath, Xunit.TestContext.Current.CancellationToken);
         var diff = await CompareAsync(page, baseline, current);
 
         if (diff.DifferentShare > AllowedDifferentPixelShare || diff.SizeDiffers)
         {
-            var artifacts = Environment.GetEnvironmentVariable("E2E_ARTIFACTS") ?? BaselineDirectory;
-            Directory.CreateDirectory(artifacts);
-            await File.WriteAllBytesAsync(Path.Combine(artifacts, name + ".actual.png"), current, Xunit.TestContext.Current.CancellationToken);
+            // All three images travel together: a reviewer downloading the
+            // artifact bundle can compare expected/actual/diff without also
+            // having to fetch the baseline out of git.
+            await WriteArtifactAsync(name + ".expected.png", baseline);
+            await WriteArtifactAsync(name + ".actual.png", current);
             if (diff.DiffPng is not null)
-                await File.WriteAllBytesAsync(Path.Combine(artifacts, name + ".diff.png"), diff.DiffPng, Xunit.TestContext.Current.CancellationToken);
+                await WriteArtifactAsync(name + ".diff.png", diff.DiffPng);
         }
 
-        Assert.False(diff.SizeDiffers, $"{name}: page size changed from {diff.BaselineSize} to {diff.CurrentSize} (set VISUAL_UPDATE=1 after an intended change)");
+        Assert.False(diff.SizeDiffers, $"{name}: page size changed from {diff.BaselineSize} to {diff.CurrentSize} (set UPDATE_VISUAL_BASELINES=1 after an intended change)");
         Assert.True(diff.DifferentShare <= AllowedDifferentPixelShare,
-            $"{name}: {diff.DifferentShare:P2} of pixels differ (allowed {AllowedDifferentPixelShare:P2}); see {name}.diff.png (set VISUAL_UPDATE=1 after an intended change)");
+            $"{name}: {diff.DifferentShare:P2} of pixels differ (allowed {AllowedDifferentPixelShare:P2}); see {name}.diff.png (set UPDATE_VISUAL_BASELINES=1 after an intended change)");
     }
 
+    /// <summary>
+    /// Every screen in <see cref="Screens"/> must have a committed baseline.
+    /// The per-screen test above already fails on a missing one, but only for
+    /// the screens it still knows about: this closes the case where a route is
+    /// renamed and its old baseline is left behind, or a baseline is committed
+    /// for a screen that no longer exists.
+    /// </summary>
+    [Fact]
+    public void Every_screen_has_exactly_one_committed_baseline()
+    {
+        Assert.SkipUnless(BaselinesAreMaintainedHere,
+            $"visual baselines are maintained for {string.Join("/", MaintainedBaselineDirectories)} only (ADR 0021); " +
+            $"this run is on {CurrentOperatingSystem}.");
+
+        var expected = Matrix
+            .Select(s => BaselineName(s.Route, s.Device, s.Theme))
+            .Order(StringComparer.Ordinal)
+            .ToList();
+
+        var committed = Directory.Exists(BaselineDirectory)
+            ? Directory.EnumerateFiles(BaselineDirectory, "*.png")
+                .Select(f => Path.GetFileNameWithoutExtension(f) ?? "")
+                .Where(n => !n.EndsWith(".actual", StringComparison.Ordinal) && !n.EndsWith(".diff", StringComparison.Ordinal) && !n.EndsWith(".expected", StringComparison.Ordinal))
+                .Order(StringComparer.Ordinal)
+                .ToList()
+            : [];
+
+        Assert.Equal(expected, committed);
+    }
+
+    private static bool UpdatingBaselines =>
+        Environment.GetEnvironmentVariable("UPDATE_VISUAL_BASELINES") == "1"
+        || Environment.GetEnvironmentVariable("VISUAL_UPDATE") == "1";
+
+    /// <summary>
+    /// The operating systems whose baselines are committed and compared. Adding
+    /// one means adding a CI leg that runs on it — otherwise the new folder is
+    /// exactly the dead weight this list exists to prevent.
+    /// </summary>
+    private static string[] MaintainedBaselineDirectories { get; } = ["linux"];
+
+    private static string CurrentOperatingSystem =>
+        OperatingSystem.IsWindows() ? "windows" : OperatingSystem.IsMacOS() ? "macos" : "linux";
+
+    private static bool BaselinesAreMaintainedHere =>
+        MaintainedBaselineDirectories.Contains(CurrentOperatingSystem) || UpdatingBaselines;
+
     private static string BaselineDirectory { get; } =
-        Path.Combine(RepositoryRoot(), "tests", "WorkPlanStudio.E2E", "visual-baselines", OperatingSystem.IsWindows() ? "windows" : OperatingSystem.IsMacOS() ? "macos" : "linux");
+        Path.Combine(RepositoryRoot(), "tests", "WorkPlanStudio.E2E", "visual-baselines", CurrentOperatingSystem);
+
+    private static async Task<string> WriteArtifactAsync(string fileName, byte[] content)
+    {
+        var artifacts = Environment.GetEnvironmentVariable("E2E_ARTIFACTS") ?? AppContext.BaseDirectory;
+        Directory.CreateDirectory(artifacts);
+        var path = Path.Combine(artifacts, fileName);
+        await File.WriteAllBytesAsync(path, content, Xunit.TestContext.Current.CancellationToken);
+        return path;
+    }
 
     private static string RepositoryRoot()
     {

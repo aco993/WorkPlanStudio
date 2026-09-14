@@ -26,7 +26,7 @@ public sealed class AlgorithmAdversarialTests
             Job(2, Step(10, 1, 50)),
             Job(3, Step(10, 1, 20)));
 
-        var schedule = new DispatchScheduler().Run(context, [0, 1, 2], FarDue(context));
+        var schedule = new DispatchScheduler().Run(context, [0, 1, 2], FarDue(context), Ct);
         var third = schedule.Operations.Single(o => o.JobId == 3);
 
         Assert.Equal(1, third.SlotIndex);
@@ -52,7 +52,7 @@ public sealed class AlgorithmAdversarialTests
             Job(1, new JobStep(10, 1, 0, "A")),
             Job(2, new JobStep(10, 1, 100, "B")));
 
-        var schedule = new DispatchScheduler().Run(context, [0, 1], FarDue(context));
+        var schedule = new DispatchScheduler().Run(context, [0, 1], FarDue(context), Ct);
         var second = schedule.Operations.Single(o => o.JobId == 2);
 
         Assert.Equal(20, second.SetupSeconds);
@@ -89,9 +89,9 @@ public sealed class AlgorithmAdversarialTests
 
         double oracle = double.PositiveInfinity;
         foreach (var permutation in Permutations([.. Enumerable.Range(0, context.Jobs.Count)]))
-            oracle = Math.Min(oracle, ScheduleEvaluator.Evaluate(scheduler.Run(context, permutation, due), context).Penalty);
+            oracle = Math.Min(oracle, ScheduleEvaluator.Evaluate(scheduler.Run(context, permutation, due, Ct), context).Penalty);
 
-        Assert.Equal(oracle, ExactDispatchOrderOptimizer.Run(context, TestContext.Current.CancellationToken)
+        Assert.Equal(oracle, ExhaustiveDispatchOrderSearch.Run(context, TestContext.Current.CancellationToken)
             .Result.Evaluation.Penalty, 9);
     }
 
@@ -102,7 +102,7 @@ public sealed class AlgorithmAdversarialTests
         var context = Context(new SchedulingParameters(), [Machine(1), Machine(2)],
             Job(1, Step(10, 1, 0), Step(20, 2, 0), Step(30, 1, 0)));
 
-        var schedule = new DispatchScheduler().Run(context, [0], FarDue(context));
+        var schedule = new DispatchScheduler().Run(context, [0], FarDue(context), Ct);
 
         Assert.All(schedule.Operations, o => Assert.True(o.EndSeconds >= o.StartSeconds));
         Feasibility.AssertFeasible(schedule, context);
@@ -123,7 +123,7 @@ public sealed class AlgorithmAdversarialTests
         var context = Context(new SchedulingParameters(), [machine],
             Released(1, 3 * Day + 10 * Hour, Step(10, 1, Hour)));
 
-        var op = new DispatchScheduler().Run(context, [0], FarDue(context)).Operations.Single();
+        var op = new DispatchScheduler().Run(context, [0], FarDue(context), Ct).Operations.Single();
 
         Assert.Equal(3 * Day + 10 * Hour, op.StartSeconds);   // inside day 3's window, not day 0
     }

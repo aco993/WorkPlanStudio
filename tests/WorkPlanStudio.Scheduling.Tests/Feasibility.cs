@@ -103,5 +103,80 @@ internal static class Feasibility
                     $"Work center {workCenterId} runs {open} operations at t={time}, over capacity {capacity}.");
             }
         }
+
+        AssertSlotExclusivity(schedule);
+        AssertChargedSetupMatchesTheMatrix(schedule, context);
+    }
+
+    /// <summary>
+    /// Each slot is strictly serial in its own right, which is stronger than the
+    /// aggregate capacity sweep above: a work center with four slots could run
+    /// four operations at once and still be stacking two of them on slot 1.
+    /// <para>
+    /// Zero-length operations are included, and are allowed to coincide with each
+    /// other — an inspection gate occupies no machine time, so several can sit at
+    /// the same instant — but not to fall inside another operation's span, which
+    /// would mean the gate happened while the slot was busy with something else.
+    /// The sweep above cannot see either case, because it skips them entirely.
+    /// </para>
+    /// </summary>
+    private static void AssertSlotExclusivity(Schedule schedule)
+    {
+        foreach (var onSlot in schedule.Operations.GroupBy(o => (o.WorkCenterId, o.SlotIndex)))
+        {
+            long previousEnd = long.MinValue;
+            foreach (var op in InDispatchOrder(onSlot))
+            {
+                Assert.True(op.StartSeconds >= previousEnd,
+                    $"Job {op.JobId} step {op.StepNumber} starts at {op.StartSeconds} on work center " +
+                    $"{onSlot.Key.WorkCenterId} slot {onSlot.Key.SlotIndex}, which is busy until {previousEnd}.");
+                previousEnd = op.EndSeconds;
+            }
+        }
+    }
+
+    /// <summary>
+    /// The order the dispatcher placed these in. Start alone is not a total order
+    /// once zero-length operations are in play; end, then job, then step is,
+    /// and it reconstructs the dispatch order exactly — a zero-length operation
+    /// leaves the slot free at the same second, so anything placed after it on
+    /// that slot starts at or after that second.
+    /// </summary>
+    private static IEnumerable<ScheduledOperation> InDispatchOrder(IEnumerable<ScheduledOperation> operations) =>
+        operations
+            .OrderBy(o => o.StartSeconds)
+            .ThenBy(o => o.EndSeconds)
+            .ThenBy(o => o.JobId)
+            .ThenBy(o => o.StepNumber);
+
+    /// <summary>
+    /// The change-over charged to an operation has to be the one the matrix
+    /// declares for the transition that actually happened on its slot. Without
+    /// this, a dispatcher that charged setup on every operation — or on none —
+    /// would satisfy the whole property suite: the durations still add up, the
+    /// slots still do not overlap, and nothing else looks at the number.
+    /// </summary>
+    private static void AssertChargedSetupMatchesTheMatrix(Schedule schedule, SchedulingContext context)
+    {
+        var familyByStep = context.Jobs
+            .SelectMany(job => job.Steps.Select(step => ((job.Id, step.StepNumber), step.SetupFamily)))
+            .ToDictionary(pair => pair.Item1, pair => pair.SetupFamily);
+
+        foreach (var onSlot in schedule.Operations.GroupBy(o => (o.WorkCenterId, o.SlotIndex)))
+        {
+            string? previousFamily = null;
+            foreach (var op in InDispatchOrder(onSlot))
+            {
+                string family = familyByStep[(op.JobId, op.StepNumber)];
+                long expected = context.SetupSecondsFor(onSlot.Key.WorkCenterId, previousFamily, family);
+
+                Assert.True(expected == op.SetupSeconds,
+                    $"Job {op.JobId} step {op.StepNumber} on work center {onSlot.Key.WorkCenterId} slot {onSlot.Key.SlotIndex} " +
+                    $"was charged {op.SetupSeconds}s of change-over from '{previousFamily ?? "(fresh)"}' to '{family}', " +
+                    $"but the matrix says {expected}s.");
+
+                previousFamily = family;
+            }
+        }
     }
 }

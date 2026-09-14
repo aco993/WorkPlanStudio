@@ -1,5 +1,6 @@
 @page "/production-orders"
 @using System.Globalization
+@using WorkPlanStudio.Validation
 @inject IStringLocalizer<SharedResource> L
 @inject ProductionOrderService Orders
 @inject WorkPlanService Plans
@@ -38,26 +39,53 @@ else if (_orders.Count == 0)
 }
 else
 {
+    @*
+        Orders are the transactional entity — one row per order per week — so this
+        is the list that actually grows. Work plans got a search box and a status
+        filter; the list that needs them most had neither.
+    *@
+    <div class="toolbar">
+        <div class="search">
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+            <input type="search" aria-label="@L["Md_Orders_SearchPlaceholder"]"
+                   placeholder="@L["Md_Orders_SearchPlaceholder"]"
+                   value="@_search" @oninput="OnSearch" />
+        </div>
+        <div class="seg">
+            <button class="@(_statusFilter is null ? "active" : null)" @onclick="() => _statusFilter = null">@L["Common_All"]</button>
+            @foreach (var status in _statuses)
+            {
+                <button class="@(_statusFilter == status ? "active" : null)" @onclick="() => _statusFilter = status">@StatusLabel(status)</button>
+            }
+        </div>
+    </div>
+
     <div class="card no-pad">
         <table class="data-table hover">
             <caption class="sr-only">@L["Orders_Title"]</caption>
             <thead>
                 <tr>
-                    <th scope="col">@L["Orders_Number"]</th>
+                    <th scope="col" aria-sort="@SortState(OrderColumn.Number)">
+                        <button type="button" class="th-sort" @onclick="() => SortBy(OrderColumn.Number)">@L["Orders_Number"]@SortMark(OrderColumn.Number)</button>
+                    </th>
                     <th scope="col">@L["Field_PartName"]</th>
                     <th scope="col">@L["Orders_Routing"]</th>
                     <th scope="col" class="num">@L["Orders_Quantity"]</th>
                     <th scope="col" class="num">@L["Orders_Release"]</th>
-                    <th scope="col" class="num">@L["Orders_Due"]</th>
-                    <th scope="col" class="center">@L["Field_Priority"]</th>
+                    <th scope="col" class="num" aria-sort="@SortState(OrderColumn.Due)">
+                        <button type="button" class="th-sort" @onclick="() => SortBy(OrderColumn.Due)">@L["Orders_Due"]@SortMark(OrderColumn.Due)</button>
+                    </th>
+                    <th scope="col" class="center" aria-sort="@SortState(OrderColumn.Priority)">
+                        <button type="button" class="th-sort" @onclick="() => SortBy(OrderColumn.Priority)">@L["Field_Priority"]@SortMark(OrderColumn.Priority)</button>
+                    </th>
                     <th scope="col">@L["Field_Status"]</th>
                     <th scope="col" class="actions-col">@L["Common_Actions"]</th>
                 </tr>
             </thead>
             <tbody>
-                @foreach (var order in _orders)
+                @foreach (var order in Filtered)
                 {
-                    <tr>
+                    <tr @key="order.Id">
                         <td><span class="mono">@order.OrderNumber</span></td>
                         <td>@(order.WorkPlan?.PartName ?? "—")</td>
                         <td>
@@ -68,9 +96,9 @@ else
                             }
                         </td>
                         <td class="num">@Format.Number(order.Quantity)</td>
-                        <td class="num muted">@order.ReleaseUtc.ToString("d", CultureInfo.CurrentCulture)</td>
-                        <td class="num">@order.DueUtc.ToString("d", CultureInfo.CurrentCulture)</td>
-                        <td class="center">@order.Priority</td>
+                        <td class="num muted">@order.ReleaseLocal.ToString("d", CultureInfo.CurrentCulture)</td>
+                        <td class="num">@order.DueLocal.ToString("d", CultureInfo.CurrentCulture)</td>
+                        <td class="center">@PriorityLabel(order.Priority)</td>
                         <td><span class="badge order-@order.Status.ToString().ToLowerInvariant()">@StatusLabel(order.Status)</span></td>
                         <td class="actions-col">
                             <AuthorizeView Policy="@Permissions.ManageOrders">
@@ -98,69 +126,91 @@ else
 
 <Modal @bind-Visible="_showEditor" Title="@L["Orders_NewTitle"]">
     <ChildContent>
+        <MdErrorSummary State="_errors" />
         <div class="form-grid">
             <label class="field">
                 <span>@L["Orders_Number"]</span>
-                <input id="po-number" class="input @(_formErrors.ContainsKey("OrderNumber") ? "error" : null)"
-                       autocomplete="off"
-                       aria-invalid="@(_formErrors.ContainsKey("OrderNumber") ? "true" : "false")"
-                       aria-describedby="@(_formErrors.ContainsKey("OrderNumber") ? "po-number-error" : null)"
+                <input id="po-number" class="input @_errors.Style("OrderNumber")" maxlength="30"
+                       autocomplete="off" spellcheck="false" autocapitalize="characters"
+                       aria-invalid="@_errors.Invalid("OrderNumber")" aria-describedby="@_errors.DescribedBy("OrderNumber")"
                        @bind="_editing.OrderNumber" @bind:event="oninput" />
-                @if (_formErrors.TryGetValue("OrderNumber", out var numberError))
+                @if (_errors["OrderNumber"] is { } numberError)
                 {
-                    <span id="po-number-error" class="field-error">@numberError</span>
+                    <span id="@_errors.ErrorId("OrderNumber")" class="field-error">@numberError</span>
                 }
             </label>
 
-            <label class="field">
-                <span>@L["Orders_Routing"]</span>
-                <select class="input" @bind="_editing.WorkPlanId">
-                    <option value="0">—</option>
-                    @foreach (var plan in _plans)
-                    {
-                        <option value="@plan.Id">@plan.PlanNumber — @plan.PartName</option>
-                    }
-                </select>
-            </label>
+            <div class="field">
+                <label for="po-plan">@L["Orders_Routing"]</label>
+                <EntityPicker TItem="WorkPlan" Id="po-plan"
+                              Items="_plans"
+                              Value="@(_editing.WorkPlanId == 0 ? null : _editing.WorkPlanId)"
+                              ValueChanged="value => _editing.WorkPlanId = value ?? 0"
+                              IdOf="p => p.Id"
+                              LabelOf="PlanLabel"
+                              EmptyHint="@L["Md_Orders_NoReleasedPlans"]"
+                              Invalid="_errors.Has(PlanField)"
+                              DescribedBy="@_errors.DescribedBy("WorkPlanId")" />
+                @if (_errors["WorkPlanId"] is { } planError)
+                {
+                    <span id="@_errors.ErrorId("WorkPlanId")" class="field-error">@planError</span>
+                }
+            </div>
 
             <label class="field">
                 <span>@L["Orders_Quantity"]</span>
-                <input id="po-qty" class="input num @(_formErrors.ContainsKey("Quantity") ? "error" : null)"
-                       type="number" min="1" max="1000000"
-                       aria-invalid="@(_formErrors.ContainsKey("Quantity") ? "true" : "false")"
-                       aria-describedby="@(_formErrors.ContainsKey("Quantity") ? "po-qty-error" : null)"
-                       @bind="_editing.Quantity" @bind:event="oninput" />
-                @if (_formErrors.TryGetValue("Quantity", out var quantityError))
+                <input id="po-qty" class="input num @_errors.Style("Quantity")"
+                       type="number" min="1" max="1000000" inputmode="numeric"
+                       aria-invalid="@_errors.Invalid("Quantity")" aria-describedby="@_errors.DescribedBy("Quantity")"
+                       @bind="_quantity" @bind:event="oninput" />
+                @if (_errors["Quantity"] is { } quantityError)
                 {
-                    <span id="po-qty-error" class="field-error">@quantityError</span>
+                    <span id="@_errors.ErrorId("Quantity")" class="field-error">@quantityError</span>
                 }
             </label>
 
             <label class="field">
                 <span>@L["Field_Priority"]</span>
-                <select class="input" @bind="_editing.Priority">
-                    @for (int p = 1; p <= 5; p++)
+                @*
+                    Five naked digits told the planner nothing: the model documents
+                    "1 (normal) to 5 (rush)" and the UI showed neither end of the
+                    scale. Named options say which way is urgent.
+                *@
+                <select id="po-priority" class="input @_errors.Style("Priority")"
+                        aria-invalid="@_errors.Invalid("Priority")" aria-describedby="@_errors.DescribedBy("Priority")"
+                        @bind="_editing.Priority">
+                    @for (int p = ProductionOrderValidator.MinPriority; p <= ProductionOrderValidator.MaxPriority; p++)
                     {
-                        <option value="@p">@p</option>
+                        <option value="@p">@PriorityLabel(p)</option>
                     }
                 </select>
+                @if (_errors["Priority"] is { } priorityError)
+                {
+                    <span id="@_errors.ErrorId("Priority")" class="field-error">@priorityError</span>
+                }
             </label>
 
             <label class="field">
                 <span>@L["Orders_Release"]</span>
-                <input class="input" type="date" @bind="_releaseDate" />
+                <input id="po-release" class="input @_errors.Style("ReleaseLocal")" type="date"
+                       max="@_dueDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)"
+                       aria-invalid="@_errors.Invalid("ReleaseLocal")" aria-describedby="@_errors.DescribedBy("ReleaseLocal")"
+                       @bind="_releaseDate" />
+                @if (_errors["ReleaseLocal"] is { } releaseError)
+                {
+                    <span id="@_errors.ErrorId("ReleaseLocal")" class="field-error">@releaseError</span>
+                }
             </label>
 
             <label class="field">
                 <span>@L["Orders_Due"]</span>
-                <input id="po-due" class="input @(_formErrors.ContainsKey("DueUtc") ? "error" : null)"
-                       type="date"
-                       aria-invalid="@(_formErrors.ContainsKey("DueUtc") ? "true" : "false")"
-                       aria-describedby="@(_formErrors.ContainsKey("DueUtc") ? "po-due-error" : null)"
+                <input id="po-due" class="input @_errors.Style("DueLocal")" type="date"
+                       min="@_releaseDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)"
+                       aria-invalid="@_errors.Invalid("DueLocal")" aria-describedby="@_errors.DescribedBy("DueLocal")"
                        @bind="_dueDate" />
-                @if (_formErrors.TryGetValue("DueUtc", out var dueError))
+                @if (_errors["DueLocal"] is { } dueError)
                 {
-                    <span id="po-due-error" class="field-error">@dueError</span>
+                    <span id="@_errors.ErrorId("DueLocal")" class="field-error">@dueError</span>
                 }
             </label>
         </div>
@@ -172,35 +222,111 @@ else
 </Modal>
 
 @code {
+    private enum OrderColumn { Number, Due, Priority }
+
+    private const string PlanField = nameof(ProductionOrder.WorkPlanId);
+
+    // The project's stylesheet belongs to another stream, so the sortable header
+    // carries its own reset rather than inventing a class nothing defines. It
+    // keeps the focus ring, which is the part that matters.
     private bool _loading = true;
     private string? _error;
     private List<ProductionOrder> _orders = [];
     private List<WorkPlan> _plans = [];
+    private string _search = "";
+    private ProductionOrderStatus? _statusFilter;
+    private OrderColumn _sortColumn = OrderColumn.Due;
+    private bool _sortDescending = true;
+
+    private readonly ProductionOrderStatus[] _statuses =
+    [
+        ProductionOrderStatus.Draft, ProductionOrderStatus.Released, ProductionOrderStatus.Cancelled
+    ];
 
     private bool _showEditor;
     private ProductionOrder _editing = new();
-    private DateTime _releaseDate = DateTime.UtcNow.Date;
-    private DateTime _dueDate = DateTime.UtcNow.Date.AddDays(7);
-    private readonly Dictionary<string, string> _formErrors = [];
+    private int? _quantity;
+
+    // Plant-local wall-clock dates, like everything else the shop calendar reads.
+    private DateTime _releaseDate = DateTime.Today;
+    private DateTime _dueDate = DateTime.Today.AddDays(7);
+    private readonly FormErrorState _errors = new();
+
+    protected override void OnInitialized()
+    {
+        _errors.Declare("OrderNumber", "po-number");
+        _errors.Declare("WorkPlanId", "po-plan");
+        _errors.Declare("Quantity", "po-qty");
+        _errors.Declare("Priority", "po-priority");
+        _errors.Declare("ReleaseLocal", "po-release");
+        _errors.Declare("DueLocal", "po-due");
+        _errors.Declare("Status", "po-number");
+    }
 
     protected override async Task OnInitializedAsync() => await ReloadAsync();
 
     private async Task ReloadAsync()
     {
         _loading = true;
-        _orders = await Orders.GetAllAsync();
-        _plans = (await Plans.GetAllAsync())
-            .Where(p => p.Status == WorkPlanStatus.Released)
-            .ToList();
-        _loading = false;
+        try
+        {
+            _orders = await Orders.GetAllAsync();
+            _plans = (await Plans.GetAllAsync())
+                .Where(p => p.Status == WorkPlanStatus.Released)
+                .ToList();
+        }
+        finally
+        {
+            _loading = false;
+        }
     }
+
+    private void OnSearch(ChangeEventArgs e) => _search = e.Value?.ToString() ?? "";
+
+    private void SortBy(OrderColumn column)
+    {
+        if (_sortColumn == column)
+            _sortDescending = !_sortDescending;
+        else
+            (_sortColumn, _sortDescending) = (column, false);
+    }
+
+    private string SortState(OrderColumn column) =>
+        _sortColumn != column ? "none" : _sortDescending ? "descending" : "ascending";
+
+    private string SortMark(OrderColumn column) =>
+        _sortColumn != column ? "" : _sortDescending ? " ↓" : " ↑";
+
+    private IEnumerable<ProductionOrder> Filtered
+    {
+        get
+        {
+            var filtered = _orders
+                .Where(o => _statusFilter is null || o.Status == _statusFilter)
+                .Where(o => string.IsNullOrWhiteSpace(_search)
+                    || o.OrderNumber.Contains(_search, StringComparison.OrdinalIgnoreCase)
+                    || (o.WorkPlan?.PartName.Contains(_search, StringComparison.OrdinalIgnoreCase) ?? false)
+                    || (o.WorkPlan?.PlanNumber.Contains(_search, StringComparison.OrdinalIgnoreCase) ?? false));
+
+            return _sortColumn switch
+            {
+                OrderColumn.Number => Order(filtered, o => o.OrderNumber),
+                OrderColumn.Priority => Order(filtered, o => o.Priority),
+                _ => Order(filtered, o => o.DueLocal)
+            };
+        }
+    }
+
+    private IEnumerable<ProductionOrder> Order<TKey>(IEnumerable<ProductionOrder> source, Func<ProductionOrder, TKey> key) =>
+        _sortDescending ? source.OrderByDescending(key) : source.OrderBy(key);
 
     private async Task New()
     {
-        _formErrors.Clear();
+        _errors.Clear();
         _error = null;
-        _releaseDate = DateTime.UtcNow.Date;
-        _dueDate = DateTime.UtcNow.Date.AddDays(7);
+        _releaseDate = DateTime.Today;
+        _dueDate = DateTime.Today.AddDays(7);
+        _quantity = 100;
         _editing = new ProductionOrder
         {
             OrderNumber = await Orders.SuggestOrderNumberAsync(),
@@ -212,11 +338,20 @@ else
 
     private async Task SaveAsync()
     {
-        _formErrors.Clear();
         _error = null;
 
-        _editing.ReleaseUtc = DateTime.SpecifyKind(_releaseDate, DateTimeKind.Utc);
-        _editing.DueUtc = DateTime.SpecifyKind(_dueDate, DateTimeKind.Utc);
+        if (_quantity is null)
+        {
+            _errors.Apply(
+                ApplicationResult<ProductionOrder>.Validation(
+                    [new ValidationIssue(nameof(ProductionOrder.Quantity), "Val_Required")]),
+                L);
+            return;
+        }
+
+        _editing.Quantity = _quantity.Value;
+        _editing.ReleaseLocal = PlantTime.Wall(_releaseDate).Date;
+        _editing.DueLocal = PlantTime.Wall(_dueDate).Date;
 
         var result = await Orders.SaveAsync(_editing);
         if (!Apply(result))
@@ -243,30 +378,34 @@ else
     private async Task DeleteAsync(int id)
     {
         _error = null;
-        var result = await Orders.DeleteAsync(id);
-        if (result.IsSuccess)
-        {
+        if (Apply(await Orders.DeleteAsync(id)))
             await ReloadAsync();
-            return;
-        }
-
-        _error = L["Error_ActionFailed"];
     }
 
-    /// <summary>Routes a result to either the field errors or the page banner.</summary>
+    /// <summary>
+    /// Routes a result to the form. Outside the dialog there is no form, so the
+    /// same messages land in the page banner instead of disappearing.
+    /// </summary>
     private bool Apply<T>(ApplicationResult<T> result)
     {
         if (result.IsSuccess)
             return true;
 
-        foreach (var issue in result.ValidationIssues ?? [])
-            _formErrors[issue.Field] = L[issue.MessageKey, issue.Arguments];
+        if (_showEditor)
+        {
+            _errors.Apply(result, L);
+            return false;
+        }
 
-        if (_formErrors.Count == 0)
-            _error = result.Status == ApplicationResultStatus.Forbidden ? L["Error_Forbidden"] : L["Error_ActionFailed"];
-
+        _error = result.ValidationIssues is [var issue, ..]
+            ? L[issue.MessageKey, issue.Arguments]
+            : L[result.Status == ApplicationResultStatus.Forbidden ? "Error_Forbidden" : "Error_ActionFailed"];
         return false;
     }
+
+    private string PlanLabel(WorkPlan plan) => $"{plan.PlanNumber} — {plan.PartName}";
+
+    private string PriorityLabel(int priority) => L[$"Md_Priority_{priority}"];
 
     private string StatusLabel(ProductionOrderStatus status) => status switch
     {

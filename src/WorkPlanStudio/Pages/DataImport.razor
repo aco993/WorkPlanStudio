@@ -1,0 +1,508 @@
+@page "/import"
+@using Microsoft.AspNetCore.Components.Forms
+@using WorkPlanStudio.Services.Import
+@using WorkPlanStudio.Validation
+@inject IStringLocalizer<SharedResource> L
+@inject CsvImportService Importer
+@inject IImportMappingStore Mappings
+@inject ILogger<DataImport> Logger
+
+<PageTitle>@L["Import_Title"] · WorkPlan Studio</PageTitle>
+
+@*
+    Styles that belong in wwwroot/css/app.css, which this stream does not own.
+    Five rules, all specific to this page; lifting them is an integration note,
+    not a decision. Everything else here reuses the app's existing vocabulary.
+*@
+<div class="page-head">
+    <div>
+        <h1>@L["Import_Title"]</h1>
+        <p class="page-sub">@L["Import_Subtitle"]</p>
+    </div>
+</div>
+
+<ReadOnlyNotice Policy="@Policy" />
+
+@if (_error is not null)
+{
+    <div class="form-banner error" role="alert">@_error</div>
+}
+
+@* Present from the first paint, so the announcement it later carries is heard. *@
+<div id="import-status" class="sr-only" role="status" aria-live="polite">@_announcement</div>
+
+<div class="card">
+    <div class="card-head"><h2>@L["Import_Kind_Label"]</h2></div>
+    <div class="card-body">
+        <div class="form-grid">
+            <div class="field">
+                <label for="import-kind">@L["Import_Kind_Label"]</label>
+                <select id="import-kind" class="input" disabled="@_busy" @onchange="ChangeKindAsync">
+                    @foreach (var schema in ImportSchemas.All)
+                    {
+                        <option value="@schema.Kind" selected="@(_kind == schema.Kind)">@L[schema.TitleKey]</option>
+                    }
+                </select>
+            </div>
+            <div class="field">
+                <span>@L["Import_Samples"]</span>
+                <span class="field-hint">@L["Import_Samples_Hint"]</span>
+                <a href="@Schema.SampleFile" download>@string.Format(L["Import_Sample_Download"], L[Schema.TitleKey])</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card" style="margin-top:1rem">
+    <div class="card-body">
+        <ImportDropZone Disabled="_busy" OnChange="ChooseFileAsync" />
+
+        @if (_header is not null)
+        {
+            <p class="small-text" style="margin-top:.9rem">
+                @string.Format(L["Import_File_Summary"], _fileName, _header.DataRecords, _header.Dialect.EncodingName, _header.Dialect.SeparatorLabel)
+            </p>
+        }
+
+        @if (_busy)
+        {
+            <p class="field-hint" style="margin-top:.6rem">@_announcement</p>
+            <div class="import-bar" aria-hidden="true"><span style="width:@ProgressWidth"></span></div>
+        }
+    </div>
+</div>
+
+@if (_header is not null && _map is not null)
+{
+    <div class="card" style="margin-top:1rem">
+        <div class="card-head"><h2>@L["Import_Mapping_Title"]</h2></div>
+        <div class="card-body">
+            <p class="field-hint" style="margin-bottom:.9rem">@L["Import_Mapping_Hint"]</p>
+            <ImportColumnMap Map="_map" Disabled="_busy" OnChanged="ForgetPlan" />
+        </div>
+    </div>
+
+    <div class="card" style="margin-top:1rem">
+        <div class="card-head"><h2>@L["Import_Options_Title"]</h2></div>
+        <div class="card-body">
+            <div class="field check">
+                <input id="import-update" type="checkbox" disabled="@_busy"
+                       @bind="_updateExisting" @bind:after="ForgetPlan" />
+                <span>@L["Import_Option_Update"]</span>
+            </div>
+            <p class="field-hint" style="margin:.2rem 0 .9rem 1.8rem">@L["Import_Option_UpdateHint"]</p>
+
+            @if (_kind == ImportEntityKind.WorkCenters)
+            {
+                <div class="field check">
+                    <input id="import-create-cost-centers" type="checkbox" disabled="@_busy"
+                           @bind="_createCostCenters" @bind:after="ForgetPlan" />
+                    <span>@L["Import_Option_CreateCostCenters"]</span>
+                </div>
+                <p class="field-hint" style="margin:.2rem 0 .9rem 1.8rem">@L["Import_Option_CreateCostCentersHint"]</p>
+            }
+
+            <div class="field" style="max-width:220px">
+                <label for="import-separator">@L["Import_Option_Separator"]</label>
+                <select id="import-separator" class="input" disabled="@_busy" @onchange="ChangeSeparatorAsync">
+                    <option value="" selected="@(_separator is null)">@string.Format(L["Import_Separator_Detected"], _header.Dialect.SeparatorLabel)</option>
+                    <option value=";" selected="@(_separator == ';')">;</option>
+                    <option value="," selected="@(_separator == ',')">,</option>
+                    <option value="tab" selected="@(_separator == '\t')">TAB</option>
+                </select>
+            </div>
+
+            <div class="head-actions" style="margin-top:1.1rem">
+                <button id="import-dry-run" class="btn btn-primary" disabled="@(_busy || _map.MissingRequired().Count > 0)" @onclick="DryRunAsync">
+                    @L["Import_Action_DryRun"]
+                </button>
+                <button id="import-reset" class="btn btn-ghost" disabled="@_busy" @onclick="Reset">@L["Import_Action_Again"]</button>
+            </div>
+
+            @if (_map.MissingRequired().Count > 0)
+            {
+                <p class="field-error" style="margin-top:.6rem">@L["Import_Mapping_Blocked"]</p>
+            }
+        </div>
+    </div>
+}
+
+@if (_plan is { } plan)
+{
+    <div class="card" style="margin-top:1rem">
+        <div class="card-head" style="flex-wrap:wrap;gap:.6rem">
+            <h2>@L["Import_Preview_Title"]</h2>
+            <AuthorizeView Policy="@Policy">
+                <button id="import-commit" class="btn btn-primary" disabled="@(_busy || !plan.CanCommit)" @onclick="CommitAsync">
+                    @L["Import_Action_Commit"]
+                </button>
+            </AuthorizeView>
+        </div>
+        <div class="card-body">
+            <div class="import-counts">
+                <span class="badge status-released">@plan.CreateCount @L["Import_Count_Create"]</span>
+                <span class="badge status-archived">@plan.UpdateCount @L["Import_Count_Update"]</span>
+                <span class="badge status-draft">@plan.SkipCount @L["Import_Count_Skip"]</span>
+                <span class="pill @(plan.Rejected.Count > 0 ? "off" : "ok")">@plan.Rejected.Count @L["Import_Count_Reject"]</span>
+            </div>
+
+            <p class="field-hint">
+                @string.Format(L["Import_Storage_Note"],
+                    plan.EstimatedPayloadCharacters.ToString("N0", CultureInfo.CurrentCulture),
+                    BrowserDatabase.MaxPayloadCharacters.ToString("N0", CultureInfo.CurrentCulture))
+            </p>
+
+            @if (plan.ExceedsStorage)
+            {
+                <p class="field-error">
+                    @L["Import_Error_Quota",
+                        plan.EstimatedPayloadCharacters.ToString("N0", CultureInfo.CurrentCulture),
+                        BrowserDatabase.MaxPayloadCharacters.ToString("N0", CultureInfo.CurrentCulture)]
+                </p>
+            }
+            else if (plan.AffectedCount == 0)
+            {
+                <p class="field-hint">@L["Import_Preview_Nothing"]</p>
+            }
+        </div>
+
+        <TableScroll Label="@L["Import_Preview_Caption"]">
+            <table class="data-table">
+                <caption class="sr-only">@L["Import_Preview_Caption"]</caption>
+                <thead>
+                    <tr>
+                        <th scope="col" class="num">@L["Import_Col_Line"]</th>
+                        <th scope="col">@L["Import_Col_Action"]</th>
+                        <th scope="col">@L["Import_Col_Key"]</th>
+                        <th scope="col">@L["Import_Col_Detail"]</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in plan.Rows.Take(PreviewLimit))
+                    {
+                        <tr @key="row.Line" id="@($"import-row-{row.Line}")">
+                            <th scope="row" class="num">@row.Line</th>
+                            <td><span class="pill @(row.Action == ImportRowAction.Reject ? "off" : "ok")">@L[$"Import_Row_{row.Action}"]</span></td>
+                            <td><span class="mono">@row.Key</span></td>
+                            <td>
+                                @if (row.Action == ImportRowAction.Reject)
+                                {
+                                    <a href="@($"#import-issue-{row.Line}")"
+                                       aria-label="@string.Format(L["Import_Row_Why_Label"], row.Line)">@L["Import_Row_Why"]</a>
+                                }
+                                else
+                                {
+                                    <span class="muted">@row.Detail</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </TableScroll>
+
+        @if (plan.Rows.Count > PreviewLimit)
+        {
+            <div class="card-body">
+                <p class="field-hint">@string.Format(L["Import_Preview_Truncated"], PreviewLimit, plan.Rows.Count)</p>
+            </div>
+        }
+    </div>
+
+    @if (plan.Warnings.Count > 0)
+    {
+        <div class="card" style="margin-top:1rem">
+            <div class="card-head"><h2>@L["Import_Warnings_Title"]</h2></div>
+            <ImportIssueTable Caption="@L["Import_Warnings_Caption"]" Issues="plan.Warnings"
+                              Describe="Describe" IdPrefix="import-warning" />
+        </div>
+    }
+
+    @if (plan.Rejected.Count > 0)
+    {
+        <div class="card" style="margin-top:1rem">
+            <div class="card-head" style="flex-wrap:wrap;gap:.6rem">
+                <h2>@L["Import_Rejected_Title"]</h2>
+                <a id="import-rejected-download" class="btn btn-outline" href="@_rejectedReport" download="@RejectedFileName">@L["Import_Rejected_Download"]</a>
+            </div>
+            <ImportIssueTable Caption="@L["Import_Rejected_Caption"]" Issues="plan.Rejected"
+                              Describe="Describe" IdPrefix="import-issue" />
+        </div>
+    }
+}
+
+@code {
+    /// <summary>
+    /// How many preview rows are rendered. A 10 000-row file produces 10 000
+    /// rows; rendering all of them costs seconds of layout for a table nobody
+    /// reads past the first screen. The counts above it are always complete, and
+    /// the rejected rows are downloadable in full.
+    /// </summary>
+    private const int PreviewLimit = 200;
+
+    private ImportEntityKind _kind = ImportEntityKind.CostCenters;
+    private string _fileName = "";
+    private byte[]? _content;
+    private CsvHeader? _header;
+    private ColumnMap? _map;
+    private ImportPlan? _plan;
+    private string? _rejectedReport;
+
+    private bool _updateExisting;
+    private bool _createCostCenters;
+    private char? _separator;
+
+    private bool _busy;
+    private int _progress;
+    private string _announcement = "";
+    private string? _error;
+
+    private ImportSchema Schema => ImportSchemas.For(_kind);
+
+    private string Policy => CsvImportService.PolicyFor(_kind);
+
+    private string RejectedFileName => $"workplanstudio-rejected-{_kind}.csv";
+
+    /// <summary>
+    /// How far the parse has got. The total comes from the header inspection, so
+    /// the bar is a real fraction rather than an animation that means nothing.
+    /// </summary>
+    private string ProgressWidth =>
+        _header is { DataRecords: > 0 } header && _progress > 0
+            ? $"{Math.Min(100, _progress * 100 / header.DataRecords)}%"
+            : "35%";
+
+    private async Task ChangeKindAsync(ChangeEventArgs args)
+    {
+        if (!Enum.TryParse<ImportEntityKind>(args.Value?.ToString(), out var kind))
+            return;
+
+        _kind = kind;
+        _createCostCenters = false;
+        ForgetPlan();
+
+        // The file is kept: choosing the wrong sheet first is the most likely
+        // mistake, and making the user find the file again would be a punishment
+        // for it.
+        if (_header is not null)
+            await BuildMapAsync();
+    }
+
+    private async Task ChangeSeparatorAsync(ChangeEventArgs args)
+    {
+        _separator = args.Value?.ToString() switch
+        {
+            ";" => ';',
+            "," => ',',
+            "tab" => '\t',
+            _ => null
+        };
+
+        if (_content is not null)
+            await InspectAsync();
+    }
+
+    private void ForgetPlan()
+    {
+        _plan = null;
+        _rejectedReport = null;
+        _announcement = "";
+    }
+
+    private void Reset()
+    {
+        _content = null;
+        _header = null;
+        _map = null;
+        _fileName = "";
+        _separator = null;
+        _error = null;
+        ForgetPlan();
+    }
+
+    private async Task ChooseFileAsync(InputFileChangeEventArgs args)
+    {
+        _error = null;
+        ForgetPlan();
+
+        var file = args.File;
+        if (file.Size > CsvImportService.MaxFileBytes)
+        {
+            _error = string.Format(L["Import_Error_TooLarge"], CsvImportService.MaxFileBytes / (1024 * 1024));
+            _header = null;
+            _map = null;
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            _fileName = file.Name;
+            await using var stream = file.OpenReadStream(CsvImportService.MaxFileBytes);
+            using var buffer = new MemoryStream();
+            await stream.CopyToAsync(buffer);
+            _content = buffer.ToArray();
+            await InspectAsync();
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(exception, "Reading the uploaded file failed");
+            _error = L["Import_Error_ReadFailed"];
+            _content = null;
+            _header = null;
+            _map = null;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task InspectAsync()
+    {
+        var inspected = await Importer.InspectAsync(_content!, _separator);
+        if (!inspected.IsSuccess)
+        {
+            _error = Summarise(inspected);
+            _header = null;
+            _map = null;
+            return;
+        }
+
+        _header = inspected.Value;
+        await BuildMapAsync();
+    }
+
+    private async Task BuildMapAsync()
+    {
+        var remembered = await Mappings.LoadAsync(_kind);
+        _map = ColumnMap.Restore(Schema, _header!.Columns, remembered);
+    }
+
+    private async Task DryRunAsync()
+    {
+        _error = null;
+        _busy = true;
+        _progress = 0;
+        _announcement = "";
+
+        try
+        {
+            var options = new ImportOptions(_kind, _separator, _updateExisting, _createCostCenters);
+            var progress = new InlineProgress(rows =>
+            {
+                _progress = rows;
+                _announcement = string.Format(L["Import_Progress_Reading"], rows);
+                StateHasChanged();
+            });
+
+            var planned = await Importer.PlanAsync(_content!, options, _map!, progress);
+            if (!planned.IsSuccess)
+            {
+                _error = Summarise(planned);
+                return;
+            }
+
+            _plan = planned.Value!;
+            _rejectedReport = BuildRejectedReport(_plan);
+            _announcement = string.Format(
+                L["Import_Progress_Done"],
+                _plan.CreateCount, _plan.UpdateCount, _plan.SkipCount, _plan.Rejected.Count);
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(exception, "The import dry run failed");
+            _error = L["Error_ActionFailed"];
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task CommitAsync()
+    {
+        if (_plan is null)
+            return;
+
+        _error = null;
+        _busy = true;
+        try
+        {
+            var committed = await Importer.CommitAsync(_plan);
+            if (!committed.IsSuccess)
+            {
+                _error = $"{Summarise(committed)} {L["Import_Result_Failed"]}";
+                return;
+            }
+
+            var outcome = committed.Value!;
+            await Mappings.SaveAsync(_kind, _map!.ToRemembered());
+
+            var message = string.Format(
+                L["Import_Result"], outcome.Created, outcome.Updated, outcome.Skipped, outcome.Rejected);
+            if (outcome.CostCentersCreated > 0)
+                message += " " + string.Format(L["Import_Result_CostCenters"], outcome.CostCentersCreated);
+
+            // Clearing the file is deliberate: the same plan must not be
+            // committable twice, and the second press would import nothing while
+            // looking exactly like the first.
+            Reset();
+            _announcement = message;
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(exception, "Committing the import failed");
+            _error = L["Error_ActionFailed"];
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private string BuildRejectedReport(ImportPlan plan)
+    {
+        var report = RejectedRowsReport.Build(
+            [L["Import_Col_Line"], L["Import_Col_Column"], L["Import_Col_Reason"]],
+            plan.Rejected.Select(issue => (issue.Line, issue.Column ?? "", Describe(issue))));
+
+        return "data:text/csv;base64," + Convert.ToBase64String(RejectedRowsReport.ToBytes(report));
+    }
+
+    /// <summary>
+    /// The sentence for one issue. Arguments that are themselves resource keys
+    /// (the mapping screen's field labels) are localised on the way through, so
+    /// "Code is required and has no column" reads the same in both languages.
+    /// </summary>
+    private string Describe(ImportIssue issue) =>
+        L[issue.MessageKey, issue.Arguments.Select(Localise).ToArray()];
+
+    private object Localise(object argument) =>
+        argument is string text && text.StartsWith("Import_Field_", StringComparison.Ordinal) ? L[text].Value : argument;
+
+    /// <summary>
+    /// Reports progress on the caller's own thread.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="Progress{T}"/> <em>posts</em> to the captured synchronization
+    /// context, so the last "reading…" report lands after the dry run has already
+    /// written its result and overwrites it. The announcement a screen reader
+    /// then hears is the progress, permanently. WebAssembly is single-threaded
+    /// and every call here comes from the renderer's own loop, so reporting
+    /// inline is both correct and ordered.
+    /// </remarks>
+    private sealed class InlineProgress : IProgress<int>
+    {
+        private readonly Action<int> _report;
+
+        public InlineProgress(Action<int> report) => _report = report;
+
+        public void Report(int value) => _report(value);
+    }
+
+    private string Summarise<T>(ApplicationResult<T> result) =>
+        result.ValidationIssues is { Count: > 0 } issues
+            ? string.Join(" ", issues.Select(issue => L[issue.MessageKey, issue.Arguments.Select(Localise).ToArray()].Value))
+            : L[result.Status == ApplicationResultStatus.Forbidden ? "Error_Forbidden" : "Error_ActionFailed"].Value;
+}

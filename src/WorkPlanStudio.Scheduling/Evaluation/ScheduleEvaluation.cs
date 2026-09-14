@@ -28,11 +28,15 @@ public sealed record ScheduleEvaluation
     /// <summary>Mean throughput time (release → completion), in seconds.</summary>
     public double AverageFlowSeconds { get; init; }
 
-    /// <summary>Busy ÷ available per work center that ran at least one op, 0..1.</summary>
+    /// <summary>
+    /// Busy ÷ available per work center that ran at least one op. Normally in
+    /// 0..1; a value above 1 means the capacity invariant broke and is reported
+    /// rather than capped.
+    /// </summary>
     public IReadOnlyDictionary<int, double> UtilizationByWorkCenter { get; init; }
         = new Dictionary<int, double>();
 
-    /// <summary>Mean utilisation across the work centers that were used, 0..1.</summary>
+    /// <summary>Mean utilisation across the work centers that were used, normally 0..1.</summary>
     public double AverageUtilization { get; init; }
 
     /// <summary>The weighted objective the search minimises (lower is better).</summary>

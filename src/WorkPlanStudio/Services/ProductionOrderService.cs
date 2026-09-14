@@ -3,6 +3,7 @@ using WorkPlanStudio.Data;
 using WorkPlanStudio.Models;
 using WorkPlanStudio.Services.Auth;
 using WorkPlanStudio.Validation;
+using WorkPlanStudio.WorkingTime;
 
 namespace WorkPlanStudio.Services;
 
@@ -12,6 +13,8 @@ namespace WorkPlanStudio.Services;
 /// </summary>
 public sealed class ProductionOrderService
 {
+    private const string NumberPrefix = "PO-";
+
     private readonly BrowserDatabase _db;
     private readonly IPermissionGuard _guard;
 
@@ -27,7 +30,7 @@ public sealed class ProductionOrderService
         return await db.ProductionOrders
             .Include(o => o.WorkPlan)
             .AsNoTracking()
-            .OrderByDescending(o => o.DueUtc)
+            .OrderByDescending(o => o.DueLocal)
             .ToListAsync(cancellationToken);
     }
 
@@ -38,7 +41,7 @@ public sealed class ProductionOrderService
         return await db.ProductionOrders
             .AsNoTracking()
             .Where(o => o.Status == ProductionOrderStatus.Released && o.RoutingSnapshotJson != "")
-            .OrderBy(o => o.DueUtc)
+            .OrderBy(o => o.DueLocal)
             .ToListAsync(cancellationToken);
     }
 
@@ -55,14 +58,8 @@ public sealed class ProductionOrderService
     public async Task<string> SuggestOrderNumberAsync(CancellationToken cancellationToken = default)
     {
         await using var db = await _db.CreateContextAsync(cancellationToken);
-        var numbers = await db.ProductionOrders.Select(o => o.OrderNumber).ToListAsync(cancellationToken);
-
-        int highest = numbers
-            .Select(n => int.TryParse(n.Replace("PO-", "", StringComparison.Ordinal), out var value) ? value : 0)
-            .DefaultIfEmpty(1000)
-            .Max();
-
-        return $"PO-{highest + 1}";
+        var taken = await db.ProductionOrders.Select(o => o.OrderNumber).ToListAsync(cancellationToken);
+        return NumberSuggestion.Next(NumberPrefix, taken);
     }
 
     public async Task<ApplicationResult<ProductionOrder>> SaveAsync(
@@ -73,59 +70,78 @@ public sealed class ProductionOrderService
             return ApplicationResult<ProductionOrder>.Forbidden();
 
         ArgumentNullException.ThrowIfNull(order);
+        Normalize(order);
 
         var issues = ProductionOrderValidator.Validate(order);
         if (issues.Count > 0)
             return ApplicationResult<ProductionOrder>.Validation(issues);
 
-        await using var db = await _db.CreateContextAsync(cancellationToken);
+        return await DatabaseMutation.RunAsync<ProductionOrder>(
+            _db,
+            async (db, token) =>
+            {
+                var plan = await db.WorkPlans.AsNoTracking()
+                    .FirstOrDefaultAsync(p => p.Id == order.WorkPlanId, token);
+                if (plan is null)
+                    return ApplicationResult<Func<ProductionOrder>>.Validation(
+                        [new ValidationIssue(nameof(ProductionOrder.WorkPlanId), "Val_WorkPlanMissing")]);
 
-        if (!await db.WorkPlans.AnyAsync(p => p.Id == order.WorkPlanId, cancellationToken))
-            return ApplicationResult<ProductionOrder>.Validation(
-                [new ValidationIssue(nameof(ProductionOrder.WorkPlanId), "Val_WorkPlanMissing")]);
+                // The dropdown only offers released plans; that was the only thing
+                // enforcing it, which put a manufacturing sign-off in a .razor file.
+                if (plan.Status != WorkPlanStatus.Released)
+                    return ApplicationResult<Func<ProductionOrder>>.Validation(
+                        [new ValidationIssue(nameof(ProductionOrder.WorkPlanId), "Val_PlanNotReleased")]);
 
-        var trimmed = order.OrderNumber.Trim();
-        if (await db.ProductionOrders.AnyAsync(o => o.OrderNumber == trimmed && o.Id != order.Id, cancellationToken))
-            return ApplicationResult<ProductionOrder>.Conflict(
-                new ValidationIssue(nameof(ProductionOrder.OrderNumber), "Val_OrderNumberTaken"));
+                if (await db.ProductionOrders.AnyAsync(
+                        o => o.OrderNumber == order.OrderNumber && o.Id != order.Id, token))
+                    return ApplicationResult<Func<ProductionOrder>>.Conflict(
+                        new ValidationIssue(nameof(ProductionOrder.OrderNumber), "Val_OrderNumberTaken"));
 
-        ProductionOrder entity;
-        if (order.Id == 0)
-        {
-            entity = new ProductionOrder { CreatedUtc = DateTime.UtcNow };
-            db.ProductionOrders.Add(entity);
-        }
-        else
-        {
-            var existing = await db.ProductionOrders.FirstOrDefaultAsync(o => o.Id == order.Id, cancellationToken);
-            if (existing is null)
-                return ApplicationResult<ProductionOrder>.NotFound();
+                ProductionOrder entity;
+                if (order.Id == 0)
+                {
+                    entity = new ProductionOrder { CreatedUtc = DateTime.UtcNow };
+                    db.ProductionOrders.Add(entity);
+                }
+                else
+                {
+                    var existing = await db.ProductionOrders.FirstOrDefaultAsync(o => o.Id == order.Id, token);
+                    if (existing is null)
+                        return ApplicationResult<Func<ProductionOrder>>.NotFound();
 
-            // The snapshot is the whole point: once frozen, the terms of the order
-            // are a record of what the shop was told to build.
-            if (existing.Status != ProductionOrderStatus.Draft)
-                return ApplicationResult<ProductionOrder>.Conflict(
-                    new ValidationIssue(nameof(ProductionOrder.Status), "Val_OrderNotDraft"));
+                    // The snapshot is the whole point: once frozen, the terms of the
+                    // order are a record of what the shop was told to build.
+                    if (existing.Status != ProductionOrderStatus.Draft)
+                        return ApplicationResult<Func<ProductionOrder>>.Conflict(
+                            new ValidationIssue(nameof(ProductionOrder.Status), "Val_OrderNotDraft"));
 
-            entity = existing;
-        }
+                    entity = existing;
+                }
 
-        entity.OrderNumber = trimmed;
-        entity.WorkPlanId = order.WorkPlanId;
-        entity.Quantity = order.Quantity;
-        entity.ReleaseUtc = order.ReleaseUtc;
-        entity.DueUtc = order.DueUtc;
-        entity.Priority = order.Priority;
-        entity.ModifiedUtc = DateTime.UtcNow;
+                entity.OrderNumber = order.OrderNumber;
+                entity.WorkPlanId = order.WorkPlanId;
+                entity.Quantity = order.Quantity;
+                entity.ReleaseLocal = order.ReleaseLocal;
+                entity.DueLocal = order.DueLocal;
+                entity.Priority = order.Priority;
+                entity.ModifiedUtc = DateTime.UtcNow;
 
-        await db.SaveChangesAsync(cancellationToken);
-        return await PersistAsync(entity, cancellationToken);
+                return ApplicationResult<Func<ProductionOrder>>.Success(() => entity);
+            },
+            new ValidationIssue(nameof(ProductionOrder.OrderNumber), "Val_OrderNumberTaken"),
+            cancellationToken);
     }
 
     /// <summary>
-    /// Freezes the current routing onto the order and releases it. This is the
-    /// moment the order stops depending on master data.
+    /// Freezes the current routing onto the order and releases it.
     /// </summary>
+    /// <remarks>
+    /// This used to claim it was "the moment the order stops depending on master
+    /// data". It never was: the snapshot stores work-centre ids and the scheduler
+    /// resolves them against live master data on every run. What the release does
+    /// now is record that dependency in <see cref="OrderRoutingCenter"/> rows, so
+    /// the guards and the database can protect it.
+    /// </remarks>
     public async Task<ApplicationResult<ProductionOrder>> ReleaseAsync(
         int id,
         CancellationToken cancellationToken = default)
@@ -133,35 +149,49 @@ public sealed class ProductionOrderService
         if (!await _guard.CanAsync(Permissions.ManageOrders, cancellationToken))
             return ApplicationResult<ProductionOrder>.Forbidden();
 
-        await using var db = await _db.CreateContextAsync(cancellationToken);
+        return await DatabaseMutation.RunAsync<ProductionOrder>(
+            _db,
+            async (db, token) =>
+            {
+                var order = await db.ProductionOrders
+                    .Include(o => o.RoutingCenters)
+                    .FirstOrDefaultAsync(o => o.Id == id, token);
+                if (order is null)
+                    return ApplicationResult<Func<ProductionOrder>>.NotFound();
 
-        var order = await db.ProductionOrders.FirstOrDefaultAsync(o => o.Id == id, cancellationToken);
-        if (order is null)
-            return ApplicationResult<ProductionOrder>.NotFound();
+                if (order.Status != ProductionOrderStatus.Draft)
+                    return ApplicationResult<Func<ProductionOrder>>.Conflict(
+                        new ValidationIssue(nameof(ProductionOrder.Status), "Val_OrderNotDraft"));
 
-        if (order.Status != ProductionOrderStatus.Draft)
-            return ApplicationResult<ProductionOrder>.Conflict(
-                new ValidationIssue(nameof(ProductionOrder.Status), "Val_OrderNotDraft"));
+                var plan = await db.WorkPlans
+                    .Include(p => p.Operations).ThenInclude(o => o.WorkCenter)
+                    .FirstOrDefaultAsync(p => p.Id == order.WorkPlanId, token);
 
-        var plan = await db.WorkPlans
-            .Include(p => p.Operations).ThenInclude(o => o.WorkCenter)
-            .FirstOrDefaultAsync(p => p.Id == order.WorkPlanId, cancellationToken);
+                if (plan is null)
+                    return ApplicationResult<Func<ProductionOrder>>.Validation(
+                        [new ValidationIssue(nameof(ProductionOrder.WorkPlanId), "Val_WorkPlanMissing")]);
 
-        if (plan is null)
-            return ApplicationResult<ProductionOrder>.Validation(
-                [new ValidationIssue(nameof(ProductionOrder.WorkPlanId), "Val_WorkPlanMissing")]);
+                if (plan.Status != WorkPlanStatus.Released)
+                    return ApplicationResult<Func<ProductionOrder>>.Validation(
+                        [new ValidationIssue(nameof(ProductionOrder.WorkPlanId), "Val_PlanNotReleased")]);
 
-        if (plan.Operations.Count == 0)
-            return ApplicationResult<ProductionOrder>.Validation(
-                [new ValidationIssue(nameof(ProductionOrder.WorkPlanId), "Val_OrderPlanHasNoOperations")]);
+                if (plan.Operations.Count == 0)
+                    return ApplicationResult<Func<ProductionOrder>>.Validation(
+                        [new ValidationIssue(nameof(ProductionOrder.WorkPlanId), "Val_OrderPlanHasNoOperations")]);
 
-        order.RoutingSnapshotJson = RoutingSnapshot.Capture(plan).Serialize();
-        order.RoutingRevision = plan.Revision ?? "";
-        order.Status = ProductionOrderStatus.Released;
-        order.ModifiedUtc = DateTime.UtcNow;
+                var snapshot = RoutingSnapshot.Capture(plan);
+                order.RoutingSnapshotJson = snapshot.Serialize();
+                order.RoutingRevision = plan.Revision ?? "";
+                order.Status = ProductionOrderStatus.Released;
+                order.ModifiedUtc = DateTime.UtcNow;
 
-        await db.SaveChangesAsync(cancellationToken);
-        return await PersistAsync(order, cancellationToken);
+                order.RoutingCenters.Clear();
+                foreach (var workCenterId in snapshot.WorkCenterIds)
+                    order.RoutingCenters.Add(new OrderRoutingCenter { WorkCenterId = workCenterId });
+
+                return ApplicationResult<Func<ProductionOrder>>.Success(() => order);
+            },
+            cancellationToken: cancellationToken);
     }
 
     /// <summary>Withdraws an order. The snapshot is kept as the record of what was released.</summary>
@@ -172,17 +202,27 @@ public sealed class ProductionOrderService
         if (!await _guard.CanAsync(Permissions.ManageOrders, cancellationToken))
             return ApplicationResult<ProductionOrder>.Forbidden();
 
-        await using var db = await _db.CreateContextAsync(cancellationToken);
+        return await DatabaseMutation.RunAsync<ProductionOrder>(
+            _db,
+            async (db, token) =>
+            {
+                var order = await db.ProductionOrders
+                    .Include(o => o.RoutingCenters)
+                    .FirstOrDefaultAsync(o => o.Id == id, token);
+                if (order is null)
+                    return ApplicationResult<Func<ProductionOrder>>.NotFound();
 
-        var order = await db.ProductionOrders.FirstOrDefaultAsync(o => o.Id == id, cancellationToken);
-        if (order is null)
-            return ApplicationResult<ProductionOrder>.NotFound();
+                order.Status = ProductionOrderStatus.Cancelled;
+                order.ModifiedUtc = DateTime.UtcNow;
 
-        order.Status = ProductionOrderStatus.Cancelled;
-        order.ModifiedUtc = DateTime.UtcNow;
+                // A withdrawn order is not scheduled any more, so it must stop
+                // holding its work centres hostage. The snapshot stays; only the
+                // index of the live dependency goes.
+                order.RoutingCenters.Clear();
 
-        await db.SaveChangesAsync(cancellationToken);
-        return await PersistAsync(order, cancellationToken);
+                return ApplicationResult<Func<ProductionOrder>>.Success(() => order);
+            },
+            cancellationToken: cancellationToken);
     }
 
     /// <summary>Deletes an order outright. Only a draft may go, since it never reached the shop.</summary>
@@ -191,32 +231,29 @@ public sealed class ProductionOrderService
         if (!await _guard.CanAsync(Permissions.ManageOrders, cancellationToken))
             return ApplicationResult<bool>.Forbidden();
 
-        await using var db = await _db.CreateContextAsync(cancellationToken);
+        return await DatabaseMutation.RunAsync<bool>(
+            _db,
+            async (db, token) =>
+            {
+                var order = await db.ProductionOrders.FirstOrDefaultAsync(o => o.Id == id, token);
+                if (order is null)
+                    return ApplicationResult<Func<bool>>.NotFound();
 
-        var order = await db.ProductionOrders.FirstOrDefaultAsync(o => o.Id == id, cancellationToken);
-        if (order is null)
-            return ApplicationResult<bool>.NotFound();
+                if (order.Status != ProductionOrderStatus.Draft)
+                    return ApplicationResult<Func<bool>>.Conflict(
+                        new ValidationIssue(nameof(ProductionOrder.Status), "Val_OrderNotDraft"));
 
-        if (order.Status != ProductionOrderStatus.Draft)
-            return ApplicationResult<bool>.Conflict(
-                new ValidationIssue(nameof(ProductionOrder.Status), "Val_OrderNotDraft"));
-
-        db.ProductionOrders.Remove(order);
-        await db.SaveChangesAsync(cancellationToken);
-
-        var persisted = await _db.PersistAsync(cancellationToken);
-        return persisted.IsSuccess
-            ? ApplicationResult<bool>.Success(true)
-            : ApplicationResult<bool>.PersistenceFailed();
+                db.ProductionOrders.Remove(order);
+                return ApplicationResult<Func<bool>>.Success(() => true);
+            },
+            cancellationToken: cancellationToken);
     }
 
-    private async Task<ApplicationResult<ProductionOrder>> PersistAsync(
-        ProductionOrder order,
-        CancellationToken cancellationToken)
+    private static void Normalize(ProductionOrder order)
     {
-        var persisted = await _db.PersistAsync(cancellationToken);
-        return persisted.IsSuccess
-            ? ApplicationResult<ProductionOrder>.Success(order)
-            : ApplicationResult<ProductionOrder>.PersistenceFailed();
+        order.OrderNumber = Text.Key(order.OrderNumber);
+        order.RoutingRevision = order.RoutingRevision?.Trim() ?? "";
+        order.ReleaseLocal = PlantTime.Wall(order.ReleaseLocal);
+        order.DueLocal = PlantTime.Wall(order.DueLocal);
     }
 }

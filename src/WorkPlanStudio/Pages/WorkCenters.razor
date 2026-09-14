@@ -1,6 +1,9 @@
 @page "/work-centers"
+@using WorkPlanStudio.Validation
 @inject IStringLocalizer<SharedResource> L
 @inject WorkCenterService Centers
+@inject CostCenterService CostCenters
+@inject NavigationManager Nav
 @inject ILogger<WorkCenters> Logger
 
 <PageTitle>@L["WorkCenters_Title"] · WorkPlan Studio</PageTitle>
@@ -16,6 +19,11 @@
 
 <ReadOnlyNotice Policy="@Permissions.ManageMasterData" />
 
+@if (_pageError is not null)
+{
+    <div class="form-banner error" role="alert">@_pageError</div>
+}
+
 @if (_loading)
 {
     <div class="loading-row" role="status"><span class="spinner" aria-hidden="true"></span><span class="sr-only">@L["Common_Loading"]</span></div>
@@ -29,10 +37,31 @@ else if (_centers.Count == 0)
 }
 else
 {
-    @if (_saveError is not null)
-    {
-        <div class="form-banner error" role="alert">@_saveError</div>
-    }
+    @*
+        Filtering by cost centre is the question a cost centre exists to answer,
+        and it was unanswerable while the field was free text. The search box
+        covers code and name; the two together are enough for a list of machines,
+        which does not grow the way the order list does.
+    *@
+    <div class="toolbar">
+        <div class="search">
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+            <input type="search" aria-label="@L["Md_WorkCenters_SearchPlaceholder"]"
+                   placeholder="@L["Md_WorkCenters_SearchPlaceholder"]"
+                   value="@_search" @oninput="OnSearch" />
+        </div>
+        <label class="field inline">
+            <span>@L["Field_CostCenter"]</span>
+            <select class="input" aria-label="@L["Md_WorkCenters_FilterCostCenter"]" @bind="_costCenterFilter">
+                <option value="0">@L["Common_All"]</option>
+                @foreach (var costCenter in _costCenters)
+                {
+                    <option value="@costCenter.Id">@costCenter.Display</option>
+                }
+            </select>
+        </label>
+    </div>
+
     <div class="card no-pad">
         <table class="data-table hover">
             <caption class="sr-only">@L["WorkCenters_Title"]</caption>
@@ -50,13 +79,13 @@ else
                 </tr>
             </thead>
             <tbody>
-                @foreach (var wc in _centers)
+                @foreach (var wc in Filtered)
                 {
                     var usage = _usage.GetValueOrDefault(wc.Id);
-                    <tr>
+                    <tr @key="wc.Id">
                         <td><span class="mono">@wc.Code</span></td>
                         <td>@wc.Name</td>
-                        <td><span class="muted">@wc.CostCenter</span></td>
+                        <td><span class="muted">@(wc.CostCenter?.Display ?? L["Md_CostCenter_None"].Value)</span></td>
                         <td class="num">@Format.Number(wc.HourlyRate)</td>
                         <td class="num">@wc.ParallelCapacity</td>
                         <td><span class="muted">@ShiftLabel(wc.ShiftPatternKey)</span></td>
@@ -94,61 +123,103 @@ else
 
 <Modal @bind-Visible="_showEditor" Title="@(_editing.Id == 0 ? L["WorkCenters_NewTitle"] : L["WorkCenters_EditTitle"])">
     <ChildContent>
+    <MdErrorSummary State="_errors" />
     <div class="form-grid">
         <label class="field">
             <span>@L["Field_Code"]</span>
-            <input id="wc-code" aria-invalid="@(_formErrors.ContainsKey("Code") ? "true" : "false")" aria-describedby="@(_formErrors.ContainsKey("Code") ? "wc-code-error" : null)" class="input @(_formErrors.ContainsKey("Code") ? "error" : null)" @bind="_editing.Code" @bind:event="oninput" />
-            @if (_formErrors.TryGetValue("Code", out var ce))
+            <input id="wc-code" class="input @_errors.Style("Code")" maxlength="20"
+                   autocomplete="off" spellcheck="false" autocapitalize="characters"
+                   aria-invalid="@_errors.Invalid("Code")" aria-describedby="@_errors.DescribedBy("Code")"
+                   @bind="_editing.Code" @bind:event="oninput" />
+            @if (_errors["Code"] is { } codeError)
             {
-                <span id="wc-code-error" class="field-error">@ce</span>
+                <span id="@_errors.ErrorId("Code")" class="field-error">@codeError</span>
             }
         </label>
-        <label class="field">
-            <span>@L["Field_CostCenter"]</span>
-            <input class="input" @bind="_editing.CostCenter" @bind:event="oninput" />
-        </label>
+        <div class="field">
+            <label for="wc-cost-center">@L["Field_CostCenter"]</label>
+            <EntityPicker TItem="CostCenter" Id="wc-cost-center"
+                          Items="_selectableCostCenters"
+                          Value="_editing.CostCenterId"
+                          ValueChanged="value => _editing.CostCenterId = value"
+                          IdOf="c => c.Id"
+                          LabelOf="c => c.Display"
+                          IsActive="c => c.IsActive"
+                          EmptyLabel="@L["Md_CostCenter_None"]"
+                          EmptyHint="@L["Md_CostCenter_NoneDefined"]"
+                          CreateLabel="@L["Md_CostCenter_CreateNew"]"
+                          OnCreateRequested="CreateCostCenterAsync"
+                          Invalid="_errors.Has(nameof(WorkCenter.CostCenterId))"
+                          DescribedBy="@_errors.DescribedBy(nameof(WorkCenter.CostCenterId))" />
+            @if (_errors[nameof(WorkCenter.CostCenterId)] is { } costCenterError)
+            {
+                <span id="@_errors.ErrorId(nameof(WorkCenter.CostCenterId))" class="field-error">@costCenterError</span>
+            }
+        </div>
         <label class="field wide">
             <span>@L["Field_Name"]</span>
-            <input id="wc-name" aria-invalid="@(_formErrors.ContainsKey("Name") ? "true" : "false")" aria-describedby="@(_formErrors.ContainsKey("Name") ? "wc-name-error" : null)" class="input @(_formErrors.ContainsKey("Name") ? "error" : null)" @bind="_editing.Name" @bind:event="oninput" />
-            @if (_formErrors.TryGetValue("Name", out var ne))
+            <input id="wc-name" class="input @_errors.Style("Name")" maxlength="100"
+                   aria-invalid="@_errors.Invalid("Name")" aria-describedby="@_errors.DescribedBy("Name")"
+                   @bind="_editing.Name" @bind:event="oninput" />
+            @if (_errors["Name"] is { } nameError)
             {
-                <span id="wc-name-error" class="field-error">@ne</span>
+                <span id="@_errors.ErrorId("Name")" class="field-error">@nameError</span>
             }
         </label>
         <label class="field">
             <span>@L["Field_HourlyRate"]</span>
-            <input id="wc-rate" aria-invalid="@(_formErrors.ContainsKey("HourlyRate") ? "true" : "false")" aria-describedby="@(_formErrors.ContainsKey("HourlyRate") ? "wc-rate-error" : null)" class="input @(_formErrors.ContainsKey("HourlyRate") ? "error" : null)" type="number" min="0" max="1000000" step="1" @bind="_editing.HourlyRate" @bind:event="oninput" />
-            @if (_formErrors.TryGetValue("HourlyRate", out var he))
+            @*
+                Bound to a nullable. With a non-nullable target Blazor reverts an
+                unparsable value - and "empty" is unparsable - so clearing the box
+                left the old number in the model and saved it while the screen
+                showed nothing. A nullable parses the empty string to null, which
+                the save then reports as a missing value.
+            *@
+            <input id="wc-rate" class="input @_errors.Style("HourlyRate")"
+                   type="number" min="0" max="1000000" step="0.01" inputmode="decimal"
+                   aria-invalid="@_errors.Invalid("HourlyRate")" aria-describedby="@_errors.DescribedBy("HourlyRate")"
+                   @bind="_rate" @bind:event="oninput" />
+            @if (_errors["HourlyRate"] is { } rateError)
             {
-                <span id="wc-rate-error" class="field-error">@he</span>
+                <span id="@_errors.ErrorId("HourlyRate")" class="field-error">@rateError</span>
             }
         </label>
         <label class="field">
             <span>@L["Field_Capacity"]</span>
-            <input id="wc-capacity" aria-invalid="@(_formErrors.ContainsKey("ParallelCapacity") ? "true" : "false")" aria-describedby="@(_formErrors.ContainsKey("ParallelCapacity") ? "wc-capacity-error" : null)" class="input @(_formErrors.ContainsKey("ParallelCapacity") ? "error" : null)" type="number" min="1" max="64" @bind="_editing.ParallelCapacity" @bind:event="oninput" />
-            @if (_formErrors.TryGetValue("ParallelCapacity", out var capacityError))
+            <input id="wc-capacity" class="input @_errors.Style("ParallelCapacity")"
+                   type="number" min="1" max="64" inputmode="numeric"
+                   aria-invalid="@_errors.Invalid("ParallelCapacity")" aria-describedby="@_errors.DescribedBy("ParallelCapacity")"
+                   @bind="_capacity" @bind:event="oninput" />
+            @if (_errors["ParallelCapacity"] is { } capacityError)
             {
-                <span id="wc-capacity-error" class="field-error">@capacityError</span>
+                <span id="@_errors.ErrorId("ParallelCapacity")" class="field-error">@capacityError</span>
             }
         </label>
         <label class="field wide">
             <span>@L["Field_ShiftPattern"]</span>
-            <select id="wc-shift" class="input" @bind="_editing.ShiftPatternKey">
+            <select id="wc-shift" class="input @_errors.Style("ShiftPatternKey")"
+                    aria-invalid="@_errors.Invalid("ShiftPatternKey")" aria-describedby="@_errors.DescribedBy("ShiftPatternKey")"
+                    @bind="_editing.ShiftPatternKey">
                 @foreach (var pattern in ShiftPatterns.Presets)
                 {
                     <option value="@pattern.Key">@L[$"Shift_{pattern.Key}"]</option>
                 }
             </select>
-            @if (_formErrors.TryGetValue("ShiftPatternKey", out var shiftError))
+            @if (_errors["ShiftPatternKey"] is { } shiftError)
             {
-                <span class="field-error">@shiftError</span>
+                <span id="@_errors.ErrorId("ShiftPatternKey")" class="field-error">@shiftError</span>
             }
-            <span class="field-hint">@L["WorkingTime_Subtitle"]</span>
         </label>
         <label class="field check">
-            <input type="checkbox" @bind="_editing.IsActive" />
+            <input id="wc-active" type="checkbox"
+                   aria-invalid="@_errors.Invalid("IsActive")" aria-describedby="@_errors.DescribedBy("IsActive")"
+                   @bind="_editing.IsActive" />
             <span>@L["Common_Active"]</span>
         </label>
+        @if (_errors["IsActive"] is { } activeError)
+        {
+            <span id="@_errors.ErrorId("IsActive")" class="field-error">@activeError</span>
+        }
     </div>
     </ChildContent>
     <Footer>
@@ -170,86 +241,147 @@ else
 @code {
     private bool _loading = true;
     private List<WorkCenter> _centers = new();
+    private List<CostCenter> _costCenters = [];
+    private List<CostCenter> _selectableCostCenters = [];
     private Dictionary<int, int> _usage = new();
+    private string _search = "";
+    private int _costCenterFilter;
+    private string? _pageError;
 
     private bool _showEditor;
     private WorkCenter _editing = new() { IsActive = true };
-    private readonly Dictionary<string, string> _formErrors = new();
+    private decimal? _rate;
+    private int? _capacity;
+    private readonly FormErrorState _errors = new();
     private bool _saving;
-    private string? _saveError;
 
     private bool _showDelete;
     private WorkCenter? _pendingDelete;
+
+    protected override void OnInitialized()
+    {
+        _errors.Declare("Code", "wc-code");
+        _errors.Declare("Name", "wc-name");
+        _errors.Declare("HourlyRate", "wc-rate");
+        _errors.Declare("ParallelCapacity", "wc-capacity");
+        _errors.Declare("ShiftPatternKey", "wc-shift");
+        _errors.Declare("IsActive", "wc-active");
+        _errors.Declare(nameof(WorkCenter.CostCenterId), "wc-cost-center");
+    }
 
     protected override async Task OnInitializedAsync() => await ReloadAsync();
 
     private async Task ReloadAsync()
     {
         _loading = true;
-        _centers = await Centers.GetAllAsync();
-        _usage = await Centers.GetUsageCountsAsync();
-        _loading = false;
+        try
+        {
+            _centers = await Centers.GetAllAsync();
+            _usage = await Centers.GetUsageCountsAsync();
+            _costCenters = await CostCenters.GetAllAsync();
+        }
+        finally
+        {
+            _loading = false;
+        }
     }
+
+    private IEnumerable<WorkCenter> Filtered => _centers
+        .Where(wc => _costCenterFilter == 0 || wc.CostCenterId == _costCenterFilter)
+        .Where(wc => string.IsNullOrWhiteSpace(_search)
+            || wc.Code.Contains(_search, StringComparison.OrdinalIgnoreCase)
+            || wc.Name.Contains(_search, StringComparison.OrdinalIgnoreCase));
+
+    private void OnSearch(ChangeEventArgs e) => _search = e.Value?.ToString() ?? "";
 
     // The preset label without its clock times, for the table.
     private string ShiftLabel(string key) =>
         L[$"Shift_{key}"].Value.Split(" · ")[0];
 
-    private void New()
+    private async Task New()
     {
         _editing = new WorkCenter { IsActive = true, ParallelCapacity = 1 };
-        _formErrors.Clear();
+        _rate = 0m;
+        _capacity = 1;
+        _errors.Clear();
+        _selectableCostCenters = await CostCenters.GetSelectableAsync();
         _showEditor = true;
     }
 
-    private void Edit(WorkCenter wc)
+    private async Task Edit(WorkCenter wc)
     {
         _editing = new WorkCenter
         {
             Id = wc.Id,
             Code = wc.Code,
             Name = wc.Name,
-            CostCenter = wc.CostCenter,
+            CostCenterId = wc.CostCenterId,
             HourlyRate = wc.HourlyRate,
             ParallelCapacity = wc.ParallelCapacity,
             ShiftPatternKey = wc.ShiftPatternKey,
             IsActive = wc.IsActive
         };
-        _formErrors.Clear();
+        _rate = wc.HourlyRate;
+        _capacity = wc.ParallelCapacity;
+        _errors.Clear();
+        _selectableCostCenters = await CostCenters.GetSelectableAsync(wc.CostCenterId);
         _showEditor = true;
     }
 
+    /// <summary>
+    /// Sends the planner to the cost-centre editor without losing this form.
+    /// The work centre is a modal over a list, so nothing is navigated away from
+    /// that is not already saved; the new tab keeps this page where it is.
+    /// </summary>
+    private void CreateCostCenterAsync() =>
+        Nav.NavigateTo("cost-centers?new=" + Uri.EscapeDataString(_editing.Code));
+
     private async Task SaveAsync()
     {
-        _formErrors.Clear();
-        _saveError = null;
+        _pageError = null;
         _saving = true;
 
         try
         {
+            // An empty numeric box is now genuinely empty, so it fails validation
+            // rather than quietly re-saving the value it used to keep.
+            var missing = new List<ValidationIssue>();
+            if (_rate is not { } rate)
+            {
+                rate = 0m;
+                missing.Add(new ValidationIssue(nameof(WorkCenter.HourlyRate), "Val_Required"));
+            }
+
+            if (_capacity is not { } capacity)
+            {
+                capacity = 0;
+                missing.Add(new ValidationIssue(nameof(WorkCenter.ParallelCapacity), "Val_Required"));
+            }
+
+            if (missing.Count > 0)
+            {
+                _errors.Apply(ApplicationResult<int>.Validation(missing), L);
+                return;
+            }
+
+            _editing.HourlyRate = rate;
+            _editing.ParallelCapacity = capacity;
+
             var result = await Centers.SaveAsync(_editing);
             if (result.IsSuccess)
             {
+                _errors.Clear();
                 _showEditor = false;
                 await ReloadAsync();
                 return;
             }
 
-            if (result.ValidationIssues is { Count: > 0 })
-                foreach (var issue in result.ValidationIssues)
-                    _formErrors.TryAdd(issue.Field, L[issue.MessageKey, issue.Arguments]);
-
-            if (result.Status == ApplicationResultStatus.NotFound)
-                _saveError = L["Error_NotFound"];
-            else if (result.Status == ApplicationResultStatus.PersistenceFailed)
-                _saveError = L["Error_SaveFailed"];
-            else if (result.Status == ApplicationResultStatus.Forbidden)
-                _saveError = L["Error_Forbidden"];
+            _errors.Apply(result, L);
         }
         catch (Exception exception)
         {
             Logger.LogError(exception, "Saving work center {WorkCenterId} failed", _editing.Id);
-            _saveError = L["Error_SaveFailed"];
+            _errors.Fail(L["Error_SaveFailed"]);
         }
         finally
         {
@@ -265,8 +397,15 @@ else
 
     private async Task ConfirmDeleteAsync()
     {
+        _pageError = null;
         if (_pendingDelete is not null)
-            await Centers.DeleteAsync(_pendingDelete.Id);
+        {
+            var result = await Centers.DeleteAsync(_pendingDelete.Id);
+            if (!result.IsSuccess)
+                _pageError = result.ValidationIssues is [var issue, ..]
+                    ? L[issue.MessageKey, issue.Arguments]
+                    : L[result.Status == ApplicationResultStatus.Forbidden ? "Error_Forbidden" : "Error_ActionFailed"];
+        }
 
         _showDelete = false;
         _pendingDelete = null;

@@ -1,0 +1,290 @@
+@page "/cost-centers"
+@inject IStringLocalizer<SharedResource> L
+@inject CostCenterService Catalog
+@inject ILogger<CostCenters> Logger
+
+<PageTitle>@L["Md_CostCenters_Title"] · WorkPlan Studio</PageTitle>
+
+<div class="page-head">
+    <div>
+        <h1>@L["Md_CostCenters_Title"]</h1>
+        <p class="page-sub">@L["Md_CostCenters_Subtitle"]</p>
+    </div>
+    <AuthorizeView Policy="@Permissions.ManageMasterData">
+        <button class="btn btn-primary" @onclick="() => New()">
+            <span class="btn-plus">+</span> @L["Md_CostCenters_New"]
+        </button>
+    </AuthorizeView>
+</div>
+
+<ReadOnlyNotice Policy="@Permissions.ManageMasterData" />
+
+@if (_pageError is not null)
+{
+    <div class="form-banner error" role="alert">@_pageError</div>
+}
+
+@if (_loading)
+{
+    <div class="loading-row" role="status"><span class="spinner" aria-hidden="true"></span><span class="sr-only">@L["Common_Loading"]</span></div>
+}
+else if (_costCenters.Count == 0)
+{
+    <div class="empty-state">
+        <svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2" /><path d="M3 10h18M7 15h4" /></svg>
+        <p>@L["Md_CostCenters_Empty"]</p>
+    </div>
+}
+else
+{
+    <div class="toolbar">
+        <div class="search">
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+            <input type="search" aria-label="@L["Md_CostCenters_SearchPlaceholder"]"
+                   placeholder="@L["Md_CostCenters_SearchPlaceholder"]"
+                   value="@_search" @oninput="OnSearch" />
+        </div>
+    </div>
+
+    <div class="card no-pad">
+        <table class="data-table hover">
+            <caption class="sr-only">@L["Md_CostCenters_Title"]</caption>
+            <thead>
+                <tr>
+                    <th scope="col">@L["Field_Code"]</th>
+                    <th scope="col">@L["Field_Name"]</th>
+                    <th scope="col">@L["Md_Field_Description"]</th>
+                    <th scope="col">@L["Field_Status"]</th>
+                    <th scope="col" class="num">@L["Md_Field_WorkCenters"]</th>
+                    <th scope="col" class="actions-col">@L["Common_Actions"]</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var costCenter in Filtered)
+                {
+                    var usage = _usage.GetValueOrDefault(costCenter.Id);
+                    <tr @key="costCenter.Id">
+                        <td><span class="mono">@costCenter.Code</span></td>
+                        <td>@costCenter.Name</td>
+                        <td><span class="muted">@costCenter.Description</span></td>
+                        <td>
+                            <span class="pill @(costCenter.IsActive ? "ok" : "off")">
+                                @(costCenter.IsActive ? L["Common_Active"] : L["Common_Inactive"])
+                            </span>
+                        </td>
+                        <td class="num muted">@usage</td>
+                        <td class="actions-col">
+                            <AuthorizeView Policy="@Permissions.ManageMasterData">
+                                <button class="icon-btn" aria-label="@L["Common_Edit"]" title="@L["Common_Edit"]" @onclick="() => Edit(costCenter)">
+                                    <svg viewBox="0 0 24 24"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
+                                </button>
+                                @if (usage > 0)
+                                {
+                                    <button class="icon-btn" disabled aria-label="@L["Md_CostCenters_InUse"]" title="@L["Md_CostCenters_InUse"]">
+                                        <svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" /></svg>
+                                    </button>
+                                }
+                                else
+                                {
+                                    <button class="icon-btn danger" aria-label="@L["Common_Delete"]" title="@L["Common_Delete"]" @onclick="() => AskDelete(costCenter)">
+                                        <svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" /></svg>
+                                    </button>
+                                }
+                            </AuthorizeView>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+<Modal @bind-Visible="_showEditor" Title="@(_editing.Id == 0 ? L["Md_CostCenters_NewTitle"] : L["Md_CostCenters_EditTitle"])">
+    <ChildContent>
+        <MdErrorSummary State="_errors" />
+        <div class="form-grid">
+            <label class="field">
+                <span>@L["Field_Code"]</span>
+                <input id="cc-code" class="input @_errors.Style("Code")" maxlength="20"
+                       autocomplete="off" spellcheck="false" autocapitalize="characters"
+                       aria-invalid="@_errors.Invalid("Code")" aria-describedby="@_errors.DescribedBy("Code")"
+                       @bind="_editing.Code" @bind:event="oninput" />
+                @if (_errors["Code"] is { } codeError)
+                {
+                    <span id="@_errors.ErrorId("Code")" class="field-error">@codeError</span>
+                }
+            </label>
+            <label class="field wide">
+                <span>@L["Field_Name"]</span>
+                <input id="cc-name" class="input @_errors.Style("Name")" maxlength="100"
+                       aria-invalid="@_errors.Invalid("Name")" aria-describedby="@_errors.DescribedBy("Name")"
+                       @bind="_editing.Name" @bind:event="oninput" />
+                @if (_errors["Name"] is { } nameError)
+                {
+                    <span id="@_errors.ErrorId("Name")" class="field-error">@nameError</span>
+                }
+            </label>
+            <label class="field wide">
+                <span>@L["Md_Field_Description"]</span>
+                <input id="cc-description" class="input @_errors.Style("Description")" maxlength="250"
+                       aria-invalid="@_errors.Invalid("Description")" aria-describedby="@_errors.DescribedBy("Description")"
+                       @bind="_editing.Description" @bind:event="oninput" />
+                @if (_errors["Description"] is { } descriptionError)
+                {
+                    <span id="@_errors.ErrorId("Description")" class="field-error">@descriptionError</span>
+                }
+            </label>
+            <label class="field check">
+                <input id="cc-active" type="checkbox"
+                       aria-invalid="@_errors.Invalid("IsActive")" aria-describedby="@_errors.DescribedBy("IsActive")"
+                       @bind="_editing.IsActive" />
+                <span>@L["Common_Active"]</span>
+            </label>
+            @if (_errors["IsActive"] is { } activeError)
+            {
+                <span id="@_errors.ErrorId("IsActive")" class="field-error">@activeError</span>
+            }
+        </div>
+    </ChildContent>
+    <Footer>
+        <button class="btn btn-ghost" @onclick="() => _showEditor = false">@L["Common_Cancel"]</button>
+        <button class="btn btn-primary" @onclick="SaveAsync" disabled="@_saving">@L["Common_Save"]</button>
+    </Footer>
+</Modal>
+
+<Modal @bind-Visible="_showDelete" Title="@L["Md_Confirm_DeleteCostCenterTitle"]">
+    <ChildContent>
+        <p>@(string.Format(L["Md_Confirm_DeleteCostCenterBody"], _pendingDelete?.Code))</p>
+    </ChildContent>
+    <Footer>
+        <button class="btn btn-ghost" @onclick="() => _showDelete = false">@L["Common_Cancel"]</button>
+        <button class="btn btn-danger" @onclick="ConfirmDeleteAsync">@L["Common_Delete"]</button>
+    </Footer>
+</Modal>
+
+@code {
+    /// <summary>Opens the editor straight away, for the picker's "create new" affordance.</summary>
+    [Parameter, SupplyParameterFromQuery(Name = "new")] public string? CreateNew { get; set; }
+
+    private bool _loading = true;
+    private List<CostCenter> _costCenters = [];
+    private Dictionary<int, int> _usage = [];
+    private string _search = "";
+    private string? _pageError;
+
+    private bool _showEditor;
+    private CostCenter _editing = new();
+    private readonly FormErrorState _errors = new();
+    private bool _saving;
+
+    private bool _showDelete;
+    private CostCenter? _pendingDelete;
+
+    protected override void OnInitialized()
+    {
+        _errors.Declare("Code", "cc-code");
+        _errors.Declare("Name", "cc-name");
+        _errors.Declare("Description", "cc-description");
+        _errors.Declare("IsActive", "cc-active");
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ReloadAsync();
+        if (!string.IsNullOrEmpty(CreateNew))
+            New(CreateNew);
+    }
+
+    private IEnumerable<CostCenter> Filtered => _costCenters
+        .Where(c => string.IsNullOrWhiteSpace(_search)
+            || c.Code.Contains(_search, StringComparison.OrdinalIgnoreCase)
+            || c.Name.Contains(_search, StringComparison.OrdinalIgnoreCase));
+
+    private void OnSearch(ChangeEventArgs e) => _search = e.Value?.ToString() ?? "";
+
+    private async Task ReloadAsync()
+    {
+        _loading = true;
+        try
+        {
+            _costCenters = await Catalog.GetAllAsync();
+            _usage = await Catalog.GetUsageCountsAsync();
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void New(string? code = null)
+    {
+        _editing = new CostCenter { IsActive = true, Code = code ?? "" };
+        _errors.Clear();
+        _showEditor = true;
+    }
+
+    private void Edit(CostCenter costCenter)
+    {
+        _editing = new CostCenter
+        {
+            Id = costCenter.Id,
+            Code = costCenter.Code,
+            Name = costCenter.Name,
+            Description = costCenter.Description,
+            IsActive = costCenter.IsActive
+        };
+        _errors.Clear();
+        _showEditor = true;
+    }
+
+    private async Task SaveAsync()
+    {
+        _pageError = null;
+        _saving = true;
+        try
+        {
+            var result = await Catalog.SaveAsync(_editing);
+            if (result.IsSuccess)
+            {
+                _errors.Clear();
+                _showEditor = false;
+                await ReloadAsync();
+                return;
+            }
+
+            _errors.Apply(result, L);
+        }
+        catch (Exception exception)
+        {
+            Logger.LogError(exception, "Saving cost center {CostCenterId} failed", _editing.Id);
+            _errors.Fail(L["Error_SaveFailed"]);
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private void AskDelete(CostCenter costCenter)
+    {
+        _pendingDelete = costCenter;
+        _showDelete = true;
+    }
+
+    private async Task ConfirmDeleteAsync()
+    {
+        _pageError = null;
+        if (_pendingDelete is not null)
+        {
+            var result = await Catalog.DeleteAsync(_pendingDelete.Id);
+            if (!result.IsSuccess)
+                _pageError = result.ValidationIssues is [var issue, ..]
+                    ? L[issue.MessageKey, issue.Arguments]
+                    : L[result.Status == ApplicationResultStatus.Forbidden ? "Error_Forbidden" : "Error_ActionFailed"];
+        }
+
+        _showDelete = false;
+        _pendingDelete = null;
+        await ReloadAsync();
+    }
+}

@@ -7,7 +7,7 @@
 
 A schedule is only useful if a planner understands *why* it turned out the way it
 did — which resource is the constraint, why a job is late, what to try next. An
-An AI narrator is one possible way to surface that. A direct LLM-only feature would
+AI narrator is one possible way to surface that. A direct LLM-only feature would
 be a poor fit for this application:
 it could hallucinate numbers, it would not work in the public GitHub Pages demo
 (no server, no key), and a browser app cannot hold a secret. The app is also a
@@ -25,8 +25,11 @@ Separate the **analysis** from its **narration**.
 2. The app narrates that explanation behind one seam, `IScheduleNarrator`:
    - `RuleBasedNarrator` — the **default**. Deterministic, offline, localized
      (EN/DE), needs no key. It is also the demo/test provider and the fallback.
-   - `OpenAiScheduleNarrator` — **optional**, bring-your-own-key, for any
+   - `AiScheduleNarrator` — **optional**, bring-your-own-key, for any
      OpenAI-compatible endpoint. It only ever rephrases the computed facts.
+     *(Named `OpenAiScheduleNarrator` when this record was written; renamed when
+     [ADR 0014](0014-schedule-chat-on-device-first-with-pluggable-models.md) put
+     Anthropic and Gemini behind the same seam.)*
 3. `ScheduleAssistant` owns provider selection and **falls back** to the
    rule-based text on any AI error. BYOK settings live only in the browser's
    `localStorage`; nothing secret is committed.

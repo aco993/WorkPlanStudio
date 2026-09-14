@@ -15,7 +15,7 @@ namespace WorkPlanStudio.Web.Tests;
 /// the live preview, the holiday table and the absence list all render from
 /// the stored settings and react to a changed state without a save.
 /// </summary>
-public sealed class WorkingTimePageTests : BunitContext
+public sealed class WorkingTimePageTests : AppBunitContext
 {
     private BrowserDatabase Arrange(TempDatabaseFiles files)
     {

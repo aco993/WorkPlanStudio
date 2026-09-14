@@ -92,28 +92,41 @@ public sealed record MachineCapacity(int WorkCenterId, string Name, int Parallel
     /// or — with bridging — the longest run of windows joined by bridgeable gaps.
     /// <c>long.MaxValue</c> when unconstrained.
     /// </summary>
+    /// <remarks>
+    /// A run that closes the period is unbounded, not long: if every gap in the
+    /// calendar (the wrap from the last window back to the first included) is
+    /// bridgeable, the machine never stops for longer than an operation may pause,
+    /// so an operation of any length fits. Measuring such a calendar as a finite
+    /// number is how a machine open 95.8 % of the day came to reject a 55-hour
+    /// operation that the dispatcher places without trouble.
+    /// </remarks>
     public long LongestPlacementSeconds
     {
         get
         {
             var windows = AvailabilityWindows;
-            if (windows.Count == 0)
+            int count = windows.Count;
+            if (count == 0)
                 return long.MaxValue;
 
-            // Walk the windows twice around the period so a run that wraps the
-            // boundary is measured once as a whole.
             long best = 0;
-            for (int start = 0; start < windows.Count; start++)
+            for (int start = 0; start < count; start++)
             {
                 long run = windows[start].DurationSeconds;
                 long previousEnd = windows[start].EndSeconds;
-                for (int step = 1; step < windows.Count * 2; step++)
+
+                // One lap is enough: arriving back at `start` means every gap on
+                // the way — including the period wrap — was bridgeable.
+                for (int step = 1; step <= count; step++)
                 {
-                    int index = (start + step) % windows.Count;
-                    long offset = (start + step) / windows.Count * CalendarPeriodSeconds;
+                    int index = (start + step) % count;
+                    long offset = (start + step) / count * CalendarPeriodSeconds;
                     long nextStart = windows[index].StartSeconds + offset;
                     if (nextStart - previousEnd > MaxBridgeableGapSeconds)
                         break;
+                    if (index == start)
+                        return long.MaxValue;
+
                     run += windows[index].DurationSeconds;
                     previousEnd = windows[index].EndSeconds + offset;
                 }
@@ -140,27 +153,7 @@ public sealed record MachineCapacity(int WorkCenterId, string Name, int Parallel
         if (untilSeconds <= 0)
             return 0;
 
-        long open;
-        if (AvailabilityWindows.Count == 0)
-        {
-            open = untilSeconds;
-        }
-        else
-        {
-            // Walk the periods that overlap [0, until) on the phase-shifted axis.
-            open = 0;
-            long shiftedEnd = untilSeconds + CalendarPhaseSeconds;
-            for (long cycle = CalendarPhaseSeconds / CalendarPeriodSeconds * CalendarPeriodSeconds; cycle < shiftedEnd; cycle += CalendarPeriodSeconds)
-            {
-                foreach (var window in AvailabilityWindows)
-                {
-                    long start = Math.Max(cycle + window.StartSeconds, CalendarPhaseSeconds);
-                    long end = Math.Min(cycle + window.EndSeconds, shiftedEnd);
-                    if (end > start)
-                        open += end - start;
-                }
-            }
-        }
+        long open = OpenSecondsBetween(0, untilSeconds);
 
         foreach (var blackout in Blackouts)
         {
@@ -173,6 +166,12 @@ public sealed record MachineCapacity(int WorkCenterId, string Name, int Parallel
     }
 
     /// <summary>Seconds of calendar windows inside <c>[from, to)</c>, ignoring blackouts.</summary>
+    /// <remarks>
+    /// Closed form rather than a walk over the periods in the range. The walk was
+    /// <c>O(horizon / period)</c> and ran once per work center per blackout per
+    /// scored schedule, so on a year of holidays and Sundays — exactly what the
+    /// sibling working-time library produces — it dominated the evaluator.
+    /// </remarks>
     private long OpenSecondsBetween(long from, long to)
     {
         if (to <= from)
@@ -180,29 +179,29 @@ public sealed record MachineCapacity(int WorkCenterId, string Name, int Parallel
         if (AvailabilityWindows.Count == 0)
             return to - from;
 
-        long open = 0;
-        long shiftedFrom = from + CalendarPhaseSeconds;
-        long shiftedTo = to + CalendarPhaseSeconds;
-        for (long cycle = shiftedFrom / CalendarPeriodSeconds * CalendarPeriodSeconds; cycle < shiftedTo; cycle += CalendarPeriodSeconds)
-        {
-            foreach (var window in AvailabilityWindows)
-            {
-                long start = Math.Max(cycle + window.StartSeconds, shiftedFrom);
-                long end = Math.Min(cycle + window.EndSeconds, shiftedTo);
-                if (end > start)
-                    open += end - start;
-            }
-        }
-
-        return open;
+        return OpenSecondsBefore(to + CalendarPhaseSeconds) - OpenSecondsBefore(from + CalendarPhaseSeconds);
     }
 
-    /// <summary>The worst change-over cost into <paramref name="family"/>, used for feasibility checks.</summary>
-    internal long WorstSetupInto(string family) => SetupDurations.Count == 0
-        ? 0
-        : SetupDurations
-            .Where(s => string.Equals(s.ToFamily, family, StringComparison.Ordinal))
-            .Select(s => s.DurationSeconds)
-            .DefaultIfEmpty(0)
-            .Max();
+    /// <summary>Open seconds in <c>[0, x)</c> of the repeating pattern, on the calendar's own axis.</summary>
+    private long OpenSecondsBefore(long x)
+    {
+        if (x <= 0)
+            return 0;
+
+        long period = CalendarPeriodSeconds;
+        long fullPeriods = x / period;
+        long remainder = x - fullPeriods * period;
+
+        long openPerPeriod = 0;
+        long partial = 0;
+        foreach (var window in AvailabilityWindows)
+        {
+            openPerPeriod += window.DurationSeconds;
+            long end = Math.Min(window.EndSeconds, remainder);
+            if (end > window.StartSeconds)
+                partial += end - window.StartSeconds;
+        }
+
+        return fullPeriods * openPerPeriod + partial;
+    }
 }

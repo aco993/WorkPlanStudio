@@ -494,4 +494,324 @@
   <data name="Provider_Anthropic" xml:space="preserve"><value>Anthropic (Claude)</value></data>
   <data name="Provider_Gemini" xml:space="preserve"><value>Google Gemini</value></data>
   <data name="Sched_Ai_CorsNote" xml:space="preserve"><value>Die Anfrage geht aus Ihrem Browser an den Endpunkt; der Anbieter muss Browser-Aufrufe (CORS) erlauben. OpenAI, Anthropic (mit seinem Direktzugriffs-Header, automatisch gesetzt), Gemini, OpenRouter und lokale Server tun das; manche Proxys nicht.</value></data>
+  <data name="Ui_NavMenu" xml:space="preserve"><value>Menü</value></data>
+  <data name="Ui_Language" xml:space="preserve"><value>Sprache</value></data>
+  <data name="Ui_GanttHelp" xml:space="preserve"><value>Pfeiltasten wechseln zwischen Arbeitsgängen und geschlossenen Zeiten, Eingabetaste liest den fokussierten Eintrag vor, Escape blendet ihn aus.</value></data>
+  <data name="Ui_GanttShowTable" xml:space="preserve"><value>Als Tabelle anzeigen</value></data>
+  <data name="Ui_GanttHideTable" xml:space="preserve"><value>Tabelle ausblenden</value></data>
+  <data name="Ui_GanttTableCaption" xml:space="preserve"><value>Alle Arbeitsgänge und geschlossenen Zeiten des Diagramms, Arbeitsplatz für Arbeitsplatz</value></data>
+  <data name="Ui_ColStart" xml:space="preserve"><value>Beginn</value></data>
+  <data name="Ui_ColEnd" xml:space="preserve"><value>Ende</value></data>
+  <data name="Ui_ColDuration" xml:space="preserve"><value>Dauer</value></data>
+  <data name="Ui_ColDetail" xml:space="preserve"><value>Detail</value></data>
+  <data name="Ui_ColDay" xml:space="preserve"><value>Tag</value></data>
+  <data name="Ui_ScheduleAnnounced" xml:space="preserve"><value>Produktionsplan erzeugt: {0} von {1} Aufträgen pünktlich, Durchlaufzeit {2}.</value></data>
+  <data name="Ui_Range" xml:space="preserve"><value>{0} bis {1}</value></data>
+  <data name="Ui_WeekDayClosed" xml:space="preserve"><value>ganztägig geschlossen</value></data>
+  <data name="Val_SingleLine" xml:space="preserve"><value>Dies muss eine einzelne Textzeile sein.</value></data>
+  <data name="Val_Scale" xml:space="preserve"><value>Höchstens {0} Nachkommastellen.</value></data>
+  <data name="Val_CostCenterCodeTaken" xml:space="preserve"><value>Eine andere Kostenstelle verwendet diesen Schlüssel bereits.</value></data>
+  <data name="Val_CostCenterInUse" xml:space="preserve"><value>Es buchen noch Arbeitsplätze auf diese Kostenstelle.</value></data>
+  <data name="Val_CostCenterMissing" xml:space="preserve"><value>Diese Kostenstelle gibt es nicht mehr.</value></data>
+  <data name="Val_WorkCenterOrderUse" xml:space="preserve"><value>Ein freigegebener Fertigungsauftrag läuft noch über diesen Arbeitsplatz.</value></data>
+  <data name="Val_WorkPlanInUse" xml:space="preserve"><value>Zu diesem Arbeitsplan wurde ein Fertigungsauftrag angelegt.</value></data>
+  <data name="Val_PlanNotReleased" xml:space="preserve"><value>Der Arbeitsplan muss freigegeben sein, bevor ein Auftrag ihn verwenden kann.</value></data>
+  <data name="Storage_Failure_QuotaExceeded" xml:space="preserve"><value>Der Speicher dieses Browsers reicht für die Datenbank nicht mehr aus. Exportieren Sie die Daten und geben Sie Speicher frei oder setzen Sie zurück.</value></data>
+  <data name="Storage_Failure_UpgradeFailed" xml:space="preserve"><value>Die gespeicherten Daten stammen aus Schema-Version {0} und konnten nicht aktualisiert werden. Exportieren Sie sie vor dem Zurücksetzen.</value></data>
+  <data name="Storage_Failure_Forbidden" xml:space="preserve"><value>Die aktuelle Rolle darf das nicht.</value></data>
+  <data name="Md_Nav_CostCenters" xml:space="preserve"><value>Kostenstellen</value></data>
+  <data name="Md_CostCenters_Title" xml:space="preserve"><value>Kostenstellen</value></data>
+  <data name="Md_CostCenters_Subtitle" xml:space="preserve"><value>Die Verrechnungseinheiten, auf die Arbeitsplätze ihre Maschinenstunden buchen.</value></data>
+  <data name="Md_CostCenters_New" xml:space="preserve"><value>Neue Kostenstelle</value></data>
+  <data name="Md_CostCenters_NewTitle" xml:space="preserve"><value>Neue Kostenstelle</value></data>
+  <data name="Md_CostCenters_EditTitle" xml:space="preserve"><value>Kostenstelle bearbeiten</value></data>
+  <data name="Md_CostCenters_Empty" xml:space="preserve"><value>Noch keine Kostenstellen. Legen Sie die erste an, um sie einem Arbeitsplatz zuzuordnen.</value></data>
+  <data name="Md_CostCenters_InUse" xml:space="preserve"><value>Wird von Arbeitsplätzen verwendet</value></data>
+  <data name="Md_CostCenters_SearchPlaceholder" xml:space="preserve"><value>Schlüssel oder Name suchen</value></data>
+  <data name="Md_Confirm_DeleteCostCenterTitle" xml:space="preserve"><value>Kostenstelle löschen?</value></data>
+  <data name="Md_Confirm_DeleteCostCenterBody" xml:space="preserve"><value>Die Kostenstelle {0} wird entfernt. Das lässt sich nicht rückgängig machen.</value></data>
+  <data name="Md_Field_Description" xml:space="preserve"><value>Beschreibung</value></data>
+  <data name="Md_Field_WorkCenters" xml:space="preserve"><value>Arbeitsplätze</value></data>
+  <data name="Md_CostCenter_None" xml:space="preserve"><value>Nicht zugeordnet</value></data>
+  <data name="Md_CostCenter_NoneDefined" xml:space="preserve"><value>Es sind noch keine Kostenstellen angelegt.</value></data>
+  <data name="Md_CostCenter_CreateNew" xml:space="preserve"><value>Kostenstelle anlegen</value></data>
+  <data name="Md_Picker_None" xml:space="preserve"><value>—</value></data>
+  <data name="Md_Picker_InactiveSuffix" xml:space="preserve"><value>(inaktiv)</value></data>
+  <data name="Md_Picker_Create" xml:space="preserve"><value>Neu anlegen</value></data>
+  <data name="Md_FormErrorsLead" xml:space="preserve"><value>Bitte korrigieren Sie Folgendes, bevor Sie speichern.</value></data>
+  <data name="Md_WorkCenters_SearchPlaceholder" xml:space="preserve"><value>Schlüssel oder Name suchen</value></data>
+  <data name="Md_WorkCenters_FilterCostCenter" xml:space="preserve"><value>Nach Kostenstelle filtern</value></data>
+  <data name="Md_Orders_SearchPlaceholder" xml:space="preserve"><value>Auftrag, Teil oder Arbeitsplan suchen</value></data>
+  <data name="Md_Orders_NoReleasedPlans" xml:space="preserve"><value>Es ist noch kein Arbeitsplan freigegeben, also gibt es nichts zu beauftragen.</value></data>
+  <data name="Md_Priority_1" xml:space="preserve"><value>1 — normal</value></data>
+  <data name="Md_Priority_2" xml:space="preserve"><value>2 — erhöht</value></data>
+  <data name="Md_Priority_3" xml:space="preserve"><value>3 — hoch</value></data>
+  <data name="Md_Priority_4" xml:space="preserve"><value>4 — dringend</value></data>
+  <data name="Md_Priority_5" xml:space="preserve"><value>5 — Eilauftrag</value></data>
+  <data name="Md_Storage_Import" xml:space="preserve"><value>Sicherung einspielen</value></data>
+  <data name="Md_Storage_ImportFailed" xml:space="preserve"><value>Diese Datei konnte nicht als WorkPlan-Studio-Export gelesen werden.</value></data>
+  <data name="Account_Title" xml:space="preserve"><value>Konto</value></data>
+  <data name="Account_SignIn" xml:space="preserve"><value>Anmelden</value></data>
+  <data name="Account_SignOut" xml:space="preserve"><value>Abmelden</value></data>
+  <data name="Account_UserName" xml:space="preserve"><value>Benutzername</value></data>
+  <data name="Account_Password" xml:space="preserve"><value>Kennwort</value></data>
+  <data name="Account_Required" xml:space="preserve"><value>Dieses Feld ist erforderlich.</value></data>
+  <data name="Account_SignInIntro" xml:space="preserve"><value>Mit der Anmeldung tritt an die Stelle der Rolle zur Ansicht die Rolle, die Ihr Konto wirklich hat. Sie kommt vom Server und kann hier nicht geändert werden.</value></data>
+  <data name="Account_SignInFailed" xml:space="preserve"><value>Benutzername oder Kennwort wurden nicht akzeptiert.</value></data>
+  <data name="Account_SigningIn" xml:space="preserve"><value>Anmeldung läuft…</value></data>
+  <data name="Account_SignedInAs" xml:space="preserve"><value>Angemeldet als {0}</value></data>
+  <data name="Account_Roles" xml:space="preserve"><value>Rollen</value></data>
+  <data name="Account_Server" xml:space="preserve"><value>Server</value></data>
+  <data name="Account_ScheduleOnServer" xml:space="preserve"><value>Die Planung wird auf dem Server erzeugt, von derselben Maschine, die auch in dieser App steckt.</value></data>
+  <data name="Account_OfflineTitle" xml:space="preserve"><value>Kein Server konfiguriert</value></data>
+  <data name="Account_Offline" xml:space="preserve"><value>Dieser Stand läuft vollständig in Ihrem Browser. Es gibt keinen Server und keine Konten: Die Rolle in der Kopfzeile zeigt das Berechtigungsmodell, sie schützt nichts.</value></data>
+  <data name="Account_Pull" xml:space="preserve"><value>Stammdaten vom Server holen</value></data>
+  <data name="Account_Pulling" xml:space="preserve"><value>Wird geholt…</value></data>
+  <data name="Account_PullBoundary" xml:space="preserve"><value>Das Holen ersetzt die lokale Kopie durch die des Servers. Lokale Änderungen gehen nicht zurück: Das ist ein einseitiger Import, kein Abgleich in beide Richtungen.</value></data>
+  <data name="Account_PullDone" xml:space="preserve"><value>Die lokale Kopie wurde durch {0} Kostenstellen, {1} Arbeitsplätze, {2} Arbeitspläne und {3} Fertigungsaufträge ersetzt.</value></data>
+  <data name="Account_PullFailed" xml:space="preserve"><value>Die Stammdaten konnten nicht vom Server geholt werden.</value></data>
+  <data name="Run_Cancel" xml:space="preserve"><value>Abbrechen</value></data>
+  <data name="Run_Started" xml:space="preserve"><value>Der Produktionsplan wird erstellt.</value></data>
+  <data name="Run_Cancelled" xml:space="preserve"><value>Der Lauf wurde abgebrochen. Der bisherige Produktionsplan bleibt unverändert.</value></data>
+  <data name="Run_Preparing" xml:space="preserve"><value>Der Lauf wird vorbereitet.</value></data>
+  <data name="Run_Progress" xml:space="preserve"><value>Neustart {0} von {1} — bester Zielwert bisher {2}, kleiner ist besser.</value></data>
+  <data name="Run_SameThreadNote" xml:space="preserve"><value>Die Suche läuft im eigenen Thread dieses Tabs und gibt ihn zwischen den Neustarts frei, damit die Seite bedienbar bleibt.</value></data>
+  <data name="Run_BudgetExceeded" xml:space="preserve"><value>Mehrfachstarts mal Schritte der lokalen Suche ergibt {0} Kandidatenpläne, erlaubt sind höchstens {1}. Verringern Sie einen der beiden Werte.</value></data>
+  <data name="Run_Acceptance" xml:space="preserve"><value>Verbesserungsregel</value></data>
+  <data name="Run_Acceptance_First" xml:space="preserve"><value>Erste Verbesserung</value></data>
+  <data name="Run_Acceptance_Best" xml:space="preserve"><value>Beste Position je Auftrag</value></data>
+  <data name="Run_Acceptance_Steepest" xml:space="preserve"><value>Steilster Abstieg</value></data>
+  <data name="Run_Acceptance_FirstHint" xml:space="preserve"><value>Nimmt den ersten Zug, der hilft, und macht sofort weiter. Das Budget geht in Züge statt in Vergleiche.</value></data>
+  <data name="Run_Acceptance_BestHint" xml:space="preserve"><value>Setzt jeden Auftrag der Reihe nach auf seine beste Position. Der gemessene Standard: rund 7 % besser als der steilste Abstieg über 25 Testfälle.</value></data>
+  <data name="Run_Acceptance_SteepestHint" xml:space="preserve"><value>Vergleicht alle Züge und nimmt den besten. Gründlich bei kleinen Plänen; bei großen reicht das Budget für ein, zwei Züge.</value></data>
+  <data name="Import_Nav" xml:space="preserve"><value>Import</value></data>
+  <data name="Import_Title" xml:space="preserve"><value>Daten importieren</value></data>
+  <data name="Import_Subtitle" xml:space="preserve"><value>Stammdaten aus einer CSV-Datei einlesen. Es wird nichts geschrieben, bevor Sie gesehen haben, was sich ändern würde.</value></data>
+  <data name="Import_Kind_CostCenters" xml:space="preserve"><value>Kostenstellen</value></data>
+  <data name="Import_Kind_WorkCenters" xml:space="preserve"><value>Arbeitsplätze</value></data>
+  <data name="Import_Kind_WorkPlans" xml:space="preserve"><value>Arbeitspläne und Arbeitsgänge</value></data>
+  <data name="Import_Kind_Orders" xml:space="preserve"><value>Fertigungsaufträge</value></data>
+  <data name="Import_Kind_Label" xml:space="preserve"><value>Was enthält die Datei?</value></data>
+  <data name="Import_Samples" xml:space="preserve"><value>Beispieldateien</value></data>
+  <data name="Import_Samples_Hint" xml:space="preserve"><value>Jedes Beispiel zeigt die Spalten sowie die Zahlen- und Datumsformate, die diese Seite liest.</value></data>
+  <data name="Import_Sample_Download" xml:space="preserve"><value>Beispiel „{0}“ herunterladen</value></data>
+  <data name="Import_Drop_Label" xml:space="preserve"><value>CSV-Datei auswählen oder hierher ziehen</value></data>
+  <data name="Import_Drop_Hint" xml:space="preserve"><value>Bis {0} MB. UTF-8, UTF-16 oder Windows-1252; getrennt durch Komma, Semikolon oder Tabulator — wird automatisch erkannt.</value></data>
+  <data name="Import_Drop_Replace" xml:space="preserve"><value>Andere Datei wählen</value></data>
+  <data name="Import_File_Summary" xml:space="preserve"><value>{0} — {1} Datenzeilen, {2}, Trennzeichen „{3}“</value></data>
+  <data name="Import_Mapping_Title" xml:space="preserve"><value>Spalten</value></data>
+  <data name="Import_Mapping_Hint" xml:space="preserve"><value>Aus der Kopfzeile erraten. Korrigieren Sie, was nicht stimmt — die Zuordnung wird für diese Art von Datei gemerkt.</value></data>
+  <data name="Import_Mapping_None" xml:space="preserve"><value>— nicht importieren —</value></data>
+  <data name="Import_Mapping_Required" xml:space="preserve"><value>Pflichtfeld</value></data>
+  <data name="Import_Mapping_Missing" xml:space="preserve"><value>Diese Spalte ist ein Pflichtfeld und wurde nicht zugeordnet.</value></data>
+  <data name="Import_Mapping_Blocked" xml:space="preserve"><value>Ordnen Sie jedem Pflichtfeld eine Spalte zu, bevor die Datei geprüft wird.</value></data>
+  <data name="Import_Mapping_Column" xml:space="preserve"><value>Spalte {0}</value></data>
+  <data name="Import_Field_Code" xml:space="preserve"><value>Kennung</value></data>
+  <data name="Import_Field_Name" xml:space="preserve"><value>Bezeichnung</value></data>
+  <data name="Import_Field_Description" xml:space="preserve"><value>Beschreibung</value></data>
+  <data name="Import_Field_Active" xml:space="preserve"><value>Aktiv</value></data>
+  <data name="Import_Field_CostCenter" xml:space="preserve"><value>Kostenstelle</value></data>
+  <data name="Import_Field_HourlyRate" xml:space="preserve"><value>Stundensatz</value></data>
+  <data name="Import_Field_Capacity" xml:space="preserve"><value>Parallele Kapazität</value></data>
+  <data name="Import_Field_ShiftPattern" xml:space="preserve"><value>Schichtmodell</value></data>
+  <data name="Import_Field_PlanNumber" xml:space="preserve"><value>Plannummer</value></data>
+  <data name="Import_Field_PartNumber" xml:space="preserve"><value>Teilenummer</value></data>
+  <data name="Import_Field_PartName" xml:space="preserve"><value>Teilebezeichnung</value></data>
+  <data name="Import_Field_Revision" xml:space="preserve"><value>Änderungsstand</value></data>
+  <data name="Import_Field_Status" xml:space="preserve"><value>Status</value></data>
+  <data name="Import_Field_LotSize" xml:space="preserve"><value>Losgröße</value></data>
+  <data name="Import_Field_OperationNumber" xml:space="preserve"><value>Arbeitsgangnummer</value></data>
+  <data name="Import_Field_OperationDescription" xml:space="preserve"><value>Arbeitsgang</value></data>
+  <data name="Import_Field_WorkCenter" xml:space="preserve"><value>Arbeitsplatz</value></data>
+  <data name="Import_Field_SetupMinutes" xml:space="preserve"><value>Rüstzeit (Minuten)</value></data>
+  <data name="Import_Field_RunMinutes" xml:space="preserve"><value>Stückzeit (Minuten)</value></data>
+  <data name="Import_Field_Remarks" xml:space="preserve"><value>Bemerkung</value></data>
+  <data name="Import_Field_OrderNumber" xml:space="preserve"><value>Auftragsnummer</value></data>
+  <data name="Import_Field_Quantity" xml:space="preserve"><value>Menge</value></data>
+  <data name="Import_Field_Release" xml:space="preserve"><value>Freigabedatum</value></data>
+  <data name="Import_Field_Due" xml:space="preserve"><value>Liefertermin</value></data>
+  <data name="Import_Field_Priority" xml:space="preserve"><value>Priorität</value></data>
+  <data name="Import_Options_Title" xml:space="preserve"><value>Optionen</value></data>
+  <data name="Import_Option_Update" xml:space="preserve"><value>Vorhandene Zeilen aktualisieren</value></data>
+  <data name="Import_Option_UpdateHint" xml:space="preserve"><value>Aus: eine vorhandene Kennung bleibt unverändert und wird als übersprungen gezählt. An: sie wird überschrieben, und jede solche Zeile erscheint vorher als Warnung.</value></data>
+  <data name="Import_Option_CreateCostCenters" xml:space="preserve"><value>Kostenstellen anlegen, die in der Datei stehen, aber nicht vorhanden sind</value></data>
+  <data name="Import_Option_CreateCostCentersHint" xml:space="preserve"><value>Aus: ein Arbeitsplatz mit unbekannter Kostenstelle wird abgelehnt, denn das ist meistens ein Tippfehler.</value></data>
+  <data name="Import_Option_Separator" xml:space="preserve"><value>Trennzeichen</value></data>
+  <data name="Import_Separator_Detected" xml:space="preserve"><value>Erkannt: {0}</value></data>
+  <data name="Import_Action_DryRun" xml:space="preserve"><value>Datei prüfen</value></data>
+  <data name="Import_Action_Commit" xml:space="preserve"><value>Importieren</value></data>
+  <data name="Import_Action_Again" xml:space="preserve"><value>Neu beginnen</value></data>
+  <data name="Import_Progress_Reading" xml:space="preserve"><value>Datei wird gelesen: bisher {0} Zeilen.</value></data>
+  <data name="Import_Progress_Done" xml:space="preserve"><value>Probelauf fertig: {0} würden angelegt, {1} geändert, {2} übersprungen, {3} abgelehnt. Es wurde nichts geschrieben.</value></data>
+  <data name="Import_Busy" xml:space="preserve"><value>Wird verarbeitet</value></data>
+  <data name="Import_Preview_Title" xml:space="preserve"><value>Probelauf</value></data>
+  <data name="Import_Preview_Caption" xml:space="preserve"><value>Jede Zeile der Datei und was mit ihr geschehen würde</value></data>
+  <data name="Import_Preview_Nothing" xml:space="preserve"><value>Diese Datei würde nichts verändern.</value></data>
+  <data name="Import_Count_Create" xml:space="preserve"><value>anzulegen</value></data>
+  <data name="Import_Count_Update" xml:space="preserve"><value>zu ändern</value></data>
+  <data name="Import_Count_Skip" xml:space="preserve"><value>übersprungen</value></data>
+  <data name="Import_Count_Reject" xml:space="preserve"><value>abgelehnt</value></data>
+  <data name="Import_Row_Create" xml:space="preserve"><value>Anlegen</value></data>
+  <data name="Import_Row_Update" xml:space="preserve"><value>Ändern</value></data>
+  <data name="Import_Row_Skip" xml:space="preserve"><value>Überspringen</value></data>
+  <data name="Import_Row_Reject" xml:space="preserve"><value>Ablehnen</value></data>
+  <data name="Import_Col_Line" xml:space="preserve"><value>Zeile</value></data>
+  <data name="Import_Col_Action" xml:space="preserve"><value>Aktion</value></data>
+  <data name="Import_Col_Key" xml:space="preserve"><value>Schlüssel</value></data>
+  <data name="Import_Col_Detail" xml:space="preserve"><value>Detail</value></data>
+  <data name="Import_Col_Column" xml:space="preserve"><value>Spalte</value></data>
+  <data name="Import_Col_Reason" xml:space="preserve"><value>Grund</value></data>
+  <data name="Import_Row_Why" xml:space="preserve"><value>warum</value></data>
+  <data name="Import_Row_Back" xml:space="preserve"><value>zurück zu Zeile {0}</value></data>
+  <data name="Import_Rejected_Title" xml:space="preserve"><value>Abgelehnte Zeilen</value></data>
+  <data name="Import_Rejected_Caption" xml:space="preserve"><value>Zeilen, die nicht importiert werden können, mit Spalte und Grund</value></data>
+  <data name="Import_Rejected_Download" xml:space="preserve"><value>Abgelehnte Zeilen herunterladen</value></data>
+  <data name="Import_Warnings_Title" xml:space="preserve"><value>Warnungen</value></data>
+  <data name="Import_Warnings_Caption" xml:space="preserve"><value>Was dieser Import verändern oder annehmen würde</value></data>
+  <data name="Import_Storage_Note" xml:space="preserve"><value>Geschätzter Browser-Speicher nach diesem Import: {0} von {1} Zeichen.</value></data>
+  <data name="Import_Result" xml:space="preserve"><value>Importiert: {0} angelegt, {1} geändert, {2} übersprungen, {3} abgelehnt.</value></data>
+  <data name="Import_Result_CostCenters" xml:space="preserve"><value>Außerdem wurden {0} Kostenstellen angelegt.</value></data>
+  <data name="Import_Result_Failed" xml:space="preserve"><value>Es wurde nichts importiert. Die Datenbank ist unverändert.</value></data>
+  <data name="Import_Error_Empty" xml:space="preserve"><value>Die Datei ist leer oder enthält unter der Kopfzeile keine Zeilen.</value></data>
+  <data name="Import_Error_TooLarge" xml:space="preserve"><value>Die Datei ist größer als {0} MB. Die gesamte Datenbank liegt im Speicher dieses Browsers; eine Datei dieser Größe ließe sich auch nach dem Lesen nicht ablegen.</value></data>
+  <data name="Import_Error_NotText" xml:space="preserve"><value>Das ist keine Textdatei. Speichern Sie die Tabelle als CSV und versuchen Sie es erneut.</value></data>
+  <data name="Import_Error_RequiredColumn" xml:space="preserve"><value>{0} ist ein Pflichtfeld und hat keine Spalte.</value></data>
+  <data name="Import_Error_Quota" xml:space="preserve"><value>Dieser Import bräuchte etwa {0} Zeichen Browser-Speicher, das Limit liegt bei {1}. Es wurde nichts geschrieben.</value></data>
+  <data name="Import_Error_NothingToDo" xml:space="preserve"><value>Es gibt nichts zu importieren.</value></data>
+  <data name="Import_Error_Changed" xml:space="preserve"><value>Die Daten haben sich geändert, während der Probelauf angezeigt wurde; der Import wurde nicht ausgeführt. Prüfen Sie die Datei erneut.</value></data>
+  <data name="Import_Error_Constraint" xml:space="preserve"><value>Die Datenbank hat eine Zeile abgelehnt. Es wurde nichts importiert.</value></data>
+  <data name="Import_Parse_UnterminatedQuote" xml:space="preserve"><value>Zeile {0} öffnet ein Feld in Anführungszeichen, das nie geschlossen wird.</value></data>
+  <data name="Import_Parse_FieldTooLong" xml:space="preserve"><value>Zeile {0} enthält ein Feld mit mehr als {1} Zeichen.</value></data>
+  <data name="Import_Parse_TooManyColumns" xml:space="preserve"><value>Zeile {0} hat mehr als {1} Spalten.</value></data>
+  <data name="Import_Parse_TooManyRows" xml:space="preserve"><value>Die Datei hat mehr als {1} Zeilen (erreicht bei Zeile {0}).</value></data>
+  <data name="Import_Error_ColumnCount" xml:space="preserve"><value>Die Kopfzeile hat {0} Spalten, diese Zeile hat {1}.</value></data>
+  <data name="Import_Error_NotANumber" xml:space="preserve"><value>„{0}“ ist keine Zahl. Schreiben Sie 1234.56 oder 1234,56.</value></data>
+  <data name="Import_Error_NotAWholeNumber" xml:space="preserve"><value>„{0}“ ist keine ganze Zahl.</value></data>
+  <data name="Import_Error_NotABoolean" xml:space="preserve"><value>„{0}“ ist weder ja noch nein.</value></data>
+  <data name="Import_Error_NotADate" xml:space="preserve"><value>„{0}“ ist kein Datum, das diese Seite liest. Zulässig: {1}.</value></data>
+  <data name="Import_Error_UnknownStatus" xml:space="preserve"><value>„{0}“ ist kein Arbeitsplan-Status.</value></data>
+  <data name="Import_Error_DuplicateKey" xml:space="preserve"><value>„{0}“ steht bereits in dieser Datei, in Zeile {1}.</value></data>
+  <data name="Import_Error_DuplicateOperation" xml:space="preserve"><value>Arbeitsgang {0} kommt im Plan {1} zweimal vor.</value></data>
+  <data name="Import_Error_UnknownWorkCenter" xml:space="preserve"><value>Es gibt keinen Arbeitsplatz mit der Kennung „{0}“.</value></data>
+  <data name="Import_Error_UnknownCostCenter" xml:space="preserve"><value>Es gibt keine Kostenstelle mit der Kennung „{0}“. Aktivieren Sie oben die Option, um sie anzulegen.</value></data>
+  <data name="Import_Error_PlanHeaderConflict" xml:space="preserve"><value>Diese Zeile widerspricht Zeile {1} beim Plan {0}.</value></data>
+  <data name="Import_Warn_Overwrite" xml:space="preserve"><value>„{0}“ ist vorhanden und würde überschrieben.</value></data>
+  <data name="Import_Warn_NewCostCenter" xml:space="preserve"><value>Kostenstelle „{0}“ würde angelegt, mit der Kennung als Bezeichnung.</value></data>
+  <data name="Import_Warn_PlanHasOrders" xml:space="preserve"><value>Plan {0} hat {1} Fertigungsaufträge. Werden seine Arbeitsgänge ersetzt, ändert sich die Grundlage dieser Aufträge.</value></data>
+  <data name="Import_Preview_Truncated" xml:space="preserve"><value>Es werden die ersten {0} von {1} Zeilen angezeigt. Die Zahlen oben und der Download umfassen alle.</value></data>
+  <data name="Import_Error_ReadFailed" xml:space="preserve"><value>Die Datei konnte nicht gelesen werden.</value></data>
+  <data name="Import_Row_Why_Label" xml:space="preserve"><value>warum Zeile {0} abgelehnt wurde</value></data>
+  <data name="Rule_RestCompensation_Title" xml:space="preserve"><value>Ausgleichsruhezeit</value></data>
+  <data name="Rule_RestCompensation_Text" xml:space="preserve"><value>§ 5 Abs. 2 behält eine auf zehn Stunden verkürzte Ruhezeit Krankenhäusern und anderen Einrichtungen zur Behandlung und Pflege, Gaststätten und Beherbergungsbetrieben, Verkehrsbetrieben, dem Rundfunk sowie der Landwirtschaft und der Tierhaltung vorbehalten — und auch dort nur, wenn jede Verkürzung innerhalb eines Kalendermonats oder von vier Wochen durch Verlängerung einer anderen Ruhezeit auf mindestens zwölf Stunden ausgeglichen wird.</value></data>
+  <data name="Rule_MultiShiftRequirement_Title" xml:space="preserve"><value>Mehrschichtbetrieb</value></data>
+  <data name="Rule_MultiShiftRequirement_Text" xml:space="preserve"><value>Beginn und Ende der Sonn- und Feiertagsruhe dürfen um bis zu sechs Stunden vor- oder zurückverlegt werden — aber nur in mehrschichtigen Betrieben mit regelmäßiger Tag- und Nachtschicht. Ein Modell mit nur einer der beiden nimmt eine Befugnis in Anspruch, die § 9 Abs. 2 ihm nicht gibt.</value></data>
+  <data name="Rule_ReplacementRestDay_Title" xml:space="preserve"><value>Ersatzruhetag</value></data>
+  <data name="Rule_ReplacementRestDay_Text" xml:space="preserve"><value>§ 11 Abs. 3 verlangt für Sonntagsarbeit einen Ersatzruhetag innerhalb eines den Beschäftigungstag einschließenden Zeitraums von zwei Wochen; § 11 Abs. 2 verlangt für Arbeit an einem auf einen Werktag fallenden Feiertag einen innerhalb von acht Wochen. Die Erlaubnis, an diesen Tagen zu arbeiten, bringt die Pflicht mit sich.</value></data>
+  <data name="Applied_RestCompensation" xml:space="preserve"><value>{0} am {1}: Ruhezeit auf {2} verkürzt; das Gesetz verlangt hier mindestens {3} (§ 5 Abs. 2).</value></data>
+  <data name="Applied_MultiShiftRequirement" xml:space="preserve"><value>{0}: Die Sonn- und Feiertagsruhe ist um {2} verschoben — § 9 Abs. 2 lässt das nur im Mehrschichtbetrieb mit regelmäßiger Tag- und Nachtschicht zu.</value></data>
+  <data name="Applied_ReplacementRestDay" xml:space="preserve"><value>{0} am {1}: Dafür ist ein Ersatzruhetag innerhalb von {3} zu gewähren (§ 11 Abs. 2, 3).</value></data>
+  <data name="Wt_Days" xml:space="preserve"><value>{0} Tage</value></data>
+  <data name="Wt_Weeks" xml:space="preserve"><value>{0} Wochen</value></data>
+  <data name="Wt_WeeksUnit" xml:space="preserve"><value>Wochen</value></data>
+  <data name="Wt_AveragingWindow" xml:space="preserve"><value>Ausgleichszeitraum für den Durchschnitt (§ 3 S. 2)</value></data>
+  <data name="Wt_Window_TwentyFourWeeks" xml:space="preserve"><value>24 Wochen</value></data>
+  <data name="Wt_Window_SixCalendarMonths" xml:space="preserve"><value>Sechs Kalendermonate</value></data>
+  <data name="Wt_RestSector" xml:space="preserve"><value>Branche nach § 5 Abs. 2</value></data>
+  <data name="Wt_Sector_None" xml:space="preserve"><value>Keine — es bleibt bei elf Stunden</value></data>
+  <data name="Wt_Sector_HealthCare" xml:space="preserve"><value>Krankenhäuser, Behandlung und Pflege</value></data>
+  <data name="Wt_Sector_Hospitality" xml:space="preserve"><value>Gaststätten, Bewirtung und Beherbergung</value></data>
+  <data name="Wt_Sector_Transport" xml:space="preserve"><value>Verkehrsbetriebe</value></data>
+  <data name="Wt_Sector_Broadcasting" xml:space="preserve"><value>Rundfunk</value></data>
+  <data name="Wt_Sector_Agriculture" xml:space="preserve"><value>Landwirtschaft und Tierhaltung</value></data>
+  <data name="Wt_RestNoSector" xml:space="preserve"><value>Außerhalb der in § 5 Abs. 2 genannten Branchen besteht kein Anspruch auf eine Verkürzung der Ruhezeit; deshalb stehen nur elf Stunden zur Wahl.</value></data>
+  <data name="Wt_RestSectorOpened" xml:space="preserve"><value>Eine Branche ist angegeben: Die verkürzte Ruhezeit von zehn Stunden steht jetzt zur Wahl — und mit ihr die Ausgleichspflicht.</value></data>
+  <data name="Wt_RestCompensationNote" xml:space="preserve"><value>Jede so verkürzte Ruhezeit ist innerhalb eines Kalendermonats oder von vier Wochen durch Verlängerung einer anderen Ruhezeit derselben Besatzung auf mindestens {0} auszugleichen (§ 5 Abs. 2).</value></data>
+  <data name="Wt_SundayRotation" xml:space="preserve"><value>Länge des Schichtturnus (§ 11 Abs. 1)</value></data>
+  <data name="Wt_SundayRotationHint" xml:space="preserve"><value>Ein Turnus von vier Wochen heißt: Jede Besatzung arbeitet jeden vierten Sonntag. Ein Turnus von einer Woche heißt: dieselbe Besatzung arbeitet an allen.</value></data>
+  <data name="Wt_SundayRotationOpened" xml:space="preserve"><value>Sonntagsarbeit ist zugelassen; der Schichtturnus entscheidet jetzt, wie viele Sonntage frei bleiben.</value></data>
+  <data name="Wt_OperatingDays" xml:space="preserve"><value>Betriebstage in dieser Vorschau</value></data>
+  <data name="Wt_Days_AsDefined" xml:space="preserve"><value>Wie im Schichtmodell hinterlegt</value></data>
+  <data name="Wt_Days_WithSaturday" xml:space="preserve"><value>Zusätzlich samstags</value></data>
+  <data name="Wt_Days_WithSunday" xml:space="preserve"><value>Zusätzlich samstags und sonntags</value></data>
+  <data name="Wt_PreviewPeriod" xml:space="preserve"><value>Vorschauzeitraum {0} – {1}</value></data>
+  <data name="Wt_Averaging" xml:space="preserve"><value>Ausgleichszeitraum</value></data>
+  <data name="Wt_AveragingNote" xml:space="preserve"><value>§ 3 S. 2 erlaubt den Zehn-Stunden-Tag nur, solange im Ausgleichszeitraum „im Durchschnitt acht Stunden werktäglich“ — Montag bis Samstag — nicht überschritten werden. § 6 Abs. 2 verlangt dasselbe für Nachtarbeit, gerechnet über vier Wochen. Beides ist aus dem Modell oben berechnet.</value></data>
+  <data name="Wt_ColRule" xml:space="preserve"><value>Vorschrift</value></data>
+  <data name="Wt_ColCrew" xml:space="preserve"><value>Schichtbesatzung</value></data>
+  <data name="Wt_ColAverage" xml:space="preserve"><value>Durchschnitt werktäglich</value></data>
+  <data name="Wt_ColState" xml:space="preserve"><value>Stand</value></data>
+  <data name="Wt_ColFirstBreach" xml:space="preserve"><value>Erstmals überschritten am</value></data>
+  <data name="Wt_ColCompensation" xml:space="preserve"><value>Noch auszugleichende Tage</value></data>
+  <data name="Wt_ColPeriod" xml:space="preserve"><value>Gemessener Zeitraum</value></data>
+  <data name="Wt_AveragingKept" xml:space="preserve"><value>eingehalten</value></data>
+  <data name="Wt_AveragingBreached" xml:space="preserve"><value>überschritten</value></data>
+  <data name="Wt_AveragingOf" xml:space="preserve"><value>{0} von höchstens {1}</value></data>
+  <data name="Wt_AveragingWerktage" xml:space="preserve"><value>auf {0} Werktage</value></data>
+  <data name="Wt_AveragingMeasured" xml:space="preserve"><value>über den Zeitraum gemessen</value></data>
+  <data name="Wt_AveragingProjected" xml:space="preserve"><value>aus der sich wiederholenden Woche fortgeschrieben</value></data>
+  <data name="Wt_AveragingNone" xml:space="preserve"><value>Dieses Modell besetzt niemanden; es gibt keine Arbeitszeit zu mitteln.</value></data>
+  <data name="Wt_AveragingNotBreached" xml:space="preserve"><value>in diesem Zeitraum nicht</value></data>
+  <data name="Wt_AnnounceAveraging" xml:space="preserve"><value>Ausgleichszeitraum: Der höchste Durchschnitt beträgt {0} werktäglich, Besatzung {1} — {2}.</value></data>
+  <data name="Wt_SundayRest" xml:space="preserve"><value>Freie Sonntage (§ 11 Abs. 1)</value></data>
+  <data name="Wt_FreeSundays" xml:space="preserve"><value>{0} freie Sonntage im Jahr {1}; § 11 Abs. 1 verlangt mindestens {2}.</value></data>
+  <data name="Wt_SundayStatus_NotApplicable" xml:space="preserve"><value>§ 11 schützt Beschäftigte; dieses Modell besetzt keine.</value></data>
+  <data name="Wt_SundayStatus_Intact" xml:space="preserve"><value>Keine Besatzung arbeitet sonntags.</value></data>
+  <data name="Wt_SundayStatus_Rotated" xml:space="preserve"><value>Der angegebene Turnus lässt genug Sonntage frei.</value></data>
+  <data name="Wt_SundayStatus_Breach" xml:space="preserve"><value>Zu wenige Sonntage bleiben frei.</value></data>
+  <data name="Wt_WeekClosed" xml:space="preserve"><value>Die Regeln lassen diesem Modell keine Arbeitszeit übrig; der Arbeitsplatz darf nicht laufen.</value></data>
+  <data name="Wt_WeekClosedBy" xml:space="preserve"><value>Geschlossen durch {0}.</value></data>
+  <data name="Wt_WeekClosedUnattributed" xml:space="preserve"><value>Keine Regel hat sich als Ursache vermerkt.</value></data>
+  <data name="Wt_Val_RestNeedsSector" xml:space="preserve"><value>Die verkürzte Ruhezeit setzt eine der in § 5 Abs. 2 genannten Branchen voraus.</value></data>
+  <data name="Wt_Val_SectorInvalid" xml:space="preserve"><value>Wählen Sie eine der in § 5 Abs. 2 genannten Branchen.</value></data>
+  <data name="Wt_Val_AveragingWindowInvalid" xml:space="preserve"><value>Wählen Sie einen Ausgleichszeitraum.</value></data>
+  <data name="Wt_Range" xml:space="preserve"><value>{0} – {1}</value></data>
+  <data name="Holiday_EasterSunday" xml:space="preserve"><value>Ostersonntag</value></data>
+  <data name="Holiday_WhitSunday" xml:space="preserve"><value>Pfingstsonntag</value></data>
+  <data name="Ai_QuestionTooLong" xml:space="preserve"><value>Diese Frage ist länger als {0} Zeichen. Bitte kürzen — die Plandaten stehen ohnehin schon im Prompt, die Frage selbst darf kurz sein.</value></data>
+  <data name="Ai_UnknownOrder" xml:space="preserve"><value>{0} kommt in diesem Plan nicht vor. Eingeplant werden nur freigegebene Aufträge: bitte die Nummer prüfen oder den Auftrag freigeben und neu planen.</value></data>
+  <data name="Ai_AmbiguousOrder" xml:space="preserve"><value>{0} trifft in diesem Plan auf {1} Aufträge zu; ich kann nicht sagen, welcher gemeint ist. Auftragsnummern, die sich nur in der Groß- und Kleinschreibung unterscheiden, sind verschiedene Aufträge.</value></data>
+  <data name="Ai_UnknownWorkCenter" xml:space="preserve"><value>Den Arbeitsplatz {0} gibt es in diesem Plan nicht. Enthalten sind: {1}.</value></data>
+  <data name="Ai_AmbiguousWorkCenter" xml:space="preserve"><value>{0} trifft auf {1} Arbeitsplätze in diesem Plan zu; ich kann nicht sagen, welcher gemeint ist.</value></data>
+  <data name="Ai_BottleneckWithoutClosed" xml:space="preserve"><value>{0} ist der Engpass: {1} Auslastung der geöffneten Zeit über {2} Arbeitsgänge. Die geschlossene Zeit lässt sich keiner einzelnen Zeile im Diagramm zuordnen, deshalb nennt diese Antwort dafür keine Zahl.</value></data>
+  <data name="Ai_KeyStored" xml:space="preserve"><value>Für {0} ist in diesem Browser ein Schlüssel gespeichert. Feld leer lassen, um ihn zu behalten, oder einen neuen eingeben, um ihn zu ersetzen.</value></data>
+  <data name="Ai_KeyNone" xml:space="preserve"><value>Für diesen Anbieter ist noch kein Schlüssel gespeichert.</value></data>
+  <data name="Ai_KeyForget" xml:space="preserve"><value>Schlüssel löschen</value></data>
+  <data name="Ai_KeyForgotten" xml:space="preserve"><value>Der Schlüssel für {0} wurde aus diesem Browser entfernt.</value></data>
+  <data name="Ai_KeyRisk" xml:space="preserve"><value>Der Schlüssel liegt im Speicher dieses Browsers, und der ist kein Tresor: Jedes Skript auf dieser Seite und jede Browser-Erweiterung mit Zugriff darauf kann ihn lesen. Nur einen Schlüssel verwenden, den Sie widerrufen können, und auf gemeinsam genutzten Rechnern kein Modell aktivieren.</value></data>
+  <data name="Export_Menu" xml:space="preserve"><value>Export</value></data>
+  <data name="Export_Busy" xml:space="preserve"><value>Wird erstellt…</value></data>
+  <data name="Export_Pdf" xml:space="preserve"><value>PDF-Bericht</value></data>
+  <data name="Export_Excel" xml:space="preserve"><value>Excel-Arbeitsmappe</value></data>
+  <data name="Export_Csv" xml:space="preserve"><value>CSV-Datei</value></data>
+  <data name="Export_Hint" xml:space="preserve"><value>Die Datei entsteht in Ihrem Browser; nichts wird hochgeladen.</value></data>
+  <data name="Export_Ready" xml:space="preserve"><value>{0} steht zum Herunterladen bereit.</value></data>
+  <data name="Export_Failed" xml:space="preserve"><value>Der Export konnte nicht erstellt werden. Bitte erneut versuchen oder ein anderes Format wählen.</value></data>
+  <data name="Export_Title" xml:space="preserve"><value>Produktionsplan</value></data>
+  <data name="Export_Subtitle" xml:space="preserve"><value>Prioritätsregel: {0} · Zieltermin-Regel: {1}</value></data>
+  <data name="Export_PageNumber" xml:space="preserve"><value>Seite {0} von {1}</value></data>
+  <data name="Export_Operations" xml:space="preserve"><value>Arbeitsgänge</value></data>
+  <data name="Export_Utilization" xml:space="preserve"><value>Auslastung je Arbeitsplatz</value></data>
+  <data name="Export_Parameters" xml:space="preserve"><value>Laufparameter</value></data>
+  <data name="Export_Setting" xml:space="preserve"><value>Einstellung</value></data>
+  <data name="Export_Value" xml:space="preserve"><value>Wert</value></data>
+  <data name="Export_Start" xml:space="preserve"><value>Beginn</value></data>
+  <data name="Export_End" xml:space="preserve"><value>Ende</value></data>
+  <data name="Export_Duration" xml:space="preserve"><value>Dauer</value></data>
+  <data name="Export_Generated" xml:space="preserve"><value>Erstellt</value></data>
+  <data name="Export_Horizon" xml:space="preserve"><value>Planbeginn</value></data>
+  <data name="Export_LocalSearchTaken" xml:space="preserve"><value>Ausgeführte Verbesserungsschritte</value></data>
+  <data name="Export_HoursUnit" xml:space="preserve"><value>Std.</value></data>
+  <data name="Export_Summary" xml:space="preserve"><value>Zusammenfassung</value></data>
+  <data name="Export_Figure" xml:space="preserve"><value>Kennzahl</value></data>
+  <data name="Export_True" xml:space="preserve"><value>WAHR</value></data>
+  <data name="Export_False" xml:space="preserve"><value>FALSCH</value></data>
+  <data name="Sched_Proof_Action" xml:space="preserve"><value>Optimalität beweisen</value></data>
+  <data name="Sched_Proof_Busy" xml:space="preserve"><value>Wird bewiesen …</value></data>
+  <data name="Sched_Proof_Optimal" xml:space="preserve"><value>Optimalität bewiesen: unter diesen Parametern gibt es keinen besseren Plan. {0} Suchknoten, {1}.</value></data>
+  <data name="Sched_Proof_Better" xml:space="preserve"><value>Es gibt einen besseren Plan: dieser liegt {0} % über dem bewiesenen Optimum. {1} Suchknoten, {2}.</value></data>
+  <data name="Sched_Proof_NotProved" xml:space="preserve"><value>Innerhalb von {0} nicht bewiesen: die Suche konnte die Lücke nicht schließen. Bewiesen ist immerhin, dass der Plan höchstens {1} % über dem bestmöglichen liegt — das Optimum liegt zwischen dieser Schranke und dem gezeigten Plan.</value></data>
+  <data name="Sched_Proof_TooLarge" xml:space="preserve"><value>Zu groß, um hier entschieden zu werden: {0} Arbeitsgänge. Der exakte Löser wird nur angeboten, wo er fertig wird, während Sie warten.</value></data>
+  <data name="Sched_Proof_Nothing" xml:space="preserve"><value>Nichts zu beweisen — es gibt keinen Plan.</value></data>
+  <data name="Sched_Proof_Failed" xml:space="preserve"><value>Die Optimalitätsprüfung konnte nicht abgeschlossen werden.</value></data>
+  <data name="Sched_Proof_NotProvedNoBound" xml:space="preserve"><value>Innerhalb von {0} nicht bewiesen: die Suche hat weder die Lücke geschlossen noch eine brauchbare Schranke gefunden.</value></data>
 </root>
