@@ -54,6 +54,7 @@ flowchart TD
 | `src/WorkPlanStudio.WorkingTime` | shift patterns, the ArbZG rules, German public holidays, machine calendars | base class library only |
 | `src/WorkPlanStudio.Export` | CSV, xlsx and PDF writers | base class library only |
 | `src/WorkPlanStudio.Contracts` | the DTOs and policy names the app and the API share | base class library only |
+| `src/WorkPlanStudio.Domain` | the entities, the validation rules, the policy table and the EF→engine mapping | the authorization abstractions, nothing else |
 | `src/WorkPlanStudio.Api` | the optional backend: Identity, JWT, EF migrations, minimal API | ASP.NET Core 10 |
 
 `ArchitectureTests` in the scheduling and working-time test projects reflect over those assemblies
@@ -61,10 +62,16 @@ and fail the build if `Microsoft.AspNetCore`, `Microsoft.EntityFrameworkCore`, `
 or `SQLitePCLRaw` ever appears in their reference graph. The export library carries no package
 reference at all, which is the same property enforced by its `.csproj` rather than by a test.
 
-The API project compiles `Models/**`, `Validation/**` and four `Services/*.cs` files **out of the
-browser app by linked source**, so the entity shapes, the validators and the policy table are one
-copy rather than two that drift. That link is also the constraint it imposes: nothing under
-`Models/` or `Validation/` may take a dependency on Blazor, EF Core or JS interop.
+The app and the API both **reference `WorkPlanStudio.Domain`**, so the entity shapes, the validators
+and the policy table are one copy rather than two that drift. That shared assembly is also the
+constraint it imposes: nothing in it may take a dependency on Blazor, EF Core or JS interop, and
+persistence is deliberately left out of it — the browser's `DbContext` and the server's
+`IdentityDbContext` disagree on purpose, and a shared context would be a shared lie.
+
+The API used to compile those files out of the app with `<Compile Include>`. It worked, and it
+was the one place in the repository where "which project does this type belong to" had a different
+answer from everywhere else — and it hid a real defect: the one validator that could not be linked
+had been copied into the API by hand, and the copy had three rules fewer than the original.
 
 ## Boundaries and invariants
 
@@ -267,8 +274,8 @@ per browser. `Permissions` is one table from policy to roles, registered with `A
 Pages use `AuthorizeView Policy="…"`; services use `IPermissionGuard`, which wraps
 `IAuthorizationService`.
 
-Connected, the same table is registered **by linked source** in the API, the principal comes from a
-JWT the server issued against an Identity account, and the persona switcher disappears from the UI.
+Connected, the same table is registered in the API **from the same assembly**, the principal comes
+from a JWT the server issued against an Identity account, and the persona switcher disappears from the UI.
 That is the seam ADR 0013 said existed, demonstrated rather than asserted. The static demo is still
 the persona build and still protects nothing; [SECURITY.md](SECURITY.md) says so plainly.
 

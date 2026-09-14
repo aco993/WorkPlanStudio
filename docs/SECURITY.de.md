@@ -59,8 +59,8 @@ vor ([ADR 0013](adr/0013-personas-through-the-real-authorization-pipeline.md)); 
 schützt nichts**.
 
 Diese Nahtstelle ist inzwischen mehr als eine Behauptung. Ist `Api:BaseAddress`
-konfiguriert, setzt dieselbe Richtlinientabelle — *dieselbe Quelldatei*, in beide Wirte
-kompiliert — ein Server durch, dem die Daten gehören, gegen einen Principal aus einem von
+konfiguriert, setzt dieselbe Richtlinientabelle — *dieselbe Assembly*, von beiden Wirten
+referenziert — ein Server durch, dem die Daten gehören, gegen einen Principal aus einem von
 ihm ausgestellten JWT, und der Rollenwechsler verschwindet aus der Oberfläche. Siehe
 [ADR 0020](adr/0020-optional-backend-and-real-auth.md). Die veröffentlichte Demo ist
 weiterhin der Rollen-Build.

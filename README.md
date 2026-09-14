@@ -137,7 +137,7 @@ With a key of your own, the same facts and the on-device answer go to a model of
 
 The top bar lets you be the **Planner** (everything), the **Supervisor** (release orders and record absences, but not redefine routings or plant rules) or a **Guest** (look, touch nothing). These are not a UI switch: the persona is a `ClaimsPrincipal` fed into ASP.NET Core's real authorization pipeline, pages use `AuthorizeView` policies, and every mutating service checks the same policy through an `IPermissionGuard` — a set a reflection test discovers rather than a list someone maintains.
 
-"Swapping the demo identity for a real one is one class" was a claim; it is now a project. `src/WorkPlanStudio.Api` compiles the client's *own* policy table by linked source and enforces it against a JWT issued to an Identity account, with rotating refresh tokens, lockout, rate limiting and a start-up that refuses a weak signing key. Configure `Api:BaseAddress` and the persona switcher disappears. The published demo does not configure it, and [docs/SECURITY.md](docs/SECURITY.md) says plainly that the demo protects nothing. See [ADR 0013](docs/adr/0013-personas-through-the-real-authorization-pipeline.md) and [ADR 0020](docs/adr/0020-optional-backend-and-real-auth.md).
+"Swapping the demo identity for a real one is one class" was a claim; it is now a project. `src/WorkPlanStudio.Api` references the client's *own* policy table — the same assembly, `WorkPlanStudio.Domain` — and enforces it against a JWT issued to an Identity account, with rotating refresh tokens, lockout, rate limiting and a start-up that refuses a weak signing key. Configure `Api:BaseAddress` and the persona switcher disappears. The published demo does not configure it, and [docs/SECURITY.md](docs/SECURITY.md) says plainly that the demo protects nothing. See [ADR 0013](docs/adr/0013-personas-through-the-real-authorization-pipeline.md) and [ADR 0020](docs/adr/0020-optional-backend-and-real-auth.md).
 
 ## Tech stack
 
@@ -147,7 +147,7 @@ The top bar lets you be the **Planner** (everything), the **Supervisor** (releas
 | Data | Entity Framework Core 10 + SQLite compiled to WebAssembly, persisted to `localStorage`, schema-versioned with real upgrade steps |
 | Domain libraries | `WorkPlanStudio.Scheduling` (finite-capacity engine + exact solver), `WorkPlanStudio.WorkingTime` (ArbZG rules, holidays, calendars), `WorkPlanStudio.Export` (CSV, xlsx, PDF) — all pure C#, no package references |
 | Optional backend | ASP.NET Core 10 minimal API, EF Core migrations, ASP.NET Core Identity, JWT + refresh tokens, OpenAPI, Docker |
-| Authorization | `Microsoft.AspNetCore.Components.Authorization`, policies, `IAuthorizationService` — one policy table, compiled into both hosts |
+| Authorization | `Microsoft.AspNetCore.Components.Authorization`, policies, `IAuthorizationService` — one policy table, in one assembly both hosts reference |
 | Localization | `Microsoft.Extensions.Localization`, `IStringLocalizer`, `.resx` (EN / DE) |
 | Styling | Hand-written CSS design system on custom-property tokens; light, dark and system themes; forced-colours support |
 | AI | Provider seam with OpenAI-compatible, Anthropic and Gemini clients; source-generated JSON; on-device fallback |
@@ -217,6 +217,7 @@ WorkPlanStudio/
 │  ├─ WorkPlanStudio.WorkingTime/   # pure rules: GermanHolidays, ShiftPattern, WorkingTimeRules, WorkingTimelineBuilder, compliance
 │  ├─ WorkPlanStudio.Export/        # pure writers: Csv/, Xlsx/, Pdf/
 │  ├─ WorkPlanStudio.Contracts/     # DTOs and policy names shared with the API
+│  ├─ WorkPlanStudio.Domain/        # entities, validation, policies, EF→engine mapping
 │  └─ WorkPlanStudio.Api/           # optional backend: Identity, JWT, EF migrations, endpoints
 ├─ tests/
 │  ├─ WorkPlanStudio.Scheduling.Tests/    # unit, property, optimality study, exact solver, architecture, budgets
@@ -306,7 +307,6 @@ The deployable site is in `publish/wwwroot/` — 103 files, 19.8 MB, of which 5.
 - **Visual baselines exist for Linux only.** On any other operating system those ten tests skip with a reason; there is no cross-OS pixel guarantee, and there was never a runner that provided one.
 - **Mutation testing is blocked upstream.** Stryker does not yet support the Microsoft Testing Platform, so no mutation score is claimed.
 - **The CSV import will not delete, and will not partially apply.** A file cannot say "remove this row", and rejected rows are not imported — you fix the file and import again.
-- **The backend compiles the domain source rather than referencing it.** `WorkPlanStudio.Api` pulls `Models/**`, `Validation/**` and four service files in with `<Compile Include>`, so the two hosts share one definition by construction — but moving one of those files breaks the API's build with no warning. A `WorkPlanStudio.Domain` project is the right shape and is not done.
 - **Server-side storage is SQLite.** It is a real file with real migrations and it is not a production database; nothing here has been run against PostgreSQL or SQL Server.
 - Browser storage is local demo persistence: versioned snapshots with an upgrade path and recovery, not synchronisation. Sample parts, machines and times are fictitious.
 

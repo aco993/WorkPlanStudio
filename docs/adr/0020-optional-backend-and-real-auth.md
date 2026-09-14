@@ -60,18 +60,28 @@ puts a real account in the top bar. It does not sync.
 
 ### One authorization model, not two
 
-The API compiles the browser application's own `Services/Auth/Permissions.cs`
-— the same file, linked into the project — so `ManageMasterData` means
-the same thing on both sides by construction rather than by convention.
-The entities, the three validators and `ScheduleMapper` are linked for
-the same reason: a server and a client that disagree about what a valid
-work plan is will disagree quietly, at the worst possible moment.
+The API and the browser app reference the same `Permissions`, so
+`ManageMasterData` means the same thing on both sides by construction
+rather than by convention. The entities, the validators and
+`ScheduleMapper` are shared for the same reason: a server and a client
+that disagree about what a valid work plan is will disagree quietly, at
+the worst possible moment.
 
-Two things could not be linked and are duplicated with a test guarding
-each: the persistence mapping (the API's context is an
-`IdentityDbContext` and carries a concurrency token the browser has no
-use for) and `PlantSettingsValidator`, which shares a file with a service
-that writes to browser storage.
+Persistence is the one thing deliberately **not** shared: the API's
+context is an `IdentityDbContext` and carries a concurrency token the
+browser has no use for, and a shared context would be a shared lie.
+
+> **Amended after 0.3.1.** Originally the API pulled those files out of the
+> app with `<Compile Include>`, because the parallel streams that built
+> this made moving files expensive. They now live in
+> `WorkPlanStudio.Domain`, which both hosts reference. The change paid
+> for itself immediately: `PlantSettingsValidator` was the one file that
+> could not be linked — it sat beside a service that writes to browser
+> storage — so the API carried a hand-kept copy of its bounds, guarded
+> by a test that read the original's *source text*. The copy had three
+> rules fewer than the original, and the server accepted a ten-hour rest
+> with no § 5 (2) sector to justify it. The copy is gone; the endpoint
+> calls the validator.
 
 ### JWT with refresh tokens, not cookies
 

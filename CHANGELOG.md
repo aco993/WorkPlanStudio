@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **The shared domain is a project, not a `<Compile Include>`.** The optional
+  backend used to compile `Models/**`, `Validation/**` and four service files out
+  of the browser app, because a Blazor WebAssembly project with a relinked native
+  SQLite in it cannot be referenced from a server. They now live in
+  `WorkPlanStudio.Domain`, which both hosts reference normally. Namespaces are
+  unchanged, so no call site moved.
+
+### Fixed
+
+- **The server accepted plant settings the browser refuses.**
+  `PlantSettingsValidator` was the one file that could not be linked — it sat
+  beside a service that writes to browser storage — so the API carried a
+  hand-kept copy of its bounds, guarded by a test that read the original's
+  *source text*. The copy had three rules fewer: no rotation-week range, no
+  enum checks, and **no § 5 (2) rule**, so a ten-hour rest went through with no
+  sector to justify it. The copy is deleted and the endpoint calls the
+  validator; a test now puts that row over the wire and expects the refusal.
+
 ## [0.3.1] — 2026-09-14
 
 A fix release. One statutory rule turned out to be wrong in a case the property

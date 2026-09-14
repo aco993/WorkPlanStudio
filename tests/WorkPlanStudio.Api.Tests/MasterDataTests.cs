@@ -251,7 +251,7 @@ public class MasterDataTests : IClassFixture<MasterDataFixture>
         Assert.NotNull(current);
 
         var nonsense = await client.PutAsJsonAsync("/api/plant-settings", current with { State = "ZZ" }, Ct);
-        var real = await client.PutAsJsonAsync("/api/plant-settings", current with { State = "by", MinimumRestHours = 10 }, Ct);
+        var real = await client.PutAsJsonAsync("/api/plant-settings", current with { State = "by" }, Ct);
 
         Assert.Equal(HttpStatusCode.BadRequest, nonsense.StatusCode);
         Assert.Contains("Val_StateInvalid", await nonsense.Content.ReadAsStringAsync(Ct), StringComparison.Ordinal);
@@ -259,6 +259,25 @@ public class MasterDataTests : IClassFixture<MasterDataFixture>
         Assert.Equal(HttpStatusCode.OK, real.StatusCode);
         var saved = await real.Content.ReadFromJsonAsync<PlantSettingsDto>(Ct);
         Assert.Equal("BY", saved?.State);
+    }
+
+    [Fact]
+    public async Task Plant_settings_refuse_the_ten_hour_rest_the_wire_cannot_justify()
+    {
+        // § 5 (2) hands the ten-hour rest to the sectors it names and to nobody
+        // else, so it is an entitlement and not a dial. PlantSettingsDto carries
+        // no sector, so over this wire there is nothing that could justify it —
+        // and until the endpoint used the application's own validator, the server
+        // took it anyway, because its hand-kept copy of the bounds had only the
+        // range check and not the rule.
+        var client = await _api.SignedInAsync("planner");
+        var current = await client.GetFromJsonAsync<PlantSettingsDto>("/api/plant-settings", Ct);
+        Assert.NotNull(current);
+
+        var response = await client.PutAsJsonAsync("/api/plant-settings", current with { MinimumRestHours = 10 }, Ct);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Contains("Wt_Val_RestNeedsSector", await response.Content.ReadAsStringAsync(Ct), StringComparison.Ordinal);
     }
 
     [Fact]

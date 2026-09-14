@@ -4,6 +4,7 @@
     <Project Path="src/WorkPlanStudio.Scheduling/WorkPlanStudio.Scheduling.csproj" />
     <Project Path="src/WorkPlanStudio.WorkingTime/WorkPlanStudio.WorkingTime.csproj" />
     <Project Path="src/WorkPlanStudio.Contracts/WorkPlanStudio.Contracts.csproj" />
+    <Project Path="src/WorkPlanStudio.Domain/WorkPlanStudio.Domain.csproj" />
     <Project Path="src/WorkPlanStudio.Api/WorkPlanStudio.Api.csproj" />
     <Project Path="src/WorkPlanStudio.Export/WorkPlanStudio.Export.csproj" />
   </Folder>

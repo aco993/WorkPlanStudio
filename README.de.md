@@ -137,7 +137,7 @@ Mit eigenem Schlüssel gehen dieselben Fakten und die Antwort vom Gerät an ein 
 
 Die Kopfleiste lässt Sie **Planer** (alles), **Meister** (Aufträge freigeben und Abwesenheiten erfassen, aber weder Arbeitspläne noch Betriebsregeln ändern) oder **Gast** (ansehen, nichts ändern) sein. Das ist kein Schalter in der Oberfläche: Die Rolle ist ein `ClaimsPrincipal` in der echten Autorisierungspipeline von ASP.NET Core, die Seiten nutzen `AuthorizeView`-Richtlinien, und jeder schreibende Dienst prüft dieselbe Richtlinie über einen `IPermissionGuard` — eine Menge, die ein Reflexionstest ermittelt, statt einer Liste, die jemand pflegen muss.
 
-„Die Demo-Identität gegen eine echte zu tauschen ist eine Klasse“ war eine Behauptung; inzwischen ist es ein Projekt. `src/WorkPlanStudio.Api` bindet die Richtlinientabelle des Clients als *verlinkten Quelltext* ein und setzt sie gegen ein JWT für ein Identity-Konto durch, mit rotierenden Refresh-Tokens, Kontosperre, Ratenbegrenzung und einem Start, der einen zu schwachen Signaturschlüssel verweigert. Wird `Api:BaseAddress` konfiguriert, verschwindet der Rollenwechsler. Die veröffentlichte Demo konfiguriert ihn nicht, und [docs/SECURITY.de.md](docs/SECURITY.de.md) sagt deutlich, dass die Demo nichts schützt. Siehe [ADR 0013](docs/adr/0013-personas-through-the-real-authorization-pipeline.md) und [ADR 0020](docs/adr/0020-optional-backend-and-real-auth.md).
+„Die Demo-Identität gegen eine echte zu tauschen ist eine Klasse“ war eine Behauptung; inzwischen ist es ein Projekt. `src/WorkPlanStudio.Api` referenziert die Richtlinientabelle des Clients — dieselbe Assembly, `WorkPlanStudio.Domain` — und setzt sie gegen ein JWT für ein Identity-Konto durch, mit rotierenden Refresh-Tokens, Kontosperre, Ratenbegrenzung und einem Start, der einen zu schwachen Signaturschlüssel verweigert. Wird `Api:BaseAddress` konfiguriert, verschwindet der Rollenwechsler. Die veröffentlichte Demo konfiguriert ihn nicht, und [docs/SECURITY.de.md](docs/SECURITY.de.md) sagt deutlich, dass die Demo nichts schützt. Siehe [ADR 0013](docs/adr/0013-personas-through-the-real-authorization-pipeline.md) und [ADR 0020](docs/adr/0020-optional-backend-and-real-auth.md).
 
 ## Technologie
 
@@ -217,6 +217,7 @@ WorkPlanStudio/
 │  ├─ WorkPlanStudio.WorkingTime/   # reine Regeln: GermanHolidays, ShiftPattern, WorkingTimeRules, WorkingTimelineBuilder, Compliance
 │  ├─ WorkPlanStudio.Export/        # reine Writer: Csv/, Xlsx/, Pdf/
 │  ├─ WorkPlanStudio.Contracts/     # mit der API geteilte DTOs und Richtliniennamen
+│  ├─ WorkPlanStudio.Domain/        # Entitäten, Validierung, Richtlinien, EF→Engine-Abbildung
 │  └─ WorkPlanStudio.Api/           # optionales Backend: Identity, JWT, EF-Migrationen, Endpunkte
 ├─ tests/
 │  ├─ WorkPlanStudio.Scheduling.Tests/    # Unit, Property, Optimalitätsstudie, exakter Löser, Architektur, Budgets
@@ -306,7 +307,6 @@ Die auslieferbare Seite liegt in `publish/wwwroot/` — 103 Dateien, 19,8 MB, da
 - **Bild-Baselines gibt es nur für Linux.** Auf jedem anderen Betriebssystem werden diese zehn Tests übersprungen; eine betriebssystemübergreifende Pixelgarantie gibt es nicht, und es gab nie einen Runner, der sie geliefert hätte.
 - **Mutationstests sind stromaufwärts blockiert.** Stryker unterstützt die Microsoft Testing Platform noch nicht, deshalb wird kein Mutationsscore behauptet.
 - **Der CSV-Import löscht nicht und übernimmt nichts teilweise.** Eine Datei kann nicht „diese Zeile entfernen“ sagen, und abgelehnte Zeilen werden nicht importiert — man korrigiert die Datei und importiert erneut.
-- **Das Backend kompiliert die Domänenquellen, statt sie zu referenzieren.** `WorkPlanStudio.Api` zieht `Models/**`, `Validation/**` und vier Dienstdateien per `<Compile Include>` herein; beide Wirte teilen sich damit bauartbedingt eine Definition — aber wer eine dieser Dateien verschiebt, bricht den API-Build ohne Vorwarnung. Ein Projekt `WorkPlanStudio.Domain` wäre die richtige Form und ist nicht umgesetzt.
 - **Serverseitig wird SQLite gespeichert.** Eine echte Datei mit echten Migrationen — und keine Produktionsdatenbank; gegen PostgreSQL oder SQL Server ist hier nichts gelaufen.
 - Der Browser-Speicher ist lokale Demo-Persistenz: versionierte Snapshots mit Aufwertungspfad und Wiederherstellung, keine Synchronisierung. Beispielteile, -maschinen und -zeiten sind erfunden.
 

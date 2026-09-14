@@ -10,11 +10,9 @@
     <RootNamespace>WorkPlanStudio.Api</RootNamespace>
     <UserSecretsId>workplanstudio-api</UserSecretsId>
 
-    <!-- No XML documentation file. The two pure libraries generate one because
-         they are consumed as libraries; this is an application, its endpoint
-         descriptions come from WithSummary(), and switching it on would demand
-         member docs from the shared source files linked in below, which belong
-         to a project that does not ask for them. -->
+    <!-- No XML documentation file. The libraries generate one because they are
+         consumed as libraries; this is an application and its endpoint
+         descriptions come from WithSummary(). -->
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
 
     <!-- No launch profile: the port is chosen with the urls switch or with
@@ -40,34 +38,13 @@
 
   <ItemGroup>
     <ProjectReference Include="..\WorkPlanStudio.Contracts\WorkPlanStudio.Contracts.csproj" />
+    <!-- Entities, validation rules, the policy table and the EF-to-engine
+         mapping. The browser app references the same assembly, which is how the
+         two hosts are kept from quietly disagreeing about what a valid work plan
+         is. Persistence is deliberately not shared - see the project file. -->
+    <ProjectReference Include="..\WorkPlanStudio.Domain\WorkPlanStudio.Domain.csproj" />
     <ProjectReference Include="..\WorkPlanStudio.Scheduling\WorkPlanStudio.Scheduling.csproj" />
     <ProjectReference Include="..\WorkPlanStudio.WorkingTime\WorkPlanStudio.WorkingTime.csproj" />
-  </ItemGroup>
-
-  <!--
-    Shared domain source, compiled into this assembly rather than copied.
-
-    The browser app cannot be referenced from here: it is a Blazor WebAssembly
-    project and dragging it (and the relinked native SQLite) into a server build
-    would be absurd. But the entities, the business rules and the EF→engine
-    mapping are pure C# with no Blazor and no browser in them, and duplicating
-    them is how a server and a client quietly start disagreeing about what a
-    valid work plan is — precisely the bug this stream exists to prevent.
-
-    So the files are linked. Persistence mapping is not shared (this context is
-    an IdentityDbContext and owns concurrency tokens the browser has no use for),
-    and neither is anything that talks to storage. The follow-up, once the
-    parallel streams have merged and files can be moved again, is to lift these
-    into a WorkPlanStudio.Domain project that both sides reference normally.
-  -->
-  <ItemGroup>
-    <Compile Include="..\WorkPlanStudio\Models\**\*.cs" LinkBase="Shared\Models" />
-    <Compile Include="..\WorkPlanStudio\Validation\**\*.cs" LinkBase="Shared\Validation" />
-    <Compile Include="..\WorkPlanStudio\Services\Auth\Permissions.cs" Link="Shared\Auth\Permissions.cs" />
-    <Compile Include="..\WorkPlanStudio\Services\ScheduleMapper.cs" Link="Shared\Scheduling\ScheduleMapper.cs" />
-    <Compile Include="..\WorkPlanStudio\Services\ScheduleViewModels.cs" Link="Shared\Scheduling\ScheduleViewModels.cs" />
-    <Compile Include="..\WorkPlanStudio\Services\SchedulePreparationResult.cs" Link="Shared\Scheduling\SchedulePreparationResult.cs" />
-    <Compile Include="..\WorkPlanStudio\Services\ShopCalendar.cs" Link="Shared\Scheduling\ShopCalendar.cs" />
   </ItemGroup>
 
 </Project>

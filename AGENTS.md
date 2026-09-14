@@ -60,7 +60,8 @@ WebAssembly, running in the browser) and localisation sit around them. There is 
 | `src/WorkPlanStudio.WorkingTime/` | the pure working-time library (shift patterns, ArbZG rules, holidays, `WorkingTimelineBuilder` → `MachineCalendar`, `WorkingTimeCompliance`) |
 | `src/WorkPlanStudio.Export/` | the pure CSV, xlsx and PDF writers — no package reference |
 | `src/WorkPlanStudio.Contracts/` | DTOs and policy names shared with the optional API |
-| `src/WorkPlanStudio.Api/` | the optional backend (Identity, JWT, EF migrations, minimal API). **Compiles `Models/**`, `Validation/**` and four `Services/*.cs` files out of the browser app by linked source** |
+| `src/WorkPlanStudio.Domain/` | entities, validation rules, the policy table and the EF→engine mapping — referenced by the app **and** by the API, so a rule cannot mean two things on two hosts. No persistence in here. |
+| `src/WorkPlanStudio.Api/` | the optional backend (Identity, JWT, EF migrations, minimal API) |
 | `src/WorkPlanStudio/` | the Blazor app (Models, Data, Validation, Services, Components, Layout, Pages, Resources, wwwroot) |
 | `src/WorkPlanStudio/Services/ScheduleMapper.cs` | the EF→engine boundary (the one `decimal`→seconds spot) |
 | `src/WorkPlanStudio/Services/ShopCalendar.cs` | plant settings + work centers + absences → one timeline per work center |
