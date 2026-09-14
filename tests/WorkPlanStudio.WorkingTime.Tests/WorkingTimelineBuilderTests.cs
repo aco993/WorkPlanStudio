@@ -252,6 +252,40 @@ public class WorkingTimelineBuilderTests
     }
 
     [Fact]
+    public void A_shift_delayed_out_of_existence_does_not_lend_its_end_to_the_next_one()
+    {
+        // §9 (2) moves the closed Sunday to 01:00, so the Sunday night shift is
+        // clipped and what survives of it is Monday 01:00–09:00. That collides
+        // with "early", which §5 delays to 20:00 — past its own end, so it is
+        // gone. "night" on Monday must then be measured against the 09:00 the
+        // crew really stopped at, not against the 05:00 of a shift nobody works:
+        // one pass measured the dead shift and left 19:00 standing, ten hours
+        // after the crew went home. Found by WorkingTimePropertyTests, which saw
+        // it about twice in two hundred runs.
+        var rules = WorkingTimeRules.Statutory with { SundayBoundaryShift = TimeSpan.FromHours(1) };
+        var pattern = new ShiftPattern("p",
+        [
+            new ShiftDefinition("night", new(19, 0), new(9, 0), WorkDays.Monday | WorkDays.Sunday, "A"),
+            new ShiftDefinition("early", new(1, 30), new(5, 0), WorkDays.Monday, "A")
+        ]);
+        var timeline = Build(pattern, rules);
+
+        Assert.DoesNotContain(timeline.WeekWindows, w => w.Label == "early");
+        var monday = Assert.Single(timeline.CrewShifts, i => i.ShiftKey == "night" && i.Day == DayOfWeek.Monday);
+        Assert.Equal(At(0, 20), monday.StartSeconds);
+
+        // And the invariant itself, on the whole crew: the ring includes the wrap
+        // from the last shift of the week back to the first.
+        var ordered = timeline.CrewShifts.OrderBy(i => i.StartSeconds).ToList();
+        for (int i = 0; i < ordered.Count; i++)
+        {
+            long previousEnd = i == 0 ? ordered[^1].EndSeconds - 7 * Day : ordered[i - 1].EndSeconds;
+            Assert.True(ordered[i].StartSeconds - previousEnd >= 11 * Hour,
+                $"{ordered[i].ShiftKey} on {ordered[i].Day} starts {ordered[i].StartSeconds - previousEnd}s after the crew stopped");
+        }
+    }
+
+    [Fact]
     public void Different_crews_are_not_checked_against_each_other()
     {
         var timeline = Build(ShiftPatterns.TwoShift);
