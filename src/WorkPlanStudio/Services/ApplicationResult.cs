@@ -10,6 +10,14 @@ public enum ApplicationResultStatus
     Conflict,
     PersistenceFailed,
 
+    /// <summary>
+    /// The change was undone because the browser has no room for the snapshot.
+    /// A separate status from <see cref="PersistenceFailed"/> because it is the
+    /// one storage failure the user can do something about, and the storage
+    /// layer has always known the difference - it was only thrown away here.
+    /// </summary>
+    StorageFull,
+
     /// <summary>The current persona lacks the policy this action requires.</summary>
     Forbidden
 }
@@ -33,6 +41,9 @@ public sealed record ApplicationResult<T>(
     public static ApplicationResult<T> NotFound() => new(ApplicationResultStatus.NotFound);
 
     public static ApplicationResult<T> PersistenceFailed() => new(ApplicationResultStatus.PersistenceFailed);
+
+    /// <summary>The snapshot did not fit; the database was put back the way it was.</summary>
+    public static ApplicationResult<T> StorageFull() => new(ApplicationResultStatus.StorageFull);
 
     public static ApplicationResult<T> Forbidden() => new(ApplicationResultStatus.Forbidden);
 }

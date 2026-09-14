@@ -294,7 +294,9 @@ public sealed class ImportInvariantTests
             cancellationToken);
 
         Assert.Equal(0, plan.CreateCount);
-        Assert.Equal(["Val_PlanNotReleased", "Val_WorkPlanMissing"], plan.Reasons());
+        // A file has nothing to select from, so the row that names a plan number
+        // nobody has says exactly that, with the number in it.
+        Assert.Equal(["Val_PlanNotReleased", "Imp_WorkPlanNotFound"], plan.Reasons());
     }
 
     [Fact]
@@ -394,7 +396,10 @@ public sealed class ImportInvariantTests
         var committed = await shop.Importer.CommitAsync(plan, cancellationToken);
         shop.Storage.QuotaExceeded = false;
 
-        Assert.Equal(ApplicationResultStatus.PersistenceFailed, committed.Status);
+        // StorageFull rather than PersistenceFailed: the storage layer has always
+        // known which of the two it was, and the surface now carries it, because
+        // "no room left" is the one storage failure a person can act on.
+        Assert.Equal(ApplicationResultStatus.StorageFull, committed.Status);
 
         var after = await shop.CostCenters.GetAllAsync(cancellationToken);
         Assert.Equal(before, after.Count);

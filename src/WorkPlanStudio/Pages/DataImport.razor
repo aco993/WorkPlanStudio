@@ -504,5 +504,10 @@
     private string Summarise<T>(ApplicationResult<T> result) =>
         result.ValidationIssues is { Count: > 0 } issues
             ? string.Join(" ", issues.Select(issue => L[issue.MessageKey, issue.Arguments.Select(Localise).ToArray()].Value))
-            : L[result.Status == ApplicationResultStatus.Forbidden ? "Error_Forbidden" : "Error_ActionFailed"].Value;
+            : L[result.Status switch
+            {
+                ApplicationResultStatus.Forbidden => "Error_Forbidden",
+                ApplicationResultStatus.StorageFull => "Error_StorageFull",
+                _ => "Error_ActionFailed"
+            }].Value;
 }

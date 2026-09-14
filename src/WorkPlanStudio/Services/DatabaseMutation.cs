@@ -75,7 +75,12 @@ internal static class DatabaseMutation
             return ApplicationResult<T>.Success(value);
 
         await database.RestoreAsync(preImage, cancellationToken);
-        return ApplicationResult<T>.PersistenceFailed();
+
+        // Both paths put the database back; only one of them is something the
+        // person in front of the screen can act on.
+        return persisted.Failure == BrowserDatabaseFailure.QuotaExceeded
+            ? ApplicationResult<T>.StorageFull()
+            : ApplicationResult<T>.PersistenceFailed();
     }
 
     /// <summary>Re-types a failed staging result; the value is absent either way.</summary>
