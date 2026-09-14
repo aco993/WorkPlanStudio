@@ -306,6 +306,8 @@ The deployable site is in `publish/wwwroot/` — 103 files, 19.8 MB, of which 5.
 - **Visual baselines exist for Linux only.** On any other operating system those ten tests skip with a reason; there is no cross-OS pixel guarantee, and there was never a runner that provided one.
 - **Mutation testing is blocked upstream.** Stryker does not yet support the Microsoft Testing Platform, so no mutation score is claimed.
 - **The CSV import will not delete, and will not partially apply.** A file cannot say "remove this row", and rejected rows are not imported — you fix the file and import again.
+- **The backend compiles the domain source rather than referencing it.** `WorkPlanStudio.Api` pulls `Models/**`, `Validation/**` and four service files in with `<Compile Include>`, so the two hosts share one definition by construction — but moving one of those files breaks the API's build with no warning. A `WorkPlanStudio.Domain` project is the right shape and is not done.
+- **Server-side storage is SQLite.** It is a real file with real migrations and it is not a production database; nothing here has been run against PostgreSQL or SQL Server.
 - Browser storage is local demo persistence: versioned snapshots with an upgrade path and recovery, not synchronisation. Sample parts, machines and times are fictitious.
 
 ## AI-assisted development disclosure

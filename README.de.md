@@ -306,6 +306,8 @@ Die auslieferbare Seite liegt in `publish/wwwroot/` — 103 Dateien, 19,8 MB, da
 - **Bild-Baselines gibt es nur für Linux.** Auf jedem anderen Betriebssystem werden diese zehn Tests übersprungen; eine betriebssystemübergreifende Pixelgarantie gibt es nicht, und es gab nie einen Runner, der sie geliefert hätte.
 - **Mutationstests sind stromaufwärts blockiert.** Stryker unterstützt die Microsoft Testing Platform noch nicht, deshalb wird kein Mutationsscore behauptet.
 - **Der CSV-Import löscht nicht und übernimmt nichts teilweise.** Eine Datei kann nicht „diese Zeile entfernen“ sagen, und abgelehnte Zeilen werden nicht importiert — man korrigiert die Datei und importiert erneut.
+- **Das Backend kompiliert die Domänenquellen, statt sie zu referenzieren.** `WorkPlanStudio.Api` zieht `Models/**`, `Validation/**` und vier Dienstdateien per `<Compile Include>` herein; beide Wirte teilen sich damit bauartbedingt eine Definition — aber wer eine dieser Dateien verschiebt, bricht den API-Build ohne Vorwarnung. Ein Projekt `WorkPlanStudio.Domain` wäre die richtige Form und ist nicht umgesetzt.
+- **Serverseitig wird SQLite gespeichert.** Eine echte Datei mit echten Migrationen — und keine Produktionsdatenbank; gegen PostgreSQL oder SQL Server ist hier nichts gelaufen.
 - Der Browser-Speicher ist lokale Demo-Persistenz: versionierte Snapshots mit Aufwertungspfad und Wiederherstellung, keine Synchronisierung. Beispielteile, -maschinen und -zeiten sind erfunden.
 
 ## Hinweis zur KI-gestützten Entwicklung
