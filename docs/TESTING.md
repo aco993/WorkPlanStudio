@@ -13,7 +13,7 @@ bulk of the suite runs in seconds with no browser and no `wasm-tools` workload.
 graph TD
     E2E["🌐 <b>End-to-end, accessibility, visual</b> — Playwright · 76 tests<br/>real Chromium: flows in both languages, axe WCAG 2.2 AA, pixel baselines"]
     APP["🧩 <b>App, backend and export</b> — xUnit/bUnit · 1 101 tests<br/>real SQLite, mapper, authorization, import, pages, chat, JWT API, file writers"]
-    UNIT["⚙️ <b>Engine and working time</b> — xUnit/CsCheck · 548 tests<br/>invariants, proved optimality, ArbZG rules, design rules"]
+    UNIT["⚙️ <b>Engine and working time</b> — xUnit/CsCheck · 549 tests<br/>invariants, proved optimality, ArbZG rules, design rules"]
 
     E2E --> APP --> UNIT
 
@@ -30,13 +30,13 @@ Counts measured on this tip by running each suite; see *Running the tests* below
 | Layer | Project | Tests | Guards | Needs WASM? | Runtime |
 | --- | --- | --: | --- | :---: | --- |
 | Engine: unit, property, optimality, exact solver, architecture, budget | `tests/WorkPlanStudio.Scheduling.Tests` | **294** | determinism, feasibility, rules, calendars and blackouts, input validation, zero-allocation scoring, the twenty-instance optimality study, the LP model, a dependency-free core | no | ~5 s |
-| Working time: unit, property, architecture, budget | `tests/WorkPlanStudio.WorkingTime.Tests` | **254** | holidays for all 16 states across 1990–2200, shift patterns, every ArbZG rule with its parameter, the averaging windows, both daylight-saving transitions, the timeline builder's invariants | no | ~1 s |
-| Data, mapper, authorization, import, components, assistant, remote | `tests/WorkPlanStudio.Web.Tests` | **865** | real SQLite constraints and schema upgrades, the all-or-nothing mapper, the persona policies as a closed set, the CSV import's preview-equals-commit promise, localized component states, the sliced run, the optimality proof, the chat against hostile responses | yes¹ | ~5 s |
+| Working time: unit, property, architecture, budget | `tests/WorkPlanStudio.WorkingTime.Tests` | **255** | holidays for all 16 states across 1990–2200, shift patterns, every ArbZG rule with its parameter, the averaging windows, both daylight-saving transitions, the timeline builder's invariants | no | ~1 s |
+| Data, mapper, authorization, import, components, assistant, remote | `tests/WorkPlanStudio.Web.Tests` | **867** | real SQLite constraints and schema upgrades, the all-or-nothing mapper, the persona policies as a closed set, the CSV import's preview-equals-commit promise, localized component states, the sliced run, the optimality proof, the chat against hostile responses | yes¹ | ~5 s |
 | Backend: HTTP integration against a real SQLite file | `tests/WorkPlanStudio.Api.Tests` | **88** | login, lockout, rate limiting, refresh-token rotation and reuse detection, 401/403 per route, concurrency stamps, and that the server produces the schedule the browser would have | no | ~3 s |
 | Export writers: CSV, xlsx, PDF | `tests/WorkPlanStudio.Export.Tests` | **148** | the bytes, read back: formula injection, quoting, the workbook's parts, the PDF's object table, both cultures' date rules | no | <1 s |
 | End-to-end, accessibility, visual regression | `tests/WorkPlanStudio.E2E` | **76** | real Chromium: schedule changes, determinism, language, working time on the Gantt, production orders end to end, storage recovery, personas, theme, keyboard, mobile, the chat in both languages; axe WCAG 2.2 AA on every route in light, dark and German; nine screen baselines | browser² | ~75 s |
 
-**1 649 unit and integration tests, plus 76 browser tests.** Ten of the browser
+**1 652 unit and integration tests, plus 76 browser tests.** Ten of the browser
 tests are the pixel comparisons, and they *skip* off Linux with a reason naming
 [ADR 0021](adr/0021-visual-baselines-linux-only.md) rather than comparing against
 a baseline nothing produced.
@@ -112,12 +112,20 @@ loose). See [ADR 0015](adr/0015-exact-solver.md).
 
 Example tests check the cases you thought of; **property tests check the ones you
 didn't.** Using [CsCheck](https://github.com/AnthonyLloyd/CsCheck), each test
-generates hundreds of random-but-valid problems and asserts an *invariant* that
+generates **fifty thousand** random-but-valid problems and asserts an *invariant* that
 must hold for every schedule the engine can produce: precedence, capacity, no work
 inside a blackout, a pause never longer than the bridgeable gap, determinism, a
 makespan never below the longest single job, and never worse than the pure rule
 order. On failure CsCheck *shrinks* to a minimal counter-example and prints a seed
 (`CsCheck_Seed`) to reproduce it.
+
+The sample count is not decoration. CsCheck's default is a hundred draws, and a
+hundred is where a real defect hides: the § 5 rest bug fixed in 0.3.1 turned up in
+two runs out of two hundred — about one counterexample in ten thousand draws — so a
+hundred-draw run saw it one time in a hundred, and a released build went out with
+it. `CsCheck_Iter` is set to 50 000 in [`ci.yml`](../.github/workflows/ci.yml),
+which finds a defect of that rarity with probability ~99.3 % and costs the four
+suites that use CsCheck a few seconds each.
 
 The working-time library has its own: a built timeline never exceeds the daily cap
 **per crew calendar day** (not per shift label, which is how the old version

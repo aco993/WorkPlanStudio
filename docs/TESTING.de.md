@@ -14,7 +14,7 @@ Der Großteil der Suite läuft in Sekunden, ohne Browser und ohne die
 graph TD
     E2E["🌐 <b>End-to-End, Barrierefreiheit, Optik</b> — Playwright · 76 Tests<br/>echtes Chromium: Abläufe in beiden Sprachen, axe WCAG 2.2 AA, Pixel-Baselines"]
     APP["🧩 <b>App, Backend und Export</b> — xUnit/bUnit · 1 101 Tests<br/>echtes SQLite, Mapping, Berechtigungen, Import, Seiten, Chat, JWT-API, Datei-Writer"]
-    UNIT["⚙️ <b>Engine und Arbeitszeit</b> — xUnit/CsCheck · 548 Tests<br/>Invarianten, bewiesene Optimalität, ArbZG-Regeln, Entwurfsregeln"]
+    UNIT["⚙️ <b>Engine und Arbeitszeit</b> — xUnit/CsCheck · 549 Tests<br/>Invarianten, bewiesene Optimalität, ArbZG-Regeln, Entwurfsregeln"]
 
     E2E --> APP --> UNIT
 
@@ -32,13 +32,13 @@ Die Zahlen wurden auf diesem Stand durch Ausführen jeder Suite gemessen; siehe
 | Schicht | Projekt | Tests | Sichert ab | WASM nötig? | Laufzeit |
 | --- | --- | --: | --- | :---: | --- |
 | Engine: Unit, Property, Optimalität, exakter Löser, Architektur, Budgets | `tests/WorkPlanStudio.Scheduling.Tests` | **294** | Determinismus, Zulässigkeit, Regeln, Kalender und Sperrzeiten, Eingabeprüfung, allokationsfreie Bewertung, die Optimalitätsstudie über zwanzig Instanzen, das LP-Modell, ein abhängigkeitsfreier Kern | nein | ~5 s |
-| Arbeitszeit: Unit, Property, Architektur, Budgets | `tests/WorkPlanStudio.WorkingTime.Tests` | **254** | Feiertage aller 16 Länder über 1990–2200, Schichtmodelle, jede ArbZG-Vorschrift mit ihrem Parameter, die Ausgleichszeiträume, beide Zeitumstellungen, die Invarianten des Zeitleistenbauers | nein | ~1 s |
-| Daten, Mapping, Berechtigungen, Import, Komponenten, Assistent, Fernzugriff | `tests/WorkPlanStudio.Web.Tests` | **865** | echte SQLite-Bedingungen und Schemaaufwertungen, das Alles-oder-nichts-Mapping, die Rollenrichtlinien als geschlossene Menge, das Versprechen des Imports (Vorschau = Übernahme), lokalisierte Komponentenzustände, der zerlegte Lauf, der Optimalitätsbeweis, der Chat gegen feindliche Antworten | ja¹ | ~5 s |
+| Arbeitszeit: Unit, Property, Architektur, Budgets | `tests/WorkPlanStudio.WorkingTime.Tests` | **255** | Feiertage aller 16 Länder über 1990–2200, Schichtmodelle, jede ArbZG-Vorschrift mit ihrem Parameter, die Ausgleichszeiträume, beide Zeitumstellungen, die Invarianten des Zeitleistenbauers | nein | ~1 s |
+| Daten, Mapping, Berechtigungen, Import, Komponenten, Assistent, Fernzugriff | `tests/WorkPlanStudio.Web.Tests` | **867** | echte SQLite-Bedingungen und Schemaaufwertungen, das Alles-oder-nichts-Mapping, die Rollenrichtlinien als geschlossene Menge, das Versprechen des Imports (Vorschau = Übernahme), lokalisierte Komponentenzustände, der zerlegte Lauf, der Optimalitätsbeweis, der Chat gegen feindliche Antworten | ja¹ | ~5 s |
 | Backend: HTTP-Integration gegen eine echte SQLite-Datei | `tests/WorkPlanStudio.Api.Tests` | **88** | Anmeldung, Kontosperre, Ratenbegrenzung, Rotation und Wiederverwendungserkennung der Refresh-Tokens, 401/403 je Route, Concurrency-Stempel — und dass der Server den Plan erzeugt, den auch der Browser erzeugt hätte | nein | ~3 s |
 | Export-Writer: CSV, xlsx, PDF | `tests/WorkPlanStudio.Export.Tests` | **148** | die Bytes, zurückgelesen: Formel-Injektion, Maskierung, die Teile der Arbeitsmappe, die Objekttabelle des PDF, die Datumsregeln beider Sprachen | nein | <1 s |
 | End-to-End, Barrierefreiheit, Bildvergleich | `tests/WorkPlanStudio.E2E` | **76** | echtes Chromium: Planänderungen, Determinismus, Sprache, Arbeitszeit im Gantt, Fertigungsaufträge von Anfang bis Ende, Speicherwiederherstellung, Rollen, Farbschema, Tastatur, Mobilgerät, der Chat in beiden Sprachen; axe WCAG 2.2 AA auf jeder Route in hell, dunkel und auf Deutsch; neun Bildschirm-Baselines | Browser² | ~75 s |
 
-**1 649 Unit- und Integrationstests, dazu 76 Browsertests.** Zehn der Browsertests
+**1 652 Unit- und Integrationstests, dazu 76 Browsertests.** Zehn der Browsertests
 sind die Pixelvergleiche, und sie werden außerhalb von Linux mit einer Begründung
 *übersprungen*, die [ADR 0021](adr/0021-visual-baselines-linux-only.md) nennt, statt
 gegen eine Baseline zu vergleichen, die niemand erzeugt hat.
@@ -116,13 +116,22 @@ ein zu weites). Siehe [ADR 0015](adr/0015-exact-solver.md).
 
 Beispieltests prüfen die Fälle, an die man gedacht hat; **Property-Tests prüfen die,
 an die man nicht gedacht hat.** Mit [CsCheck](https://github.com/AnthonyLloyd/CsCheck)
-erzeugt jeder Test hunderte zufällige, aber gültige Probleme und behauptet eine
+erzeugt jeder Test **fünfzigtausend** zufällige, aber gültige Probleme und behauptet eine
 *Invariante*, die für jeden Plan gelten muss, den die Engine erzeugen kann:
 Reihenfolge, Kapazität, keine Arbeit in einer Sperrzeit, eine Unterbrechung nie
 länger als die überbrückbare Lücke, Determinismus, eine Durchlaufzeit nie unter dem
 längsten Einzelauftrag, und nie schlechter als die reine Regelreihenfolge. Bei einem
 Fehlschlag *schrumpft* CsCheck auf ein minimales Gegenbeispiel und gibt einen Seed
 (`CsCheck_Seed`) aus, mit dem er sich nachstellen lässt.
+
+Die Zahl der Ziehungen ist kein Beiwerk. CsCheck zieht von sich aus hundertmal, und
+bei hundert versteckt sich ein echter Fehler: Der §-5-Ruhezeitfehler, der in 0.3.1
+behoben wurde, trat in zwei von zweihundert Läufen auf — etwa ein Gegenbeispiel je
+zehntausend Ziehungen — ein Lauf mit hundert Ziehungen sah ihn also einmal von
+hundert Malen, und eine veröffentlichte Fassung ging damit hinaus. `CsCheck_Iter`
+steht in [`ci.yml`](../.github/workflows/ci.yml) auf 50 000; das findet einen so
+seltenen Fehler mit ~99,3 % Wahrscheinlichkeit und kostet die vier Suiten, die
+CsCheck benutzen, jeweils ein paar Sekunden.
 
 Die Arbeitszeit-Bibliothek hat ihre eigenen: Eine gebaute Zeitleiste überschreitet
 die Tagesgrenze **je Besatzung und Kalendertag** nie (nicht je Schichtbezeichnung —
