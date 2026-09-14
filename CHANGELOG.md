@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.3] — 2026-09-14
+
+Four findings from driving the published site through all three personas, and
+the browser suite taught about the one behaviour that deliberately changed.
+
 ### Fixed
 
 - **An unsaved work plan is no longer thrown away in silence.** Typing in the
@@ -451,7 +456,8 @@ Initial public release.
 - **CI/CD** — per-layer test workflows on pull requests and a test-gated
   GitHub Pages deployment.
 
-[Unreleased]: https://github.com/aco993/WorkPlanStudio/compare/v0.3.2...HEAD
+[Unreleased]: https://github.com/aco993/WorkPlanStudio/compare/v0.3.3...HEAD
+[0.3.3]: https://github.com/aco993/WorkPlanStudio/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/aco993/WorkPlanStudio/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/aco993/WorkPlanStudio/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/aco993/WorkPlanStudio/compare/v0.2.0...v0.3.0
