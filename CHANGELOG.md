@@ -7,6 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1] — 2026-09-14
+
+A fix release. One statutory rule turned out to be wrong in a case the property
+tests only found after 0.3.0 was out, and the dependency floor moved.
+
+### Fixed
+
+- **§ 5 rest is enforced on the ring a repeating week actually is.** A crew's
+  shifts repeat weekly, so the first shift of the week is measured against the last
+  shift of the week before. The pass that enforces the rest walked that ring once,
+  and one walk measures a picture the walk itself invalidates: a shift the delay
+  pushes past its own end is *gone*, yet its end was still handed to the shift
+  behind it as "when the crew stopped working", and delaying a shift reorders the
+  ring while the pass kept walking the old order. With the Sunday boundary moved to
+  01:00 (§ 9 (2)), a clipped Sunday night shift left a crew **ten hours** of rest
+  where § 5 asks for eleven. `EnforceRest` now sweeps until nothing moves, ignores
+  the ends of shifts the delay killed, and checks the settled ring once — dropping
+  whatever still starts too soon, which only ever lengthens the rest around it.
+  Measured on the suite: **two failures in two hundred runs before, none in two
+  hundred after**. Found by `WorkingTimePropertyTests` (CsCheck), which is also why
+  a dependency pull request touching nothing but a workflow file was red.
+- A component test edited the export form while the page's own first run was still
+  in flight, so it asserted on settings that were never run. It now waits for the
+  export trigger to be **operable** — the page's own word for "settled" — rather
+  than for the button to exist.
+
+### Changed
+
+- Dependencies: the test stack (xunit.v3 MTP 4.0.1, code coverage 18.11.2, CsCheck
+  4.9.0, **bUnit 2.11.3**), the Microsoft packages (ASP.NET Core, EF Core,
+  localization) to 10.0.12, Swashbuckle's Swagger UI to 10.2.3 — development only,
+  it serves the API's documentation page — and `actions/download-artifact` to v8.
+
 ## [0.3.0] — 2026-09-14
 
 A hardening and expansion release. The theme is that several claims this project
@@ -349,7 +382,8 @@ Initial public release.
 - **CI/CD** — per-layer test workflows on pull requests and a test-gated
   GitHub Pages deployment.
 
-[Unreleased]: https://github.com/aco993/WorkPlanStudio/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/aco993/WorkPlanStudio/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/aco993/WorkPlanStudio/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/aco993/WorkPlanStudio/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/aco993/WorkPlanStudio/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/aco993/WorkPlanStudio/releases/tag/v0.1.0
