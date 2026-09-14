@@ -54,7 +54,7 @@ This demonstrates authorization plumbing and its seam for a real identity provid
 protects nothing**.
 
 That seam is no longer only a claim. When `Api:BaseAddress` is configured, the same
-policy table — the *same source file*, compiled into both hosts — is enforced by a
+policy table — the *same assembly*, referenced by both hosts — is enforced by a
 server that owns the data, against a principal from a JWT it issued, and the persona
 switcher disappears from the UI. See
 [ADR 0020](adr/0020-optional-backend-and-real-auth.md). The published demo is still

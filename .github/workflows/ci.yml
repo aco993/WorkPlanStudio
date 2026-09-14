@@ -56,6 +56,9 @@ env:
   GATE_WORKING_TIME: 93
   GATE_APP: 78
   GATE_EXPORT: 97
+  # The shared domain is exercised by the web suite (and by the API's), so it
+  # is gated where it is measured. Measured on this tip: 89.59.
+  GATE_DOMAIN: 87
   # Floors, not counts: a run that discovers nothing must never be reported as
   # success. Kept within about two per cent of the real count, so adding tests
   # needs no edit and deleting a handful does - a suite that quietly stops
@@ -212,13 +215,13 @@ jobs:
       - name: Coverage gate
         run: |
           python3 .github/scripts/coverage_gate.py TestResults/web.cobertura.xml \
-            WorkPlanStudio=$GATE_APP $BADGE_ARGS
+            WorkPlanStudio=$GATE_APP WorkPlanStudio.Domain=$GATE_DOMAIN $BADGE_ARGS
 
       - name: Build coverage report
         if: always()
         run: |
           dotnet tool install --global dotnet-reportgenerator-globaltool
-          reportgenerator -reports:'TestResults/web.cobertura.xml' -targetdir:coverage-report -reporttypes:'Html;TextSummary' -assemblyfilters:'+WorkPlanStudio'
+          reportgenerator -reports:'TestResults/web.cobertura.xml' -targetdir:coverage-report -reporttypes:'Html;TextSummary' -assemblyfilters:'+WorkPlanStudio;+WorkPlanStudio.Domain'
           echo '### App coverage report' >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
           cat coverage-report/Summary.txt >> "$GITHUB_STEP_SUMMARY"

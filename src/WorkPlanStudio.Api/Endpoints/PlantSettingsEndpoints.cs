@@ -2,9 +2,9 @@ using Microsoft.EntityFrameworkCore;
 using WorkPlanStudio.Api.Data;
 using WorkPlanStudio.Api.Http;
 using WorkPlanStudio.Api.Mapping;
-using WorkPlanStudio.Api.Validation;
 using WorkPlanStudio.Contracts;
 using WorkPlanStudio.Models;
+using WorkPlanStudio.Validation;
 
 namespace WorkPlanStudio.Api.Endpoints;
 
@@ -42,7 +42,9 @@ public static class PlantSettingsEndpoints
             var candidate = new PlantSettings();
             candidate.CopyFrom(request);
 
-            var issues = PlantSettingsRules.Validate(candidate);
+            // The application's own validator, not a copy of it: the server and
+            // the browser refuse the same row for the same reason.
+            var issues = PlantSettingsValidator.Validate(candidate);
             if (issues.Count > 0)
                 return Problems.Validation(issues);
 

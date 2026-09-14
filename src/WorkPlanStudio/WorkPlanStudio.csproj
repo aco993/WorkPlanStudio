@@ -31,6 +31,9 @@
        unit tested without the WebAssembly toolchain. -->
   <ItemGroup>
     <ProjectReference Include="..\WorkPlanStudio.Scheduling\WorkPlanStudio.Scheduling.csproj" />
+    <!-- Entities, validation rules, the persona policies and the EF-to-engine
+         mapping, in one assembly the optional server references too. -->
+    <ProjectReference Include="..\WorkPlanStudio.Domain\WorkPlanStudio.Domain.csproj" />
     <ProjectReference Include="..\WorkPlanStudio.WorkingTime\WorkPlanStudio.WorkingTime.csproj" />
 
     <!-- The wire format of the optional API. A dependency-free assembly of

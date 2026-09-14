@@ -1,0 +1,52 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    What a work plan is, and what makes one valid — the half of the product that
+    is true no matter who is running it.
+
+    It exists because the browser app and the optional server both need it and
+    neither can reference the other: the app is a Blazor WebAssembly project with
+    a relinked native SQLite in it, and dragging that into a server build would be
+    absurd. Until this project existed the server compiled the app's files in
+    through <Compile Include="..\WorkPlanStudio\Models\**"> — which worked, and
+    which nothing else in the repository does, so it was the one place where
+    "where does this type live" had a different answer from everywhere else.
+
+    What is NOT here: persistence. The browser's DbContext and the server's
+    IdentityDbContext disagree on purpose (concurrency tokens, identity tables),
+    and a shared context would be a shared lie. Entities, rules and the mapping
+    into the engine are shared; how they are stored is not.
+
+    The namespaces are unchanged — WorkPlanStudio.Models, .Validation,
+    .Services and .Services.Auth — so this move costs no call site a single
+    edit. Two of them are now spread over two assemblies, which is legal, and
+    the alternative was renaming a namespace in a hundred files to record a
+    fact the project file already states.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>WorkPlanStudio</RootNamespace>
+    <!-- No XML documentation file. The two pure libraries generate one because
+         they are consumed as libraries with an API surface to explain; this is
+         the product's own domain, and every type here carries a type-level
+         summary already. Switching it on would demand a member doc for each of
+         a hundred entity properties - "Gets the id" a hundred times is noise,
+         not documentation, and these files did not carry them in the project
+         they came from either. Turn it on the day this ships as a package. -->
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The policy table is expressed as ASP.NET Core authorization policies, so
+         AuthorizeView, [Authorize] and IAuthorizationService all work unchanged
+         on both hosts. The package is browser-safe; the client already carried it
+         through Microsoft.AspNetCore.Components.Authorization. -->
+    <PackageReference Include="Microsoft.AspNetCore.Authorization" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\WorkPlanStudio.Scheduling\WorkPlanStudio.Scheduling.csproj" />
+    <ProjectReference Include="..\WorkPlanStudio.WorkingTime\WorkPlanStudio.WorkingTime.csproj" />
+  </ItemGroup>
+
+</Project>

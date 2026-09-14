@@ -58,6 +58,7 @@ flowchart TD
 | `src/WorkPlanStudio.WorkingTime` | Schichtmodelle, ArbZG-Regeln, gesetzliche Feiertage, Maschinenkalender | nur der Basisklassenbibliothek |
 | `src/WorkPlanStudio.Export` | CSV-, xlsx- und PDF-Writer | nur der Basisklassenbibliothek |
 | `src/WorkPlanStudio.Contracts` | die DTOs und Richtliniennamen, die App und API teilen | nur der Basisklassenbibliothek |
+| `src/WorkPlanStudio.Domain` | die Entitäten, die Validierungsregeln, die Richtlinientabelle und die EF→Engine-Abbildung | den Autorisierungs-Abstraktionen, sonst nichts |
 | `src/WorkPlanStudio.Api` | das optionale Backend: Identity, JWT, EF-Migrationen, Minimal API | ASP.NET Core 10 |
 
 `ArchitectureTests` in den Testprojekten für Planung und Arbeitszeit spiegeln über diese Assemblies
@@ -66,11 +67,18 @@ und lassen den Build scheitern, sobald `Microsoft.AspNetCore`, `Microsoft.Entity
 hat überhaupt keine Paketreferenz — dieselbe Eigenschaft, durchgesetzt von ihrer `.csproj` statt von
 einem Test.
 
-Das API-Projekt kompiliert `Models/**`, `Validation/**` und vier `Services/*.cs`-Dateien **als
-verlinkten Quelltext aus der Browser-App**, damit die Entitätsformen, die Validatoren und die
-Richtlinientabelle eine Kopie bleiben statt zweier, die auseinanderlaufen. Diese Verlinkung ist
-zugleich die Auflage: nichts unter `Models/` oder `Validation/` darf von Blazor, EF Core oder
-JS-Interop abhängen.
+App und API **referenzieren beide `WorkPlanStudio.Domain`**, damit die Entitätsformen, die
+Validatoren und die Richtlinientabelle eine Kopie bleiben statt zweier, die auseinanderlaufen. Diese
+gemeinsame Assembly ist zugleich die Auflage: nichts darin darf von Blazor, EF Core oder JS-Interop
+abhängen, und die Persistenz bleibt bewusst draußen — der `DbContext` des Browsers und der
+`IdentityDbContext` des Servers widersprechen sich mit Absicht, und ein gemeinsamer Kontext wäre
+eine gemeinsame Lüge.
+
+Früher zog die API diese Dateien per `<Compile Include>` aus der App herein. Das funktionierte und
+war die einzige Stelle im Repository, an der „zu welchem Projekt gehört dieser Typ" anders
+beantwortet wurde als überall sonst — und es verdeckte einen echten Fehler: Der eine Validator, der
+sich nicht verlinken ließ, war von Hand in die API kopiert worden, und die Kopie hatte drei Regeln
+weniger als das Original.
 
 ## Grenzen und Invarianten
 
@@ -293,7 +301,7 @@ je Browser gemerkt. `Permissions` ist eine Tabelle von Richtlinie zu Rollen, ang
 `AddAuthorizationCore`. Seiten nutzen `AuthorizeView Policy="…"`, Dienste nutzen `IPermissionGuard`,
 der `IAuthorizationService` kapselt.
 
-Im verbundenen Betrieb wird dieselbe Tabelle **als verlinkter Quelltext** in der API angemeldet, der
+Im verbundenen Betrieb wird dieselbe Tabelle **aus derselben Assembly** in der API angemeldet, der
 Principal stammt aus einem JWT, das der Server für ein Identity-Konto ausgestellt hat, und der
 Rollenwechsler verschwindet aus der Oberfläche. Das ist die Nahtstelle, die ADR 0013 behauptet hat,
 vorgeführt statt behauptet. Die statische Demo ist weiterhin der Rollen-Build und schützt weiterhin
