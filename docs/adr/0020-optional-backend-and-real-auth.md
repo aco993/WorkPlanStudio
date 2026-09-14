@@ -71,7 +71,7 @@ Persistence is the one thing deliberately **not** shared: the API's
 context is an `IdentityDbContext` and carries a concurrency token the
 browser has no use for, and a shared context would be a shared lie.
 
-> **Amended after 0.3.1.** Originally the API pulled those files out of the
+> **Amended in 0.3.2.** Originally the API pulled those files out of the
 > app with `<Compile Include>`, because the parallel streams that built
 > this made moving files expensive. They now live in
 > `WorkPlanStudio.Domain`, which both hosts reference. The change paid
