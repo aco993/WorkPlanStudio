@@ -20,11 +20,12 @@ namespace WorkPlanStudio.Web.Tests;
 /// own project against the bytes they produce; what matters here is that the
 /// app feeds them the right thing and names the result sensibly.
 /// <para>
-/// Every interaction with the menu goes through <see cref="ActAsync"/>. Finding
-/// an element and raising an event on it in two statements is a race in bUnit:
-/// a re-render between the two invalidates the handler id the found element
-/// carries, and the failure reads as flakiness rather than as the stale element
-/// it is.
+/// Every interaction with the menu goes through
+/// <see cref="InteractionTestSupport.ActAsync{TComponent}(Bunit.IRenderedComponent{TComponent}, string, Action{AngleSharp.Dom.IElement})"/>,
+/// which locates and triggers in one step. Doing it in two statements is a race
+/// in bUnit: a re-render between the two invalidates the handler id the found
+/// element carries, and the failure reads as flakiness rather than as the stale
+/// element it is.
 /// </para>
 /// </summary>
 public sealed class ExportIntegrationTests : AppBunitContext
@@ -400,13 +401,6 @@ public sealed class ExportIntegrationTests : AppBunitContext
             .Add(menu => menu.Parameters, new SchedulingParameters()));
     }
 
-    /// <summary>
-    /// Finds and acts in one render pass, so a re-render between the two cannot
-    /// strand the handler id the element carries. See the class remark.
-    /// </summary>
-    private static Task ActAsync(IRenderedComponent<ExportMenu> cut, string selector, Action<AngleSharp.Dom.IElement> act) =>
-        cut.InvokeAsync(() => act(cut.Find(selector)));
-
     [Fact]
     public void The_menu_is_closed_until_it_is_opened_and_says_so()
     {
@@ -423,7 +417,7 @@ public sealed class ExportIntegrationTests : AppBunitContext
     public async Task Clicking_the_trigger_opens_a_menu_of_the_three_formats()
     {
         var cut = RenderMenu();
-        await ActAsync(cut, ".export-trigger", element => element.Click());
+        await cut.ActAsync(".export-trigger", element => element.Click());
 
         Assert.Equal("true", cut.Find(".export-trigger").GetAttribute("aria-expanded"));
         Assert.Equal("export-menu-panel", cut.Find("[role=menu]").Id);
@@ -440,7 +434,7 @@ public sealed class ExportIntegrationTests : AppBunitContext
     public async Task An_arrow_key_on_the_trigger_opens_the_menu(string key)
     {
         var cut = RenderMenu();
-        await ActAsync(cut, ".export-trigger", element => element.KeyDown(new KeyboardEventArgs { Key = key }));
+        await cut.ActAsync(".export-trigger", element => element.KeyDown(new KeyboardEventArgs { Key = key }));
 
         Assert.Equal("true", cut.Find(".export-trigger").GetAttribute("aria-expanded"));
         Assert.Equal(3, cut.FindAll("[role=menuitem]").Count);
@@ -450,8 +444,8 @@ public sealed class ExportIntegrationTests : AppBunitContext
     public async Task Escape_closes_the_menu_again()
     {
         var cut = RenderMenu();
-        await ActAsync(cut, ".export-trigger", element => element.Click());
-        await ActAsync(cut, "[role=menu]", element => element.KeyDown(new KeyboardEventArgs { Key = "Escape" }));
+        await cut.ActAsync(".export-trigger", element => element.Click());
+        await cut.ActAsync("[role=menu]", element => element.KeyDown(new KeyboardEventArgs { Key = "Escape" }));
 
         Assert.Equal("false", cut.Find(".export-trigger").GetAttribute("aria-expanded"));
         Assert.Empty(cut.FindAll("[role=menuitem]"));
@@ -465,8 +459,8 @@ public sealed class ExportIntegrationTests : AppBunitContext
     public async Task The_arrow_keys_move_inside_the_open_menu_without_closing_it(string key)
     {
         var cut = RenderMenu();
-        await ActAsync(cut, ".export-trigger", element => element.Click());
-        await ActAsync(cut, "[role=menu]", element => element.KeyDown(new KeyboardEventArgs { Key = key }));
+        await cut.ActAsync(".export-trigger", element => element.Click());
+        await cut.ActAsync("[role=menu]", element => element.KeyDown(new KeyboardEventArgs { Key = key }));
 
         Assert.Equal(3, cut.FindAll("[role=menuitem]").Count);
     }
@@ -475,8 +469,8 @@ public sealed class ExportIntegrationTests : AppBunitContext
     public async Task Clicking_a_format_exports_it_and_closes_the_menu()
     {
         var cut = RenderMenu(Sample.OnTime() with { Horizon = new DateTime(2026, 6, 1, 6, 0, 0) });
-        await ActAsync(cut, ".export-trigger", element => element.Click());
-        await ActAsync(cut, "[role=menuitem]", element => element.Click());
+        await cut.ActAsync(".export-trigger", element => element.Click());
+        await cut.ActAsync("[role=menuitem]", element => element.Click());
 
         cut.WaitForAssertion(() => Assert.Single(JSInterop.Invocations[FileDownloadService.JsFunction]));
         var invocation = JSInterop.Invocations[FileDownloadService.JsFunction].Single();
@@ -602,7 +596,7 @@ public sealed class ExportIntegrationTests : AppBunitContext
         cut.WaitForAssertion(() => Assert.False(cut.Find(".export-trigger").HasAttribute("disabled")));
 
         fake.UseGate = true;
-        await cut.InvokeAsync(() => cut.Find("#sched-generate").Click());
+        await cut.ActAsync("#sched-generate", button => button.Click());
 
         cut.WaitForAssertion(() => Assert.True(cut.Find(".export-trigger").HasAttribute("disabled")));
         fake.Gate.SetResult();
@@ -619,10 +613,10 @@ public sealed class ExportIntegrationTests : AppBunitContext
         cut.WaitForAssertion(() => Assert.NotEmpty(cut.FindAll(".export-trigger")));
 
         // Run with one rule, then edit the form to another without running again.
-        await cut.InvokeAsync(() => cut.Find("#sched-rule").Change(nameof(DispatchRule.ShortestProcessingTime)));
-        await cut.InvokeAsync(() => cut.Find("#sched-generate").Click());
+        await cut.ActAsync("#sched-rule", select => select.Change(nameof(DispatchRule.ShortestProcessingTime)));
+        await cut.ActAsync("#sched-generate", button => button.Click());
         cut.WaitForAssertion(() => Assert.Equal(DispatchRule.ShortestProcessingTime, fake.LastParameters!.DispatchRule));
-        await cut.InvokeAsync(() => cut.Find("#sched-rule").Change(nameof(DispatchRule.LongestProcessingTime)));
+        await cut.ActAsync("#sched-rule", select => select.Change(nameof(DispatchRule.LongestProcessingTime)));
 
         var menu = cut.FindComponent<ExportMenu>();
         Assert.Equal(DispatchRule.ShortestProcessingTime, menu.Instance.Parameters.DispatchRule);
@@ -642,7 +636,7 @@ public sealed class ExportIntegrationTests : AppBunitContext
             .Add(menu => menu.Result, Sample.OnTime())
             .Add(menu => menu.Parameters, new SchedulingParameters()));
 
-        await ActAsync(cut, ".export-trigger", element => element.Click());
+        await cut.ActAsync(".export-trigger", element => element.Click());
         Assert.Equal(3, cut.FindAll("[role=menuitem]").Count);
     }
 }
