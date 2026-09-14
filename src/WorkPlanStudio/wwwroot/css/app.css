@@ -384,6 +384,11 @@ a:hover { text-decoration: underline; }
 .seg button:hover:not(.active) { color: var(--text); }
 
 /* ----- Forms ----- */
+/* EditableArea's wrapper. A fieldset is the only element that can disable a
+   whole form at once, and it arrives with a border, padding and a min-width of
+   min-content that would break every grid inside it. */
+.form-fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem 1.1rem; }
 .field { display: flex; flex-direction: column; gap: .35rem; }
 .field.wide { grid-column: 1 / -1; }

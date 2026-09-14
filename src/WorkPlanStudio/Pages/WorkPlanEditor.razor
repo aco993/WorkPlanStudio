@@ -1,5 +1,6 @@
 @page "/work-plans/new"
 @page "/work-plans/{Id:int}"
+@using Microsoft.AspNetCore.Components.Routing
 @using WorkPlanStudio.Validation
 @inject IStringLocalizer<SharedResource> L
 @inject WorkPlanService Plans
@@ -23,6 +24,25 @@
 </div>
 
 <ReadOnlyNotice Policy="@Permissions.ManageMasterData" />
+
+@*
+    Both halves of the guard: ConfirmExternalNavigation is the browser's own
+    "leave site?" prompt for a reload or a typed address, OnBeforeInternalNavigation
+    is ours for a link inside the app. The parameter only takes effect on a
+    render, which is why the signature is compared in the render path rather
+    than cached in a handler.
+*@
+<NavigationLock ConfirmExternalNavigation="@IsDirty" OnBeforeInternalNavigation="ConfirmLeaveAsync" />
+
+<Modal @bind-Visible="_showLeave" Title="@L["Confirm_LeaveTitle"]">
+    <ChildContent>
+        <p>@L["Confirm_LeaveBody"]</p>
+    </ChildContent>
+    <Footer>
+        <button class="btn btn-ghost" @onclick="StayOnPage">@L["Confirm_LeaveStay"]</button>
+        <button class="btn btn-danger" @onclick="DiscardAndLeaveAsync">@L["Confirm_LeaveDiscard"]</button>
+    </Footer>
+</Modal>
 
 @if (_loading)
 {
@@ -53,178 +73,180 @@ else
         }
     </datalist>
 
-    <div class="editor-grid">
-        <section class="card">
-            <div class="card-head"><h2>@L["Editor_HeaderSection"]</h2></div>
-            <div class="card-body">
-                <div class="form-grid">
-                    <label class="field">
-                        <span>@L["Field_PlanNumber"]</span>
-                        <input id="wp-number" class="input @_errors.Style("PlanNumber")" maxlength="20"
-                               autocomplete="off" spellcheck="false" autocapitalize="characters"
-                               aria-invalid="@_errors.Invalid("PlanNumber")" aria-describedby="@_errors.DescribedBy("PlanNumber")"
-                               @bind="_model.PlanNumber" @bind:event="oninput" />
-                        @if (_errors["PlanNumber"] is { } planNumberError)
-                        {
-                            <span id="@_errors.ErrorId("PlanNumber")" class="field-error">@planNumberError</span>
-                        }
-                    </label>
-                    <label class="field">
-                        <span>@L["Field_Status"]</span>
-                        <select id="wp-status" class="input @_errors.Style("Status")"
-                                aria-invalid="@_errors.Invalid("Status")" aria-describedby="@_errors.DescribedBy("Status")"
-                                @bind="_model.Status">
-                            @foreach (var s in Enum.GetValues<WorkPlanStatus>())
+    <EditableArea Policy="@Permissions.ManageMasterData">
+        <div class="editor-grid">
+            <section class="card">
+                <div class="card-head"><h2>@L["Editor_HeaderSection"]</h2></div>
+                <div class="card-body">
+                    <div class="form-grid">
+                        <label class="field">
+                            <span>@L["Field_PlanNumber"]</span>
+                            <input id="wp-number" class="input @_errors.Style("PlanNumber")" maxlength="20"
+                                   autocomplete="off" spellcheck="false" autocapitalize="characters"
+                                   aria-invalid="@_errors.Invalid("PlanNumber")" aria-describedby="@_errors.DescribedBy("PlanNumber")"
+                                   @bind="_model.PlanNumber" @bind:event="oninput" />
+                            @if (_errors["PlanNumber"] is { } planNumberError)
                             {
-                                <option value="@s">@StatusLabel(s)</option>
+                                <span id="@_errors.ErrorId("PlanNumber")" class="field-error">@planNumberError</span>
                             }
-                        </select>
-                        @if (_errors["Status"] is { } statusError)
-                        {
-                            <span id="@_errors.ErrorId("Status")" class="field-error">@statusError</span>
-                        }
-                    </label>
-                    <label class="field">
-                        <span>@L["Field_PartNumber"]</span>
-                        <input id="wp-part-number" class="input @_errors.Style("PartNumber")" list="wp-part-numbers"
-                               maxlength="40" autocomplete="off" spellcheck="false" autocapitalize="characters"
-                               aria-invalid="@_errors.Invalid("PartNumber")" aria-describedby="@_errors.DescribedBy("PartNumber")"
-                               @bind="_model.PartNumber" @bind:event="oninput" />
-                        @if (_errors["PartNumber"] is { } partNumberError)
-                        {
-                            <span id="@_errors.ErrorId("PartNumber")" class="field-error">@partNumberError</span>
-                        }
-                    </label>
-                    <label class="field">
-                        <span>@L["Field_Revision"]</span>
-                        <input id="wp-revision" class="input @_errors.Style("Revision")" list="wp-revisions"
-                               maxlength="10" autocomplete="off" spellcheck="false" autocapitalize="characters"
-                               aria-invalid="@_errors.Invalid("Revision")" aria-describedby="@_errors.DescribedBy("Revision")"
-                               @bind="_model.Revision" @bind:event="oninput" />
-                        @if (_errors["Revision"] is { } revisionError)
-                        {
-                            <span id="@_errors.ErrorId("Revision")" class="field-error">@revisionError</span>
-                        }
-                    </label>
-                    <label class="field wide">
-                        <span>@L["Field_PartName"]</span>
-                        <input id="wp-part" class="input @_errors.Style("PartName")" maxlength="120"
-                               aria-invalid="@_errors.Invalid("PartName")" aria-describedby="@_errors.DescribedBy("PartName")"
-                               @bind="_model.PartName" @bind:event="oninput" />
-                        @if (_errors["PartName"] is { } partNameError)
-                        {
-                            <span id="@_errors.ErrorId("PartName")" class="field-error">@partNameError</span>
-                        }
-                    </label>
-                    <label class="field">
-                        <span>@L["Field_LotSize"]</span>
-                        <input id="wp-lot" class="input @_errors.Style("LotSize")"
-                               type="number" min="1" max="1000000" inputmode="numeric"
-                               aria-invalid="@_errors.Invalid("LotSize")" aria-describedby="@_errors.DescribedBy("LotSize")"
-                               @bind="_lotSize" @bind:event="oninput" />
-                        @if (_errors["LotSize"] is { } lotSizeError)
-                        {
-                            <span id="@_errors.ErrorId("LotSize")" class="field-error">@lotSizeError</span>
-                        }
-                    </label>
+                        </label>
+                        <label class="field">
+                            <span>@L["Field_Status"]</span>
+                            <select id="wp-status" class="input @_errors.Style("Status")"
+                                    aria-invalid="@_errors.Invalid("Status")" aria-describedby="@_errors.DescribedBy("Status")"
+                                    @bind="_model.Status">
+                                @foreach (var s in Enum.GetValues<WorkPlanStatus>())
+                                {
+                                    <option value="@s">@StatusLabel(s)</option>
+                                }
+                            </select>
+                            @if (_errors["Status"] is { } statusError)
+                            {
+                                <span id="@_errors.ErrorId("Status")" class="field-error">@statusError</span>
+                            }
+                        </label>
+                        <label class="field">
+                            <span>@L["Field_PartNumber"]</span>
+                            <input id="wp-part-number" class="input @_errors.Style("PartNumber")" list="wp-part-numbers"
+                                   maxlength="40" autocomplete="off" spellcheck="false" autocapitalize="characters"
+                                   aria-invalid="@_errors.Invalid("PartNumber")" aria-describedby="@_errors.DescribedBy("PartNumber")"
+                                   @bind="_model.PartNumber" @bind:event="oninput" />
+                            @if (_errors["PartNumber"] is { } partNumberError)
+                            {
+                                <span id="@_errors.ErrorId("PartNumber")" class="field-error">@partNumberError</span>
+                            }
+                        </label>
+                        <label class="field">
+                            <span>@L["Field_Revision"]</span>
+                            <input id="wp-revision" class="input @_errors.Style("Revision")" list="wp-revisions"
+                                   maxlength="10" autocomplete="off" spellcheck="false" autocapitalize="characters"
+                                   aria-invalid="@_errors.Invalid("Revision")" aria-describedby="@_errors.DescribedBy("Revision")"
+                                   @bind="_model.Revision" @bind:event="oninput" />
+                            @if (_errors["Revision"] is { } revisionError)
+                            {
+                                <span id="@_errors.ErrorId("Revision")" class="field-error">@revisionError</span>
+                            }
+                        </label>
+                        <label class="field wide">
+                            <span>@L["Field_PartName"]</span>
+                            <input id="wp-part" class="input @_errors.Style("PartName")" maxlength="120"
+                                   aria-invalid="@_errors.Invalid("PartName")" aria-describedby="@_errors.DescribedBy("PartName")"
+                                   @bind="_model.PartName" @bind:event="oninput" />
+                            @if (_errors["PartName"] is { } partNameError)
+                            {
+                                <span id="@_errors.ErrorId("PartName")" class="field-error">@partNameError</span>
+                            }
+                        </label>
+                        <label class="field">
+                            <span>@L["Field_LotSize"]</span>
+                            <input id="wp-lot" class="input @_errors.Style("LotSize")"
+                                   type="number" min="1" max="1000000" inputmode="numeric"
+                                   aria-invalid="@_errors.Invalid("LotSize")" aria-describedby="@_errors.DescribedBy("LotSize")"
+                                   @bind="_lotSize" @bind:event="oninput" />
+                            @if (_errors["LotSize"] is { } lotSizeError)
+                            {
+                                <span id="@_errors.ErrorId("LotSize")" class="field-error">@lotSizeError</span>
+                            }
+                        </label>
+                    </div>
                 </div>
-            </div>
-        </section>
+            </section>
 
-        <section class="card summary-card">
-            <div class="card-head"><h2>@L["Editor_Summary"]</h2></div>
-            <div class="card-body">
-                <dl class="summary">
-                    <div><dt>@L["Editor_SetupSum"]</dt><dd>@Format.Minutes(SetupSum)</dd></div>
-                    <div><dt>@L["Editor_UnitSum"]</dt><dd>@Format.Minutes(UnitSum)</dd></div>
-                    <div><dt>@L["Editor_LotTime"]</dt><dd>@Format.Hours(LotTime)</dd></div>
-                    <div class="highlight"><dt>@L["Editor_LotCost"]</dt><dd>@Format.Euro(LotCost)</dd></div>
-                </dl>
-            </div>
-        </section>
-    </div>
-
-    <section id="wp-operations" class="card no-pad">
-        <div class="card-head pad">
-            <h2>@L["Editor_OperationsSection"]</h2>
-            <button class="btn btn-outline" @onclick="AddOperation">
-                <span class="btn-plus">+</span> @L["Editor_AddOperation"]
-            </button>
+            <section class="card summary-card">
+                <div class="card-head"><h2>@L["Editor_Summary"]</h2></div>
+                <div class="card-body">
+                    <dl class="summary">
+                        <div><dt>@L["Editor_SetupSum"]</dt><dd>@Format.Minutes(SetupSum)</dd></div>
+                        <div><dt>@L["Editor_UnitSum"]</dt><dd>@Format.Minutes(UnitSum)</dd></div>
+                        <div><dt>@L["Editor_LotTime"]</dt><dd>@Format.Hours(LotTime)</dd></div>
+                        <div class="highlight"><dt>@L["Editor_LotCost"]</dt><dd>@Format.Euro(LotCost)</dd></div>
+                    </dl>
+                </div>
+            </section>
         </div>
 
-        @if (_errors["Operations"] is { } operationsError)
-        {
-            <div class="form-banner error">@operationsError</div>
-        }
-
-        @if (_rows.Count == 0)
-        {
-            <div class="empty-state small">
-                <p>@L["Editor_NoOperations"]</p>
+        <section id="wp-operations" class="card no-pad">
+            <div class="card-head pad">
+                <h2>@L["Editor_OperationsSection"]</h2>
+                <button class="btn btn-outline" @onclick="AddOperation">
+                    <span class="btn-plus">+</span> @L["Editor_AddOperation"]
+                </button>
             </div>
-        }
-        else
-        {
-            <table class="data-table op-table">
-                <thead>
-                    <tr>
-                        <th scope="col" class="num narrow">@L["Field_OperationNo"]</th>
-                        <th scope="col" class="wc-col">@L["Field_WorkCenter"]</th>
-                        <th scope="col">@L["Field_Description"]</th>
-                        <th scope="col" class="num">@L["Field_SetupTime"]</th>
-                        <th scope="col" class="num">@L["Field_TimePerPiece"]</th>
-                        <th scope="col">@L["Field_Remarks"]</th>
-                        <th scope="col"><span class="sr-only">@L["Common_Actions"]</span></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var row in _rows)
-                    {
-                        <tr @key="row.Key">
-                            <td class="num narrow">
-                                <input class="input mini num" type="number" min="1" step="10" inputmode="numeric"
-                                       aria-label="@L["Field_OperationNo"]"
-                                       @bind="row.OperationNumber" @bind:event="oninput" />
-                            </td>
-                            <td class="wc-col">
-                                <EntityPicker TItem="WorkCenter" Id="@($"op-{row.Key}-center")"
-                                              Items="_workCenters"
-                                              Value="row.WorkCenterId"
-                                              ValueChanged="value => row.WorkCenterId = value"
-                                              IdOf="w => w.Id"
-                                              LabelOf="CenterLabel"
-                                              IsActive="w => w.IsActive"
-                                              AriaLabel="@L["Field_WorkCenter"]" />
-                            </td>
-                            <td>
-                                <input class="input" maxlength="120" aria-label="@L["Field_Description"]"
-                                       @bind="row.Description" @bind:event="oninput" />
-                            </td>
-                            <td class="num">
-                                <input class="input mini num" type="number" min="0" step="0.01" inputmode="decimal"
-                                       aria-label="@L["Field_SetupTime"]"
-                                       @bind="row.SetupTimeMinutes" @bind:event="oninput" />
-                            </td>
-                            <td class="num">
-                                <input class="input mini num" type="number" min="0" step="0.01" inputmode="decimal"
-                                       aria-label="@L["Field_TimePerPiece"]"
-                                       @bind="row.TimePerPieceMinutes" @bind:event="oninput" />
-                            </td>
-                            <td>
-                                <input class="input" maxlength="250" aria-label="@L["Field_Remarks"]"
-                                       @bind="row.Remarks" @bind:event="oninput" />
-                            </td>
-                            <td class="actions-col">
-                                <button class="icon-btn danger" aria-label="@L["Common_Delete"]" title="@L["Common_Delete"]" @onclick="() => RemoveOperation(row)">
-                                    <svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" /></svg>
-                                </button>
-                            </td>
+
+            @if (_errors["Operations"] is { } operationsError)
+            {
+                <div class="form-banner error">@operationsError</div>
+            }
+
+            @if (_rows.Count == 0)
+            {
+                <div class="empty-state small">
+                    <p>@L["Editor_NoOperations"]</p>
+                </div>
+            }
+            else
+            {
+                <table class="data-table op-table">
+                    <thead>
+                        <tr>
+                            <th scope="col" class="num narrow">@L["Field_OperationNo"]</th>
+                            <th scope="col" class="wc-col">@L["Field_WorkCenter"]</th>
+                            <th scope="col">@L["Field_Description"]</th>
+                            <th scope="col" class="num">@L["Field_SetupTime"]</th>
+                            <th scope="col" class="num">@L["Field_TimePerPiece"]</th>
+                            <th scope="col">@L["Field_Remarks"]</th>
+                            <th scope="col"><span class="sr-only">@L["Common_Actions"]</span></th>
                         </tr>
-                    }
-                </tbody>
-            </table>
-        }
-    </section>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in _rows)
+                        {
+                            <tr @key="row.Key">
+                                <td class="num narrow">
+                                    <input class="input mini num" type="number" min="1" step="10" inputmode="numeric"
+                                           aria-label="@L["Field_OperationNo"]"
+                                           @bind="row.OperationNumber" @bind:event="oninput" />
+                                </td>
+                                <td class="wc-col">
+                                    <EntityPicker TItem="WorkCenter" Id="@($"op-{row.Key}-center")"
+                                                  Items="_workCenters"
+                                                  Value="row.WorkCenterId"
+                                                  ValueChanged="value => row.WorkCenterId = value"
+                                                  IdOf="w => w.Id"
+                                                  LabelOf="CenterLabel"
+                                                  IsActive="w => w.IsActive"
+                                                  AriaLabel="@L["Field_WorkCenter"]" />
+                                </td>
+                                <td>
+                                    <input class="input" maxlength="120" aria-label="@L["Field_Description"]"
+                                           @bind="row.Description" @bind:event="oninput" />
+                                </td>
+                                <td class="num">
+                                    <input class="input mini num" type="number" min="0" step="0.01" inputmode="decimal"
+                                           aria-label="@L["Field_SetupTime"]"
+                                           @bind="row.SetupTimeMinutes" @bind:event="oninput" />
+                                </td>
+                                <td class="num">
+                                    <input class="input mini num" type="number" min="0" step="0.01" inputmode="decimal"
+                                           aria-label="@L["Field_TimePerPiece"]"
+                                           @bind="row.TimePerPieceMinutes" @bind:event="oninput" />
+                                </td>
+                                <td>
+                                    <input class="input" maxlength="250" aria-label="@L["Field_Remarks"]"
+                                           @bind="row.Remarks" @bind:event="oninput" />
+                                </td>
+                                <td class="actions-col">
+                                    <button class="icon-btn danger" aria-label="@L["Common_Delete"]" title="@L["Common_Delete"]" @onclick="() => RemoveOperation(row)">
+                                        <svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" /></svg>
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </section>
+    </EditableArea>
 }
 
 @code {
@@ -278,6 +300,22 @@ else
     private readonly FormErrorState _errors = new();
     private bool _saving;
 
+    // What the form looked like when it was loaded or last saved. Comparing the
+    // whole of it beats a flag set by an event handler: it cannot miss a binding
+    // that fires somewhere unexpected, and it says "clean" again when an edit is
+    // typed and then undone, which a flag never does.
+    private string _savedSignature = "";
+    private bool _showLeave;
+    private string? _pendingLocation;
+
+    private bool IsDirty => !_loading && Signature() != _savedSignature;
+
+    private string Signature() => string.Join('',
+        _model.PlanNumber, _model.Status, _model.PartNumber, _model.Revision, _model.PartName, _lotSize,
+        string.Join('', _rows.Select(row => string.Join('|',
+            row.OperationNumber, row.WorkCenterId, row.Description,
+            row.SetupTimeMinutes, row.TimePerPieceMinutes, row.Remarks))));
+
     private bool IsNew => Id is null;
     private string Title => IsNew ? L["Editor_NewTitle"] : L["Editor_EditTitle"];
 
@@ -323,6 +361,7 @@ else
         _rows.Clear();
         _rows.AddRange(_model.Operations.OrderBy(o => o.OperationNumber).Select(OperationRow.From));
         _loading = false;
+        _savedSignature = Signature();
     }
 
     // ----- live summary -----
@@ -375,6 +414,7 @@ else
             if (result.IsSuccess)
             {
                 _errors.Clear();
+                _savedSignature = Signature();
                 Nav.NavigateTo("work-plans");
                 return;
             }
@@ -408,5 +448,38 @@ else
                 .ToList()
         };
 
-    private void Cancel() => Nav.NavigateTo("work-plans");
+    /// <summary>
+    /// Cancel already means "throw this away", so it says so once and leaves.
+    /// Asking again would train the habit of clicking past the question.
+    /// </summary>
+    private void Cancel()
+    {
+        _savedSignature = Signature();
+        Nav.NavigateTo("work-plans");
+    }
+
+    /// <summary>Holds an internal navigation while the page asks whether the edit may go.</summary>
+    private void ConfirmLeaveAsync(LocationChangingContext context)
+    {
+        if (!IsDirty)
+            return;
+
+        context.PreventNavigation();
+        _pendingLocation = context.TargetLocation;
+        _showLeave = true;
+    }
+
+    private void StayOnPage()
+    {
+        _showLeave = false;
+        _pendingLocation = null;
+    }
+
+    private void DiscardAndLeaveAsync()
+    {
+        _showLeave = false;
+        _savedSignature = Signature();
+        if (_pendingLocation is { } location)
+            Nav.NavigateTo(location);
+    }
 }

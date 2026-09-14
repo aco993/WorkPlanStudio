@@ -93,6 +93,13 @@ public sealed class ProductionOrderE2ETests : IClassFixture<PlaywrightFixture>
 
         await AppReady.GotoAsync(page, $"{_fixture.BaseUrl}/production-orders");
         await order.GetByRole(AriaRole.Button, new() { Name = "Cancel order" }).ClickAsync();
+
+        // Withdrawing is a one-way door - the order drops the routing index that
+        // made it schedulable - so the page asks first, exactly as deleting does.
+        var confirm = page.GetByRole(AriaRole.Dialog);
+        await confirm.WaitForAsync();
+        await confirm.GetByRole(AriaRole.Button, new() { Name = "Cancel order" }).ClickAsync();
+
         await page.GetByRole(AriaRole.Row).Filter(new LocatorFilterOptions { HasText = orderNumber })
             .GetByText("Cancelled").WaitForAsync();
 

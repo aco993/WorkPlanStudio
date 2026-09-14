@@ -105,13 +105,13 @@ else
                                 @if (order.Status == ProductionOrderStatus.Draft)
                                 {
                                     <button class="btn btn-outline" @onclick="() => ReleaseAsync(order.Id)">@L["Orders_Release"]</button>
-                                    <button class="icon-btn danger" aria-label="@L["Common_Delete"]" title="@L["Common_Delete"]" @onclick="() => DeleteAsync(order.Id)">
+                                    <button class="icon-btn danger" aria-label="@L["Common_Delete"]" title="@L["Common_Delete"]" @onclick="() => AskDelete(order)">
                                         <svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" /></svg>
                                     </button>
                                 }
                                 else if (order.Status == ProductionOrderStatus.Released)
                                 {
-                                    <button class="btn btn-ghost" @onclick="() => CancelAsync(order.Id)">@L["Orders_Cancel"]</button>
+                                    <button class="btn btn-ghost" @onclick="() => AskCancel(order)">@L["Orders_Cancel"]</button>
                                 }
                             </AuthorizeView>
                         </td>
@@ -123,6 +123,31 @@ else
 
     <p class="page-sub" style="margin-top:1rem">@L["Orders_ImmutabilityNote"]</p>
 }
+
+@*
+    Both of these are one-way doors — a deleted draft is gone, and a withdrawn
+    order drops the routing index that made it schedulable and cannot be
+    released again — so both ask, exactly as the three master-data pages do.
+*@
+<Modal @bind-Visible="_showDelete" Title="@L["Confirm_DeleteOrderTitle"]">
+    <ChildContent>
+        <p>@(string.Format(L["Confirm_DeleteOrderBody"], _pending?.OrderNumber))</p>
+    </ChildContent>
+    <Footer>
+        <button class="btn btn-ghost" @onclick="() => _showDelete = false">@L["Common_Cancel"]</button>
+        <button class="btn btn-danger" @onclick="ConfirmDeleteAsync">@L["Common_Delete"]</button>
+    </Footer>
+</Modal>
+
+<Modal @bind-Visible="_showCancel" Title="@L["Confirm_CancelOrderTitle"]">
+    <ChildContent>
+        <p>@(string.Format(L["Confirm_CancelOrderBody"], _pending?.OrderNumber))</p>
+    </ChildContent>
+    <Footer>
+        <button class="btn btn-ghost" @onclick="() => _showCancel = false">@L["Orders_KeepOrder"]</button>
+        <button class="btn btn-danger" @onclick="ConfirmCancelAsync">@L["Orders_Cancel"]</button>
+    </Footer>
+</Modal>
 
 <Modal @bind-Visible="_showEditor" Title="@L["Orders_NewTitle"]">
     <ChildContent>
@@ -244,6 +269,9 @@ else
     ];
 
     private bool _showEditor;
+    private bool _showDelete;
+    private bool _showCancel;
+    private ProductionOrder? _pending;
     private ProductionOrder _editing = new();
     private int? _quantity;
 
@@ -368,17 +396,37 @@ else
             await ReloadAsync();
     }
 
-    private async Task CancelAsync(int id)
+    private void AskCancel(ProductionOrder order)
+    {
+        _pending = order;
+        _showCancel = true;
+    }
+
+    private async Task ConfirmCancelAsync()
     {
         _error = null;
-        if (Apply(await Orders.CancelAsync(id)))
+        var id = _pending?.Id;
+        _showCancel = false;
+        _pending = null;
+
+        if (id is not null && Apply(await Orders.CancelAsync(id.Value)))
             await ReloadAsync();
     }
 
-    private async Task DeleteAsync(int id)
+    private void AskDelete(ProductionOrder order)
+    {
+        _pending = order;
+        _showDelete = true;
+    }
+
+    private async Task ConfirmDeleteAsync()
     {
         _error = null;
-        if (Apply(await Orders.DeleteAsync(id)))
+        var id = _pending?.Id;
+        _showDelete = false;
+        _pending = null;
+
+        if (id is not null && Apply(await Orders.DeleteAsync(id.Value)))
             await ReloadAsync();
     }
 

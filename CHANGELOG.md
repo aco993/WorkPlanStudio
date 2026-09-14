@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **An unsaved work plan is no longer thrown away in silence.** Typing in the
+  editor and then following a link — or the back link, or reloading — discarded
+  the edit with no word about it. The page now asks, and the question is
+  answerable: *Keep editing* stays with the text still in the box, *Discard
+  changes* leaves. What counts as unsaved is the form compared against what was
+  loaded, so typing a change and undoing it leaves without a question, and
+  **Cancel** still means "throw this away" and asks nothing.
+- **A persona that cannot save cannot type either.** A Guest opening a work plan
+  got thirty-six live fields, an *Add operation* button and a *Delete* button per
+  row — and no Save, because there is none for them. The controls that belong to
+  a policy now sit in a disabled `<fieldset>`, so they are inert, out of the tab
+  order and announced as disabled, next to the notice that says which persona
+  could use them. The same on the plant rules, where the two preview selects stay
+  usable because they only change what is drawn.
+- **The orders page asks before a one-way door, like every other page.** Deleting
+  a draft order removed it on the first click, while work plans, work centers and
+  cost centers have always asked. Withdrawing a released order asks too: it drops
+  the routing index that made it schedulable and cannot be released again.
+- The Gantt legend told the reader to hover for the reason a work center is
+  closed. Every segment has carried that reason in its `aria-label` the whole
+  time; the sentence was the only mouse-only thing about it.
+
 ## [0.3.2] — 2026-09-14
 
 The three follow-ups the 0.3.1 review left open, and the two things they
