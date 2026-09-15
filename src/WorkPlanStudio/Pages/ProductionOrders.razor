@@ -5,6 +5,8 @@
 @inject ProductionOrderService Orders
 @inject WorkPlanService Plans
 
+@using WorkPlanStudio.Services.Forms
+
 <PageTitle>@L["Orders_Title"] · WorkPlan Studio</PageTitle>
 
 <div class="page-head">
@@ -83,7 +85,7 @@ else
                 </tr>
             </thead>
             <tbody>
-                @foreach (var order in Filtered)
+                @foreach (var order in _page.Slice(Filtered.ToList()))
                 {
                     <tr @key="order.Id">
                         <td><span class="mono">@order.OrderNumber</span></td>
@@ -120,6 +122,8 @@ else
             </tbody>
         </table>
     </div>
+
+    <Paginator Window="_page" OnChanged="StateHasChanged" />
 
     <p class="page-sub" style="margin-top:1rem">@L["Orders_ImmutabilityNote"]</p>
 }
@@ -247,6 +251,9 @@ else
 </Modal>
 
 @code {
+    // Every row here carries controls, so the table draws one page of them
+    // rather than all of them. See PageWindow for what the measurement was.
+    private readonly PageWindow _page = new();
     private enum OrderColumn { Number, Due, Priority }
 
     private const string PlanField = nameof(ProductionOrder.WorkPlanId);
