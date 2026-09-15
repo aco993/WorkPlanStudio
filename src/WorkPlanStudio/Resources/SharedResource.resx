@@ -120,7 +120,8 @@
   <data name="WorkPlans_Title" xml:space="preserve"><value>Work Plans</value></data>
   <data name="WorkPlans_New" xml:space="preserve"><value>New work plan</value></data>
   <data name="WorkPlans_SearchPlaceholder" xml:space="preserve"><value>Search by number or part…</value></data>
-  <data name="WorkPlans_Empty" xml:space="preserve"><value>No work plans match your search.</value></data>
+  <data name="WorkPlans_Empty" xml:space="preserve"><value>No work plans yet.</value></data>
+  <data name="List_NoMatches" xml:space="preserve"><value>No rows match the search and filters.</value></data>
 
   <data name="Editor_NewTitle" xml:space="preserve"><value>New work plan</value></data>
   <data name="Editor_EditTitle" xml:space="preserve"><value>Edit work plan</value></data>

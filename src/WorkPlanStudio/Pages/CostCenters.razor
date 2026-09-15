@@ -48,59 +48,66 @@ else
         </div>
     </div>
 
-    <div class="card no-pad">
-        <table class="data-table hover">
-            <caption class="sr-only">@L["Md_CostCenters_Title"]</caption>
-            <thead>
-                <tr>
-                    <th scope="col">@L["Field_Code"]</th>
-                    <th scope="col">@L["Field_Name"]</th>
-                    <th scope="col">@L["Md_Field_Description"]</th>
-                    <th scope="col">@L["Field_Status"]</th>
-                    <th scope="col" class="num">@L["Md_Field_WorkCenters"]</th>
-                    <th scope="col" class="actions-col">@L["Common_Actions"]</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var costCenter in _page.Slice(Filtered.ToList()))
-                {
-                    var usage = _usage.GetValueOrDefault(costCenter.Id);
-                    <tr @key="costCenter.Id">
-                        <td><span class="mono">@costCenter.Code</span></td>
-                        <td>@costCenter.Name</td>
-                        <td><span class="muted">@costCenter.Description</span></td>
-                        <td>
-                            <span class="pill @(costCenter.IsActive ? "ok" : "off")">
-                                @(costCenter.IsActive ? L["Common_Active"] : L["Common_Inactive"])
-                            </span>
-                        </td>
-                        <td class="num muted">@usage</td>
-                        <td class="actions-col">
-                            <AuthorizeView Policy="@Permissions.ManageMasterData">
-                                <button class="icon-btn" aria-label="@L["Common_Edit"]" title="@L["Common_Edit"]" @onclick="() => Edit(costCenter)">
-                                    <svg viewBox="0 0 24 24"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
-                                </button>
-                                @if (usage > 0)
-                                {
-                                    <button class="icon-btn" disabled aria-label="@L["Md_CostCenters_InUse"]" title="@L["Md_CostCenters_InUse"]">
-                                        <svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" /></svg>
-                                    </button>
-                                }
-                                else
-                                {
-                                    <button class="icon-btn danger" aria-label="@L["Common_Delete"]" title="@L["Common_Delete"]" @onclick="() => AskDelete(costCenter)">
-                                        <svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" /></svg>
-                                    </button>
-                                }
-                            </AuthorizeView>
-                        </td>
+    @if (!Filtered.Any())
+    {
+        <NoMatches />
+    }
+    else
+    {
+        <div class="card no-pad">
+            <table class="data-table hover">
+                <caption class="sr-only">@L["Md_CostCenters_Title"]</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">@L["Field_Code"]</th>
+                        <th scope="col">@L["Field_Name"]</th>
+                        <th scope="col">@L["Md_Field_Description"]</th>
+                        <th scope="col">@L["Field_Status"]</th>
+                        <th scope="col" class="num">@L["Md_Field_WorkCenters"]</th>
+                        <th scope="col" class="actions-col">@L["Common_Actions"]</th>
                     </tr>
-                }
-            </tbody>
-        </table>
-    </div>
+                </thead>
+                <tbody>
+                    @foreach (var costCenter in _page.Slice(Filtered.ToList()))
+                    {
+                        var usage = _usage.GetValueOrDefault(costCenter.Id);
+                        <tr @key="costCenter.Id">
+                            <td><span class="mono">@costCenter.Code</span></td>
+                            <td>@costCenter.Name</td>
+                            <td><span class="muted">@costCenter.Description</span></td>
+                            <td>
+                                <span class="pill @(costCenter.IsActive ? "ok" : "off")">
+                                    @(costCenter.IsActive ? L["Common_Active"] : L["Common_Inactive"])
+                                </span>
+                            </td>
+                            <td class="num muted">@usage</td>
+                            <td class="actions-col">
+                                <AuthorizeView Policy="@Permissions.ManageMasterData">
+                                    <button class="icon-btn" aria-label="@L["Common_Edit"]" title="@L["Common_Edit"]" @onclick="() => Edit(costCenter)">
+                                        <svg viewBox="0 0 24 24"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
+                                    </button>
+                                    @if (usage > 0)
+                                    {
+                                        <button class="icon-btn" disabled aria-label="@L["Md_CostCenters_InUse"]" title="@L["Md_CostCenters_InUse"]">
+                                            <svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" /></svg>
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <button class="icon-btn danger" aria-label="@L["Common_Delete"]" title="@L["Common_Delete"]" @onclick="() => AskDelete(costCenter)">
+                                            <svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" /></svg>
+                                        </button>
+                                    }
+                                </AuthorizeView>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
 
-    <Paginator Window="_page" OnChanged="StateHasChanged" />
+        <Paginator Window="_page" OnChanged="StateHasChanged" />
+    }
 }
 
 <Modal @bind-Visible="_showEditor" Title="@(_editing.Id == 0 ? L["Md_CostCenters_NewTitle"] : L["Md_CostCenters_EditTitle"])">

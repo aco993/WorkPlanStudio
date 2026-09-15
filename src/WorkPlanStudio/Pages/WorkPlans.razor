@@ -40,12 +40,19 @@
 {
     <div class="loading-row" role="status"><span class="spinner" aria-hidden="true"></span><span class="sr-only">@L["Common_Loading"]</span></div>
 }
-else if (!Filtered.Any())
+else if (_plans.Count == 0)
 {
     <div class="empty-state">
         <svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2" /><path d="M9 4v2h6V4" /><path d="M9 11h6M9 15h4" /></svg>
         <p>@L["WorkPlans_Empty"]</p>
     </div>
+}
+else if (!Filtered.Any())
+{
+    @* This list was the only one that said anything, and it said the same thing
+       either way: "no work plans match your search" over a database that simply
+       had none in it yet. *@
+    <NoMatches />
 }
 else
 {

@@ -62,68 +62,75 @@ else
         </div>
     </div>
 
-    <div class="card no-pad">
-        <table class="data-table hover">
-            <caption class="sr-only">@L["Orders_Title"]</caption>
-            <thead>
-                <tr>
-                    <th scope="col" aria-sort="@SortState(OrderColumn.Number)">
-                        <button type="button" class="th-sort" @onclick="() => SortBy(OrderColumn.Number)">@L["Orders_Number"]@SortMark(OrderColumn.Number)</button>
-                    </th>
-                    <th scope="col">@L["Field_PartName"]</th>
-                    <th scope="col">@L["Orders_Routing"]</th>
-                    <th scope="col" class="num">@L["Orders_Quantity"]</th>
-                    <th scope="col" class="num">@L["Orders_Release"]</th>
-                    <th scope="col" class="num" aria-sort="@SortState(OrderColumn.Due)">
-                        <button type="button" class="th-sort" @onclick="() => SortBy(OrderColumn.Due)">@L["Orders_Due"]@SortMark(OrderColumn.Due)</button>
-                    </th>
-                    <th scope="col" class="center" aria-sort="@SortState(OrderColumn.Priority)">
-                        <button type="button" class="th-sort" @onclick="() => SortBy(OrderColumn.Priority)">@L["Field_Priority"]@SortMark(OrderColumn.Priority)</button>
-                    </th>
-                    <th scope="col">@L["Field_Status"]</th>
-                    <th scope="col" class="actions-col">@L["Common_Actions"]</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var order in _page.Slice(Filtered.ToList()))
-                {
-                    <tr @key="order.Id">
-                        <td><span class="mono">@order.OrderNumber</span></td>
-                        <td>@(order.WorkPlan?.PartName ?? "—")</td>
-                        <td>
-                            <span class="mono muted">@(order.WorkPlan?.PlanNumber ?? "—")</span>
-                            @if (order.Status != ProductionOrderStatus.Draft)
-                            {
-                                <span class="pill frozen" title="@L["Orders_SnapshotTooltip"]">@L["Orders_Frozen"]</span>
-                            }
-                        </td>
-                        <td class="num">@Format.Number(order.Quantity)</td>
-                        <td class="num muted">@order.ReleaseLocal.ToString("d", CultureInfo.CurrentCulture)</td>
-                        <td class="num">@order.DueLocal.ToString("d", CultureInfo.CurrentCulture)</td>
-                        <td class="center">@PriorityLabel(order.Priority)</td>
-                        <td><span class="badge order-@order.Status.ToString().ToLowerInvariant()">@StatusLabel(order.Status)</span></td>
-                        <td class="actions-col">
-                            <AuthorizeView Policy="@Permissions.ManageOrders">
-                                @if (order.Status == ProductionOrderStatus.Draft)
-                                {
-                                    <button class="btn btn-outline" @onclick="() => ReleaseAsync(order.Id)">@L["Orders_Release"]</button>
-                                    <button class="icon-btn danger" aria-label="@L["Common_Delete"]" title="@L["Common_Delete"]" @onclick="() => AskDelete(order)">
-                                        <svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" /></svg>
-                                    </button>
-                                }
-                                else if (order.Status == ProductionOrderStatus.Released)
-                                {
-                                    <button class="btn btn-ghost" @onclick="() => AskCancel(order)">@L["Orders_Cancel"]</button>
-                                }
-                            </AuthorizeView>
-                        </td>
+    @if (!Filtered.Any())
+    {
+        <NoMatches />
+    }
+    else
+    {
+        <div class="card no-pad">
+            <table class="data-table hover">
+                <caption class="sr-only">@L["Orders_Title"]</caption>
+                <thead>
+                    <tr>
+                        <th scope="col" aria-sort="@SortState(OrderColumn.Number)">
+                            <button type="button" class="th-sort" @onclick="() => SortBy(OrderColumn.Number)">@L["Orders_Number"]@SortMark(OrderColumn.Number)</button>
+                        </th>
+                        <th scope="col">@L["Field_PartName"]</th>
+                        <th scope="col">@L["Orders_Routing"]</th>
+                        <th scope="col" class="num">@L["Orders_Quantity"]</th>
+                        <th scope="col" class="num">@L["Orders_Release"]</th>
+                        <th scope="col" class="num" aria-sort="@SortState(OrderColumn.Due)">
+                            <button type="button" class="th-sort" @onclick="() => SortBy(OrderColumn.Due)">@L["Orders_Due"]@SortMark(OrderColumn.Due)</button>
+                        </th>
+                        <th scope="col" class="center" aria-sort="@SortState(OrderColumn.Priority)">
+                            <button type="button" class="th-sort" @onclick="() => SortBy(OrderColumn.Priority)">@L["Field_Priority"]@SortMark(OrderColumn.Priority)</button>
+                        </th>
+                        <th scope="col">@L["Field_Status"]</th>
+                        <th scope="col" class="actions-col">@L["Common_Actions"]</th>
                     </tr>
-                }
-            </tbody>
-        </table>
-    </div>
+                </thead>
+                <tbody>
+                    @foreach (var order in _page.Slice(Filtered.ToList()))
+                    {
+                        <tr @key="order.Id">
+                            <td><span class="mono">@order.OrderNumber</span></td>
+                            <td>@(order.WorkPlan?.PartName ?? "—")</td>
+                            <td>
+                                <span class="mono muted">@(order.WorkPlan?.PlanNumber ?? "—")</span>
+                                @if (order.Status != ProductionOrderStatus.Draft)
+                                {
+                                    <span class="pill frozen" title="@L["Orders_SnapshotTooltip"]">@L["Orders_Frozen"]</span>
+                                }
+                            </td>
+                            <td class="num">@Format.Number(order.Quantity)</td>
+                            <td class="num muted">@order.ReleaseLocal.ToString("d", CultureInfo.CurrentCulture)</td>
+                            <td class="num">@order.DueLocal.ToString("d", CultureInfo.CurrentCulture)</td>
+                            <td class="center">@PriorityLabel(order.Priority)</td>
+                            <td><span class="badge order-@order.Status.ToString().ToLowerInvariant()">@StatusLabel(order.Status)</span></td>
+                            <td class="actions-col">
+                                <AuthorizeView Policy="@Permissions.ManageOrders">
+                                    @if (order.Status == ProductionOrderStatus.Draft)
+                                    {
+                                        <button class="btn btn-outline" @onclick="() => ReleaseAsync(order.Id)">@L["Orders_Release"]</button>
+                                        <button class="icon-btn danger" aria-label="@L["Common_Delete"]" title="@L["Common_Delete"]" @onclick="() => AskDelete(order)">
+                                            <svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" /></svg>
+                                        </button>
+                                    }
+                                    else if (order.Status == ProductionOrderStatus.Released)
+                                    {
+                                        <button class="btn btn-ghost" @onclick="() => AskCancel(order)">@L["Orders_Cancel"]</button>
+                                    }
+                                </AuthorizeView>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
 
-    <Paginator Window="_page" OnChanged="StateHasChanged" />
+        <Paginator Window="_page" OnChanged="StateHasChanged" />
+    }
 
     <p class="page-sub" style="margin-top:1rem">@L["Orders_ImmutabilityNote"]</p>
 }
