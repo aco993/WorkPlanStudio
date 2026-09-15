@@ -50,25 +50,34 @@ env:
   #
   # Each one sits about two points under what the suite actually measures, so it
   # defends what has been reached rather than a number from the day it was
-  # written. Measured on d7590bb: engine 96.57, working time 94.18, app 79.95,
-  # export 98.45, api 70.19.
+  # written. Measured on fd490bc: engine 96.57, working time 94.18, app 81.06,
+  # export 98.45, api 69.67, domain 89.78.
+  #
+  # GATE_SLACK enforces that sentence in the other direction. Coverage rose and
+  # two gates did not follow: the app's sat 3.06 points under what was measured,
+  # which is a gate that has quietly stopped defending anything. Past this many
+  # points adrift the build fails and the number has to be raised - the same way
+  # it fails when coverage drops.
+  GATE_SLACK: 3
   GATE_ENGINE: 95
   GATE_WORKING_TIME: 93
-  GATE_APP: 78
+  GATE_APP: 79
   GATE_EXPORT: 97
   # The shared domain is exercised by the web suite (and by the API's), so it
-  # is gated where it is measured. Measured on this tip: 89.59.
-  GATE_DOMAIN: 87
+  # is gated where it is measured. Measured on fd490bc: 89.78.
+  GATE_DOMAIN: 88
   # Floors, not counts: a run that discovers nothing must never be reported as
   # success. Kept within about two per cent of the real count, so adding tests
   # needs no edit and deleting a handful does - a suite that quietly stops
   # loading half of itself is the failure these exist to catch, and floors far
-  # below the truth cannot see it. Counts on d7590bb, as CI runs them (the
-  # performance budgets are excluded here and run in performance.yml): engine
-  # 291, working time 250, web 867, api 88, export 148.
-  MIN_TESTS_ENGINE: 285
-  MIN_TESTS_WORKING_TIME: 245
-  MIN_TESTS_WEB: 850
+  # below the truth cannot see it. Counts on fd490bc as this machine runs them:
+  # engine 294, working time 255, web 945, api 88, export 148. CI runs the
+  # engine's performance budgets in performance.yml instead, so its engine count
+  # is three lower, and the working-time floor keeps a little more room than two
+  # per cent for the same reason.
+  MIN_TESTS_ENGINE: 288
+  MIN_TESTS_WORKING_TIME: 248
+  MIN_TESTS_WEB: 925
   MIN_TESTS_API: 86
   MIN_TESTS_EXPORT: 145
   GATE_API: 68
@@ -143,11 +152,11 @@ jobs:
       - name: Coverage gate
         run: |
           python3 .github/scripts/coverage_gate.py TestResults/engine.cobertura.xml \
-            WorkPlanStudio.Scheduling=$GATE_ENGINE $BADGE_ARGS
+            WorkPlanStudio.Scheduling=$GATE_ENGINE $BADGE_ARGS --slack $GATE_SLACK
           python3 .github/scripts/coverage_gate.py TestResults/workingtime.cobertura.xml \
-            WorkPlanStudio.WorkingTime=$GATE_WORKING_TIME $BADGE_ARGS
+            WorkPlanStudio.WorkingTime=$GATE_WORKING_TIME $BADGE_ARGS --slack $GATE_SLACK
           python3 .github/scripts/coverage_gate.py TestResults/export.cobertura.xml \
-            WorkPlanStudio.Export=$GATE_EXPORT
+            WorkPlanStudio.Export=$GATE_EXPORT --slack $GATE_SLACK
 
       - name: Build coverage report
         if: always()
@@ -215,7 +224,7 @@ jobs:
       - name: Coverage gate
         run: |
           python3 .github/scripts/coverage_gate.py TestResults/web.cobertura.xml \
-            WorkPlanStudio=$GATE_APP WorkPlanStudio.Domain=$GATE_DOMAIN $BADGE_ARGS
+            WorkPlanStudio=$GATE_APP WorkPlanStudio.Domain=$GATE_DOMAIN $BADGE_ARGS --slack $GATE_SLACK
 
       - name: Build coverage report
         if: always()
@@ -277,7 +286,7 @@ jobs:
 
       - name: Coverage gate
         run: |
-          python3 .github/scripts/coverage_gate.py TestResults/api.cobertura.xml WorkPlanStudio.Api=$GATE_API
+          python3 .github/scripts/coverage_gate.py TestResults/api.cobertura.xml WorkPlanStudio.Api=$GATE_API --slack $GATE_SLACK
 
       - name: Build coverage report
         if: always()

@@ -9,11 +9,23 @@
 else if (!_readiness.IsReady)
 {
     <main class="recovery-shell">
+        @*
+            The persona switcher, on the one screen that has no layout around it.
+            Without it a guest read "export it before resetting", could not see
+            the reset (it needs ResetData) and could not become someone who can:
+            the screen whose whole job is getting out of a dead end was one.
+        *@
+        <div class="recovery-bar">
+            <PersonaMenu />
+        </div>
         <section class="card recovery-card" role="alert">
             <div class="card-head"><h1>@L["Storage_RecoveryTitle"]</h1></div>
             <div class="card-body">
                 <p>@RecoveryMessage(_readiness)</p>
-                <p>@L["Storage_RecoveryPreserved"]</p>
+                <AuthorizeView Policy="@Permissions.ResetData">
+                    <Authorized><p>@L["Storage_RecoveryPreserved"]</p></Authorized>
+                    <NotAuthorized><p>@L["Storage_RecoveryPreservedReadOnly"]</p></NotAuthorized>
+                </AuthorizeView>
 
                 @if (_actionError is not null)
                 {

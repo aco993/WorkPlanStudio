@@ -1032,6 +1032,16 @@
             OptimalityProofStatus.BetterScheduleExists =>
                 L["Sched_Proof_Better", Format.Number((decimal)(proof.GapPercent ?? 0), 1),
                   Format.Number(proof.Nodes), Format.Seconds(proof.Elapsed)],
+            // A failed proof is not one outcome. "We looked at four million
+            // schedules and none beat yours" and "we found a better one but
+            // cannot say how much better" are different answers, and both used
+            // to come out as a percentage above a lower bound that measures the
+            // bound's weakness rather than the plan.
+            OptimalityProofStatus.NotProvedNoneBetterFound =>
+                L["Sched_Proof_NoneBetter", Format.Number(proof.Nodes), Format.Seconds(proof.Elapsed)],
+            _ when proof.FoundBetterPercent is { } better =>
+                L["Sched_Proof_FoundBetter", Format.Number((decimal)better, 1),
+                  Format.Number(proof.Nodes), Format.Seconds(proof.Elapsed)],
             _ => proof.BoundGapPercent is { } bound
                 ? L["Sched_Proof_NotProved", Format.Seconds(proof.Elapsed), Format.Number((decimal)bound, 1)]
                 : L["Sched_Proof_NotProvedNoBound", Format.Seconds(proof.Elapsed)]

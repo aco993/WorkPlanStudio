@@ -1,5 +1,6 @@
 @page "/work-plans/new"
 @page "/work-plans/{Id:int}"
+@using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Components.Routing
 @using WorkPlanStudio.Validation
 @inject IStringLocalizer<SharedResource> L
@@ -7,6 +8,8 @@
 @inject WorkCenterService Centers
 @inject NavigationManager Nav
 @inject ILogger<WorkPlanEditor> Logger
+@using Microsoft.AspNetCore.Authorization
+@inject IAuthorizationService Authorization
 
 <PageTitle>@Title · WorkPlan Studio</PageTitle>
 
@@ -16,12 +19,15 @@
         <h1>@Title</h1>
     </div>
     <div class="head-actions">
-        @if (!_missing)
+        @*
+            Cancel belongs to editing. Offered to someone who cannot change a
+            field it is a second back-link wearing the word "discard", and on
+            /work-plans/new as a guest it was the only button on the page.
+        *@
+        @if (!_missing && !Denied && MayEdit)
         {
             <button class="btn btn-ghost" @onclick="Cancel">@L["Common_Cancel"]</button>
-            <AuthorizeView Policy="@Permissions.ManageMasterData">
-                <button class="btn btn-primary" @onclick="SaveAsync" disabled="@_saving">@L["Common_Save"]</button>
-            </AuthorizeView>
+            <button class="btn btn-primary" @onclick="SaveAsync" disabled="@_saving">@L["Common_Save"]</button>
         }
     </div>
 </div>
@@ -55,6 +61,18 @@ else if (_missing)
 {
     <div class="empty-state" role="status">
         <p>@(string.Format(L["Editor_PlanMissing"], Id))</p>
+        <a class="btn btn-primary" href="work-plans">@L["Editor_BackToPlans"]</a>
+    </div>
+}
+else if (Denied)
+{
+    @*
+        A form nobody on this page may submit is not read-only, it is a promise
+        that cannot be kept: thirty-six dead fields under the heading "New work
+        plan". Say which persona creates one, and offer the way back.
+    *@
+    <div class="empty-state" role="status">
+        <p>@(string.Format(L["Editor_NewNeedsRole"], CreatorRoles))</p>
         <a class="btn btn-primary" href="work-plans">@L["Editor_BackToPlans"]</a>
     </div>
 }
@@ -374,7 +392,31 @@ else
             row.SetupTimeMinutes, row.TimePerPieceMinutes, row.Remarks))));
 
     private bool IsNew => Id is null;
-    private string Title => IsNew ? L["Editor_NewTitle"] : L["Editor_EditTitle"];
+
+
+    @* The persona, asked of the authorization pipeline rather than of the
+       provider's CurrentRole: that property is the default until the store has
+       been read, so a page rendered before the layout got there decides with the
+       wrong role. OnParametersSetAsync re-runs when the cascading state changes,
+       which is exactly when someone switches persona. *@
+    [CascadingParameter] private Task<AuthenticationState>? AuthState { get; set; }
+
+    private bool MayEdit { get; set; }
+
+    /// <summary>
+    /// A new plan asked for by someone who may not create one. Computed rather
+    /// than stored: switching persona must change the answer without a reload,
+    /// and <c>OnParametersSetAsync</c> deliberately does nothing when only a
+    /// cascading value moved.
+    /// </summary>
+    private bool Denied => IsNew && !MayEdit;
+
+    private string CreatorRoles =>
+        string.Join(" / ", Permissions.RolesFor[Permissions.ManageMasterData].Select(role => L[$"Role_{role}"].Value));
+
+    private string Title => IsNew
+        ? L["Editor_NewTitle"]
+        : MayEdit ? L["Editor_EditTitle"] : L["Editor_ViewTitle"];
 
     /// <summary>Revision letters offered by the datalist, plus anything already in use.</summary>
     private IEnumerable<string> Revisions =>
@@ -411,6 +453,9 @@ else
     /// </summary>
     protected override async Task OnParametersSetAsync()
     {
+        MayEdit = AuthState is null
+            || (await Authorization.AuthorizeAsync((await AuthState).User, Permissions.ManageMasterData)).Succeeded;
+
         if (_loaded && _loadedId == Id)
             return;
 
