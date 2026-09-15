@@ -4,6 +4,7 @@
 @inject IStringLocalizer<SharedResource> L
 @inject ProductionOrderService Orders
 @inject WorkPlanService Plans
+@inject UiAnnouncer Announcer
 
 @using WorkPlanStudio.Services.Forms
 
@@ -112,7 +113,7 @@ else
                                 <AuthorizeView Policy="@Permissions.ManageOrders">
                                     @if (order.Status == ProductionOrderStatus.Draft)
                                     {
-                                        <button class="btn btn-outline" @onclick="() => ReleaseAsync(order.Id)">@L["Orders_Release"]</button>
+                                        <button class="btn btn-outline" @onclick="() => ReleaseAsync(order)">@L["Orders_Release"]</button>
                                         <button class="icon-btn danger" aria-label="@L["Common_Delete"]" title="@L["Common_Delete"]" @onclick="() => AskDelete(order)">
                                             <svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" /></svg>
                                         </button>
@@ -296,13 +297,13 @@ else
 
     protected override void OnInitialized()
     {
-        _errors.Declare("OrderNumber", "po-number");
-        _errors.Declare("WorkPlanId", "po-plan");
-        _errors.Declare("Quantity", "po-qty");
-        _errors.Declare("Priority", "po-priority");
-        _errors.Declare("ReleaseLocal", "po-release");
-        _errors.Declare("DueLocal", "po-due");
-        _errors.Declare("Status", "po-number");
+        _errors.Declare("OrderNumber", "po-number", L["Orders_Number"]);
+        _errors.Declare("WorkPlanId", "po-plan", L["Orders_Routing"]);
+        _errors.Declare("Quantity", "po-qty", L["Orders_Quantity"]);
+        _errors.Declare("Priority", "po-priority", L["Field_Priority"]);
+        _errors.Declare("ReleaseLocal", "po-release", L["Orders_Release"]);
+        _errors.Declare("DueLocal", "po-due", L["Orders_Due"]);
+        _errors.Declare("Status", "po-number", L["Field_Status"]);
     }
 
     protected override async Task OnInitializedAsync() => await ReloadAsync();
@@ -395,19 +396,25 @@ else
         _editing.ReleaseLocal = PlantTime.Wall(_releaseDate).Date;
         _editing.DueLocal = PlantTime.Wall(_dueDate).Date;
 
+        var isNew = _editing.Id == 0;
+        var number = _editing.OrderNumber;
         var result = await Orders.SaveAsync(_editing);
         if (!Apply(result))
             return;
 
         _showEditor = false;
+        Announcer.Say(L[isNew ? "Ann_Created" : "Ann_Saved", number]);
         await ReloadAsync();
     }
 
-    private async Task ReleaseAsync(int id)
+    private async Task ReleaseAsync(ProductionOrder order)
     {
         _error = null;
-        if (Apply(await Orders.ReleaseAsync(id)))
+        if (Apply(await Orders.ReleaseAsync(order.Id)))
+        {
+            Announcer.Say(L["Ann_OrderReleased", order.OrderNumber]);
             await ReloadAsync();
+        }
     }
 
     private void AskCancel(ProductionOrder order)
@@ -420,11 +427,17 @@ else
     {
         _error = null;
         var id = _pending?.Id;
+        var number = _pending?.OrderNumber;
         _showCancel = false;
         _pending = null;
 
         if (id is not null && Apply(await Orders.CancelAsync(id.Value)))
+        {
+            // The row changes to Cancelled somewhere below the dialog that has just
+            // closed. Without this the whole event was silent.
+            Announcer.Say(L["Ann_OrderCancelled", number ?? string.Empty]);
             await ReloadAsync();
+        }
     }
 
     private void AskDelete(ProductionOrder order)
@@ -437,11 +450,15 @@ else
     {
         _error = null;
         var id = _pending?.Id;
+        var number = _pending?.OrderNumber;
         _showDelete = false;
         _pending = null;
 
         if (id is not null && Apply(await Orders.DeleteAsync(id.Value)))
+        {
+            Announcer.Say(L["Ann_Deleted", number ?? string.Empty]);
             await ReloadAsync();
+        }
     }
 
     /// <summary>

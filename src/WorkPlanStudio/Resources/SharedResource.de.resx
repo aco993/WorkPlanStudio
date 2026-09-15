@@ -308,6 +308,11 @@
   <data name="Orders_Release" xml:space="preserve"><value>Freigabe</value></data>
   <data name="Orders_Due" xml:space="preserve"><value>Termin</value></data>
   <data name="Orders_Cancel" xml:space="preserve"><value>Auftrag stornieren</value></data>
+  <data name="Ann_OrderReleased" xml:space="preserve"><value>Auftrag {0} freigegeben.</value></data>
+  <data name="Ann_OrderCancelled" xml:space="preserve"><value>Auftrag {0} storniert. Er wird nicht mehr eingeplant.</value></data>
+  <data name="Ann_Deleted" xml:space="preserve"><value>{0} gelöscht.</value></data>
+  <data name="Ann_Created" xml:space="preserve"><value>{0} angelegt.</value></data>
+  <data name="Ann_Saved" xml:space="preserve"><value>{0} gespeichert.</value></data>
   <data name="Orders_Frozen" xml:space="preserve"><value>eingefroren</value></data>
   <data name="Orders_SnapshotTooltip" xml:space="preserve"><value>Dieser Auftrag enthält eine Kopie des Arbeitsplans zum Zeitpunkt der Freigabe.</value></data>
   <data name="Orders_StatusDraft" xml:space="preserve"><value>Entwurf</value></data>
@@ -362,7 +367,8 @@
   <data name="WorkingTime_Saved" xml:space="preserve"><value>Betriebsregeln gespeichert. Der nächste Planungslauf verwendet sie.</value></data>
   <data name="WorkingTime_Holidays" xml:space="preserve"><value>Gesetzliche Feiertage {0}</value></data>
   <data name="WorkingTime_HolidaysNote" xml:space="preserve"><value>Für das gewählte Bundesland berechnet; bewegliche Feiertage leiten sich aus Ostern ab.</value></data>
-  <data name="WorkingTime_Preview" xml:space="preserve"><value>Wochenmuster</value></data>
+  <data name="WorkingTime_Preview" xml:space="preserve"><value>Vorschau des Wochenmusters</value></data>
+  <data name="WorkingTime_PreviewNote" xml:space="preserve"><value>Eine Was-wäre-wenn-Ansicht. Auf dieser Karte wird nichts gespeichert — das Schichtmodell steht am jeweiligen Arbeitsplatz.</value></data>
   <data name="WorkingTime_PreviewFor" xml:space="preserve"><value>Schichtmodell für die Vorschau</value></data>
   <data name="WorkingTime_WeeklyHours" xml:space="preserve"><value>{0} Arbeitsstunden pro Woche</value></data>
   <data name="WorkingTime_FreeSundays" xml:space="preserve"><value>{0} freie Sonntage im Jahr</value></data>
@@ -652,6 +658,7 @@
   <data name="Import_Option_Separator" xml:space="preserve"><value>Trennzeichen</value></data>
   <data name="Import_Separator_Detected" xml:space="preserve"><value>Erkannt: {0}</value></data>
   <data name="Import_Action_DryRun" xml:space="preserve"><value>Datei prüfen</value></data>
+  <data name="Import_DryRunBlocked" xml:space="preserve"><value>Zuerst jede Pflichtspalte zuordnen — siehe die Liste oben.</value></data>
   <data name="Import_Action_Commit" xml:space="preserve"><value>Importieren</value></data>
   <data name="Import_Action_Again" xml:space="preserve"><value>Neu beginnen</value></data>
   <data name="Import_Progress_Reading" xml:space="preserve"><value>Datei wird gelesen: bisher {0} Zeilen.</value></data>
@@ -836,8 +843,8 @@
   <data name="Confirm_LeaveDiscard" xml:space="preserve"><value>Änderungen verwerfen</value></data>
   <data name="Confirm_DeleteOrderTitle" xml:space="preserve"><value>Auftrag löschen</value></data>
   <data name="Confirm_DeleteOrderBody" xml:space="preserve"><value>Auftrag {0} löschen? Er ist noch ein Entwurf, und das lässt sich nicht rückgängig machen.</value></data>
-  <data name="Confirm_CancelOrderTitle" xml:space="preserve"><value>Auftrag zurückziehen</value></data>
-  <data name="Confirm_CancelOrderBody" xml:space="preserve"><value>Auftrag {0} zurückziehen? Er wird nicht mehr eingeplant, gibt die belegten Arbeitsplätze frei und kann nicht erneut freigegeben werden.</value></data>
+  <data name="Confirm_CancelOrderTitle" xml:space="preserve"><value>Auftrag stornieren</value></data>
+  <data name="Confirm_CancelOrderBody" xml:space="preserve"><value>Auftrag {0} stornieren? Er wird nicht mehr eingeplant, gibt die belegten Arbeitsplätze frei und kann nicht erneut freigegeben werden.</value></data>
   <data name="Orders_KeepOrder" xml:space="preserve"><value>Auftrag behalten</value></data>
   <data name="Editor_PlanMissing" xml:space="preserve"><value>Es gibt keinen Arbeitsplan mit der Kennung {0}. Möglicherweise wurde er gelöscht.</value></data>
   <data name="Editor_NewNeedsRole" xml:space="preserve"><value>Einen Arbeitsplan anzulegen braucht die Rolle {0}. Oben umschalten oder zurück zur Liste.</value></data>

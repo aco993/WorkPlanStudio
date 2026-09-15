@@ -112,12 +112,24 @@
                 </select>
             </div>
 
+            @{ var blocked = _map.MissingRequired().Count > 0; }
             <div class="head-actions" style="margin-top:1.1rem">
-                <button id="import-dry-run" class="btn btn-primary" disabled="@(_busy || _map.MissingRequired().Count > 0)" @onclick="DryRunAsync">
+                @*
+                    A disabled button has to carry its own reason. This one was off
+                    until every required column was matched, and said so only up the
+                    page beside the column - so whoever reached the button first
+                    found a dead control and no explanation.
+                *@
+                <button id="import-dry-run" class="btn btn-primary" disabled="@(_busy || blocked)"
+                        aria-describedby="@(blocked ? "import-dry-run-blocked" : null)" @onclick="DryRunAsync">
                     @L["Import_Action_DryRun"]
                 </button>
                 <button id="import-reset" class="btn btn-ghost" disabled="@_busy" @onclick="Reset">@L["Import_Action_Again"]</button>
             </div>
+            @if (blocked)
+            {
+                <p id="import-dry-run-blocked" class="hint">@L["Import_DryRunBlocked"]</p>
+            }
 
             @if (_map.MissingRequired().Count > 0)
             {

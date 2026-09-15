@@ -7,7 +7,13 @@ namespace WorkPlanStudio.Services.Forms;
 /// <param name="Field">The validator's field name.</param>
 /// <param name="InputId">The <c>id</c> of the control, or <c>null</c> when no control owns this message.</param>
 /// <param name="Message">The localised sentence.</param>
-public sealed record FormError(string Field, string? InputId, string Message);
+/// <param name="Label">
+/// The control's visible label, when the page named one. The summary puts it in
+/// front of the message: without it two required fields produced two list items
+/// both reading "Required", and two links with the same text pointing at
+/// different controls (WCAG 2.4.4).
+/// </param>
+public sealed record FormError(string Field, string? InputId, string Message, string? Label = null);
 
 /// <summary>
 /// Where a form's validation messages live between a failed save and the render
@@ -40,6 +46,7 @@ public sealed record FormError(string Field, string? InputId, string Message);
 public sealed class FormErrorState
 {
     private readonly Dictionary<string, string> _inputIdByField = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, string> _labelByField = new(StringComparer.Ordinal);
     private readonly Dictionary<string, string> _messageByField = new(StringComparer.Ordinal);
     private readonly List<FormError> _all = [];
 
@@ -55,7 +62,21 @@ public sealed class FormErrorState
     public bool HasAny => _all.Count > 0 || Summary is not null;
 
     /// <summary>Names a field this form renders a message slot for.</summary>
-    public void Declare(string field, string inputId) => _inputIdByField[field] = inputId;
+    /// <param name="field">The validator's field name.</param>
+    /// <param name="inputId">The control's <c>id</c>.</param>
+    /// <param name="label">
+    /// The control's visible label. Optional only so that a form without one still
+    /// compiles; a summary item without it says what is wrong and not where.
+    /// </param>
+    public void Declare(string field, string inputId, string? label = null)
+    {
+        _inputIdByField[field] = inputId;
+        if (label is not null)
+            _labelByField[field] = label;
+    }
+
+    /// <summary>The visible label a page declared for a field, if any.</summary>
+    public string? LabelFor(string field) => _labelByField.GetValueOrDefault(field);
 
     public void Clear()
     {
@@ -106,7 +127,7 @@ public sealed class FormErrorState
             if (inputId is not null)
                 _messageByField.TryAdd(issue.Field, message);
 
-            _all.Add(new FormError(issue.Field, inputId, message));
+            _all.Add(new FormError(issue.Field, inputId, message, _labelByField.GetValueOrDefault(issue.Field)));
         }
 
         Summary = result.Status switch

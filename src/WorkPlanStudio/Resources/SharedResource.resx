@@ -308,6 +308,11 @@
   <data name="Orders_Release" xml:space="preserve"><value>Release</value></data>
   <data name="Orders_Due" xml:space="preserve"><value>Due</value></data>
   <data name="Orders_Cancel" xml:space="preserve"><value>Cancel order</value></data>
+  <data name="Ann_OrderReleased" xml:space="preserve"><value>Order {0} released.</value></data>
+  <data name="Ann_OrderCancelled" xml:space="preserve"><value>Order {0} cancelled. It is no longer scheduled.</value></data>
+  <data name="Ann_Deleted" xml:space="preserve"><value>{0} deleted.</value></data>
+  <data name="Ann_Created" xml:space="preserve"><value>{0} created.</value></data>
+  <data name="Ann_Saved" xml:space="preserve"><value>{0} saved.</value></data>
   <data name="Orders_Frozen" xml:space="preserve"><value>frozen</value></data>
   <data name="Orders_SnapshotTooltip" xml:space="preserve"><value>This order carries a copy of the routing as it was when released.</value></data>
   <data name="Orders_StatusDraft" xml:space="preserve"><value>Draft</value></data>
@@ -362,7 +367,8 @@
   <data name="WorkingTime_Saved" xml:space="preserve"><value>Plant rules saved. The next schedule run uses them.</value></data>
   <data name="WorkingTime_Holidays" xml:space="preserve"><value>Public holidays {0}</value></data>
   <data name="WorkingTime_HolidaysNote" xml:space="preserve"><value>Computed for the selected state; movable feasts derive from Easter.</value></data>
-  <data name="WorkingTime_Preview" xml:space="preserve"><value>Weekly pattern</value></data>
+  <data name="WorkingTime_Preview" xml:space="preserve"><value>Weekly pattern preview</value></data>
+  <data name="WorkingTime_PreviewNote" xml:space="preserve"><value>A what-if view. Nothing on this card is saved — each work center carries its own shift pattern.</value></data>
   <data name="WorkingTime_PreviewFor" xml:space="preserve"><value>Shift pattern to preview</value></data>
   <data name="WorkingTime_WeeklyHours" xml:space="preserve"><value>{0} working hours per week</value></data>
   <data name="WorkingTime_FreeSundays" xml:space="preserve"><value>{0} free Sundays a year</value></data>
@@ -652,6 +658,7 @@
   <data name="Import_Option_Separator" xml:space="preserve"><value>Separator</value></data>
   <data name="Import_Separator_Detected" xml:space="preserve"><value>Detected: {0}</value></data>
   <data name="Import_Action_DryRun" xml:space="preserve"><value>Check the file</value></data>
+  <data name="Import_DryRunBlocked" xml:space="preserve"><value>Match every required column first — see the list above.</value></data>
   <data name="Import_Action_Commit" xml:space="preserve"><value>Import</value></data>
   <data name="Import_Action_Again" xml:space="preserve"><value>Start again</value></data>
   <data name="Import_Progress_Reading" xml:space="preserve"><value>Reading the file: {0} rows so far.</value></data>
@@ -836,8 +843,8 @@
   <data name="Confirm_LeaveDiscard" xml:space="preserve"><value>Discard changes</value></data>
   <data name="Confirm_DeleteOrderTitle" xml:space="preserve"><value>Delete order</value></data>
   <data name="Confirm_DeleteOrderBody" xml:space="preserve"><value>Delete order {0}? It is still a draft, and this cannot be undone.</value></data>
-  <data name="Confirm_CancelOrderTitle" xml:space="preserve"><value>Withdraw order</value></data>
-  <data name="Confirm_CancelOrderBody" xml:space="preserve"><value>Withdraw order {0}? It stops being scheduled, releases the work centers it held, and cannot be released again.</value></data>
+  <data name="Confirm_CancelOrderTitle" xml:space="preserve"><value>Cancel order</value></data>
+  <data name="Confirm_CancelOrderBody" xml:space="preserve"><value>Cancel order {0}? It stops being scheduled, releases the work centers it held, and cannot be released again.</value></data>
   <data name="Orders_KeepOrder" xml:space="preserve"><value>Keep the order</value></data>
   <data name="Editor_PlanMissing" xml:space="preserve"><value>There is no work plan with id {0}. It may have been deleted.</value></data>
   <data name="Editor_NewNeedsRole" xml:space="preserve"><value>Creating a work plan needs the {0} persona. Switch persona in the top bar, or go back to the list.</value></data>

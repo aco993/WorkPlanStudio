@@ -2,6 +2,7 @@
 @inject IStringLocalizer<SharedResource> L
 @inject CostCenterService Catalog
 @inject ILogger<CostCenters> Logger
+@inject UiAnnouncer Announcer
 
 @using WorkPlanStudio.Services.Forms
 
@@ -196,10 +197,10 @@ else
 
     protected override void OnInitialized()
     {
-        _errors.Declare("Code", "cc-code");
-        _errors.Declare("Name", "cc-name");
-        _errors.Declare("Description", "cc-description");
-        _errors.Declare("IsActive", "cc-active");
+        _errors.Declare("Code", "cc-code", L["Field_Code"]);
+        _errors.Declare("Name", "cc-name", L["Field_Name"]);
+        _errors.Declare("Description", "cc-description", L["Md_Field_Description"]);
+        _errors.Declare("IsActive", "cc-active", L["Common_Active"]);
     }
 
     protected override async Task OnInitializedAsync()
@@ -257,11 +258,14 @@ else
         _saving = true;
         try
         {
+            var isNew = _editing.Id == 0;
+            var label = _editing.Code;
             var result = await Catalog.SaveAsync(_editing);
             if (result.IsSuccess)
             {
                 _errors.Clear();
                 _showEditor = false;
+                Announcer.Say(L[isNew ? "Ann_Created" : "Ann_Saved", label]);
                 await ReloadAsync();
                 return;
             }
@@ -290,8 +294,11 @@ else
         _pageError = null;
         if (_pendingDelete is not null)
         {
+            var label = _pendingDelete.Code;
             var result = await Catalog.DeleteAsync(_pendingDelete.Id);
-            if (!result.IsSuccess)
+            if (result.IsSuccess)
+                Announcer.Say(L["Ann_Deleted", label]);
+            else
                 _pageError = result.ValidationIssues is [var issue, ..]
                     ? L[issue.MessageKey, issue.Arguments]
                     : L[result.Status == ApplicationResultStatus.Forbidden ? "Error_Forbidden" : "Error_ActionFailed"];

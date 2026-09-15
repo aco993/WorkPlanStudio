@@ -5,6 +5,7 @@
 @inject CostCenterService CostCenters
 @inject NavigationManager Nav
 @inject ILogger<WorkCenters> Logger
+@inject UiAnnouncer Announcer
 
 @using WorkPlanStudio.Services.Forms
 
@@ -274,13 +275,13 @@ else
 
     protected override void OnInitialized()
     {
-        _errors.Declare("Code", "wc-code");
-        _errors.Declare("Name", "wc-name");
-        _errors.Declare("HourlyRate", "wc-rate");
-        _errors.Declare("ParallelCapacity", "wc-capacity");
-        _errors.Declare("ShiftPatternKey", "wc-shift");
-        _errors.Declare("IsActive", "wc-active");
-        _errors.Declare(nameof(WorkCenter.CostCenterId), "wc-cost-center");
+        _errors.Declare("Code", "wc-code", L["Field_Code"]);
+        _errors.Declare("Name", "wc-name", L["Field_Name"]);
+        _errors.Declare("HourlyRate", "wc-rate", L["Field_HourlyRate"]);
+        _errors.Declare("ParallelCapacity", "wc-capacity", L["Field_Capacity"]);
+        _errors.Declare("ShiftPatternKey", "wc-shift", L["Field_ShiftPattern"]);
+        _errors.Declare("IsActive", "wc-active", L["Common_Active"]);
+        _errors.Declare(nameof(WorkCenter.CostCenterId), "wc-cost-center", L["Field_CostCenter"]);
     }
 
     protected override async Task OnInitializedAsync() => await ReloadAsync();
@@ -381,11 +382,14 @@ else
             _editing.HourlyRate = rate;
             _editing.ParallelCapacity = capacity;
 
+            var isNew = _editing.Id == 0;
+            var label = _editing.Code;
             var result = await Centers.SaveAsync(_editing);
             if (result.IsSuccess)
             {
                 _errors.Clear();
                 _showEditor = false;
+                Announcer.Say(L[isNew ? "Ann_Created" : "Ann_Saved", label]);
                 await ReloadAsync();
                 return;
             }
@@ -414,8 +418,11 @@ else
         _pageError = null;
         if (_pendingDelete is not null)
         {
+            var label = _pendingDelete.Code;
             var result = await Centers.DeleteAsync(_pendingDelete.Id);
-            if (!result.IsSuccess)
+            if (result.IsSuccess)
+                Announcer.Say(L["Ann_Deleted", label]);
+            else
                 _pageError = result.ValidationIssues is [var issue, ..]
                     ? L[issue.MessageKey, issue.Arguments]
                     : L[result.Status == ApplicationResultStatus.Forbidden ? "Error_Forbidden" : "Error_ActionFailed"];
