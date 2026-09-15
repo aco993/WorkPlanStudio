@@ -1,0 +1,21 @@
+@inject IStringLocalizer<SharedResource> L
+
+@*
+    What a list says when it holds rows but the search and filters match none of
+    them. Three of the four lists said nothing at all: a table header, no rows,
+    and no explanation — measured on the published site by typing something that
+    occurs nowhere. A screen reader read the column titles and then stopped.
+
+    role="status" rather than a plain paragraph, because the reader is typing in a
+    search box and will not go looking: the sentence has to come to them. It sits
+    below the toolbar on purpose, so the search box that produced this is still
+    there to be cleared.
+*@
+<div class="empty-state small" role="status">
+    <p>@(Message ?? L["List_NoMatches"])</p>
+</div>
+
+@code {
+    /// <summary>Overrides the general sentence where a list can say something better.</summary>
+    [Parameter] public string? Message { get; set; }
+}
