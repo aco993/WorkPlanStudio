@@ -7,6 +7,55 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.6] — 2026-09-15
+
+Three defects from scoring the published 0.3.5 against the same ten criteria. The
+first is the worst this app has had: it lost data that had **already been saved**.
+
+### Fixed
+
+- **Two browser tabs no longer delete each other's saved work.** Every tab holds
+  the whole database in memory and writes the whole of it back under one key, so
+  the last writer won and the loser was never told. Measured on the published
+  site, in both directions: tab A renames a work plan and saves, tab B — which
+  loaded before that — renames a work centre and saves, and A's change is gone;
+  save again from A and B's is gone. No warning anywhere, while the losing tab
+  went on showing the change that had already been deleted. The stored payload now
+  carries a **revision** that counts writes; a write names the revision it was
+  based on, and storage compares and sets in one synchronous block, so a write
+  based on something another tab has already replaced is **refused** rather than
+  applied and nothing of theirs is overwritten. The refusal is its own status with
+  its own sentence: *Another tab changed this data after the page was loaded, so
+  the change was not saved and nothing of theirs was overwritten. Reload to get
+  the current data, then make the change again.* Replacing the whole database —
+  import, reset, the first write of a fresh one — is never refused as stale,
+  because those are not edits; and a payload written before revisions existed
+  reads as 0 and stamps 1 on its first write, so an existing browser is not locked
+  out by a guard that arrived after it.
+- **A tab is told before it tries, not after.** The browser raises a `storage`
+  event in every other tab of an origin when one of them writes, and this app had
+  never listened. A tab whose copy has fallen behind now says so — *Another tab
+  changed this data. Reload to see it.* — with the reload beside it.
+- **A marked cell says why it is wrong.** `aria-invalid` on its own announces
+  "wrong" without the reason, and the sentence added in 0.3.5 sits above the
+  table, which is not where a keyboard lands. Each cell now carries its own
+  reason, announced but not drawn, because sixty cells have no room for sixty
+  sentences.
+- **The README no longer copies numbers a run produces.** It carried six coverage
+  percentages by hand and two had already fallen behind the badge delivered beside
+  them — in a sentence claiming both came from the same measurement. The
+  thresholds stay, because they are policy; what is measured is on the badges,
+  written by the run that measures it.
+
+### Tests
+
+- **Sixteen tests.** The six for the revision guard cannot compile against 0.3.5 —
+  the storage interface, the result status and the write outcome are all new — and
+  the two for the other findings fail there. Two exist to stop the guard being too
+  eager: a tab that is up to date still saves twice in a row, and replacing the
+  whole database is never refused as stale. A guard that refuses everything is not
+  a guard.
+
 ## [0.3.5] — 2026-09-15
 
 Four defects, found by scoring the published site against the same ten criteria
@@ -544,6 +593,7 @@ Initial public release.
   GitHub Pages deployment.
 
 [Unreleased]: https://github.com/aco993/WorkPlanStudio/compare/v0.3.4...HEAD
+[0.3.6]: https://github.com/aco993/WorkPlanStudio/compare/v0.3.5...v0.3.6
 [0.3.5]: https://github.com/aco993/WorkPlanStudio/compare/v0.3.4...v0.3.5
 [0.3.4]: https://github.com/aco993/WorkPlanStudio/compare/v0.3.3...v0.3.4
 [0.3.3]: https://github.com/aco993/WorkPlanStudio/compare/v0.3.2...v0.3.3
