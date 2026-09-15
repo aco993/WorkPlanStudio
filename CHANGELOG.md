@@ -7,6 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.1] — 2026-09-15
+
+Two findings from scoring the published 0.4.0, both small, both the same species
+as the ones before them: the application knew something it did not say, or said
+one thing twice.
+
+### Fixed
+
+- **The 429 did not say for how long.** The login route's rate limiter cuts in at
+  exactly the configured tenth request — measured against the running API — and
+  the refusal carried the status code and nothing else. RFC 6585 says a 429
+  *SHOULD* carry `Retry-After`; without it a client is told "too many" and can
+  only guess or keep hammering, which is the behaviour the limiter exists to
+  prevent. `OnRejected` now reads the window from the lease metadata, falls back
+  to the configured `AuthWindowSeconds`, and writes the header; the body stays the
+  `problem+json` the status-code pages already produced.
+- **The recovery screen printed the same instruction twice.** The failure message
+  ended *"Export it before resetting."* and the paragraph directly under it said
+  *"The existing payload has not been overwritten. Export it before resetting the
+  local demo database."* The failure message's job is to say what is wrong; the
+  advice belongs to the paragraph below it, which is also the one that knows
+  whether this persona may reset at all. The tail is gone from the upgrade-failure
+  and quota messages, and the quota message keeps the part that was its own —
+  *removing other site data for this origin frees some*.
+- **So did the assistant's settings dialog.** Two paragraphs both said browser
+  storage is not a vault and not to use a shared computer, in different words,
+  each carrying two facts the other did not. They are one paragraph now, with
+  every distinct fact once. The CORS note stays beside it: that one says something
+  else.
+
+### Tests
+
+- **Seven, five of which fail against 0.4.0.** Two are guards: the recovery screen
+  must not print the same paragraph twice, and only one of the assistant's texts
+  may call the browser no vault.
+- **A shared fixed window is not test isolation.** The new `Retry-After` test
+  spent the rate-limit window its neighbour asserts exact counts against, so that
+  one saw six refusals where it expects three answers and three refusals — green
+  on this machine, red on the runner, because the order differed. It has its own
+  host now, and therefore its own limiter.
+
 ## [0.4.0] — 2026-09-15
 
 Five findings from scoring the published 0.3.9. The first is the one that matters;
@@ -777,7 +818,8 @@ Initial public release.
 - **CI/CD** — per-layer test workflows on pull requests and a test-gated
   GitHub Pages deployment.
 
-[Unreleased]: https://github.com/aco993/WorkPlanStudio/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/aco993/WorkPlanStudio/compare/v0.4.1...HEAD
+[0.4.1]: https://github.com/aco993/WorkPlanStudio/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/aco993/WorkPlanStudio/compare/v0.3.9...v0.4.0
 [0.3.9]: https://github.com/aco993/WorkPlanStudio/compare/v0.3.8...v0.3.9
 [0.3.8]: https://github.com/aco993/WorkPlanStudio/compare/v0.3.7...v0.3.8
