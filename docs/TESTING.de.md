@@ -404,22 +404,28 @@ Fall nachgestellt.
 Die Abdeckung wird mit dem Collector der Microsoft Testing Platform gemessen und **je
 Assembly in der CI abgesichert**
 ([`.github/scripts/coverage_gate.py`](../.github/scripts/coverage_gate.py)). Gemessen
-von der CI auf `0923a0a`:
+von der CI auf `fd490bc`:
 
 | Assembly | Gemessen von | Zeilen | Zweige | Schwelle |
 | --- | --- | ---: | ---: | ---: |
 | `WorkPlanStudio.Scheduling` | `Scheduling.Tests` | 96,57 % | 90,45 % | 95 % |
 | `WorkPlanStudio.WorkingTime` | `WorkingTime.Tests` | 94,18 % | 90,28 % | 93 % |
-| `WorkPlanStudio.Domain` (Entitäten, Validierung, Richtlinien, Abbildung) | `Web.Tests` | 89,59 % | 78,37 % | 87 % |
-| `WorkPlanStudio` (App: Dienste, Import, Assistent, Seiten) | `Web.Tests` | 79,42 % | 70,88 % | 78 % |
+| `WorkPlanStudio.Domain` (Entitäten, Validierung, Richtlinien, Abbildung) | `Web.Tests` | 89,78 % | 78,65 % | 88 % |
+| `WorkPlanStudio` (App: Dienste, Import, Assistent, Seiten) | `Web.Tests` | 81,06 % | 72,73 % | 79 % |
 | `WorkPlanStudio.Api` | `Api.Tests` | 69,67 % | 68,36 % | 68 % |
 | `WorkPlanStudio.Export` | `Export.Tests` | 98,45 % | 90,34 % | 97 % |
 
 Die Zahl der App-Assembly liegt aus Entwurfsgründen niedriger: Ihre Seiten deckt die
 Browser-Suite ab, die der Collector nicht sieht.
 
-Jede Schwelle liegt rund zwei Punkte unter dem Gemessenen, verteidigt also das
+Jede Schwelle liegt ein bis zwei Punkte unter dem Gemessenen, verteidigt also das
 Erreichte und nicht eine Zahl vom Tag ihrer Entstehung.
+
+Dieser Satz wird geprüft, nicht behauptet. `coverage_gate.py --slack 3` lässt den
+Build scheitern, sobald die Abdeckung einer Assembly mehr als drei Punkte über
+ihrer Schwelle liegt — eine Schwelle, der die Abdeckung davongelaufen ist, wird nie
+rot und sagt deshalb auch nie, dass sie nichts mehr verteidigt. Entstanden, nachdem
+die Schwelle der App 3,06 Punkte unter dem lag, was derselbe Lauf gemessen hat.
 
 Die Schwellenwerte stehen im `env`-Block von `ci.yml` und sonst nirgends, damit die
 Prüfung im Pull Request und die Auslieferung zusammen wandern. Die Badges im README

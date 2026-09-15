@@ -145,21 +145,27 @@ public sealed class ThreeFromTheSamePassTests : AppBunitContext
         Assert.True(string.IsNullOrEmpty(remarks.GetAttribute("aria-describedby")));
     }
 
-    [Fact]
-    public void The_readme_does_not_carry_coverage_numbers_by_hand()
+    /// <summary>
+    /// Two of the six numbers this bullet carried had already fallen behind the
+    /// badge delivered beside them, while the same sentence claimed both came from
+    /// the same measurement. The English copy was cured in 0.3.6 and the German
+    /// one was not - it still listed all six, three of them stale - which is why
+    /// the guard now covers both files rather than the one that was fixed.
+    /// </summary>
+    [Theory]
+    [InlineData("README.md", "**Coverage gated per assembly in CI", "badges above")]
+    [InlineData("README.de.md", "**Abdeckung je Assembly in der CI abgesichert", "Badges oben")]
+    public void Neither_readme_carries_coverage_numbers_by_hand(string file, string marker, string pointer)
     {
-        // Two of the six it carried had already fallen behind the badge delivered
-        // beside them - while the same sentence claimed both came from the same
-        // measurement. A number that a run produces belongs on the badge only.
-        var readme = File.ReadAllText(Path.Join(RepoFiles.Root, "README.md"));
-        var start = readme.IndexOf("**Coverage gated per assembly in CI**", StringComparison.Ordinal);
-        Assert.True(start >= 0, "the coverage bullet is gone - this test needs rewriting, not deleting");
+        var readme = File.ReadAllText(Path.Join(RepoFiles.Root, file));
+        var start = readme.IndexOf(marker, StringComparison.Ordinal);
+        Assert.True(start >= 0, $"the coverage bullet is gone from {file} - this test needs rewriting, not deleting");
         var bullet = readme[start..readme.IndexOf('\n', start)];
 
         // Thresholds are policy and stay; measurements are output and must not be
         // copied here. Every "(**nn.n %**)" in that bullet was a copy.
         Assert.DoesNotContain("(**", bullet, StringComparison.Ordinal);
-        Assert.Contains("badges above", bullet, StringComparison.Ordinal);
+        Assert.Contains(pointer, bullet, StringComparison.Ordinal);
     }
 
     [Fact]

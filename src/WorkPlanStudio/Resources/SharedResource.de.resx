@@ -73,6 +73,7 @@
   <data name="Common_Close" xml:space="preserve"><value>Schließen</value></data>
   <data name="Common_Delete" xml:space="preserve"><value>Löschen</value></data>
   <data name="Common_Edit" xml:space="preserve"><value>Bearbeiten</value></data>
+  <data name="Common_View" xml:space="preserve"><value>Ansehen</value></data>
   <data name="Common_Back" xml:space="preserve"><value>Zurück</value></data>
   <data name="Common_Actions" xml:space="preserve"><value>Aktionen</value></data>
   <data name="Common_All" xml:space="preserve"><value>Alle</value></data>
@@ -125,6 +126,7 @@
 
   <data name="Editor_NewTitle" xml:space="preserve"><value>Neuer Arbeitsplan</value></data>
   <data name="Editor_EditTitle" xml:space="preserve"><value>Arbeitsplan bearbeiten</value></data>
+  <data name="Editor_ViewTitle" xml:space="preserve"><value>Arbeitsplan ansehen</value></data>
   <data name="Editor_HeaderSection" xml:space="preserve"><value>Kopfdaten</value></data>
   <data name="Editor_OperationsSection" xml:space="preserve"><value>Arbeitsgänge</value></data>
   <data name="Editor_AddOperation" xml:space="preserve"><value>Arbeitsgang hinzufügen</value></data>
@@ -165,10 +167,12 @@
   <data name="Error_Reload" xml:space="preserve"><value>Anwendung neu laden</value></data>
   <data name="Storage_RecoveryTitle" xml:space="preserve"><value>Browserdaten benötigen Aufmerksamkeit</value></data>
   <data name="Storage_RecoveryPreserved" xml:space="preserve"><value>Die vorhandenen Daten wurden nicht überschrieben. Exportieren Sie sie vor dem Zurücksetzen der lokalen Demo-Datenbank.</value></data>
+  <data name="Storage_RecoveryPreservedReadOnly" xml:space="preserve"><value>Die vorhandenen Daten wurden nicht überschrieben. Exportieren dürfen Sie sie; Ersetzen oder Zurücksetzen der lokalen Demo-Datenbank braucht die Rolle Planer — oben umschalten.</value></data>
   <data name="Storage_Failure_InvalidBase64" xml:space="preserve"><value>Die gespeicherten Daten sind kein gültiges Base64-Format.</value></data>
   <data name="Storage_Failure_InvalidSqlite" xml:space="preserve"><value>Die gespeicherten Daten sind keine gültige SQLite-Datenbank.</value></data>
   <data name="Storage_Failure_TruncatedPayload" xml:space="preserve"><value>Die gespeicherte Datenbank ist unvollständig.</value></data>
   <data name="Storage_Failure_UnsupportedSchema" xml:space="preserve"><value>Die gespeicherte Schemaversion ({0}) wird von dieser Anwendungsversion nicht unterstützt.</value></data>
+  <data name="Storage_Failure_UnreadablePayload" xml:space="preserve"><value>Der gespeicherte Wert ist keine WorkPlan-Studio-Ablage: Nichts darin sagt, welche Schemaversion ihn geschrieben hat.</value></data>
   <data name="Storage_Failure_ReadFailed" xml:space="preserve"><value>Der Browser konnte den lokalen Speicher nicht lesen.</value></data>
   <data name="Storage_Failure_WriteFailed" xml:space="preserve"><value>Der Browser konnte die lokale Datenbank nicht speichern; der Speicher ist möglicherweise nicht verfügbar oder voll.</value></data>
   <data name="Storage_Failure_ExportFailed" xml:space="preserve"><value>Die gespeicherten Daten konnten nicht exportiert werden.</value></data>
@@ -819,6 +823,8 @@
   <data name="Sched_Proof_Optimal" xml:space="preserve"><value>Optimalität bewiesen: unter diesen Parametern gibt es keinen besseren Plan. {0} Suchknoten, {1}.</value></data>
   <data name="Sched_Proof_Better" xml:space="preserve"><value>Es gibt einen besseren Plan: dieser liegt {0} % über dem bewiesenen Optimum. {1} Suchknoten, {2}.</value></data>
   <data name="Sched_Proof_NotProved" xml:space="preserve"><value>Innerhalb von {0} nicht bewiesen: die Suche konnte die Lücke nicht schließen. Bewiesen ist immerhin, dass der Plan höchstens {1} % über dem bestmöglichen liegt — das Optimum liegt zwischen dieser Schranke und dem gezeigten Plan.</value></data>
+  <data name="Sched_Proof_FoundBetter" xml:space="preserve"><value>Nicht bewiesen, und die Suche fand Besseres: einen Plan {0} % unter diesem, nach {1} Knoten in {2}. Optimalität wurde nicht gezeigt — die Verbesserung ist echt, der Abstand zum Optimum bleibt offen.</value></data>
+  <data name="Sched_Proof_NoneBetter" xml:space="preserve"><value>Nicht entschieden, aber nichts Besseres gefunden: {0} Suchknoten in {1} ergaben keinen Plan, der besser bewertet wird als dieser. Das Optimum bleibt unbewiesen, weil die beweisbare untere Schranke weit unter jedem Plan liegt — dieser Abstand misst die Schranke, nicht diesen Plan.</value></data>
   <data name="Sched_Proof_TooLarge" xml:space="preserve"><value>Zu groß, um hier entschieden zu werden: {0} Arbeitsgänge. Der exakte Löser wird nur angeboten, wo er fertig wird, während Sie warten.</value></data>
   <data name="Sched_Proof_Nothing" xml:space="preserve"><value>Nichts zu beweisen — es gibt keinen Plan.</value></data>
   <data name="Sched_Proof_Failed" xml:space="preserve"><value>Die Optimalitätsprüfung konnte nicht abgeschlossen werden.</value></data>
@@ -834,6 +840,7 @@
   <data name="Confirm_CancelOrderBody" xml:space="preserve"><value>Auftrag {0} zurückziehen? Er wird nicht mehr eingeplant, gibt die belegten Arbeitsplätze frei und kann nicht erneut freigegeben werden.</value></data>
   <data name="Orders_KeepOrder" xml:space="preserve"><value>Auftrag behalten</value></data>
   <data name="Editor_PlanMissing" xml:space="preserve"><value>Es gibt keinen Arbeitsplan mit der Kennung {0}. Möglicherweise wurde er gelöscht.</value></data>
+  <data name="Editor_NewNeedsRole" xml:space="preserve"><value>Einen Arbeitsplan anzulegen braucht die Rolle {0}. Oben umschalten oder zurück zur Liste.</value></data>
   <data name="Editor_BackToPlans" xml:space="preserve"><value>Zurück zu den Arbeitsplänen</value></data>
   <data name="WorkPlans_InUse" xml:space="preserve"><value>Aus diesem Arbeitsplan wurde ein Fertigungsauftrag erzeugt</value></data>
   <data name="Error_StorageFull" xml:space="preserve"><value>Dieser Browser hat keinen Platz mehr für die Demo-Datenbank; die Änderung wurde zurückgenommen. Exportieren Sie die Daten oder schaffen Sie Platz, dann erneut versuchen.</value></data>

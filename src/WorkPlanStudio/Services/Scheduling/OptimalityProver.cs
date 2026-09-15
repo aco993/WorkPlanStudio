@@ -82,6 +82,12 @@ public sealed class OptimalityProver : IOptimalityProver
             ExactSolutionStatus.Optimal when exact.Penalty is { } optimum && heuristic <= optimum + 1e-9
                 => OptimalityProofStatus.ScheduleIsOptimal,
             ExactSolutionStatus.Optimal => OptimalityProofStatus.BetterScheduleExists,
+
+            // An unproved search that never found anything better has still said
+            // something about the schedule, and saying nothing about it is how
+            // "not proved" came to read as "possibly much worse".
+            _ when exact.Penalty is { } best && best >= heuristic - 1e-9
+                => OptimalityProofStatus.NotProvedNoneBetterFound,
             _ => OptimalityProofStatus.NotProved
         };
 
@@ -92,6 +98,7 @@ public sealed class OptimalityProver : IOptimalityProver
             exact.BestBound,
             operations,
             exact.NodesExplored,
-            exact.Elapsed);
+            exact.Elapsed,
+            exact.Penalty);
     }
 }

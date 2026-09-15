@@ -99,12 +99,22 @@
     min-height: 100vh;
     display: grid;
     place-items: center;
+    align-content: center;
+    gap: 0.75rem;
     padding: 2rem;
     background: var(--bg);
 }
 
 .recovery-card {
     width: min(42rem, 100%);
+}
+
+/* The persona switcher sits above the card, right-aligned with it, because the
+   sentence inside the card points at it. */
+.recovery-bar {
+    width: min(42rem, 100%);
+    display: flex;
+    justify-content: flex-end;
 }
 
 * { box-sizing: border-box; }

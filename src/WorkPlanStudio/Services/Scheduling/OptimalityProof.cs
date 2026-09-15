@@ -17,6 +17,16 @@ public enum OptimalityProofStatus
     /// <summary>The search ran out of budget. The optimum lies between the bound and the incumbent.</summary>
     NotProved = 3,
 
+    /// <summary>
+    /// The search ran out of budget without proving anything, and in all those
+    /// nodes it never found a schedule better than the one on screen. Distinct
+    /// from <see cref="NotProved"/> because it is the useful half of a failed
+    /// proof, and the old wording threw it away: measured on the sample plant,
+    /// the exact search explores millions of nodes and comes back with the
+    /// schedule the page already had.
+    /// </summary>
+    NotProvedNoneBetterFound = 5,
+
     /// <summary>Nothing to schedule.</summary>
     NothingToProve = 4
 }
@@ -37,6 +47,12 @@ public enum OptimalityProofStatus
 /// <param name="BestBound">The largest value proved to be a lower bound on the optimum.</param>
 /// <param name="Operations">How many operations the instance has — the size that decides feasibility.</param>
 /// <param name="Nodes">Search nodes explored.</param>
+/// <param name="BestFound">
+/// The objective value of the best schedule the exact search itself found,
+/// proved or not. Kept even when the proof fails: "we opened four million nodes
+/// and found nothing better" is a statement about the schedule, and it used to
+/// be discarded because it was not a proof.
+/// </param>
 /// <param name="Elapsed">Wall-clock time the solve took.</param>
 public sealed record OptimalityProof(
     OptimalityProofStatus Status,
@@ -45,7 +61,8 @@ public sealed record OptimalityProof(
     double BestBound,
     int Operations,
     long Nodes,
-    TimeSpan Elapsed)
+    TimeSpan Elapsed,
+    double? BestFound = null)
 {
     /// <summary>
     /// How far above the proved optimum the schedule on screen is, in per cent.
@@ -63,6 +80,15 @@ public sealed record OptimalityProof(
     /// </summary>
     public double? BoundGapPercent => BestBound > 1e-9 && HeuristicPenalty >= BestBound
         ? (HeuristicPenalty - BestBound) / BestBound * 100.0
+        : null;
+
+    /// <summary>
+    /// How much better the exact search's own best schedule is than the one on
+    /// screen, in per cent. <c>null</c> when the search found nothing better —
+    /// which is the common case and the one worth saying out loud.
+    /// </summary>
+    public double? FoundBetterPercent => BestFound is { } found && HeuristicPenalty > 1e-9 && found < HeuristicPenalty - 1e-9
+        ? (HeuristicPenalty - found) / HeuristicPenalty * 100.0
         : null;
 
     /// <summary>Nothing was computed, so nothing should be shown.</summary>

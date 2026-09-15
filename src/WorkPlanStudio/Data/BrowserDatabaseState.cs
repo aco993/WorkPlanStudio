@@ -30,7 +30,16 @@ public enum BrowserDatabaseFailure
     UpgradeFailed,
 
     /// <summary>The current persona may not perform this operation.</summary>
-    Forbidden
+    Forbidden,
+
+    /// <summary>
+    /// What is in storage is not a WorkPlan Studio payload at all: nothing in it
+    /// says which schema version wrote it. Separate from
+    /// <see cref="UnsupportedSchema"/> because that one names a version, and
+    /// reporting "version 0 is not supported" for a value that states no version
+    /// sends the reader looking for a version problem that does not exist.
+    /// </summary>
+    UnreadablePayload
 }
 
 public sealed record BrowserDatabaseReadiness(

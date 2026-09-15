@@ -73,6 +73,7 @@
   <data name="Common_Close" xml:space="preserve"><value>Close</value></data>
   <data name="Common_Delete" xml:space="preserve"><value>Delete</value></data>
   <data name="Common_Edit" xml:space="preserve"><value>Edit</value></data>
+  <data name="Common_View" xml:space="preserve"><value>View</value></data>
   <data name="Common_Back" xml:space="preserve"><value>Back</value></data>
   <data name="Common_Actions" xml:space="preserve"><value>Actions</value></data>
   <data name="Common_All" xml:space="preserve"><value>All</value></data>
@@ -125,6 +126,7 @@
 
   <data name="Editor_NewTitle" xml:space="preserve"><value>New work plan</value></data>
   <data name="Editor_EditTitle" xml:space="preserve"><value>Edit work plan</value></data>
+  <data name="Editor_ViewTitle" xml:space="preserve"><value>View work plan</value></data>
   <data name="Editor_HeaderSection" xml:space="preserve"><value>Header</value></data>
   <data name="Editor_OperationsSection" xml:space="preserve"><value>Operations</value></data>
   <data name="Editor_AddOperation" xml:space="preserve"><value>Add operation</value></data>
@@ -165,10 +167,12 @@
   <data name="Error_Reload" xml:space="preserve"><value>Reload application</value></data>
   <data name="Storage_RecoveryTitle" xml:space="preserve"><value>Browser data needs attention</value></data>
   <data name="Storage_RecoveryPreserved" xml:space="preserve"><value>The existing payload has not been overwritten. Export it before resetting the local demo database.</value></data>
+  <data name="Storage_RecoveryPreservedReadOnly" xml:space="preserve"><value>The existing payload has not been overwritten. Exporting it is open to you; replacing or resetting the local demo database needs the Planner persona — switch it above.</value></data>
   <data name="Storage_Failure_InvalidBase64" xml:space="preserve"><value>The stored payload is not valid Base64 data.</value></data>
   <data name="Storage_Failure_InvalidSqlite" xml:space="preserve"><value>The stored payload is not a valid SQLite database.</value></data>
   <data name="Storage_Failure_TruncatedPayload" xml:space="preserve"><value>The stored database payload is incomplete.</value></data>
   <data name="Storage_Failure_UnsupportedSchema" xml:space="preserve"><value>The stored schema version ({0}) is not supported by this application version.</value></data>
+  <data name="Storage_Failure_UnreadablePayload" xml:space="preserve"><value>The stored value is not a WorkPlan Studio payload: nothing in it says which schema version wrote it.</value></data>
   <data name="Storage_Failure_ReadFailed" xml:space="preserve"><value>The browser refused or failed to read local storage.</value></data>
   <data name="Storage_Failure_WriteFailed" xml:space="preserve"><value>The browser could not persist the local database, possibly because storage is unavailable or full.</value></data>
   <data name="Storage_Failure_ExportFailed" xml:space="preserve"><value>The stored payload could not be exported.</value></data>
@@ -819,6 +823,8 @@
   <data name="Sched_Proof_Optimal" xml:space="preserve"><value>Proved optimal: no schedule scores better under these parameters. {0} search nodes, {1}.</value></data>
   <data name="Sched_Proof_Better" xml:space="preserve"><value>A better schedule exists: this one is {0} % above the proved optimum. {1} search nodes, {2}.</value></data>
   <data name="Sched_Proof_NotProved" xml:space="preserve"><value>Not proved within {0}: the search could not close the gap. It did prove the schedule is at most {1} % above the best possible — the optimum lies between that bound and the plan shown.</value></data>
+  <data name="Sched_Proof_FoundBetter" xml:space="preserve"><value>Not proved, and the search did find better: a schedule {0} % below this one, after {1} nodes in {2}. Optimality was not established, so the improvement is real and the distance to the optimum is not known.</value></data>
+  <data name="Sched_Proof_NoneBetter" xml:space="preserve"><value>Not settled, but nothing better was found: {0} search nodes in {1} produced no schedule that scores better than this one. The optimum stays unproved because the lower bound the search can establish sits far below any schedule — that gap measures the bound, not this plan.</value></data>
   <data name="Sched_Proof_TooLarge" xml:space="preserve"><value>Too large to settle here: {0} operations. The exact solver is offered only where it can finish while you wait.</value></data>
   <data name="Sched_Proof_Nothing" xml:space="preserve"><value>Nothing to prove — there is no schedule.</value></data>
   <data name="Sched_Proof_Failed" xml:space="preserve"><value>The optimality check could not be completed.</value></data>
@@ -834,6 +840,7 @@
   <data name="Confirm_CancelOrderBody" xml:space="preserve"><value>Withdraw order {0}? It stops being scheduled, releases the work centers it held, and cannot be released again.</value></data>
   <data name="Orders_KeepOrder" xml:space="preserve"><value>Keep the order</value></data>
   <data name="Editor_PlanMissing" xml:space="preserve"><value>There is no work plan with id {0}. It may have been deleted.</value></data>
+  <data name="Editor_NewNeedsRole" xml:space="preserve"><value>Creating a work plan needs the {0} persona. Switch persona in the top bar, or go back to the list.</value></data>
   <data name="Editor_BackToPlans" xml:space="preserve"><value>Back to work plans</value></data>
   <data name="WorkPlans_InUse" xml:space="preserve"><value>A production order was raised from this work plan</value></data>
   <data name="Error_StorageFull" xml:space="preserve"><value>This browser has no room left for the demo database, so the change was undone. Export the data or free some space, then try again.</value></data>

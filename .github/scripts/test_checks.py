@@ -155,6 +155,16 @@ class CoverageGateTests(unittest.TestCase):
         """A run that produced no data must not be indistinguishable from a good one."""
         self.assertEqual(1, self.run_gate("0.99", "WorkPlanStudio.WorkingTime=90"))
 
+    def test_a_gate_far_under_the_measured_value_fails(self):
+        """A gate coverage has climbed past is not a gate; the README says two points."""
+        self.assertEqual(1, self.run_gate("0.955", "WorkPlanStudio.Scheduling=90", "--slack", "3"))
+
+    def test_a_gate_just_under_the_measured_value_passes(self):
+        self.assertEqual(0, self.run_gate("0.921", "WorkPlanStudio.Scheduling=90", "--slack", "3"))
+
+    def test_slack_is_off_unless_asked_for(self):
+        self.assertEqual(0, self.run_gate("0.999", "WorkPlanStudio.Scheduling=50"))
+
     def test_a_badge_is_written_with_the_measured_number(self):
         with tempfile.TemporaryDirectory() as root:
             report = write(root, "cov.xml", COBERTURA.format(rate="0.912"))

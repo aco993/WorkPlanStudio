@@ -332,6 +332,14 @@ public sealed class BrowserDatabase
     /// <summary>Validates a payload, upgrades it when it is behind, and leaves it on disk ready to use.</summary>
     private async Task<BrowserDatabaseReadiness> InstallAsync(StoredDatabase stored, CancellationToken cancellationToken)
     {
+        // A stored value that states no version is not an old payload, it is not
+        // a payload: storage hands back version 0 for anything it could not read
+        // as one. Checked before the schema comparison, or every unreadable value
+        // is reported as "schema version 0 is not supported" - a version that has
+        // never existed.
+        if (stored.Version <= 0)
+            return new(false, BrowserDatabaseFailure.UnreadablePayload, stored.Version);
+
         if (stored.Version != _options.SchemaVersion && !SchemaUpgrades.CanUpgradeFrom(stored.Version))
             return new(false, BrowserDatabaseFailure.UnsupportedSchema, stored.Version);
 
