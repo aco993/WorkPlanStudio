@@ -98,20 +98,51 @@ window.workplanDb = {
             try {
                 const parsed = JSON.parse(raw);
                 if (parsed && typeof parsed.data === 'string' && Number.isInteger(parsed.version)) {
-                    return { data: parsed.data, version: parsed.version };
+                    // A payload written before revisions existed reads as 0, which is
+                    // what an existing browser should see: the first write stamps 1.
+                    return { data: parsed.data, version: parsed.version, revision: parsed.revision || 0 };
                 }
             } catch {
                 // Fall through: treat it as the legacy Base64 layout.
             }
         }
         const version = parseInt(window.localStorage.getItem(this.legacyVersionKey) || '0', 10);
-        return { data: raw, version: version };
+        return { data: raw, version: version, revision: 0 };
+    },
+
+    // What is in storage right now, without decoding the payload.
+    currentRevision: function () {
+        const raw = window.localStorage.getItem(this.storageKey);
+        if (raw === null || raw.length === 0 || raw[0] !== '{') { return 0; }
+        try {
+            return JSON.parse(raw).revision || 0;
+        } catch {
+            return 0;
+        }
     },
 
     // Reports the outcome instead of throwing, so a full quota becomes a typed
     // result the UI can explain rather than an opaque JSException.
-    save: function (base64, version) {
-        const payload = JSON.stringify({ data: base64, version: version });
+    // expectedRevision is the revision this write is based on; -1 writes
+    // unconditionally, which is what replacing the whole database means.
+    //
+    // Reading, comparing and writing happen in one synchronous block on purpose.
+    // Every tab holds the whole database in memory and writes the whole of it
+    // back, so without this the last writer won and the loser was never told:
+    // two tabs quietly deleted each other's *saved* work, in both directions,
+    // while the losing tab went on showing the change that was already gone.
+    save: function (base64, version, expectedRevision) {
+        const current = this.currentRevision();
+        if (expectedRevision >= 0 && current !== expectedRevision) {
+            return {
+                ok: false,
+                reason: 'stale',
+                message: 'storage is at revision ' + current + ', this write was based on ' + expectedRevision
+            };
+        }
+
+        const revision = current + 1;
+        const payload = JSON.stringify({ data: base64, version: version, revision: revision });
         try {
             window.localStorage.setItem(this.storageKey, payload);
         } catch (error) {
@@ -129,7 +160,19 @@ window.workplanDb = {
         }
 
         window.localStorage.removeItem(this.legacyVersionKey);
-        return { ok: true };
+        return { ok: true, revision: revision };
+    },
+
+    // The browser offers this for nothing: a `storage` event fires in every OTHER
+    // tab of the origin whenever one of them writes. Listening turns "your save
+    // was refused, reload" from a surprise into something the reader was already
+    // told about.
+    watch: function (handler) {
+        window.addEventListener('storage', (event) => {
+            if (event.key === this.storageKey) {
+                handler.invokeMethodAsync('DatabaseChangedElsewhere');
+            }
+        });
     },
 
     clear: function () {

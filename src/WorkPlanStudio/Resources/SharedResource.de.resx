@@ -497,6 +497,8 @@
   <data name="Sched_Ai_CorsNote" xml:space="preserve"><value>Die Anfrage geht aus Ihrem Browser an den Endpunkt; der Anbieter muss Browser-Aufrufe (CORS) erlauben. OpenAI, Anthropic (mit seinem Direktzugriffs-Header, automatisch gesetzt), Gemini, OpenRouter und lokale Server tun das; manche Proxys nicht.</value></data>
   <data name="Ui_NavMenu" xml:space="preserve"><value>Menü</value></data>
   <data name="Ui_Language" xml:space="preserve"><value>Sprache</value></data>
+  <data name="Storage_ChangedElsewhereNotice" xml:space="preserve"><value>Ein anderer Tab hat diese Daten geändert. Zum Ansehen neu laden.</value></data>
+  <data name="Storage_ReloadNow" xml:space="preserve"><value>Neu laden</value></data>
   <data name="Ui_GanttHelp" xml:space="preserve"><value>Pfeiltasten wechseln zwischen Arbeitsgängen und geschlossenen Zeiten, Eingabetaste liest den fokussierten Eintrag vor, Escape blendet ihn aus.</value></data>
   <data name="Ui_GanttShowTable" xml:space="preserve"><value>Als Tabelle anzeigen</value></data>
   <data name="Ui_GanttHideTable" xml:space="preserve"><value>Tabelle ausblenden</value></data>
@@ -829,5 +831,6 @@
   <data name="Editor_BackToPlans" xml:space="preserve"><value>Zurück zu den Arbeitsplänen</value></data>
   <data name="WorkPlans_InUse" xml:space="preserve"><value>Aus diesem Arbeitsplan wurde ein Fertigungsauftrag erzeugt</value></data>
   <data name="Error_StorageFull" xml:space="preserve"><value>Dieser Browser hat keinen Platz mehr für die Demo-Datenbank; die Änderung wurde zurückgenommen. Exportieren Sie die Daten oder schaffen Sie Platz, dann erneut versuchen.</value></data>
+  <data name="Error_ChangedElsewhere" xml:space="preserve"><value>Ein anderer Tab hat diese Daten nach dem Laden der Seite geändert. Die Änderung wurde deshalb nicht gespeichert, und nichts davon wurde überschrieben. Laden Sie neu und nehmen Sie die Änderung erneut vor.</value></data>
   <data name="Imp_WorkPlanNotFound" xml:space="preserve"><value>Kein Arbeitsplan trägt die Nummer {0}.</value></data>
 </root>

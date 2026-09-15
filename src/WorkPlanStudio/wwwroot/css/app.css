@@ -996,3 +996,23 @@ select.input { cursor: pointer; }
     margin: -.4rem 0 1.2rem;
 }
 .proof-answer { margin: 0; color: var(--text-soft); font-size: .86rem; max-width: 70ch; }
+
+/* Another tab wrote to the shared database. A notice, not a dialog: reading is
+   still fine, and only the next save would be refused. */
+.cross-tab-notice {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+    padding: .6rem .9rem;
+    border: 1px solid var(--amber);
+    border-radius: var(--radius-sm);
+    background: var(--amber-soft);
+    color: var(--text);
+}
+
+.cross-tab-notice .btn-small {
+    padding: .25rem .7rem;
+    font-size: .85rem;
+}

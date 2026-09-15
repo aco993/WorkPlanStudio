@@ -119,6 +119,50 @@ public sealed class ThreeFromTheSamePassTests : AppBunitContext
     }
 
     [Fact]
+    public async Task The_marked_cell_also_says_why()
+    {
+        // aria-invalid on its own announces "wrong" without the reason, and the
+        // sentence above the table is not tied to the cell a keyboard lands on.
+        using var files = new TempDatabaseFiles();
+        var cut = await ABadCellAsync(files);
+
+        var description = cut.Find("tbody tr input[maxlength=\"120\"]");
+        var reasonId = description.GetAttribute("aria-describedby");
+
+        Assert.False(string.IsNullOrEmpty(reasonId));
+        var reason = cut.Find($"#{reasonId}");
+        Assert.Equal("Val_Required", reason.TextContent.Trim());
+    }
+
+    [Fact]
+    public async Task A_cell_that_is_fine_points_at_no_reason()
+    {
+        using var files = new TempDatabaseFiles();
+        var cut = await ABadCellAsync(files);
+
+        var remarks = cut.Find("tbody tr input[maxlength=\"250\"]");
+
+        Assert.True(string.IsNullOrEmpty(remarks.GetAttribute("aria-describedby")));
+    }
+
+    [Fact]
+    public void The_readme_does_not_carry_coverage_numbers_by_hand()
+    {
+        // Two of the six it carried had already fallen behind the badge delivered
+        // beside them - while the same sentence claimed both came from the same
+        // measurement. A number that a run produces belongs on the badge only.
+        var readme = File.ReadAllText(Path.Join(RepoFiles.Root, "README.md"));
+        var start = readme.IndexOf("**Coverage gated per assembly in CI**", StringComparison.Ordinal);
+        Assert.True(start >= 0, "the coverage bullet is gone - this test needs rewriting, not deleting");
+        var bullet = readme[start..readme.IndexOf('\n', start)];
+
+        // Thresholds are policy and stay; measurements are output and must not be
+        // copied here. Every "(**nn.n %**)" in that bullet was a copy.
+        Assert.DoesNotContain("(**", bullet, StringComparison.Ordinal);
+        Assert.Contains("badges above", bullet, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task The_cells_that_are_fine_are_left_alone()
     {
         // A marker that marks everything is the same as no marker at all.

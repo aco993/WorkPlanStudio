@@ -217,7 +217,12 @@ else
                                            type="number" min="1" step="10" inputmode="numeric"
                                            aria-label="@L["Field_OperationNo"]"
                                            aria-invalid="@CellInvalid(row, nameof(row.OperationNumber))"
+                                           aria-describedby="@CellDescribedBy(row, nameof(row.OperationNumber))"
                                            @bind="row.OperationNumber" @bind:event="oninput" />
+                                    @if (CellError(row, nameof(row.OperationNumber)) is { } operationnumberError)
+                                    {
+                                        <span id="@CellErrorId(row, nameof(row.OperationNumber))" class="sr-only">@operationnumberError</span>
+                                    }
                                 </td>
                                 <td class="wc-col">
                                     <EntityPicker TItem="WorkCenter" Id="@($"op-{row.Key}-center")"
@@ -228,33 +233,54 @@ else
                                                   LabelOf="CenterLabel"
                                                   IsActive="w => w.IsActive"
                                                   Invalid="@IsBad(row, nameof(row.WorkCenterId))"
+                                                  DescribedBy="@CellDescribedBy(row, nameof(row.WorkCenterId))"
                                                   AriaLabel="@L["Field_WorkCenter"]" />
                                 </td>
                                 <td>
                                     <input class="input @CellStyle(row, nameof(row.Description))" maxlength="120"
                                            aria-label="@L["Field_Description"]"
                                            aria-invalid="@CellInvalid(row, nameof(row.Description))"
+                                           aria-describedby="@CellDescribedBy(row, nameof(row.Description))"
                                            @bind="row.Description" @bind:event="oninput" />
+                                    @if (CellError(row, nameof(row.Description)) is { } descriptionError)
+                                    {
+                                        <span id="@CellErrorId(row, nameof(row.Description))" class="sr-only">@descriptionError</span>
+                                    }
                                 </td>
                                 <td class="num">
                                     <input class="input mini num @CellStyle(row, nameof(row.SetupTimeMinutes))"
                                            type="number" min="0" step="0.01" inputmode="decimal"
                                            aria-label="@L["Field_SetupTime"]"
                                            aria-invalid="@CellInvalid(row, nameof(row.SetupTimeMinutes))"
+                                           aria-describedby="@CellDescribedBy(row, nameof(row.SetupTimeMinutes))"
                                            @bind="row.SetupTimeMinutes" @bind:event="oninput" />
+                                    @if (CellError(row, nameof(row.SetupTimeMinutes)) is { } setuptimeminutesError)
+                                    {
+                                        <span id="@CellErrorId(row, nameof(row.SetupTimeMinutes))" class="sr-only">@setuptimeminutesError</span>
+                                    }
                                 </td>
                                 <td class="num">
                                     <input class="input mini num @CellStyle(row, nameof(row.TimePerPieceMinutes))"
                                            type="number" min="0" step="0.01" inputmode="decimal"
                                            aria-label="@L["Field_TimePerPiece"]"
                                            aria-invalid="@CellInvalid(row, nameof(row.TimePerPieceMinutes))"
+                                           aria-describedby="@CellDescribedBy(row, nameof(row.TimePerPieceMinutes))"
                                            @bind="row.TimePerPieceMinutes" @bind:event="oninput" />
+                                    @if (CellError(row, nameof(row.TimePerPieceMinutes)) is { } timeperpieceminutesError)
+                                    {
+                                        <span id="@CellErrorId(row, nameof(row.TimePerPieceMinutes))" class="sr-only">@timeperpieceminutesError</span>
+                                    }
                                 </td>
                                 <td>
                                     <input class="input @CellStyle(row, nameof(row.Remarks))" maxlength="250"
                                            aria-label="@L["Field_Remarks"]"
                                            aria-invalid="@CellInvalid(row, nameof(row.Remarks))"
+                                           aria-describedby="@CellDescribedBy(row, nameof(row.Remarks))"
                                            @bind="row.Remarks" @bind:event="oninput" />
+                                    @if (CellError(row, nameof(row.Remarks)) is { } remarksError)
+                                    {
+                                        <span id="@CellErrorId(row, nameof(row.Remarks))" class="sr-only">@remarksError</span>
+                                    }
                                 </td>
                                 <td class="actions-col">
                                     <button class="icon-btn danger" aria-label="@L["Common_Delete"]" title="@L["Common_Delete"]" @onclick="() => RemoveOperation(row)">
@@ -537,13 +563,14 @@ else
                 continue;
             }
 
-            _badCells.Add((number, column));
+            var reason = L[issue.MessageKey, issue.Arguments ?? []].Value;
+            _badCells.TryAdd((number, column), reason);
             described.Add(new ValidationIssue(
                 "Operations",
                 "Val_InOperation",
                 number,
                 ColumnLabel(column),
-                L[issue.MessageKey, issue.Arguments ?? []].Value));
+                reason));
         }
 
         return result with { ValidationIssues = described };
@@ -584,14 +611,28 @@ else
     /// and the first line of the summary is the duplicate number itself.
     /// </para>
     /// </summary>
-    private readonly HashSet<(int Number, string Column)> _badCells = [];
+    private readonly Dictionary<(int Number, string Column), string> _badCells = [];
 
-    private bool IsBad(OperationRow row, string column) =>
-        row.OperationNumber is { } number && _badCells.Contains((number, column));
+    private string? CellError(OperationRow row, string column) =>
+        row.OperationNumber is { } number ? _badCells.GetValueOrDefault((number, column)) : null;
+
+    private bool IsBad(OperationRow row, string column) => CellError(row, column) is not null;
 
     private string? CellStyle(OperationRow row, string column) => IsBad(row, column) ? "error" : null;
 
     private string CellInvalid(OperationRow row, string column) => IsBad(row, column) ? "true" : "false";
+
+    /// <summary>
+    /// The id of a cell's reason. <c>aria-invalid</c> on its own says "wrong"
+    /// without saying why, and the sentence one line above the table is not tied
+    /// to the cell a keyboard lands on — so each bad cell carries its own,
+    /// announced but not drawn, because sixty cells have no room for sixty
+    /// sentences.
+    /// </summary>
+    private static string CellErrorId(OperationRow row, string column) => $"op-{row.Key}-{column}-error";
+
+    private string? CellDescribedBy(OperationRow row, string column) =>
+        IsBad(row, column) ? CellErrorId(row, column) : null;
 
     /// <summary>
     /// Cancel already means "throw this away", so it says so once and leaves.

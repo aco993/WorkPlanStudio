@@ -85,16 +85,29 @@ internal sealed class FakeStorage : IBrowserDatabaseStorage
         return ValueTask.FromResult(Stored);
     }
 
-    public ValueTask<StorageWriteResult> SaveAsync(StoredDatabase database, CancellationToken cancellationToken = default)
+    /// <summary>Compares and sets the way the real storage does, in one step.</summary>
+    public ValueTask<StorageWriteResult> SaveAsync(
+        StoredDatabase database, long expectedRevision, CancellationToken cancellationToken = default)
     {
         SaveCalls++;
         if (ThrowOnSave)
             throw new InvalidOperationException("simulated quota failure");
         if (QuotaExceeded)
             return ValueTask.FromResult(new StorageWriteResult(StorageWriteOutcome.QuotaExceeded, "simulated quota"));
-        Stored = database;
-        return ValueTask.FromResult(StorageWriteResult.Saved);
+
+        var current = Stored?.Revision ?? 0;
+        if (expectedRevision >= 0 && current != expectedRevision)
+            return ValueTask.FromResult(new StorageWriteResult(
+                StorageWriteOutcome.ChangedElsewhere, $"storage is at {current}, the write was based on {expectedRevision}"));
+
+        var revision = current + 1;
+        Stored = database with { Revision = revision };
+        return ValueTask.FromResult(new StorageWriteResult(StorageWriteOutcome.Saved, Revision: revision));
     }
+
+    /// <summary>Stands in for another tab writing while this one held its copy.</summary>
+    public void AnotherTabWrites() =>
+        Stored = (Stored ?? new StoredDatabase("", 0)) with { Revision = (Stored?.Revision ?? 0) + 1 };
 
     public ValueTask<StoredDatabase?> PickImportAsync(CancellationToken cancellationToken = default) =>
         ValueTask.FromResult(ToImport);
