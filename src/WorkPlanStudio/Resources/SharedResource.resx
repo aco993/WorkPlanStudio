@@ -497,6 +497,11 @@
   <data name="Sched_Ai_CorsNote" xml:space="preserve"><value>The request goes from your browser to the endpoint, so the provider must allow browser (CORS) calls. OpenAI, Anthropic (with its direct-browser header, sent automatically), Gemini, OpenRouter and local servers do; some proxies do not.</value></data>
   <data name="Ui_NavMenu" xml:space="preserve"><value>Menu</value></data>
   <data name="Ui_Language" xml:space="preserve"><value>Language</value></data>
+  <data name="Pager_Label" xml:space="preserve"><value>Pages</value></data>
+  <data name="Pager_Range" xml:space="preserve"><value>Showing {0}–{1} of {2}</value></data>
+  <data name="Pager_Previous" xml:space="preserve"><value>Previous</value></data>
+  <data name="Pager_Next" xml:space="preserve"><value>Next</value></data>
+  <data name="Pager_Page" xml:space="preserve"><value>Page {0}</value></data>
   <data name="Storage_ChangedElsewhereNotice" xml:space="preserve"><value>Another tab changed this data. Reload to see it.</value></data>
   <data name="Storage_ReloadNow" xml:space="preserve"><value>Reload</value></data>
   <data name="Ui_GanttHelp" xml:space="preserve"><value>Arrow keys move between operations and closed stretches, Enter reads the one in focus, Escape clears it.</value></data>

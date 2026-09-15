@@ -497,6 +497,11 @@
   <data name="Sched_Ai_CorsNote" xml:space="preserve"><value>Die Anfrage geht aus Ihrem Browser an den Endpunkt; der Anbieter muss Browser-Aufrufe (CORS) erlauben. OpenAI, Anthropic (mit seinem Direktzugriffs-Header, automatisch gesetzt), Gemini, OpenRouter und lokale Server tun das; manche Proxys nicht.</value></data>
   <data name="Ui_NavMenu" xml:space="preserve"><value>Menü</value></data>
   <data name="Ui_Language" xml:space="preserve"><value>Sprache</value></data>
+  <data name="Pager_Label" xml:space="preserve"><value>Seiten</value></data>
+  <data name="Pager_Range" xml:space="preserve"><value>{0}–{1} von {2} angezeigt</value></data>
+  <data name="Pager_Previous" xml:space="preserve"><value>Zurück</value></data>
+  <data name="Pager_Next" xml:space="preserve"><value>Weiter</value></data>
+  <data name="Pager_Page" xml:space="preserve"><value>Seite {0}</value></data>
   <data name="Storage_ChangedElsewhereNotice" xml:space="preserve"><value>Ein anderer Tab hat diese Daten geändert. Zum Ansehen neu laden.</value></data>
   <data name="Storage_ReloadNow" xml:space="preserve"><value>Neu laden</value></data>
   <data name="Ui_GanttHelp" xml:space="preserve"><value>Pfeiltasten wechseln zwischen Arbeitsgängen und geschlossenen Zeiten, Eingabetaste liest den fokussierten Eintrag vor, Escape blendet ihn aus.</value></data>

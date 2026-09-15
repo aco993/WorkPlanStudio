@@ -1,0 +1,60 @@
+@using WorkPlanStudio.Services.Forms
+@inject IStringLocalizer<SharedResource> L
+
+@*
+    Drawn only when there is more than one page: a pager under a six-row table is
+    furniture. The range is a live region, so a reader who presses Next hears what
+    they got rather than having to go looking.
+*@
+@if (Window.PageCount > 1)
+{
+    <nav class="pager" aria-label="@L["Pager_Label"]">
+        <p class="pager-range" role="status">
+            @(string.Format(L["Pager_Range"], Window.FirstShown, Window.LastShown, Window.Total))
+        </p>
+
+        <div class="pager-controls">
+            <button type="button" class="btn btn-ghost btn-small"
+                    disabled="@(Window.Page == 1)"
+                    @onclick="() => GoAsync(Window.Page - 1)">@L["Pager_Previous"]</button>
+
+            @foreach (var number in Window.Numbers())
+            {
+                if (number is not { } target)
+                {
+                    <span class="pager-gap" aria-hidden="true">…</span>
+                }
+                else
+                {
+                    <button type="button"
+                            class="btn btn-small @(target == Window.Page ? "btn-primary" : "btn-ghost")"
+                            aria-current="@(target == Window.Page ? "page" : null)"
+                            aria-label="@(string.Format(L["Pager_Page"], target))"
+                            @onclick="() => GoAsync(target)">@target</button>
+                }
+            }
+
+            <button type="button" class="btn btn-ghost btn-small"
+                    disabled="@(Window.Page == Window.PageCount)"
+                    @onclick="() => GoAsync(Window.Page + 1)">@L["Pager_Next"]</button>
+        </div>
+    </nav>
+}
+
+@code {
+    [Parameter, EditorRequired] public PageWindow Window { get; set; } = default!;
+
+    /// <summary>
+    /// How the page learns it has to draw a different slice. Required, and not a
+    /// courtesy: the window is the page's own object, so changing it here re-renders
+    /// this component and nothing else — the range text updated while the table
+    /// underneath kept showing page one, which is a worse lie than no pager at all.
+    /// </summary>
+    [Parameter, EditorRequired] public EventCallback OnChanged { get; set; }
+
+    private async Task GoAsync(int page)
+    {
+        Window.GoTo(page);
+        await OnChanged.InvokeAsync();
+    }
+}

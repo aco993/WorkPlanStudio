@@ -3,6 +3,8 @@
 @inject CostCenterService Catalog
 @inject ILogger<CostCenters> Logger
 
+@using WorkPlanStudio.Services.Forms
+
 <PageTitle>@L["Md_CostCenters_Title"] · WorkPlan Studio</PageTitle>
 
 <div class="page-head">
@@ -60,7 +62,7 @@ else
                 </tr>
             </thead>
             <tbody>
-                @foreach (var costCenter in Filtered)
+                @foreach (var costCenter in _page.Slice(Filtered.ToList()))
                 {
                     var usage = _usage.GetValueOrDefault(costCenter.Id);
                     <tr @key="costCenter.Id">
@@ -97,6 +99,8 @@ else
             </tbody>
         </table>
     </div>
+
+    <Paginator Window="_page" OnChanged="StateHasChanged" />
 }
 
 <Modal @bind-Visible="_showEditor" Title="@(_editing.Id == 0 ? L["Md_CostCenters_NewTitle"] : L["Md_CostCenters_EditTitle"])">
@@ -163,6 +167,9 @@ else
 </Modal>
 
 @code {
+    // Every row here carries controls, so the table draws one page of them
+    // rather than all of them. See PageWindow for what the measurement was.
+    private readonly PageWindow _page = new();
     /// <summary>Opens the editor straight away, for the picker's "create new" affordance.</summary>
     [Parameter, SupplyParameterFromQuery(Name = "new")] public string? CreateNew { get; set; }
 

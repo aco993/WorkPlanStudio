@@ -3,6 +3,8 @@
 @inject WorkPlanService Plans
 @inject NavigationManager Nav
 
+@using WorkPlanStudio.Services.Forms
+
 <PageTitle>@L["WorkPlans_Title"] · WorkPlan Studio</PageTitle>
 
 <div class="page-head">
@@ -65,7 +67,7 @@ else
                 </tr>
             </thead>
             <tbody>
-                @foreach (var p in Filtered)
+                @foreach (var p in _page.Slice(Filtered.ToList()))
                 {
                     <tr class="clickable" @onclick="() => Open(p.Id)">
                         <td><span class="mono">@p.PlanNumber</span></td>
@@ -101,6 +103,8 @@ else
             </tbody>
         </table>
     </div>
+
+    <Paginator Window="_page" OnChanged="StateHasChanged" />
 }
 
 <Modal @bind-Visible="_showDelete" Title="@L["Confirm_DeletePlanTitle"]">
@@ -114,6 +118,9 @@ else
 </Modal>
 
 @code {
+    // Every row here carries controls, so the table draws one page of them
+    // rather than all of them. See PageWindow for what the measurement was.
+    private readonly PageWindow _page = new();
     private bool _loading = true;
     private List<WorkPlan> _plans = new();
     private Dictionary<int, int> _orderCounts = new();

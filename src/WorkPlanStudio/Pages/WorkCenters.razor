@@ -6,6 +6,8 @@
 @inject NavigationManager Nav
 @inject ILogger<WorkCenters> Logger
 
+@using WorkPlanStudio.Services.Forms
+
 <PageTitle>@L["WorkCenters_Title"] · WorkPlan Studio</PageTitle>
 
 <div class="page-head">
@@ -79,7 +81,7 @@ else
                 </tr>
             </thead>
             <tbody>
-                @foreach (var wc in Filtered)
+                @foreach (var wc in _page.Slice(Filtered.ToList()))
                 {
                     var usage = _usage.GetValueOrDefault(wc.Id);
                     <tr @key="wc.Id">
@@ -119,6 +121,8 @@ else
             </tbody>
         </table>
     </div>
+
+    <Paginator Window="_page" OnChanged="StateHasChanged" />
 }
 
 <Modal @bind-Visible="_showEditor" Title="@(_editing.Id == 0 ? L["WorkCenters_NewTitle"] : L["WorkCenters_EditTitle"])">
@@ -239,6 +243,9 @@ else
 </Modal>
 
 @code {
+    // Every row here carries controls, so the table draws one page of them
+    // rather than all of them. See PageWindow for what the measurement was.
+    private readonly PageWindow _page = new();
     private bool _loading = true;
     private List<WorkCenter> _centers = new();
     private List<CostCenter> _costCenters = [];
