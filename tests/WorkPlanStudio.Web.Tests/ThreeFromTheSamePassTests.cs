@@ -1,3 +1,4 @@
+using System.Globalization;
 using Bunit;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.DependencyInjection;
@@ -32,17 +33,25 @@ public sealed class ThreeFromTheSamePassTests : AppBunitContext
         Services.AddSingleton<IStringLocalizer<SharedResource>>(new PassThroughLocalizer<SharedResource>());
 
         var navigation = Services.GetRequiredService<NavigationManager>();
-        var cut = Render<WorkPlanStudio.Components.CultureSelector>();
 
-        // Whichever one the test host is not already running in - this machine's
-        // own culture is German, and a switch to the current language does nothing
-        // by design.
-        var other = cut.FindAll("button.culture-btn")
-            .Single(button => button.GetAttribute("aria-pressed") == "false");
-        var code = other.GetAttribute("lang");
-        other.Click();
+        // Pinned rather than inferred: a switch to the language already running
+        // does nothing by design, and the host's own culture is not the same on
+        // every machine - this developer's Windows is German and the CI runner is
+        // invariant, which is how the first version of this test failed only there.
+        var host = CultureInfo.CurrentCulture;
+        try
+        {
+            CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("en-US");
+            var cut = Render<WorkPlanStudio.Components.CultureSelector>();
 
-        Assert.Contains($"culture={code}", navigation.Uri, StringComparison.Ordinal);
+            cut.FindAll("button.culture-btn").Single(b => b.TextContent.Trim() == "DE").Click();
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = host;
+        }
+
+        Assert.Contains("culture=de-DE", navigation.Uri, StringComparison.Ordinal);
     }
 
     [Fact]
