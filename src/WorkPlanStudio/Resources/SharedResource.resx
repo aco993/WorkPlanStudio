@@ -135,6 +135,7 @@
   <data name="Editor_LotCost" xml:space="preserve"><value>Cost for lot</value></data>
 
   <data name="Val_Required" xml:space="preserve"><value>Required</value></data>
+  <data name="Val_InOperation" xml:space="preserve"><value>Operation {0} · {1}: {2}</value></data>
   <data name="Val_PlanNumberTaken" xml:space="preserve"><value>This plan number already exists.</value></data>
   <data name="Val_CodeTaken" xml:space="preserve"><value>This code already exists.</value></data>
   <data name="Val_NeedOperation" xml:space="preserve"><value>Add at least one operation.</value></data>

@@ -135,6 +135,7 @@
   <data name="Editor_LotCost" xml:space="preserve"><value>Kosten pro Los</value></data>
 
   <data name="Val_Required" xml:space="preserve"><value>Pflichtfeld</value></data>
+  <data name="Val_InOperation" xml:space="preserve"><value>Arbeitsgang {0} · {1}: {2}</value></data>
   <data name="Val_PlanNumberTaken" xml:space="preserve"><value>Diese Plan-Nr. existiert bereits.</value></data>
   <data name="Val_CodeTaken" xml:space="preserve"><value>Dieses Kürzel existiert bereits.</value></data>
   <data name="Val_NeedOperation" xml:space="preserve"><value>Fügen Sie mindestens einen Arbeitsgang hinzu.</value></data>

@@ -1,5 +1,6 @@
+@implements IDisposable
+@using Microsoft.AspNetCore.Components.Routing
 @inject IStringLocalizer<SharedResource> L
-@inject IJSRuntime JS
 @inject NavigationManager Nav
 
 @*
@@ -18,7 +19,7 @@
                 lang="@option.Code"
                 aria-pressed="@(IsCurrent(option.Code) ? "true" : "false")"
                 title="@option.Name"
-                @onclick="() => SetCultureAsync(option.Code)">
+                @onclick="() => SetCulture(option.Code)">
             @option.Short
         </button>
     }
@@ -35,15 +36,61 @@
 
     private static bool IsCurrent(string code) => CultureInfo.CurrentCulture.Name == code;
 
-    private async Task SetCultureAsync(string code)
+    /// <summary>
+    /// Asks for the language in the address and reloads. Nothing is written here:
+    /// the reload can be refused — the work-plan editor holds it while it asks
+    /// about unsaved changes — and a preference written before the question is a
+    /// preference the reader never agreed to. The page that really does start in
+    /// the new language is the one that remembers it (see <c>js/app.js</c>).
+    /// </summary>
+    private void SetCulture(string code)
     {
         if (CultureInfo.CurrentCulture.Name == code)
             return;
 
-        // Persist the choice, then reload so the whole app re-renders in the new
-        // culture (Program.cs reads this value on startup).
-        await JS.InvokeVoidAsync("blazorCulture.set", code);
-        await JS.InvokeVoidAsync("documentLanguage.set", CultureInfo.GetCultureInfo(code).TwoLetterISOLanguageName);
-        Nav.NavigateTo(Nav.Uri, forceLoad: true);
+        Nav.NavigateTo(AddressFor(code), forceLoad: true);
     }
+
+    private string AddressFor(string code)
+    {
+        var address = new UriBuilder(Nav.Uri);
+        var query = address.Query.TrimStart('?');
+        var without = string.Join('&', query.Split('&', StringSplitOptions.RemoveEmptyEntries)
+            .Where(part => !part.StartsWith("culture=", StringComparison.Ordinal)));
+
+        address.Query = string.IsNullOrEmpty(without) ? $"culture={code}" : $"{without}&culture={code}";
+        return address.Uri.ToString();
+    }
+
+    protected override void OnInitialized() => Nav.LocationChanged += OnLocationChanged;
+
+    /// <summary>
+    /// The refused reload comes back as an ordinary navigation once the reader has
+    /// answered — the editor sends them to the address it was holding, which still
+    /// asks for the language. A soft navigation cannot deliver a language, so this
+    /// turns it back into the reload it was.
+    /// </summary>
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        var asked = AskedCulture(e.Location);
+        if (asked is null || asked == CultureInfo.CurrentCulture.Name || _forced == e.Location)
+            return;
+
+        // Once per address. A forced load normally ends this component's life, but
+        // "normally" is not an invariant: anything that swallows the reload would
+        // otherwise see this handler answer its own navigation, for ever.
+        _forced = e.Location;
+        Nav.NavigateTo(e.Location, forceLoad: true);
+    }
+
+    private string? _forced;
+
+    private static string? AskedCulture(string location)
+    {
+        var query = location.Split('?', 2).ElementAtOrDefault(1);
+        return query?.Split('&')
+            .FirstOrDefault(part => part.StartsWith("culture=", StringComparison.Ordinal))?["culture=".Length..];
+    }
+
+    public void Dispose() => Nav.LocationChanged -= OnLocationChanged;
 }
