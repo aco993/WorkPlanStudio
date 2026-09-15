@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Cors.Infrastructure;
@@ -133,6 +134,24 @@ builder.Services.AddOptions<CorsOptions>().Configure<IConfiguration>((cors, conf
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    // RFC 6585: a 429 should say for how long. Measured on v0.4.0 the response
+    // carried the status and nothing else, so a client was told "too many" and
+    // could only guess or keep hammering — the behaviour the limiter exists to
+    // prevent. The body stays the problem+json the status-code pages produce;
+    // this only adds the one header they cannot know.
+    options.OnRejected = (context, _) =>
+    {
+        var seconds = context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var window)
+            ? (int)Math.Ceiling(window.TotalSeconds)
+            : context.HttpContext.RequestServices
+                .GetRequiredService<IOptions<AuthOptions>>().Value.AuthWindowSeconds;
+
+        context.HttpContext.Response.Headers.RetryAfter =
+            Math.Max(1, seconds).ToString(CultureInfo.InvariantCulture);
+        return ValueTask.CompletedTask;
+    };
+
     options.AddPolicy(AuthEndpoints.RateLimitPolicy, context =>
     {
         var auth = context.RequestServices.GetRequiredService<IOptions<AuthOptions>>().Value;

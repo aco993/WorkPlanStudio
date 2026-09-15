@@ -85,4 +85,34 @@ public class RateLimitTests : IClassFixture<RateLimitFixture>
         Assert.Contains(HttpStatusCode.TooManyRequests, statuses);
         Assert.Equal(3, statuses.Count(status => status == HttpStatusCode.Unauthorized));
     }
+
+    /// <summary>
+    /// Measured on the published v0.4.0: the 429 carried the status and nothing
+    /// else, so a client was told "too many" and could only guess or keep
+    /// hammering - the behaviour the limiter exists to prevent. RFC 6585 says a
+    /// 429 SHOULD say for how long.
+    /// </summary>
+    [Fact]
+    public async Task The_refusal_says_how_long_to_wait()
+    {
+        var client = _api.CreateClient();
+        HttpResponseMessage? refused = null;
+
+        for (var attempt = 0; attempt < 6 && refused is null; attempt++)
+        {
+            var response = await client.PostAsJsonAsync(
+                "/api/auth/login", new LoginRequest($"retry-{attempt}", "whatever-password"), Ct);
+            if (response.StatusCode == HttpStatusCode.TooManyRequests)
+                refused = response;
+        }
+
+        Assert.NotNull(refused);
+        var retryAfter = refused.Headers.RetryAfter;
+        Assert.NotNull(retryAfter);
+
+        // Somewhere inside the window it was told to wait for, and never zero:
+        // "wait zero seconds" is the same as saying nothing.
+        var seconds = retryAfter.Delta?.TotalSeconds ?? 0;
+        Assert.InRange(seconds, 1, 60);
+    }
 }
