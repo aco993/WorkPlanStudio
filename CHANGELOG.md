@@ -7,6 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.7] — 2026-09-15
+
+One finding from scoring the published 0.3.6: the lists drew every row they had,
+and the import page invites files up to 8 MB.
+
+### Fixed
+
+- **A list draws one page of itself.** Measured on the published site with 300
+  imported orders, `/production-orders` rendered **269 rows as 4 717 DOM nodes
+  with 531 buttons**, took about 3.9 s to arrive and about 0.78 s to redraw for a
+  single status filter. With a page of fifty, the same data on the same machine is
+  **50 rows, 1 019 nodes, 100 buttons** and about **140 ms** for that filter. The
+  engine was never the problem: the demo schedule runs in 390 ms in the same
+  browser. All four lists page — work plans, work centers, cost centres and
+  production orders — and the three that fit on one page show no pager at all.
+- **Paging rather than virtualising**, because every row here carries real
+  controls. A window that swaps rows in and out as the reader scrolls moves focus
+  out from under the keyboard and makes the row count a moving target for a screen
+  reader; a page is a fixed, announceable thing, the page buttons are ordinary
+  buttons, and the range sits in a live region so pressing *Next* says what you
+  got. Filtering to fewer rows goes back to page one — filtering from page four
+  onto an empty table explains nothing — while sorting keeps the page, because it
+  does not change how many rows there are.
+- **The page buttons meet the minimum target size.** They measured 23 px tall on a
+  phone, under the 24 px WCAG 2.2 sets for a pointer target: close enough to look
+  right and still wrong. 25 × 29 px now, checked at 375 px wide.
+
+### Tests
+
+- **Ten tests.** One of them is for a bug this release nearly shipped with: the
+  window belongs to the page, so changing it inside the pager re-renders the pager
+  and nothing else — the range read *101–150 of 269* while the table underneath
+  went on showing rows 1–50. The callback that tells the list to redraw is now
+  required rather than optional, and omitting it is a build error (`RZ2012`) in
+  this tree, which is a stronger guard than a test. The rest pin the window: the
+  last page is the remainder and not a full one, an out-of-range page lands on one
+  that exists, filtering resets and sorting does not, and a hundred pages are
+  offered as a handful of buttons plus the two ends.
+
 ## [0.3.6] — 2026-09-15
 
 Three defects from scoring the published 0.3.5 against the same ten criteria. The
@@ -593,6 +632,7 @@ Initial public release.
   GitHub Pages deployment.
 
 [Unreleased]: https://github.com/aco993/WorkPlanStudio/compare/v0.3.4...HEAD
+[0.3.7]: https://github.com/aco993/WorkPlanStudio/compare/v0.3.6...v0.3.7
 [0.3.6]: https://github.com/aco993/WorkPlanStudio/compare/v0.3.5...v0.3.6
 [0.3.5]: https://github.com/aco993/WorkPlanStudio/compare/v0.3.4...v0.3.5
 [0.3.4]: https://github.com/aco993/WorkPlanStudio/compare/v0.3.3...v0.3.4
