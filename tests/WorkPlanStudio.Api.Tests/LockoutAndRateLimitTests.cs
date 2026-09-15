@@ -85,4 +85,54 @@ public class RateLimitTests : IClassFixture<RateLimitFixture>
         Assert.Contains(HttpStatusCode.TooManyRequests, statuses);
         Assert.Equal(3, statuses.Count(status => status == HttpStatusCode.Unauthorized));
     }
+
+}
+
+/// <summary>
+/// Its own host, and therefore its own limiter. A fixed window is spent by
+/// whoever asks first: sharing one fixture with the test above made that one
+/// see six refusals instead of three answers and three refusals - the window
+/// was already empty when it started.
+/// </summary>
+public sealed class RetryAfterFixture() : ApiFactory("ratelimit-retry", new Dictionary<string, string?>(StringComparer.Ordinal)
+{
+    ["Auth:AuthRequestsPerWindow"] = "2",
+    ["Auth:AuthWindowSeconds"] = "60"
+});
+
+/// <summary>
+/// Measured on the published v0.4.0: the 429 carried the status and nothing
+/// else, so a client was told "too many" and could only guess or keep hammering
+/// - the behaviour the limiter exists to prevent. RFC 6585 says a 429 SHOULD say
+/// for how long.
+/// </summary>
+public class RetryAfterTests : IClassFixture<RetryAfterFixture>
+{
+    private readonly RetryAfterFixture _api;
+
+    public RetryAfterTests(RetryAfterFixture api) => _api = api;
+
+    [Fact]
+    public async Task The_refusal_says_how_long_to_wait()
+    {
+        var client = _api.CreateClient();
+        HttpResponseMessage? refused = null;
+
+        for (var attempt = 0; attempt < 5 && refused is null; attempt++)
+        {
+            var response = await client.PostAsJsonAsync(
+                "/api/auth/login", new LoginRequest($"retry-{attempt}", "whatever-password"), Ct);
+            if (response.StatusCode == HttpStatusCode.TooManyRequests)
+                refused = response;
+        }
+
+        Assert.NotNull(refused);
+        var retryAfter = refused.Headers.RetryAfter;
+        Assert.NotNull(retryAfter);
+
+        // Inside the window it was told to wait for, and never zero: "wait zero
+        // seconds" is the same as saying nothing.
+        var seconds = retryAfter.Delta?.TotalSeconds ?? 0;
+        Assert.InRange(seconds, 1, 60);
+    }
 }

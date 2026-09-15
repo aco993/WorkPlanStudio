@@ -112,6 +112,43 @@ public sealed class RecoveryScreenIsNotADeadEndTests : AppBunitContext
         Assert.Equal(2, readiness.StoredVersion);
     }
 
+    /// <summary>
+    /// The failure says what is wrong; the paragraph under it says what to do,
+    /// and that is the one which knows whether the reader may reset at all. On
+    /// the published v0.4.0 both said it: "…could not be upgraded. Export it
+    /// before resetting." directly above "The existing payload has not been
+    /// overwritten. Export it before resetting the local demo database."
+    /// </summary>
+    [Theory]
+    [InlineData("SharedResource.resx", "before resetting")]
+    [InlineData("SharedResource.de.resx", "vor dem Zurücksetzen")]
+    public void The_failure_message_does_not_repeat_the_advice_below_it(string file, string advice)
+    {
+        var resource = File.ReadAllText(Path.Join(RepoFiles.Root, "src", "WorkPlanStudio", "Resources", file));
+
+        // The paragraph that owns the advice still carries it.
+        Assert.Contains(advice, Value(resource, "Storage_RecoveryPreserved"), StringComparison.OrdinalIgnoreCase);
+
+        foreach (var failure in new[]
+        {
+            "Storage_Failure_UpgradeFailed", "Storage_Failure_QuotaExceeded",
+            "Storage_Failure_UnreadablePayload", "Storage_Failure_UnsupportedSchema",
+            "Storage_Failure_InvalidSqlite", "Storage_Failure_TruncatedPayload"
+        })
+        {
+            Assert.DoesNotContain(advice, Value(resource, failure), StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    [Fact]
+    public void The_recovery_screen_says_a_thing_once()
+    {
+        var cut = Recovered(WorkspaceRole.Planner, "once.db");
+
+        var said = cut.FindAll(".recovery-card p").Select(p => p.TextContent.Trim()).ToList();
+        Assert.Equal(said.Count, said.Distinct(StringComparer.Ordinal).Count());
+    }
+
     /// <summary>Two situations, two sentences — in both languages, or the fix is half done.</summary>
     [Theory]
     [InlineData("SharedResource.resx")]

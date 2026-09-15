@@ -290,7 +290,6 @@
   <data name="Sched_Ai_Endpoint" xml:space="preserve"><value>API endpoint</value></data>
   <data name="Sched_Ai_Model" xml:space="preserve"><value>Model</value></data>
   <data name="Sched_Ai_ApiKey" xml:space="preserve"><value>API key</value></data>
-  <data name="Sched_Ai_Privacy" xml:space="preserve"><value>Your key is stored in browser localStorage, which is not a secret vault, and is sent to the validated endpoint above. Do not use this on a shared computer. A production deployment should use a backend proxy and server-side secret storage.</value></data>
   <data name="Sched_Ai_InvalidSettings" xml:space="preserve"><value>Enter a valid HTTPS endpoint (HTTP is allowed only for loopback development), model, and API key.</value></data>
   <data name="Sched_Ai_FailureTimeout" xml:space="preserve"><value>request timed out</value></data>
   <data name="Sched_Ai_FailureResponse" xml:space="preserve"><value>invalid provider response</value></data>
@@ -535,8 +534,8 @@
   <data name="Val_WorkCenterOrderUse" xml:space="preserve"><value>A released production order is still routed through this work center.</value></data>
   <data name="Val_WorkPlanInUse" xml:space="preserve"><value>A production order was raised from this work plan.</value></data>
   <data name="Val_PlanNotReleased" xml:space="preserve"><value>The work plan must be released before an order can use it.</value></data>
-  <data name="Storage_Failure_QuotaExceeded" xml:space="preserve"><value>This browser has run out of storage for the database. Export the data, then remove other site data or reset.</value></data>
-  <data name="Storage_Failure_UpgradeFailed" xml:space="preserve"><value>The stored data is from schema version {0} and could not be upgraded. Export it before resetting.</value></data>
+  <data name="Storage_Failure_QuotaExceeded" xml:space="preserve"><value>This browser has run out of storage for the database. Removing other site data for this origin frees some.</value></data>
+  <data name="Storage_Failure_UpgradeFailed" xml:space="preserve"><value>The stored data is from schema version {0} and could not be upgraded.</value></data>
   <data name="Storage_Failure_Forbidden" xml:space="preserve"><value>The current persona may not do that.</value></data>
   <data name="Md_Nav_CostCenters" xml:space="preserve"><value>Cost centers</value></data>
   <data name="Md_CostCenters_Title" xml:space="preserve"><value>Cost centers</value></data>
@@ -797,7 +796,7 @@
   <data name="Ai_KeyNone" xml:space="preserve"><value>No key is stored for this provider yet.</value></data>
   <data name="Ai_KeyForget" xml:space="preserve"><value>Forget this key</value></data>
   <data name="Ai_KeyForgotten" xml:space="preserve"><value>The key for {0} was removed from this browser.</value></data>
-  <data name="Ai_KeyRisk" xml:space="preserve"><value>The key is kept in this browser's storage, which is not a vault: any script running on this page, and any browser extension with access to it, can read it. Use a key you are able to revoke, and do not enable a model on a shared computer.</value></data>
+  <data name="Ai_KeyRisk" xml:space="preserve"><value>The key is kept in this browser's storage, which is not a vault: any script on this page, and any browser extension with access to it, can read it — and it is sent to the endpoint above. Use a key you are able to revoke, and not on a shared computer. A production deployment belongs behind a backend proxy with server-side secret storage.</value></data>
   <data name="Export_Menu" xml:space="preserve"><value>Export</value></data>
   <data name="Export_Busy" xml:space="preserve"><value>Preparing…</value></data>
   <data name="Export_Pdf" xml:space="preserve"><value>PDF report</value></data>

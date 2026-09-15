@@ -124,4 +124,43 @@ public sealed class AssistantKeyInTheDomTests : AppBunitContext
         Arrange();
         Assert.Contains("Ai_KeyRisk", (await OpenSettingsAsync()).Markup, StringComparison.Ordinal);
     }
+
+    /// <summary>
+    /// Once. Measured on the published v0.4.0 the dialog carried two paragraphs
+    /// that both said browser storage is not a vault and not to use a shared
+    /// computer, in different words - so the reader looks for the difference
+    /// between them and there is none. The CORS note stays: it says something
+    /// else.
+    /// </summary>
+    [Fact]
+    public async Task The_risk_is_stated_once()
+    {
+        Arrange();
+        var cut = await OpenSettingsAsync();
+
+        var said = cut.FindAll(".modal-card .assistant-privacy")
+            .Select(p => p.TextContent.Trim()).ToList();
+
+        Assert.Equal(said.Count, said.Distinct(StringComparer.Ordinal).Count());
+        Assert.DoesNotContain("Sched_Ai_Privacy", cut.Markup, StringComparison.Ordinal);
+    }
+
+    /// <summary>One paragraph names the risk; the others must not name it again.</summary>
+    [Theory]
+    [InlineData("SharedResource.resx", "vault")]
+    [InlineData("SharedResource.de.resx", "Tresor")]
+    public void Only_one_of_the_dialog_texts_calls_the_browser_no_vault(string file, string word)
+    {
+        var resource = File.ReadAllText(
+            Path.Join(RepoFiles.Root, "src", "WorkPlanStudio", "Resources", file));
+
+        var mentions = System.Text.RegularExpressions.Regex
+            .Matches(resource, $"<data name=\"(?<k>Ai_[^\"]+|Sched_Ai_[^\"]+)\"[^>]*><value>(?<v>.*?)</value>",
+                System.Text.RegularExpressions.RegexOptions.Singleline)
+            .Where(m => m.Groups["v"].Value.Contains(word, StringComparison.OrdinalIgnoreCase))
+            .Select(m => m.Groups["k"].Value)
+            .ToList();
+
+        Assert.Single(mentions);
+    }
 }

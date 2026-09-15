@@ -290,7 +290,6 @@
   <data name="Sched_Ai_Endpoint" xml:space="preserve"><value>API-Endpunkt</value></data>
   <data name="Sched_Ai_Model" xml:space="preserve"><value>Modell</value></data>
   <data name="Sched_Ai_ApiKey" xml:space="preserve"><value>API-Schlüssel</value></data>
-  <data name="Sched_Ai_Privacy" xml:space="preserve"><value>Ihr Schlüssel wird im localStorage des Browsers gespeichert, der kein sicherer Schlüsselspeicher ist, und an den geprüften Endpunkt gesendet. Nicht auf gemeinsam genutzten Computern verwenden. Eine Produktivversion sollte einen Backend-Proxy und serverseitige Geheimnisse nutzen.</value></data>
   <data name="Sched_Ai_InvalidSettings" xml:space="preserve"><value>Geben Sie einen gültigen HTTPS-Endpunkt (HTTP nur für lokale Loopback-Entwicklung), ein Modell und einen API-Schlüssel ein.</value></data>
   <data name="Sched_Ai_FailureTimeout" xml:space="preserve"><value>Zeitüberschreitung der Anfrage</value></data>
   <data name="Sched_Ai_FailureResponse" xml:space="preserve"><value>ungültige Antwort des Anbieters</value></data>
@@ -535,8 +534,8 @@
   <data name="Val_WorkCenterOrderUse" xml:space="preserve"><value>Ein freigegebener Fertigungsauftrag läuft noch über diesen Arbeitsplatz.</value></data>
   <data name="Val_WorkPlanInUse" xml:space="preserve"><value>Zu diesem Arbeitsplan wurde ein Fertigungsauftrag angelegt.</value></data>
   <data name="Val_PlanNotReleased" xml:space="preserve"><value>Der Arbeitsplan muss freigegeben sein, bevor ein Auftrag ihn verwenden kann.</value></data>
-  <data name="Storage_Failure_QuotaExceeded" xml:space="preserve"><value>Der Speicher dieses Browsers reicht für die Datenbank nicht mehr aus. Exportieren Sie die Daten und geben Sie Speicher frei oder setzen Sie zurück.</value></data>
-  <data name="Storage_Failure_UpgradeFailed" xml:space="preserve"><value>Die gespeicherten Daten stammen aus Schema-Version {0} und konnten nicht aktualisiert werden. Exportieren Sie sie vor dem Zurücksetzen.</value></data>
+  <data name="Storage_Failure_QuotaExceeded" xml:space="preserve"><value>Der Speicher dieses Browsers reicht für die Datenbank nicht mehr aus. Andere Website-Daten dieses Ursprungs zu entfernen gibt etwas davon frei.</value></data>
+  <data name="Storage_Failure_UpgradeFailed" xml:space="preserve"><value>Die gespeicherten Daten stammen aus Schema-Version {0} und konnten nicht aktualisiert werden.</value></data>
   <data name="Storage_Failure_Forbidden" xml:space="preserve"><value>Die aktuelle Rolle darf das nicht.</value></data>
   <data name="Md_Nav_CostCenters" xml:space="preserve"><value>Kostenstellen</value></data>
   <data name="Md_CostCenters_Title" xml:space="preserve"><value>Kostenstellen</value></data>
@@ -797,7 +796,7 @@
   <data name="Ai_KeyNone" xml:space="preserve"><value>Für diesen Anbieter ist noch kein Schlüssel gespeichert.</value></data>
   <data name="Ai_KeyForget" xml:space="preserve"><value>Schlüssel löschen</value></data>
   <data name="Ai_KeyForgotten" xml:space="preserve"><value>Der Schlüssel für {0} wurde aus diesem Browser entfernt.</value></data>
-  <data name="Ai_KeyRisk" xml:space="preserve"><value>Der Schlüssel liegt im Speicher dieses Browsers, und der ist kein Tresor: Jedes Skript auf dieser Seite und jede Browser-Erweiterung mit Zugriff darauf kann ihn lesen. Nur einen Schlüssel verwenden, den Sie widerrufen können, und auf gemeinsam genutzten Rechnern kein Modell aktivieren.</value></data>
+  <data name="Ai_KeyRisk" xml:space="preserve"><value>Der Schlüssel liegt im Speicher dieses Browsers, und der ist kein Tresor: Jedes Skript auf dieser Seite und jede Browser-Erweiterung mit Zugriff darauf kann ihn lesen — und er wird an den Endpunkt oben gesendet. Nur einen Schlüssel verwenden, den Sie widerrufen können, und nicht auf gemeinsam genutzten Rechnern. Eine Produktivversion gehört hinter einen Backend-Proxy mit serverseitigen Geheimnissen.</value></data>
   <data name="Export_Menu" xml:space="preserve"><value>Export</value></data>
   <data name="Export_Busy" xml:space="preserve"><value>Wird erstellt…</value></data>
   <data name="Export_Pdf" xml:space="preserve"><value>PDF-Bericht</value></data>
