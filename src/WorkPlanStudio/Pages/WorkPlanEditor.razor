@@ -213,8 +213,10 @@ else
                         {
                             <tr @key="row.Key">
                                 <td class="num narrow">
-                                    <input class="input mini num" type="number" min="1" step="10" inputmode="numeric"
+                                    <input class="input mini num @CellStyle(row, nameof(row.OperationNumber))"
+                                           type="number" min="1" step="10" inputmode="numeric"
                                            aria-label="@L["Field_OperationNo"]"
+                                           aria-invalid="@CellInvalid(row, nameof(row.OperationNumber))"
                                            @bind="row.OperationNumber" @bind:event="oninput" />
                                 </td>
                                 <td class="wc-col">
@@ -225,24 +227,33 @@ else
                                                   IdOf="w => w.Id"
                                                   LabelOf="CenterLabel"
                                                   IsActive="w => w.IsActive"
+                                                  Invalid="@IsBad(row, nameof(row.WorkCenterId))"
                                                   AriaLabel="@L["Field_WorkCenter"]" />
                                 </td>
                                 <td>
-                                    <input class="input" maxlength="120" aria-label="@L["Field_Description"]"
+                                    <input class="input @CellStyle(row, nameof(row.Description))" maxlength="120"
+                                           aria-label="@L["Field_Description"]"
+                                           aria-invalid="@CellInvalid(row, nameof(row.Description))"
                                            @bind="row.Description" @bind:event="oninput" />
                                 </td>
                                 <td class="num">
-                                    <input class="input mini num" type="number" min="0" step="0.01" inputmode="decimal"
+                                    <input class="input mini num @CellStyle(row, nameof(row.SetupTimeMinutes))"
+                                           type="number" min="0" step="0.01" inputmode="decimal"
                                            aria-label="@L["Field_SetupTime"]"
+                                           aria-invalid="@CellInvalid(row, nameof(row.SetupTimeMinutes))"
                                            @bind="row.SetupTimeMinutes" @bind:event="oninput" />
                                 </td>
                                 <td class="num">
-                                    <input class="input mini num" type="number" min="0" step="0.01" inputmode="decimal"
+                                    <input class="input mini num @CellStyle(row, nameof(row.TimePerPieceMinutes))"
+                                           type="number" min="0" step="0.01" inputmode="decimal"
                                            aria-label="@L["Field_TimePerPiece"]"
+                                           aria-invalid="@CellInvalid(row, nameof(row.TimePerPieceMinutes))"
                                            @bind="row.TimePerPieceMinutes" @bind:event="oninput" />
                                 </td>
                                 <td>
-                                    <input class="input" maxlength="250" aria-label="@L["Field_Remarks"]"
+                                    <input class="input @CellStyle(row, nameof(row.Remarks))" maxlength="250"
+                                           aria-label="@L["Field_Remarks"]"
+                                           aria-invalid="@CellInvalid(row, nameof(row.Remarks))"
                                            @bind="row.Remarks" @bind:event="oninput" />
                                 </td>
                                 <td class="actions-col">
@@ -486,9 +497,7 @@ else
                 return;
             }
 
-            // Per-operation issues are keyed "Operations[n]" and share one banner
-            // above the table; the summary still lists each of them in full.
-            _errors.Apply(Regroup(result), L);
+            _errors.Apply(Describe(result), L);
         }
         catch (OperationCanceledException)
         {
@@ -505,15 +514,84 @@ else
         }
     }
 
-    private static ApplicationResult<int> Regroup(ApplicationResult<int> result) =>
-        result with
+    /// <summary>
+    /// Operation issues arrive as <c>Operations[10].Description</c>. They share one
+    /// banner above the table, so the field becomes <c>Operations</c> — but the row
+    /// and the column are not thrown away: they go into the sentence, so the summary
+    /// says which operation and which column instead of the bare word "Required",
+    /// and into <see cref="_badCells"/>, so the cell itself can be marked.
+    /// </summary>
+    private ApplicationResult<int> Describe(ApplicationResult<int> result)
+    {
+        _badCells.Clear();
+        if (result.ValidationIssues is null)
+            return result;
+
+        var described = new List<ValidationIssue>(result.ValidationIssues.Count);
+        foreach (var issue in result.ValidationIssues)
         {
-            ValidationIssues = result.ValidationIssues?
-                .Select(issue => issue.Field.StartsWith("Operations", StringComparison.Ordinal)
-                    ? issue with { Field = "Operations" }
-                    : issue)
-                .ToList()
-        };
+            var (number, column) = OperationCell(issue.Field);
+            if (column is null)
+            {
+                described.Add(issue);
+                continue;
+            }
+
+            _badCells.Add((number, column));
+            described.Add(new ValidationIssue(
+                "Operations",
+                "Val_InOperation",
+                number,
+                ColumnLabel(column),
+                L[issue.MessageKey, issue.Arguments ?? []].Value));
+        }
+
+        return result with { ValidationIssues = described };
+    }
+
+    /// <summary>Splits <c>Operations[10].Description</c> into its row and its column.</summary>
+    private static (int Number, string? Column) OperationCell(string field)
+    {
+        if (!field.StartsWith("Operations[", StringComparison.Ordinal))
+            return (0, null);
+
+        var close = field.IndexOf(']', StringComparison.Ordinal);
+        var dot = field.IndexOf('.', StringComparison.Ordinal);
+        if (close < 0 || dot < close || !int.TryParse(field.AsSpan(11, close - 11), out var number))
+            return (0, null);
+
+        return (number, field[(dot + 1)..]);
+    }
+
+    private string ColumnLabel(string column) => column switch
+    {
+        nameof(Operation.OperationNumber) => L["Field_OperationNo"],
+        nameof(Operation.WorkCenterId) => L["Field_WorkCenter"],
+        nameof(Operation.Description) => L["Field_Description"],
+        nameof(Operation.SetupTimeMinutes) => L["Field_SetupTime"],
+        nameof(Operation.TimePerPieceMinutes) => L["Field_TimePerPiece"],
+        nameof(Operation.Remarks) => L["Field_Remarks"],
+        _ => column
+    };
+
+    /// <summary>
+    /// Row number and column of every cell the last save complained about.
+    /// <para>
+    /// Keyed by the operation <em>number</em>, because that is what the validator
+    /// names — which means two rows claiming the same number are both marked for
+    /// everything said about it. That is the truthful rendering rather than a
+    /// miss: "operation 10" is ambiguous exactly when the reader has two of them,
+    /// and the first line of the summary is the duplicate number itself.
+    /// </para>
+    /// </summary>
+    private readonly HashSet<(int Number, string Column)> _badCells = [];
+
+    private bool IsBad(OperationRow row, string column) =>
+        row.OperationNumber is { } number && _badCells.Contains((number, column));
+
+    private string? CellStyle(OperationRow row, string column) => IsBad(row, column) ? "error" : null;
+
+    private string CellInvalid(OperationRow row, string column) => IsBad(row, column) ? "true" : "false";
 
     /// <summary>
     /// Cancel already means "throw this away", so it says so once and leaves.

@@ -43,28 +43,32 @@ public static class WorkPlanValidator
 
         foreach (var operation in plan.Operations)
         {
+            // "Operations[10].Description" rather than "Operations[10]": a form with
+            // sixty cells in it can only mark the wrong one if it is told which one,
+            // and a summary line can only name the column if the column is in the
+            // name. Callers that want the whole table read the part before the '['.
             var prefix = $"Operations[{operation.OperationNumber}]";
             if (operation.OperationNumber <= 0 || operation.OperationNumber > MaxOperationNumber)
-                issues.Add(new(prefix, "Val_OperationNumberRange", 1, MaxOperationNumber));
+                issues.Add(new($"{prefix}.{nameof(operation.OperationNumber)}", "Val_OperationNumberRange", 1, MaxOperationNumber));
             if (duplicateNumbers.Contains(operation.OperationNumber))
-                issues.Add(new(prefix, "Val_OperationNumberDuplicate", operation.OperationNumber));
+                issues.Add(new($"{prefix}.{nameof(operation.OperationNumber)}", "Val_OperationNumberDuplicate", operation.OperationNumber));
 
-            ValidateRequiredLength(issues, prefix, operation.Description, 120);
-            ValidateOptionalLength(issues, prefix, operation.Remarks, 250);
+            ValidateRequiredLength(issues, $"{prefix}.{nameof(operation.Description)}", operation.Description, 120);
+            ValidateOptionalLength(issues, $"{prefix}.{nameof(operation.Remarks)}", operation.Remarks, 250);
 
             if (operation.SetupTimeMinutes < 0 || operation.SetupTimeMinutes > MaxOperationMinutes)
-                issues.Add(new(prefix, "Val_SetupTimeRange", 0, MaxOperationMinutes));
+                issues.Add(new($"{prefix}.{nameof(operation.SetupTimeMinutes)}", "Val_SetupTimeRange", 0, MaxOperationMinutes));
             else if (Text.ExceedsScale(operation.SetupTimeMinutes, MinutesScale))
-                issues.Add(new(prefix, "Val_Scale", MinutesScale));
+                issues.Add(new($"{prefix}.{nameof(operation.SetupTimeMinutes)}", "Val_Scale", MinutesScale));
             if (operation.TimePerPieceMinutes < 0 || operation.TimePerPieceMinutes > MaxOperationMinutes)
-                issues.Add(new(prefix, "Val_RunTimeRange", 0, MaxOperationMinutes));
+                issues.Add(new($"{prefix}.{nameof(operation.TimePerPieceMinutes)}", "Val_RunTimeRange", 0, MaxOperationMinutes));
             else if (Text.ExceedsScale(operation.TimePerPieceMinutes, MinutesScale))
-                issues.Add(new(prefix, "Val_Scale", MinutesScale));
+                issues.Add(new($"{prefix}.{nameof(operation.TimePerPieceMinutes)}", "Val_Scale", MinutesScale));
 
             if (!centers.TryGetValue(operation.WorkCenterId, out var center))
-                issues.Add(new(prefix, "Val_WorkCenterMissing", operation.WorkCenterId));
+                issues.Add(new($"{prefix}.{nameof(operation.WorkCenterId)}", "Val_WorkCenterMissing", operation.WorkCenterId));
             else if (plan.Status == WorkPlanStatus.Released && !center.IsActive)
-                issues.Add(new(prefix, "Val_WorkCenterInactive", center.Code));
+                issues.Add(new($"{prefix}.{nameof(operation.WorkCenterId)}", "Val_WorkCenterInactive", center.Code));
 
             if (plan.LotSize > 0 && operation.SetupTimeMinutes >= 0 && operation.TimePerPieceMinutes >= 0)
             {
@@ -77,7 +81,9 @@ public static class WorkPlanValidator
                 }
                 catch (OverflowException)
                 {
-                    issues.Add(new(prefix, "Val_OperationDurationOverflow"));
+                    // The product overflows, so it belongs to the run time rather
+                    // than to any one cell; that is the column a reader can change.
+                    issues.Add(new($"{prefix}.{nameof(operation.TimePerPieceMinutes)}", "Val_OperationDurationOverflow"));
                 }
             }
         }

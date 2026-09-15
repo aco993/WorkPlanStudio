@@ -9,8 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.3.5] — 2026-09-15
 
-One defect, found by scoring the published site against the same ten criteria as
-last time — and the first one in this series that could change stored data.
+Four defects, found by scoring the published site against the same ten criteria
+as last time. The first of them is the first in this series that could change
+stored data; the other three are the same pass's smaller findings.
 
 ### Fixed
 
@@ -35,11 +36,31 @@ last time — and the first one in this series that could change stored data.
   it had nothing to lose — but it compared an empty model against an empty
   signature and concluded otherwise, which is the guard from 0.3.3 firing on the
   dead end from 0.3.4.
+- **A language switch is not remembered until it happens.** Switching needs a
+  reload, and a reload can be refused — the editor holds one while it asks about
+  unsaved changes. The preference was written first, so *Keep editing* left the
+  app in three minds at once: storage said German, the buttons said English, the
+  text stayed English, and the language changed on some later visit the reader had
+  already cancelled. The choice now travels in the address and is remembered by
+  the page that really did start in it; a reload that never happens leaves nothing
+  behind, and the address is cleaned up as soon as it has been read. Discarding
+  still switches.
+- **Every input error is marked on the input that has it.** A save with four
+  problems marked one: the lot size, because the three in the operations table all
+  pointed at the table as a whole. Validation issues now name their column —
+  `Operations[10].Description` rather than `Operations[10]` — so the offending cell
+  carries `aria-invalid` and the error style while its neighbours are left alone.
+  Two operations sharing one number are both marked, on purpose: the validator
+  names the row by its number and cannot say which of them it means.
+- **No error line is a bare word any more.** Between three full sentences the
+  summary used to say only *Required* (German *Pflichtfeld*), with no field and no
+  row to look in. It now reads *Operation 10 · Description: Required*.
 
 ### Tests
 
 - **Seven tests that re-parameterise the component they already rendered**, six of
-  which fail against 0.3.4. No test in this suite had ever done that, which is why
+  which fail against 0.3.4, and **seven more for the three findings above, all of
+  which fail against it**. No test in this suite had ever done that, which is why
   the defect survived two releases on the app's central form: a suite that only
   renders fresh components cannot see a page that fails to notice it was asked for
   something else. The seventh passes on both sides on purpose — it types into the

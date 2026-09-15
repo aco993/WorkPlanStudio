@@ -5,9 +5,26 @@
 //                       AI assistant configuration). Values stay in this browser.
 
 window.blazorCulture = {
-    get: () => window.localStorage['BlazorCulture'],
-    set: (value) => window.localStorage['BlazorCulture'] = value
+    get: () => window.localStorage['BlazorCulture']
 };
+
+// A language switch needs a reload, and a reload can be refused - the work-plan
+// editor holds one while it asks about unsaved changes, and "keep editing" means
+// the switch does not happen. So the switch is asked for in the address and
+// remembered here, by the page that really did start in it: a reload that never
+// happened leaves nothing behind. Writing it before the reload used to leave the
+// app in three minds at once - storage said German, the buttons said English, the
+// text stayed English - and then changed the language on some later visit the
+// reader had cancelled.
+(function rememberTheLanguageThisPageStartedIn() {
+    const url = new URL(window.location.href);
+    const asked = url.searchParams.get('culture');
+    if (!asked || !/^[a-z]{2}-[A-Z]{2}$/.test(asked)) { return; }
+
+    window.localStorage['BlazorCulture'] = asked;
+    url.searchParams.delete('culture');
+    window.history.replaceState(null, '', url.toString());
+})();
 
 // The boot screen and the framework's error bar are painted before the .NET
 // runtime exists, so IStringLocalizer cannot reach them; they were the last
