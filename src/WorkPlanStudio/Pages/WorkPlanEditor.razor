@@ -319,7 +319,16 @@ else
     private bool _showLeave;
     private string? _pendingLocation;
 
-    private bool IsDirty => !_loading && Signature() != _savedSignature;
+    // Which plan the form is currently showing, as opposed to which one the
+    // address asks for. They disagree exactly once per navigation, and closing
+    // that gap is what OnParametersSetAsync is for.
+    private int? _loadedId;
+    private bool _loaded;
+
+    // A page that has no form cannot have unsaved work on it, so the missing-plan
+    // dead end must not arm the guard: it used to compare an empty model against
+    // an empty signature and conclude the reader had something to lose.
+    private bool IsDirty => !_loading && !_missing && Signature() != _savedSignature;
 
     private string Signature() => string.Join('',
         _model.PlanNumber, _model.Status, _model.PartNumber, _model.Revision, _model.PartName, _lotSize,
@@ -349,8 +358,42 @@ else
         _errors.Declare("Operations", "wp-operations");
     }
 
-    protected override async Task OnInitializedAsync()
+    /// <summary>
+    /// The router keeps one instance of this page alive across
+    /// <c>/work-plans/1</c> → <c>/work-plans/2</c> → <c>/work-plans/new</c>,
+    /// because only the route parameter changes. Loading in
+    /// <c>OnInitializedAsync</c> therefore ran exactly once: every plan after the
+    /// first was drawn with the first one's numbers, and <c>Save</c> wrote them
+    /// to whichever id the address happened to carry.
+    /// <para>
+    /// The guard is the other half. This method also runs whenever a cascading
+    /// value changes — switching persona, for one — and reloading there would
+    /// throw away whatever the user had typed. So it reloads when, and only when,
+    /// the id it is showing is not the id it was asked for.
+    /// </para>
+    /// </summary>
+    protected override async Task OnParametersSetAsync()
     {
+        if (_loaded && _loadedId == Id)
+            return;
+
+        _loadedId = Id;
+        _loaded = true;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        // Everything that belongs to one plan starts again; anything left behind
+        // here is the previous plan speaking through this one's page.
+        _loading = true;
+        _missing = false;
+        _saving = false;
+        _showLeave = false;
+        _pendingLocation = null;
+        _errors.Clear();
+        _rows.Clear();
+
         _workCenters = await Centers.GetAllAsync();
         _partNumbers = await Plans.GetPartNumbersAsync();
 
@@ -371,8 +414,11 @@ else
                 // A bookmark from before a delete, or a number someone typed.
                 // Handing back an empty form pretends the plan is there and only
                 // admits otherwise once Save has been pressed.
+                _model = new WorkPlan { Status = WorkPlanStatus.Draft, LotSize = 1 };
+                _lotSize = _model.LotSize;
                 _missing = true;
                 _loading = false;
+                _savedSignature = Signature();
                 return;
             }
 
@@ -380,7 +426,6 @@ else
         }
 
         _lotSize = _model.LotSize;
-        _rows.Clear();
         _rows.AddRange(_model.Operations.OrderBy(o => o.OperationNumber).Select(OperationRow.From));
         _loading = false;
         _savedSignature = Signature();
