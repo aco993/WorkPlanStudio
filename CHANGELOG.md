@@ -7,6 +7,69 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.9] — 2026-09-15
+
+Five findings from scoring the published 0.3.8, all the same shape: the
+application knew something and said something else, or named a remedy it did not
+offer.
+
+### Fixed
+
+- **The recovery screen was a dead end for a guest.** Corrupt the stored payload
+  as *Guest* and it said *"Export it before **resetting** the local demo
+  database"* — the reset is behind `ResetData`, a guest cannot see it, and that
+  screen drew no navigation, no language picker and **no persona switcher**, so
+  the guest could not become someone who could. One button, an instruction
+  pointing at a second one this role never gets, and no way out but the browser's
+  developer tools. The switcher is on it now, and the sentence is the one the
+  reader's own role can act on; switching in place turns one button into three.
+- **An unreadable payload named a version that has never existed.** Storage
+  reports version 0 for anything it could not read, and the schema check ran
+  first, so `this is not json at all` came back as *"the stored schema version (0)
+  is not supported"*. A stated-but-unsupported version and a truncated payload
+  were each named correctly; only the parse failure landed in the wrong bucket. It
+  has its own sentence, and a value stating no version is refused before the
+  version comparison.
+- **A guest was offered an editor.** The row button said *Edit*, it opened *Edit
+  work plan* over thirty-six dead fields, and `/work-plans/new` offered *New work
+  plan* with six dead fields and exactly one button: *Cancel*. Cancel what? The
+  button says *View*, the page says *View work plan*, and asking for a new plan
+  without the permission names the persona that can make one and offers the way
+  back — no form. The permission now comes from the authorization pipeline rather
+  than from `CurrentRole`, which is the default until the persona store has been
+  read: a page rendered before the layout got there decided with the wrong role.
+- **A failed proof threw away its own answer.** *"Not proved within 2.0 s: … at
+  most 86.8 % above the best possible"* blamed the clock and led with a percentage
+  above a lower bound. Measured on the sample plant, the bound is **93.75 after
+  1.3 s and four million nodes, and still 93.75 after thirty seconds and
+  seventy-five million** — waiting changes nothing, and the percentage measures
+  the bound's weakness, not the plan. What the search did establish was discarded:
+  in all those nodes it never found a schedule better than the one on screen. It
+  says that now, and reports the improvement when it did find better.
+- **A coverage gate that had stopped being one.** The README says each threshold
+  sits about two points under what is measured; the app's sat **3.06** under and
+  the domain's 2.78, because coverage rose and the numbers did not follow.
+- **The German README still carried the six coverage numbers by hand** — the drift
+  the English one was cured of in 0.3.6, three of them already stale.
+
+### Changed
+
+- `coverage_gate.py` takes `--slack`: a threshold more than that many points
+  *below* the measured value fails the build, the same way a drop does. A gate
+  coverage has outgrown never goes red and so never says it has stopped
+  defending anything. Set to 3 in CI; `GATE_APP` 78 → 79 and `GATE_DOMAIN`
+  87 → 88.
+- Test-count floors pulled back inside two per cent of the real counts:
+  `MIN_TESTS_WEB` 850 → 925, `MIN_TESTS_ENGINE` 285 → 288,
+  `MIN_TESTS_WORKING_TIME` 245 → 248.
+
+### Tests
+
+- **Twenty-one tests, thirteen of which fail against 0.3.8** — five of those
+  cannot compile against it, because the API they test did not exist. Three more
+  in `test_checks.py` cover the new direction of the coverage gate, and the README
+  guard now checks **both** language versions rather than the one that was fixed.
+
 ## [0.3.8] — 2026-09-15
 
 One finding from scoring the published 0.3.7, and the other half of it that turned
@@ -659,7 +722,8 @@ Initial public release.
 - **CI/CD** — per-layer test workflows on pull requests and a test-gated
   GitHub Pages deployment.
 
-[Unreleased]: https://github.com/aco993/WorkPlanStudio/compare/v0.3.4...HEAD
+[Unreleased]: https://github.com/aco993/WorkPlanStudio/compare/v0.3.9...HEAD
+[0.3.9]: https://github.com/aco993/WorkPlanStudio/compare/v0.3.8...v0.3.9
 [0.3.8]: https://github.com/aco993/WorkPlanStudio/compare/v0.3.7...v0.3.8
 [0.3.7]: https://github.com/aco993/WorkPlanStudio/compare/v0.3.6...v0.3.7
 [0.3.6]: https://github.com/aco993/WorkPlanStudio/compare/v0.3.5...v0.3.6
