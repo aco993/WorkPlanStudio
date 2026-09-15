@@ -1,4 +1,6 @@
 using Bunit;
+using Microsoft.Extensions.DependencyInjection;
+using WorkPlanStudio.Services;
 
 namespace WorkPlanStudio.Web.Tests;
 
@@ -19,5 +21,18 @@ namespace WorkPlanStudio.Web.Tests;
 /// </summary>
 public abstract class AppBunitContext : BunitContext
 {
-    protected AppBunitContext() => DefaultWaitTimeout = TimeSpan.FromSeconds(15);
+    protected AppBunitContext()
+    {
+        DefaultWaitTimeout = TimeSpan.FromSeconds(15);
+
+        // Registered here rather than in each test's Arrange, because every page
+        // that changes something announces it: leaving it out would make a test
+        // fail on wiring instead of on behaviour.
+        var announcer = new UiAnnouncer();
+        announcer.Announced += Announcements.Add;
+        Services.AddSingleton(announcer);
+    }
+
+    /// <summary>The sentences the page announced, in order.</summary>
+    protected List<string> Announcements { get; } = [];
 }

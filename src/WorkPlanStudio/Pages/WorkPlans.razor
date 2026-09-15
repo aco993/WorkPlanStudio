@@ -2,6 +2,7 @@
 @inject IStringLocalizer<SharedResource> L
 @inject WorkPlanService Plans
 @inject NavigationManager Nav
+@inject UiAnnouncer Announcer
 @using Microsoft.AspNetCore.Authorization
 @inject IAuthorizationService Authorization
 @using Microsoft.AspNetCore.Components.Authorization
@@ -215,8 +216,11 @@ else
         _error = null;
         if (_pendingDelete is not null)
         {
+            var label = _pendingDelete.PlanNumber;
             var result = await Plans.DeleteAsync(_pendingDelete.Id);
-            if (!result.IsSuccess)
+            if (result.IsSuccess)
+                Announcer.Say(L["Ann_Deleted", label]);
+            else
                 _error = result.ValidationIssues is [var issue, ..]
                     ? L[issue.MessageKey, issue.Arguments]
                     : L[result.Status switch

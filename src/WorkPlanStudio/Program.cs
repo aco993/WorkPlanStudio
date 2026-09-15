@@ -33,6 +33,7 @@ builder.Services.AddScoped<IPersonaStore, JsPersonaStore>();
 builder.Services.AddScoped<DemoAuthenticationStateProvider>();
 builder.Services.AddScoped<AuthenticationStateProvider>(sp => sp.GetRequiredService<DemoAuthenticationStateProvider>());
 builder.Services.AddScoped<IPermissionGuard, PermissionGuard>();
+builder.Services.AddScoped<UiAnnouncer>();
 
 // EF logs every command it executes at Information, and the browser console is
 // the only sink here - a published build was printing all of its DDL and every

@@ -1,0 +1,41 @@
+@implements IDisposable
+@inject UiAnnouncer Announcer
+
+@*
+    The page's live region, in the layout so that it outlives the dialog or the
+    table row the action happened in.
+
+    Two regions, written alternately, because a screen reader announces a change
+    of text: withdrawing two orders in a row produces the same sentence twice, and
+    the second one would be silent if it were written to the same element. The
+    idle region is emptied on the same pass, so only one sentence is ever present.
+*@
+<div class="sr-only" role="status" aria-live="polite" aria-atomic="true">@_a</div>
+<div class="sr-only" role="status" aria-live="polite" aria-atomic="true">@_b</div>
+
+@code {
+    private string? _a;
+    private string? _b;
+    private bool _useA = true;
+
+    protected override void OnInitialized() => Announcer.Announced += Say;
+
+    private void Say(string message)
+    {
+        if (_useA)
+        {
+            _a = message;
+            _b = null;
+        }
+        else
+        {
+            _b = message;
+            _a = null;
+        }
+
+        _useA = !_useA;
+        StateHasChanged();
+    }
+
+    public void Dispose() => Announcer.Announced -= Say;
+}

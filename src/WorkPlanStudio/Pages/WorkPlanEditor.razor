@@ -10,6 +10,7 @@
 @inject ILogger<WorkPlanEditor> Logger
 @using Microsoft.AspNetCore.Authorization
 @inject IAuthorizationService Authorization
+@inject UiAnnouncer Announcer
 
 <PageTitle>@Title · WorkPlan Studio</PageTitle>
 
@@ -428,12 +429,12 @@ else
 
     protected override void OnInitialized()
     {
-        _errors.Declare("PlanNumber", "wp-number");
-        _errors.Declare("Status", "wp-status");
-        _errors.Declare("PartNumber", "wp-part-number");
-        _errors.Declare("Revision", "wp-revision");
-        _errors.Declare("PartName", "wp-part");
-        _errors.Declare("LotSize", "wp-lot");
+        _errors.Declare("PlanNumber", "wp-number", L["Field_PlanNumber"]);
+        _errors.Declare("Status", "wp-status", L["Field_Status"]);
+        _errors.Declare("PartNumber", "wp-part-number", L["Field_PartNumber"]);
+        _errors.Declare("Revision", "wp-revision", L["Field_Revision"]);
+        _errors.Declare("PartName", "wp-part", L["Field_PartName"]);
+        _errors.Declare("LotSize", "wp-lot", L["Field_LotSize"]);
         _errors.Declare("Operations", "wp-operations");
     }
 
@@ -564,6 +565,10 @@ else
             {
                 _errors.Clear();
                 _savedSignature = Signature();
+
+                // Saving leaves this page for the list, so the outcome has to be
+                // said out loud: the reader lands on a different heading.
+                Announcer.Say(L[IsNew ? "Ann_Created" : "Ann_Saved", _model.PlanNumber]);
                 Nav.NavigateTo("work-plans");
                 return;
             }

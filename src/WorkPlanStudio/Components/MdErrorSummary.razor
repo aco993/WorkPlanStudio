@@ -20,13 +20,20 @@
                 @foreach (var error in State.All)
                 {
                     <li>
+                        @*
+                            The label goes in front of the message. Two required
+                            fields used to produce two list items both reading
+                            "Required" - and, because each is a link to its own
+                            control, two links with identical text pointing at
+                            different targets.
+                        *@
                         @if (error.InputId is not null)
                         {
-                            <a href="#@error.InputId">@error.Message</a>
+                            <a href="#@error.InputId">@Describe(error)</a>
                         }
                         else
                         {
-                            @error.Message
+                            @Describe(error)
                         }
                     </li>
                 }
@@ -38,6 +45,15 @@
 @code {
     /// <summary>The form's errors. The page owns the instance; this only renders it.</summary>
     [Parameter, EditorRequired] public FormErrorState State { get; set; } = new();
+
+    /// <summary>
+    /// "Code: Required" where the page declared a label, the bare sentence
+    /// otherwise. A message that already names its own place — the editor's
+    /// "Operation 10 · Setup (min): …" — is left alone, by the page not declaring
+    /// a label for that field.
+    /// </summary>
+    private static string Describe(FormError error) =>
+        error.Label is null ? error.Message : $"{error.Label}: {error.Message}";
 
     private ElementReference _summary;
     private int _focused;
