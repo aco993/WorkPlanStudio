@@ -260,7 +260,9 @@ public sealed class ScheduleE2ETests : IClassFixture<PlaywrightFixture>
         await editor.GetByLabel("Code").FillAsync("RESET-E2E");
         await editor.GetByLabel("Name").FillAsync("Reset regression");
         await editor.GetByRole(AriaRole.Button, new() { Name = "Save" }).ClickAsync();
-        await page.GetByText("RESET-E2E").WaitForAsync();
+        // Scoped to the table: saving also announces "RESET-E2E created." in the
+        // page's live region, and a bare GetByText now matches both.
+        await page.Locator("tbody").GetByText("RESET-E2E").WaitForAsync();
 
         await page.GotoAsync($"{_fixture.BaseUrl}/about");
         await page.GetByRole(AriaRole.Button, new() { Name = "Reset to sample data" }).ClickAsync();
@@ -271,7 +273,7 @@ public sealed class ScheduleE2ETests : IClassFixture<PlaywrightFixture>
 
         await page.GotoAsync($"{_fixture.BaseUrl}/work-centers");
         await page.GetByRole(AriaRole.Heading, new() { Name = "Work Centers" }).WaitForAsync();
-        Assert.Equal(0, await page.GetByText("RESET-E2E").CountAsync());
+        Assert.Equal(0, await page.Locator("tbody").GetByText("RESET-E2E").CountAsync());
     }
 
     [Fact]
