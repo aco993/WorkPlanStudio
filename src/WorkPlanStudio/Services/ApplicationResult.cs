@@ -18,6 +18,14 @@ public enum ApplicationResultStatus
     /// </summary>
     StorageFull,
 
+    /// <summary>
+    /// Another tab changed the database after this page loaded, so the change was
+    /// refused rather than written over it. The remedy is a reload, and saying so
+    /// is the whole point: the previous behaviour was to win the race silently and
+    /// delete whatever the other tab had saved.
+    /// </summary>
+    ChangedElsewhere,
+
     /// <summary>The current persona lacks the policy this action requires.</summary>
     Forbidden
 }
@@ -44,6 +52,9 @@ public sealed record ApplicationResult<T>(
 
     /// <summary>The snapshot did not fit; the database was put back the way it was.</summary>
     public static ApplicationResult<T> StorageFull() => new(ApplicationResultStatus.StorageFull);
+
+    /// <summary>Another tab got there first; nothing of theirs was overwritten.</summary>
+    public static ApplicationResult<T> ChangedElsewhere() => new(ApplicationResultStatus.ChangedElsewhere);
 
     public static ApplicationResult<T> Forbidden() => new(ApplicationResultStatus.Forbidden);
 }

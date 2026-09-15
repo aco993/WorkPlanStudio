@@ -497,6 +497,8 @@
   <data name="Sched_Ai_CorsNote" xml:space="preserve"><value>The request goes from your browser to the endpoint, so the provider must allow browser (CORS) calls. OpenAI, Anthropic (with its direct-browser header, sent automatically), Gemini, OpenRouter and local servers do; some proxies do not.</value></data>
   <data name="Ui_NavMenu" xml:space="preserve"><value>Menu</value></data>
   <data name="Ui_Language" xml:space="preserve"><value>Language</value></data>
+  <data name="Storage_ChangedElsewhereNotice" xml:space="preserve"><value>Another tab changed this data. Reload to see it.</value></data>
+  <data name="Storage_ReloadNow" xml:space="preserve"><value>Reload</value></data>
   <data name="Ui_GanttHelp" xml:space="preserve"><value>Arrow keys move between operations and closed stretches, Enter reads the one in focus, Escape clears it.</value></data>
   <data name="Ui_GanttShowTable" xml:space="preserve"><value>Show as table</value></data>
   <data name="Ui_GanttHideTable" xml:space="preserve"><value>Hide the table</value></data>
@@ -829,5 +831,6 @@
   <data name="Editor_BackToPlans" xml:space="preserve"><value>Back to work plans</value></data>
   <data name="WorkPlans_InUse" xml:space="preserve"><value>A production order was raised from this work plan</value></data>
   <data name="Error_StorageFull" xml:space="preserve"><value>This browser has no room left for the demo database, so the change was undone. Export the data or free some space, then try again.</value></data>
+  <data name="Error_ChangedElsewhere" xml:space="preserve"><value>Another tab changed this data after the page was loaded, so the change was not saved and nothing of theirs was overwritten. Reload to get the current data, then make the change again.</value></data>
   <data name="Imp_WorkPlanNotFound" xml:space="preserve"><value>No work plan has the number {0}.</value></data>
 </root>

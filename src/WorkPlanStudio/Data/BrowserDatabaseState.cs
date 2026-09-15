@@ -18,6 +18,14 @@ public enum BrowserDatabaseFailure
     /// </summary>
     QuotaExceeded,
 
+    /// <summary>
+    /// Another tab of this app wrote after this one loaded, so the write was
+    /// refused instead of applied. Separate from <see cref="WriteFailed"/> because
+    /// nothing is broken and nothing was lost - the reader simply has an older
+    /// copy and needs a newer one.
+    /// </summary>
+    ChangedElsewhere,
+
     /// <summary>A stored payload one or more versions old could not be upgraded to the current schema.</summary>
     UpgradeFailed,
 

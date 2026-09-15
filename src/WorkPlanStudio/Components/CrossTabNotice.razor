@@ -1,0 +1,46 @@
+@implements IAsyncDisposable
+@inject IStringLocalizer<SharedResource> L
+@inject IJSRuntime JS
+@inject NavigationManager Nav
+
+@*
+    The browser tells every other tab of an origin when one of them writes to
+    localStorage, and this app had never listened. Two tabs therefore deleted each
+    other's saved work in silence; the write is refused now, but a refusal the
+    reader could not see coming is still a surprise. This is the part that says so
+    before they press Save.
+*@
+@if (_changed)
+{
+    <div class="cross-tab-notice" role="status">
+        <span>@L["Storage_ChangedElsewhereNotice"]</span>
+        <button type="button" class="btn btn-outline btn-small" @onclick="Reload">@L["Storage_ReloadNow"]</button>
+    </div>
+}
+
+@code {
+    private bool _changed;
+    private DotNetObjectReference<CrossTabNotice>? _self;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _self = DotNetObjectReference.Create(this);
+        await JS.InvokeVoidAsync("workplanDb.watch", _self);
+    }
+
+    /// <summary>Called from the <c>storage</c> event in another tab's write.</summary>
+    [JSInvokable]
+    public Task DatabaseChangedElsewhere()
+    {
+        _changed = true;
+        return InvokeAsync(StateHasChanged);
+    }
+
+    private void Reload() => Nav.NavigateTo(Nav.Uri, forceLoad: true);
+
+    public async ValueTask DisposeAsync()
+    {
+        _self?.Dispose();
+        await ValueTask.CompletedTask;
+    }
+}

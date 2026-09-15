@@ -36,6 +36,17 @@ public sealed class BrowserDatabase
 
     private Task<BrowserDatabaseReadiness>? _ready;
 
+    // The revision this tab's copy is based on. Every write carries it, and
+    // storage refuses the write if another tab has moved on since - which is the
+    // whole of the fix: the page that loses the race is told, instead of silently
+    // writing its own stale image over work that was already saved.
+    //
+    // -1 means "write whatever I have": replacing the entire database (import,
+    // reset, the first write of a fresh one) is not an edit that can be stale.
+    private long _revision = Unconditional;
+
+    private const long Unconditional = -1;
+
     public BrowserDatabase(
         IDbContextFactory<AppDbContext> factory,
         IBrowserDatabaseStorage storage,
@@ -113,16 +124,23 @@ public sealed class BrowserDatabase
 
             try
             {
-                var written = await _storage.SaveAsync(new StoredDatabase(payload, _options.SchemaVersion), cancellationToken);
+                var written = await _storage.SaveAsync(
+                    new StoredDatabase(payload, _options.SchemaVersion), _revision, cancellationToken);
                 if (written.IsSuccess)
+                {
+                    _revision = written.Revision;
                     return BrowserStorageResult.Success;
+                }
 
                 _logger.LogError("Storing the browser database failed: {Detail}", written.Detail);
                 return new(
                     false,
-                    written.Outcome == StorageWriteOutcome.QuotaExceeded
-                        ? BrowserDatabaseFailure.QuotaExceeded
-                        : BrowserDatabaseFailure.WriteFailed);
+                    written.Outcome switch
+                    {
+                        StorageWriteOutcome.QuotaExceeded => BrowserDatabaseFailure.QuotaExceeded,
+                        StorageWriteOutcome.ChangedElsewhere => BrowserDatabaseFailure.ChangedElsewhere,
+                        _ => BrowserDatabaseFailure.WriteFailed
+                    });
             }
             catch (Exception exception) when (exception is not OperationCanceledException)
             {
@@ -229,6 +247,10 @@ public sealed class BrowserDatabase
         if (picked is null)
             return await EnsureReadyAsync();   // cancelled: nothing changes
 
+        // Installing a file the visitor chose replaces the whole database on
+        // purpose, so it is not a stale edit and must not be refused as one.
+        _revision = Unconditional;
+
         var installed = await InstallAsync(picked, cancellationToken);
         if (!installed.IsReady)
         {
@@ -257,6 +279,7 @@ public sealed class BrowserDatabase
         try
         {
             await _storage.ClearAsync(cancellationToken);
+            _revision = Unconditional;   // there is nothing left to be stale against
             await using (var db = await _factory.CreateDbContextAsync(cancellationToken))
                 await db.Database.EnsureDeletedAsync(cancellationToken);
             DeleteIfExists(_options.DatabasePath);
@@ -290,6 +313,10 @@ public sealed class BrowserDatabase
 
         if (stored is null)
             return await CreateFreshAsync(cancellationToken);
+
+        // From here on this tab's copy is based on that revision, and every write
+        // it makes says so.
+        _revision = stored.Revision;
 
         var installed = await InstallAsync(stored, cancellationToken);
         if (!installed.IsReady || stored.Version == _options.SchemaVersion)
