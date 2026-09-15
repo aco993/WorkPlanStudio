@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.8] — 2026-09-15
+
+One finding from scoring the published 0.3.7, and the other half of it that turned
+up while fixing it.
+
+### Fixed
+
+- **A list says when the search matched nothing.** Measured on the published site
+  by typing something that occurs nowhere: three of the four lists showed a table
+  header, zero rows and not one word, so a screen reader read the column titles
+  and then stopped. All four say *No rows match the search and filters.* now — in
+  a status region, because the reader is typing in a search box and will not go
+  looking, and **below the toolbar**, so the search that emptied the table is
+  still there to be cleared. It covers the filter chips too, which empty a list
+  the same way and had the same silence.
+- **An empty database and an empty search are two different sentences.** The
+  work-plan list was the one that already said something, and it used one string
+  for both cases — reading as the second: *"No work plans match your search"* over
+  a database that simply had none in it yet. It says *No work plans yet.* when
+  there are none, and the shared sentence when a filter hid them.
+
+### Tests
+
+- **Six tests, five of which fail against 0.3.7.** One is there to stop the
+  sentence becoming furniture: a list with rows in it must not show it. Another
+  keeps the two sentences apart in both languages, because a single string that
+  covered two situations is how this defect started.
+
 ## [0.3.7] — 2026-09-15
 
 One finding from scoring the published 0.3.6: the lists drew every row they had,
@@ -632,6 +660,7 @@ Initial public release.
   GitHub Pages deployment.
 
 [Unreleased]: https://github.com/aco993/WorkPlanStudio/compare/v0.3.4...HEAD
+[0.3.8]: https://github.com/aco993/WorkPlanStudio/compare/v0.3.7...v0.3.8
 [0.3.7]: https://github.com/aco993/WorkPlanStudio/compare/v0.3.6...v0.3.7
 [0.3.6]: https://github.com/aco993/WorkPlanStudio/compare/v0.3.5...v0.3.6
 [0.3.5]: https://github.com/aco993/WorkPlanStudio/compare/v0.3.4...v0.3.5
