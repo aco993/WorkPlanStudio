@@ -7,6 +7,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] — 2026-09-15
+
+Five findings from scoring the published 0.3.9. The first is the one that matters;
+the rest are the same defect in smaller print — the application knew something and
+the screen said something else.
+
+The minor bump closes the 0.3.x line: ten releases, every one of them started by
+driving the published application rather than by reading its source, and every
+finding in them fixed with a test that fails against the release before it.
+
+### Added
+
+- **One live region, and a `UiAnnouncer` to speak through it.** It sits in the
+  layout so a sentence outlives the dialog and the table row the action happened
+  in. Two regions written alternately, because a screen reader announces a
+  *change* of text and cancelling two orders in a row produces the same sentence
+  twice.
+
+### Fixed
+
+- **A destructive action succeeded in silence.** Withdrawing a production order
+  moved the row to *Cancelled*, bumped the stored revision and moved focus to the
+  page heading — and the page held **no live region at all**, so a screen reader
+  said *"Production Orders, heading"*: word for word what it says when the dialog
+  is merely dismissed. The application had learned in 0.3.8 to announce an empty
+  list; it never announced a deleted row. Releasing, cancelling, deleting, creating
+  and saving now each say what happened and to which record.
+- **The error summary named the rule and never the field.** Saving an empty cost
+  centre produced two list items both reading *Required* — and, since each is a
+  link to its own control, two links with identical text pointing at different
+  targets (WCAG 2.4.4). Three dialogs did this. The page already declares which
+  control owns which field; it now declares the label with it, and the summary puts
+  that in front: *Code: Required*. A message that already names its own place — the
+  editor's *Operation 10 · Setup (min): …* from 0.3.5 — is left alone.
+- **One action had two verbs.** The row button said *Cancel order*, the dialog it
+  opened was titled *Withdraw order*, and the status it produced was *Cancelled*;
+  in German *stornieren* against *zurückziehen*. The status and the button already
+  agreed, so the dialog moved.
+- **A disabled button kept its reason somewhere else.** The import's *Check the
+  file* is off until every required column is matched — correct — and said so only
+  up the page beside the column, with no `title` and no `aria-describedby`. It now
+  points at a sentence rendered beside it.
+- **A preview that read as a setting.** The weekly-pattern card sits next to the
+  plant rules and looks like one more of them; only its `sr-only` labels said "to
+  preview". Measured: changing it writes nothing and it resets on reload. The
+  heading says *Weekly pattern preview* now, with a visible sentence saying nothing
+  on the card is saved.
+
+### Tests
+
+- **Eighteen.** Eleven of the twelve that can compile against 0.3.9 fail there; the
+  other six cannot compile at all, because `UiAnnouncer` did not exist. The bUnit
+  base context registers the announcer and collects what was said, so a page that
+  changes something can be asked what it told the reader.
+
 ## [0.3.9] — 2026-09-15
 
 Five findings from scoring the published 0.3.8, all the same shape: the
@@ -722,7 +777,8 @@ Initial public release.
 - **CI/CD** — per-layer test workflows on pull requests and a test-gated
   GitHub Pages deployment.
 
-[Unreleased]: https://github.com/aco993/WorkPlanStudio/compare/v0.3.9...HEAD
+[Unreleased]: https://github.com/aco993/WorkPlanStudio/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/aco993/WorkPlanStudio/compare/v0.3.9...v0.4.0
 [0.3.9]: https://github.com/aco993/WorkPlanStudio/compare/v0.3.8...v0.3.9
 [0.3.8]: https://github.com/aco993/WorkPlanStudio/compare/v0.3.7...v0.3.8
 [0.3.7]: https://github.com/aco993/WorkPlanStudio/compare/v0.3.6...v0.3.7
