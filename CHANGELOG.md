@@ -7,6 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.5] — 2026-09-15
+
+One defect, found by scoring the published site against the same ten criteria as
+last time — and the first one in this series that could change stored data.
+
+### Fixed
+
+- **The work-plan editor follows the address.** The router keeps one instance of
+  the page alive while only the route parameter changes, so a load written into
+  `OnInitializedAsync` ran exactly once. `/work-plans/1` followed by
+  `/work-plans/2` left the first plan's form standing under the second plan's
+  address — measured on the published site, still WP-1001 after fifteen seconds —
+  and a save from there wrote **WP-1001**, the plan the user had just navigated
+  away from, while WP-1002, the one they asked for, was untouched. Nothing on the
+  screen said which plan was being written. The load moves to
+  `OnParametersSetAsync` and clears everything that belongs to one plan before
+  reading the next; it reloads when, and only when, the id on screen is not the id
+  in the address, because that method also runs when a cascading value changes —
+  switching persona is one — and reloading there would throw away live typing.
+- **The two states added in 0.3.4 no longer outlive the plan they belong to.** A
+  missing id followed by a real one claimed the real plan had been deleted, with
+  thirty filled fields behind the sentence; a missing id followed by *New* killed
+  the new-plan form until a reload; and a real plan followed by a missing id
+  offered its full editor, Save included, for a plan that is not there.
+- **The missing-plan page no longer claims unsaved changes.** It has no form, so
+  it had nothing to lose — but it compared an empty model against an empty
+  signature and concluded otherwise, which is the guard from 0.3.3 firing on the
+  dead end from 0.3.4.
+
+### Tests
+
+- **Seven tests that re-parameterise the component they already rendered**, six of
+  which fail against 0.3.4. No test in this suite had ever done that, which is why
+  the defect survived two releases on the app's central form: a suite that only
+  renders fresh components cannot see a page that fails to notice it was asked for
+  something else. The seventh passes on both sides on purpose — it types into the
+  form and re-renders with the *same* id, to fail the careless version of this fix
+  rather than the bug.
+
 ## [0.3.4] — 2026-09-14
 
 Four small places where the code had the answer and the screen said something
@@ -484,6 +523,7 @@ Initial public release.
   GitHub Pages deployment.
 
 [Unreleased]: https://github.com/aco993/WorkPlanStudio/compare/v0.3.4...HEAD
+[0.3.5]: https://github.com/aco993/WorkPlanStudio/compare/v0.3.4...v0.3.5
 [0.3.4]: https://github.com/aco993/WorkPlanStudio/compare/v0.3.3...v0.3.4
 [0.3.3]: https://github.com/aco993/WorkPlanStudio/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/aco993/WorkPlanStudio/compare/v0.3.1...v0.3.2
