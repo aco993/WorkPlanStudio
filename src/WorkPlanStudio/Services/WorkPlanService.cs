@@ -13,11 +13,13 @@ public sealed class WorkPlanService
 
     private readonly BrowserDatabase _db;
     private readonly IPermissionGuard _guard;
+    private readonly TimeProvider _clock;
 
-    public WorkPlanService(BrowserDatabase db, IPermissionGuard? guard = null)
+    public WorkPlanService(BrowserDatabase db, IPermissionGuard? guard = null, TimeProvider? clock = null)
     {
         _db = db;
         _guard = guard ?? AllowAllGuard.Instance;
+        _clock = clock ?? TimeProvider.System;
     }
 
     /// <summary>
@@ -114,7 +116,7 @@ public sealed class WorkPlanService
                     return ApplicationResult<Func<int>>.Conflict(
                         new ValidationIssue(nameof(plan.PlanNumber), "Val_PlanNumberTaken"));
 
-                plan.CreatedUtc = plan.ModifiedUtc = DateTime.UtcNow;
+                plan.CreatedUtc = plan.ModifiedUtc = _clock.GetUtcNow().UtcDateTime;
                 foreach (var op in plan.Operations)
                     op.WorkCenter = null;
 
@@ -159,7 +161,7 @@ public sealed class WorkPlanService
                 existing.Revision = plan.Revision;
                 existing.Status = plan.Status;
                 existing.LotSize = plan.LotSize;
-                existing.ModifiedUtc = DateTime.UtcNow;
+                existing.ModifiedUtc = _clock.GetUtcNow().UtcDateTime;
 
                 db.Operations.RemoveRange(existing.Operations);
                 existing.Operations = plan.Operations.Select(o => new Operation

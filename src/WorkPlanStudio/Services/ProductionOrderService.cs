@@ -17,11 +17,13 @@ public sealed class ProductionOrderService
 
     private readonly BrowserDatabase _db;
     private readonly IPermissionGuard _guard;
+    private readonly TimeProvider _clock;
 
-    public ProductionOrderService(BrowserDatabase db, IPermissionGuard? guard = null)
+    public ProductionOrderService(BrowserDatabase db, IPermissionGuard? guard = null, TimeProvider? clock = null)
     {
         _db = db;
         _guard = guard ?? AllowAllGuard.Instance;
+        _clock = clock ?? TimeProvider.System;
     }
 
     public async Task<List<ProductionOrder>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -100,7 +102,7 @@ public sealed class ProductionOrderService
                 ProductionOrder entity;
                 if (order.Id == 0)
                 {
-                    entity = new ProductionOrder { CreatedUtc = DateTime.UtcNow };
+                    entity = new ProductionOrder { CreatedUtc = _clock.GetUtcNow().UtcDateTime };
                     db.ProductionOrders.Add(entity);
                 }
                 else
@@ -124,7 +126,7 @@ public sealed class ProductionOrderService
                 entity.ReleaseLocal = order.ReleaseLocal;
                 entity.DueLocal = order.DueLocal;
                 entity.Priority = order.Priority;
-                entity.ModifiedUtc = DateTime.UtcNow;
+                entity.ModifiedUtc = _clock.GetUtcNow().UtcDateTime;
 
                 return ApplicationResult<Func<ProductionOrder>>.Success(() => entity);
             },
@@ -183,7 +185,7 @@ public sealed class ProductionOrderService
                 order.RoutingSnapshotJson = snapshot.Serialize();
                 order.RoutingRevision = plan.Revision ?? "";
                 order.Status = ProductionOrderStatus.Released;
-                order.ModifiedUtc = DateTime.UtcNow;
+                order.ModifiedUtc = _clock.GetUtcNow().UtcDateTime;
 
                 order.RoutingCenters.Clear();
                 foreach (var workCenterId in snapshot.WorkCenterIds)
@@ -213,7 +215,7 @@ public sealed class ProductionOrderService
                     return ApplicationResult<Func<ProductionOrder>>.NotFound();
 
                 order.Status = ProductionOrderStatus.Cancelled;
-                order.ModifiedUtc = DateTime.UtcNow;
+                order.ModifiedUtc = _clock.GetUtcNow().UtcDateTime;
 
                 // A withdrawn order is not scheduled any more, so it must stop
                 // holding its work centres hostage. The snapshot stays; only the

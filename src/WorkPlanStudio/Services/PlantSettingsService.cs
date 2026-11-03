@@ -11,11 +11,13 @@ public sealed class PlantSettingsService
 {
     private readonly BrowserDatabase _db;
     private readonly IPermissionGuard _guard;
+    private readonly TimeProvider _clock;
 
-    public PlantSettingsService(BrowserDatabase db, IPermissionGuard? guard = null)
+    public PlantSettingsService(BrowserDatabase db, IPermissionGuard? guard = null, TimeProvider? clock = null)
     {
         _db = db;
         _guard = guard ?? AllowAllGuard.Instance;
+        _clock = clock ?? TimeProvider.System;
     }
 
     /// <summary>The stored settings, or the statutory defaults when the row is missing.</summary>
@@ -59,7 +61,7 @@ public sealed class PlantSettingsService
                 existing.SundayBoundaryShiftHours = settings.SundayBoundaryShiftHours;
                 existing.RestExceptionSector = settings.RestExceptionSector;
                 existing.MinimumRestHours = settings.MinimumRestHours;
-                existing.ModifiedUtc = DateTime.UtcNow;
+                existing.ModifiedUtc = _clock.GetUtcNow().UtcDateTime;
 
                 return ApplicationResult<Func<PlantSettings>>.Success(() => existing);
             },

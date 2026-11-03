@@ -37,7 +37,7 @@ public static class PlantSettingsEndpoints
         })
         .WithSummary("The plant's working-time settings.");
 
-        group.MapPut("/", async (PlantSettingsDto request, ApiDbContext db, CancellationToken cancellationToken) =>
+        group.MapPut("/", async (PlantSettingsDto request, ApiDbContext db, TimeProvider clock, CancellationToken cancellationToken) =>
         {
             var candidate = new PlantSettings();
             candidate.CopyFrom(request);
@@ -58,7 +58,7 @@ public static class PlantSettingsEndpoints
             }
 
             settings.CopyFrom(request);
-            settings.ModifiedUtc = DateTime.UtcNow;
+            settings.ModifiedUtc = clock.GetUtcNow().UtcDateTime;
 
             await db.SaveChangesAsync(cancellationToken);
             return Results.Ok(settings.ToDto());

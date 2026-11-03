@@ -21,11 +21,18 @@ public sealed partial class CsvImportService
     /// compares its own counts with the preview's before it lets the transaction
     /// stand.
     /// </remarks>
+    /// <param name="stampedAt">
+    /// One timestamp for the whole import, taken once by the caller. A file is
+    /// written atomically or not at all (ADR 0018), so every row it creates
+    /// carries the same audit stamp rather than stamps that drift apart while
+    /// the write runs.
+    /// </param>
     private static async Task<Resolution> ApplyAsync(
         AppDbContext db,
         StagedRows staged,
         ImportOptions options,
         bool write,
+        DateTime stampedAt,
         CancellationToken cancellationToken)
     {
         var resolution = new Resolution();
@@ -40,10 +47,10 @@ public sealed partial class CsvImportService
                 await ApplyWorkCentersAsync(db, staged, options, write, resolution, cancellationToken);
                 break;
             case ImportEntityKind.WorkPlans:
-                await ApplyWorkPlansAsync(db, staged, options, write, resolution, cancellationToken);
+                await ApplyWorkPlansAsync(db, staged, options, write, resolution, stampedAt, cancellationToken);
                 break;
             case ImportEntityKind.ProductionOrders:
-                await ApplyOrdersAsync(db, staged, options, write, resolution, cancellationToken);
+                await ApplyOrdersAsync(db, staged, options, write, resolution, stampedAt, cancellationToken);
                 break;
             default:
                 throw new ArgumentOutOfRangeException(nameof(options));
@@ -284,6 +291,7 @@ public sealed partial class CsvImportService
         ImportOptions options,
         bool write,
         Resolution resolution,
+        DateTime stampedAt,
         CancellationToken cancellationToken)
     {
         var centersByCode = await db.WorkCenters.ToDictionaryAsync(
@@ -364,7 +372,7 @@ public sealed partial class CsvImportService
                 resolution.Rows.Add(new ImportRowSummary(pending.Line, ImportRowAction.Create, pending.PlanNumber, detail));
                 if (write)
                 {
-                    candidate.CreatedUtc = candidate.ModifiedUtc = DateTime.UtcNow;
+                    candidate.CreatedUtc = candidate.ModifiedUtc = stampedAt;
                     db.WorkPlans.Add(candidate);
                     existing[pending.PlanNumber] = candidate;
                 }
@@ -402,7 +410,7 @@ public sealed partial class CsvImportService
             row.Revision = candidate.Revision;
             row.Status = candidate.Status;
             row.LotSize = candidate.LotSize;
-            row.ModifiedUtc = DateTime.UtcNow;
+            row.ModifiedUtc = stampedAt;
             db.Operations.RemoveRange(row.Operations);
             row.Operations = operations;
         }
@@ -414,6 +422,7 @@ public sealed partial class CsvImportService
         ImportOptions options,
         bool write,
         Resolution resolution,
+        DateTime stampedAt,
         CancellationToken cancellationToken)
     {
         var plans = await db.WorkPlans.ToDictionaryAsync(
@@ -474,7 +483,7 @@ public sealed partial class CsvImportService
                 resolution.Rows.Add(new ImportRowSummary(pending.Line, ImportRowAction.Create, pending.OrderNumber, detail));
                 if (write)
                 {
-                    candidate.CreatedUtc = candidate.ModifiedUtc = DateTime.UtcNow;
+                    candidate.CreatedUtc = candidate.ModifiedUtc = stampedAt;
                     db.ProductionOrders.Add(candidate);
                     existing[pending.OrderNumber] = candidate;
                 }
@@ -502,7 +511,7 @@ public sealed partial class CsvImportService
             row.ReleaseLocal = candidate.ReleaseLocal;
             row.DueLocal = candidate.DueLocal;
             row.Priority = candidate.Priority;
-            row.ModifiedUtc = DateTime.UtcNow;
+            row.ModifiedUtc = stampedAt;
         }
     }
 

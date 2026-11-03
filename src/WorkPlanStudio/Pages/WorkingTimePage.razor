@@ -5,6 +5,7 @@
 @inject PlantSettingsService Settings
 @inject WorkCenterService Centers
 @inject ILogger<WorkingTimePage> Logger
+@inject TimeProvider Clock
 
 <PageTitle>@L["WorkingTime_Title"] · WorkPlan Studio</PageTitle>
 
@@ -694,7 +695,7 @@ else
 
     private void NewAbsence()
     {
-        var today = DateTime.Today;
+        var today = Clock.GetLocalNow().Date;
         _newAbsence = new WorkCenterAbsence
         {
             WorkCenterId = _centers.FirstOrDefault()?.Id ?? 0,

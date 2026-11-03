@@ -31,6 +31,13 @@ public abstract class AppBunitContext : BunitContext
         var announcer = new UiAnnouncer();
         announcer.Announced += Announcements.Add;
         Services.AddSingleton(announcer);
+
+        // The clock, for the same reason: pages read it through TimeProvider now,
+        // so a page that asks for one must get one here or the test fails on
+        // wiring rather than on behaviour. The system clock keeps every existing
+        // test behaving as it did. A test that needs to pin "today" registers its
+        // own in its constructor - the last registration is the one resolved.
+        Services.AddSingleton(TimeProvider.System);
     }
 
     /// <summary>The sentences the page announced, in order.</summary>
