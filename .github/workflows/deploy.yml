@@ -90,6 +90,24 @@ jobs:
           test "$(grep -c "$site" release/wwwroot/index.html)" -ge 3
 
       # Single-page-app fallback so deep links (e.g. /work-plans/3) resolve.
+      # The service worker precaches with the integrity hashes the SDK recorded
+      # at publish time - and the two steps above edit index.html after that.
+      # One stale hash rejects the whole `cache.addAll`, which discards the
+      # registration and leaves an empty cache behind, so the site looks fine
+      # and simply never caches anything. Measured on the published site before
+      # this step existed:
+      #
+      #   fetch(new Request('index.html', { integrity: <manifest hash> }))
+      #   -> TypeError: Failed to fetch
+      #
+      # The flag is a declaration, not a blanket re-hash: any *other* file that
+      # changed between publish and upload fails the deploy with both hashes.
+      - name: Re-seal the service worker asset manifest
+        run: python3 .github/scripts/reseal_sw_assets.py release/wwwroot --resealed index.html
+
+      # After the re-seal, so the copy carries the rewritten base href. 404.html
+      # is created here and is not in the manifest; navigations are served from
+      # the cached index.html instead.
       - name: Add SPA 404 fallback
         run: cp release/wwwroot/index.html release/wwwroot/404.html
 
