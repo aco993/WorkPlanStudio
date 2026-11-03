@@ -96,3 +96,31 @@ invisible.
 - A cached build is only replaced when the asset manifest version changes, which it
   does on every publish. The stale cache is deleted on activate, so a reader is
   never served half of one build and half of another.
+
+## Addendum, 2026-11-03: the precache failed in production and nowhere else
+
+The worker was verified against a local published build - 106 entries cached,
+then 93 of 93 requests served from the cache on a repeat visit, deep link
+included. It still did not cache a single file on GitHub Pages.
+
+The deploy edits `index.html` after publish, twice: `<base href>` for the
+repository sub-path, and the absolute link-preview URLs. The SDK had already
+recorded a SHA-256 for it. `cache.addAll` is all-or-nothing, so that one stale
+hash rejected the install, the registration was discarded, and what remained was
+**an empty cache carrying the correct version name** - the signature of a worker
+that ran and then threw away its own work. Measured on the published site:
+
+    fetch(new Request('index.html', { integrity: <hash from the manifest> }))
+    -> TypeError: Failed to fetch
+
+Nothing in CI could have caught this. The failure lives in the gap between
+`dotnet publish` and `upload-pages-artifact`, which no test runs through, and
+the browser symptom is indistinguishable from a sandbox refusing to register a
+worker. It was found by checking the claim against the deployed site rather than
+against the build that produced it.
+
+`.github/scripts/reseal_sw_assets.py` recomputes the hash of the files the
+deploy says it edited, and **fails the deploy if any other file moved**. The
+asymmetry is deliberate: re-hashing the whole manifest would make it agree with
+whatever is on disk, and a manifest that cannot disagree with the disk has
+stopped being an integrity manifest.
