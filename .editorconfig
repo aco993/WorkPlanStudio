@@ -146,3 +146,59 @@ dotnet_naming_rule.types_pascal.symbols = types_and_members
 dotnet_naming_rule.types_pascal.style = pascal_case
 dotnet_naming_symbols.types_and_members.applicable_kinds = class,struct,enum,property,method,event,namespace
 dotnet_naming_style.pascal_case.capitalization = pascal_case
+
+# ---------------------------------------------------------------------------
+# Analyzers
+#
+# Directory.Build.props raises AnalysisMode to Recommended and turns code style
+# into build errors. `latest` alone ran a minority of the CA rules; Recommended
+# runs most of them, and warnings are errors here, so every rule below is a
+# decision rather than a default.
+#
+# The triage is written down because the alternative — a blanket suppression —
+# is how an analyzer configuration stops meaning anything. What is left on is
+# what found real defects in this repository the first time it ran: three types
+# holding disposable fields without being disposable, an argument exception
+# built with the wrong overload, a double dictionary lookup, and a handful of
+# format calls with no culture in an application that ships in two.
+# ---------------------------------------------------------------------------
+
+# Performance rules that buy nothing here and churn a lot.
+#
+# CA1848 wants LoggerMessage delegates. The browser console is the only sink,
+# a release build logs at Warning and above, and nothing on a hot path logs at
+# all — the ceremony would cost more to read than the allocations it saves.
+dotnet_diagnostic.CA1848.severity = none
+# CA1873 warns that a logging argument may be expensive to evaluate when logging
+# is off. Every site it finds here passes a property read - a user id, a role, a
+# bool - into a structured call that already defers formatting. Guarding those
+# with IsEnabled would add a branch per call and save nothing.
+dotnet_diagnostic.CA1873.severity = suggestion
+# CA1859/CA1861 are micro-allocation advice on cold paths: a constant array in a
+# method that runs once per render, an interface return on a method called twice.
+# Worth seeing, not worth failing a build over.
+dotnet_diagnostic.CA1859.severity = suggestion
+dotnet_diagnostic.CA1861.severity = suggestion
+# CA1822 would make a large number of Razor component members static, which
+# reads worse and buys nothing measurable in a single-threaded WebAssembly app.
+dotnet_diagnostic.CA1822.severity = suggestion
+# CA1870 wants a cached SearchValues for IndexOfAny. The one call site validates
+# a handful of sheet names per workbook against seven characters, and the array
+# it would duplicate is also used as an array two lines further down - so the
+# cache would add a second declaration of the same intent to a cold path.
+dotnet_diagnostic.CA1870.severity = suggestion
+
+# CA1000 objects to static members on generic types. ApplicationResult<T>.Ok(…)
+# and its siblings are exactly that, deliberately: a static factory on the
+# generic type is how the result type is meant to be constructed, and the
+# alternative is a second non-generic type that exists only to satisfy a rule.
+dotnet_diagnostic.CA1000.severity = none
+
+[tests/**/*.cs]
+# CA1707 objects to underscores in identifiers. Every test in this repository is
+# named as a sentence — `The_medium_problem_schedules_within_its_budget` — which
+# is the convention, not an oversight: the failure message in CI is the sentence
+# that stopped being true. It fires 2,262 times here and zero times in src/,
+# which is the whole argument for scoping it to this folder rather than turning
+# it off everywhere.
+dotnet_diagnostic.CA1707.severity = none

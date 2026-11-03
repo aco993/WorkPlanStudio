@@ -80,7 +80,7 @@ public sealed class FourSmallTruthsTests : AppBunitContext
         cut.WaitForAssertion(() => Assert.NotEmpty(cut.FindAll("tbody tr")));
 
         var used = cut.FindAll("tbody tr").Single(tr => tr.TextContent.Contains("WP-1001", StringComparison.Ordinal));
-        var delete = used.QuerySelectorAll("button.icon-btn").Last();
+        var delete = used.QuerySelectorAll("button.icon-btn")[^1];
 
         Assert.True(delete.HasAttribute("disabled"));
         Assert.Equal("WorkPlans_InUse", delete.GetAttribute("title"));
@@ -103,7 +103,7 @@ public sealed class FourSmallTruthsTests : AppBunitContext
         cut.WaitForAssertion(() => Assert.NotEmpty(cut.FindAll("tbody tr")));
 
         var row = cut.FindAll("tbody tr").Single(tr => tr.TextContent.Contains("WP-1004", StringComparison.Ordinal));
-        var delete = row.QuerySelectorAll("button.icon-btn").Last();
+        var delete = row.QuerySelectorAll("button.icon-btn")[^1];
 
         Assert.False(delete.HasAttribute("disabled"));
         Assert.Equal("Common_Delete", delete.GetAttribute("title"));

@@ -93,7 +93,7 @@ public class ShiftPatternAndRulesTests
     public void Every_rule_has_a_legal_reference()
     {
         foreach (var id in Enum.GetValues<WorkingTimeRuleId>())
-            Assert.Contains(WorkingTimeRules.Catalog, r => r.Id == id && r.LegalReference.StartsWith("§", StringComparison.Ordinal));
+            Assert.Contains(WorkingTimeRules.Catalog, r => r.Id == id && r.LegalReference.StartsWith('§'));
     }
 
     [Fact]

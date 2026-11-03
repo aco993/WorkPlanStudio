@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Globalization;
 using WorkPlanStudio.Scheduling;
 using WorkPlanStudio.Scheduling.Exact;
 using WorkPlanStudio.Scheduling.Testing;
@@ -403,7 +404,7 @@ static void ExactBudget()
         }
 
         nodes.Sort();
-        string median = nodes.Count == 0 ? "-" : nodes[nodes.Count / 2].ToString();
+        string median = nodes.Count == 0 ? "-" : nodes[nodes.Count / 2].ToString(CultureInfo.InvariantCulture);
         Console.WriteLine($"| {jobs} | 3 | 3 | {jobs * 3} | {fast}/5 | {slow}/5 | {median} |");
     }
 

@@ -160,7 +160,7 @@ public sealed class MasterDataFormTests : AppBunitContext
         // and cost-centre lists have always done. (The service still refuses -
         // see the assertion below, and ProductionOrderService's own tests.)
         var row = cut.FindAll("tbody tr").Single(tr => tr.TextContent.Contains("WP-1001", StringComparison.Ordinal));
-        var delete = row.QuerySelectorAll("button.icon-btn").Last();
+        var delete = row.QuerySelectorAll("button.icon-btn")[^1];
         Assert.True(delete.HasAttribute("disabled"));
         Assert.Equal("WorkPlans_InUse", delete.GetAttribute("title"));
 

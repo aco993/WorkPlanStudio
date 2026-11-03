@@ -1,3 +1,4 @@
+using System.Globalization;
 using Microsoft.Extensions.Localization;
 using WorkPlanStudio.Resources;
 using WorkPlanStudio.Scheduling;
@@ -86,5 +87,5 @@ public sealed class RuleBasedNarrator : IScheduleNarrator
 
     private static string Hours(long seconds) => Format.Hours(seconds / 60m);
 
-    private static string Percent(double ratio) => (ratio * 100).ToString("0") + " %";
+    private static string Percent(double ratio) => (ratio * 100).ToString("0", CultureInfo.CurrentCulture) + " %";
 }

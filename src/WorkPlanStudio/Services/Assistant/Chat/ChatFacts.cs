@@ -121,19 +121,22 @@ public static class ChatFacts
         var horizon = s.Horizon;
 
         sb.AppendLine("## Schedule");
-        sb.AppendLine($"- Dispatch rule: {context.Parameters.DispatchRule}; target-date rule: {context.Parameters.DueDateRule}; seed {context.Parameters.Seed}.");
+        sb.AppendLine(CultureInfo.InvariantCulture, $"- Dispatch rule: {context.Parameters.DispatchRule}; target-date rule: {context.Parameters.DueDateRule}; seed {context.Parameters.Seed}.");
         if (horizon is { } h)
-            sb.AppendLine($"- Horizon (second 0): {h:yyyy-MM-dd HH:mm}. All times below are plant-local.");
-        sb.AppendLine($"- Orders: {s.Kpis.JobCount}; on time: {s.Kpis.JobCount - s.Kpis.LateJobCount}; late: {s.Kpis.LateJobCount}; " +
+            sb.AppendLine(CultureInfo.InvariantCulture, $"- Horizon (second 0): {h:yyyy-MM-dd HH:mm}. All times below are plant-local.");
+        sb.AppendLine(CultureInfo.InvariantCulture, $"- Orders: {s.Kpis.JobCount}; on time: {s.Kpis.JobCount - s.Kpis.LateJobCount}; late: {s.Kpis.LateJobCount}; " +
                       $"makespan {Hours(s.Kpis.MakespanSeconds)}; total tardiness {Hours(s.Kpis.TotalTardinessSeconds)}; " +
                       $"average utilisation {Percent(s.Kpis.AverageUtilization)}; paused across breaks {Hours(s.TotalPausedSeconds)}.");
 
         sb.AppendLine("## Orders");
         foreach (var job in s.Jobs.Take(MaxOrders))
         {
-            sb.AppendLine($"- {Field(job.Reference, ReferenceLength)} ({Field(job.PartName, PartNameLength)}): " +
-                          $"target {Stamp(job.DueSeconds, horizon)}, completion {Stamp(job.CompletionSeconds, horizon)}, " +
-                          (job.IsLate ? $"LATE by {Hours(job.LatenessSeconds)}" : $"early by {Hours(-job.LatenessSeconds)}") + ".");
+            var lateness = job.IsLate
+                ? $"LATE by {Hours(job.LatenessSeconds)}"
+                : $"early by {Hours(-job.LatenessSeconds)}";
+            sb.AppendLine(CultureInfo.InvariantCulture,
+                $"- {Field(job.Reference, ReferenceLength)} ({Field(job.PartName, PartNameLength)}): " +
+                $"target {Stamp(job.DueSeconds, horizon)}, completion {Stamp(job.CompletionSeconds, horizon)}, {lateness}.");
         }
 
         Omitted(sb, s.Jobs.Count, MaxOrders, "orders");
@@ -144,11 +147,17 @@ public static class ChatFacts
             long busy = row.Bars.Sum(b => b.DurationSeconds - b.PausedSeconds);
             var closed = row.Closed.GroupBy(c => c.Kind).Select(g => $"{g.Key} {Hours(g.Sum(c => c.DurationSeconds))}");
             var util = s.UtilizationByWorkCenter.TryGetValue(row.WorkCenterName, out var u) ? Percent(u) : "n/a";
-            sb.AppendLine($"- {Field(row.WorkCenterName, WorkCenterLength)}: {row.Bars.Count} operations, busy {Hours(busy)}, utilisation {util}" +
-                          (row.Closed.Count > 0 ? $"; closed: {string.Join(", ", closed)}" : "") + ".");
+            var closedTail = row.Closed.Count > 0 ? $"; closed: {string.Join(", ", closed)}" : "";
+            sb.AppendLine(CultureInfo.InvariantCulture,
+                $"- {Field(row.WorkCenterName, WorkCenterLength)}: {row.Bars.Count} operations, " +
+                $"busy {Hours(busy)}, utilisation {util}{closedTail}.");
             foreach (var bar in row.Bars.OrderBy(b => b.StartSeconds).Take(MaxOperationsPerWorkCenter))
-                sb.AppendLine($"  - {Field(bar.JobReference, ReferenceLength)} op {bar.StepNumber}: {Stamp(bar.StartSeconds, horizon)} – {Stamp(bar.EndSeconds, horizon)}" +
-                              (bar.PausedSeconds > 0 ? $" (paused {Hours(bar.PausedSeconds)})" : "") + ".");
+            {
+                var paused = bar.PausedSeconds > 0 ? $" (paused {Hours(bar.PausedSeconds)})" : "";
+                sb.AppendLine(CultureInfo.InvariantCulture,
+                    $"  - {Field(bar.JobReference, ReferenceLength)} op {bar.StepNumber}: " +
+                    $"{Stamp(bar.StartSeconds, horizon)} – {Stamp(bar.EndSeconds, horizon)}{paused}.");
+            }
             Omitted(sb, row.Bars.Count, MaxOperationsPerWorkCenter, "operations on this work center", "  ");
         }
 
@@ -158,10 +167,16 @@ public static class ChatFacts
         {
             sb.AppendLine("## Analysis");
             if (e.Bottleneck is { } b)
-                sb.AppendLine($"- Bottleneck: {Field(b.WorkCenterName, WorkCenterLength)} at {Percent(b.Utilization)} over {b.OperationCount} operations.");
+                sb.AppendLine(CultureInfo.InvariantCulture, $"- Bottleneck: {Field(b.WorkCenterName, WorkCenterLength)} at {Percent(b.Utilization)} over {b.OperationCount} operations.");
             foreach (var late in e.LateJobs.Take(MaxLateFindings))
-                sb.AppendLine($"- {Field(late.JobReference, ReferenceLength)} is late by {Hours(late.TardinessSeconds)}; waited {Hours(late.QueueWaitSeconds)}" +
-                              (late.BlockingWorkCenterName is { } wc ? $", mostly for {Field(wc, WorkCenterLength)}" : ", its target is tighter than its processing time") + ".");
+            {
+                var cause = late.BlockingWorkCenterName is { } wc
+                    ? $", mostly for {Field(wc, WorkCenterLength)}"
+                    : ", its target is tighter than its processing time";
+                sb.AppendLine(CultureInfo.InvariantCulture,
+                    $"- {Field(late.JobReference, ReferenceLength)} is late by {Hours(late.TardinessSeconds)}; " +
+                    $"waited {Hours(late.QueueWaitSeconds)}{cause}.");
+            }
             Omitted(sb, e.LateJobs.Count, MaxLateFindings, "late orders");
             sb.AppendLine("- Recommendation: " + e.Recommendation.Kind switch
             {
@@ -173,7 +188,7 @@ public static class ChatFacts
 
         sb.AppendLine("## Working-time rules (Arbeitszeitgesetz)");
         var r = context.Rules;
-        sb.AppendLine($"- State: {r.State} ({r.State.Name()}); Sunday work {(r.SundayWorkAllowed ? "permitted (§10)" : "forbidden (§9)")}; holiday work {(r.HolidayWorkAllowed ? "permitted" : "forbidden")}; " +
+        sb.AppendLine(CultureInfo.InvariantCulture, $"- State: {r.State} ({r.State.Name()}); Sunday work {(r.SundayWorkAllowed ? "permitted (§10)" : "forbidden (§9)")}; holiday work {(r.HolidayWorkAllowed ? "permitted" : "forbidden")}; " +
                       $"daily cap {r.DailyCap.TotalHours:0} h; rest {r.MinimumRest.TotalHours:0} h; breaks {r.BreakAfterSixHours.TotalMinutes:0}/{r.BreakAfterNineHours.TotalMinutes:0} min.");
         if (context.HolidaysInHorizon.Count > 0)
             sb.AppendLine("- Public holidays inside the schedule: " + string.Join(", ", context.HolidaysInHorizon.Select(h => $"{Field(h.NameEn, 60)} ({h.Date:yyyy-MM-dd})")) + ".");
@@ -194,7 +209,7 @@ public static class ChatFacts
     private static void Omitted(StringBuilder sb, int total, int shown, string what, string indent = "")
     {
         if (total > shown)
-            sb.AppendLine($"{indent}- … and {total - shown} more {what}, not listed here.");
+            sb.AppendLine(CultureInfo.InvariantCulture, $"{indent}- … and {total - shown} more {what}, not listed here.");
     }
 
     private static string Cap(string facts) =>

@@ -1,3 +1,4 @@
+using System.Globalization;
 using AngleSharp.Dom;
 using Bunit;
 using Microsoft.AspNetCore.Components;
@@ -177,7 +178,7 @@ internal sealed class FakeAssistantConfig : IAssistantConfig
 internal sealed class PassThroughLocalizer<T> : IStringLocalizer<T>
 {
     public LocalizedString this[string name] => new(name, name, resourceNotFound: false);
-    public LocalizedString this[string name, params object[] arguments] => new(name, string.Format(name, arguments), false);
+    public LocalizedString this[string name, params object[] arguments] => new(name, string.Format(CultureInfo.CurrentCulture, name, arguments), false);
     public IEnumerable<LocalizedString> GetAllStrings(bool includeParentCultures) => [];
 }
 

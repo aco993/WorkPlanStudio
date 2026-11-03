@@ -85,9 +85,9 @@ public static class WorkingTimeText
 
         int days = (int)window.TotalDays;
         if (days >= 7 && window == TimeSpan.FromDays(days) && days % 7 == 0)
-            return string.Format(CultureInfo.CurrentUICulture, localizer["Wt_Weeks"], days / 7);
+            return string.Format(CultureInfo.CurrentCulture, localizer["Wt_Weeks"], days / 7);
         if (days >= 1 && window == TimeSpan.FromDays(days))
-            return string.Format(CultureInfo.CurrentUICulture, localizer["Wt_Days"], days);
+            return string.Format(CultureInfo.CurrentCulture, localizer["Wt_Days"], days);
 
         return Format.Duration(window);
     }
@@ -98,5 +98,5 @@ public static class WorkingTimeText
     /// the limit itself.
     /// </summary>
     public static string WerktaeglichHours(double hours) =>
-        hours.ToString("N2", CultureInfo.CurrentUICulture) + Format.NoBreak + "h";
+        hours.ToString("N2", CultureInfo.CurrentCulture) + Format.NoBreak + "h";
 }

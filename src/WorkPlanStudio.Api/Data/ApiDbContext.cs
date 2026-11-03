@@ -145,12 +145,12 @@ public sealed class ApiDbContext : IdentityDbContext<ApiUser>
     }
 
     /// <inheritdoc />
-    protected override void OnModelCreating(ModelBuilder model)
+    protected override void OnModelCreating(ModelBuilder builder)
     {
-        ArgumentNullException.ThrowIfNull(model);
-        base.OnModelCreating(model);
+        ArgumentNullException.ThrowIfNull(builder);
+        base.OnModelCreating(builder);
 
-        model.Entity<CostCenter>(e =>
+        builder.Entity<CostCenter>(e =>
         {
             e.Property(x => x.Code).HasMaxLength(20).IsRequired().UseCollation("NOCASE");
             e.Property(x => x.Name).HasMaxLength(100).IsRequired();
@@ -165,7 +165,7 @@ public sealed class ApiDbContext : IdentityDbContext<ApiUser>
             });
         });
 
-        model.Entity<WorkCenter>(e =>
+        builder.Entity<WorkCenter>(e =>
         {
             e.Property(x => x.Code).HasMaxLength(20).IsRequired().UseCollation("NOCASE");
             e.Property(x => x.Name).HasMaxLength(100).IsRequired();
@@ -195,7 +195,7 @@ public sealed class ApiDbContext : IdentityDbContext<ApiUser>
              .OnDelete(DeleteBehavior.Cascade);
         });
 
-        model.Entity<WorkCenterAbsence>(e =>
+        builder.Entity<WorkCenterAbsence>(e =>
         {
             e.Property(x => x.Label).HasMaxLength(80);
             e.HasIndex(x => new { x.WorkCenterId, x.Start });
@@ -206,7 +206,7 @@ public sealed class ApiDbContext : IdentityDbContext<ApiUser>
             });
         });
 
-        model.Entity<PlantSettings>(e =>
+        builder.Entity<PlantSettings>(e =>
         {
             e.Property(x => x.State).HasMaxLength(2).IsRequired();
             e.ToTable(table =>
@@ -217,7 +217,7 @@ public sealed class ApiDbContext : IdentityDbContext<ApiUser>
             });
         });
 
-        model.Entity<WorkPlan>(e =>
+        builder.Entity<WorkPlan>(e =>
         {
             e.Property(x => x.PlanNumber).HasMaxLength(20).IsRequired().UseCollation("NOCASE");
             e.Property(x => x.PartNumber).HasMaxLength(40).UseCollation("NOCASE");
@@ -241,7 +241,7 @@ public sealed class ApiDbContext : IdentityDbContext<ApiUser>
              .OnDelete(DeleteBehavior.Cascade);
         });
 
-        model.Entity<Operation>(e =>
+        builder.Entity<Operation>(e =>
         {
             e.Property(x => x.Description).HasMaxLength(120).IsRequired();
             e.Property(x => x.SetupTimeMinutes).HasColumnType(DecimalColumnType);
@@ -263,7 +263,7 @@ public sealed class ApiDbContext : IdentityDbContext<ApiUser>
              .OnDelete(DeleteBehavior.Restrict);
         });
 
-        model.Entity<ProductionOrder>(e =>
+        builder.Entity<ProductionOrder>(e =>
         {
             e.Property(x => x.OrderNumber).HasMaxLength(30).IsRequired().UseCollation("NOCASE");
             e.Property(x => x.RoutingRevision).HasMaxLength(10).UseCollation("NOCASE");
@@ -296,7 +296,7 @@ public sealed class ApiDbContext : IdentityDbContext<ApiUser>
             });
         });
 
-        model.Entity<OrderRoutingCenter>(e =>
+        builder.Entity<OrderRoutingCenter>(e =>
         {
             e.HasKey(x => new { x.ProductionOrderId, x.WorkCenterId });
             e.HasIndex(x => x.WorkCenterId);
@@ -309,7 +309,7 @@ public sealed class ApiDbContext : IdentityDbContext<ApiUser>
              .OnDelete(DeleteBehavior.Restrict);
         });
 
-        model.Entity<RefreshToken>(e =>
+        builder.Entity<RefreshToken>(e =>
         {
             e.Property(x => x.UserId).HasMaxLength(450).IsRequired();
             e.Property(x => x.TokenHash).HasMaxLength(64).IsRequired();

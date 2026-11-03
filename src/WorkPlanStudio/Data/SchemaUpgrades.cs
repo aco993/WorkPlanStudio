@@ -1,4 +1,5 @@
 using System.Data.Common;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
@@ -239,9 +240,9 @@ public static class SchemaUpgrades
                 // The old column had no CHECK, so a 21-character value could be in
                 // there. Truncating keeps the row rather than failing the upgrade.
                 var stored = code.Length > 20 ? code[..20] : code;
-                if (byCode.ContainsKey(stored))
+                if (byCode.TryGetValue(stored, out var truncated))
                 {
-                    byCode[code] = byCode[stored];
+                    byCode[code] = truncated;
                     continue;
                 }
 
@@ -377,6 +378,10 @@ public static class SchemaUpgrades
         }
     }
 
+    [SuppressMessage("Design", "CA1068:CancellationToken parameters must come last",
+        Justification = "params object?[] has to be the last parameter, so the token cannot be. "
+                      + "Moving it in front of the params array would rewrite fifteen call sites "
+                      + "inside the schema upgrade path for a private helper's parameter order.")]
     private static async Task ExecuteAsync(
         DbConnection connection,
         CancellationToken cancellationToken,

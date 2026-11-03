@@ -11,7 +11,7 @@ namespace WorkPlanStudio.Data;
 /// preserved for export until the user explicitly resets them; a payload one
 /// schema behind is upgraded rather than refused (see <see cref="SchemaUpgrades"/>).
 /// </summary>
-public sealed class BrowserDatabase
+public sealed class BrowserDatabase : IDisposable
 {
     private static readonly byte[] SqliteHeader = Encoding.ASCII.GetBytes("SQLite format 3\0");
 
@@ -503,4 +503,14 @@ public sealed class BrowserDatabase
         if (File.Exists(path))
             File.Delete(path);
     }
+
+    /// <summary>Releases the gate that serialises writes to localStorage.</summary>
+    /// <remarks>
+    /// Registered as a scoped service, so the container calls this at teardown.
+    /// A <see cref="SemaphoreSlim"/> only allocates a wait handle if somebody asks
+    /// for one, so this releases little in practice - but a type that owns a
+    /// disposable and says it does not is a claim that stops being true the day
+    /// the field changes.
+    /// </remarks>
+    public void Dispose() => _persistGate.Dispose();
 }

@@ -259,7 +259,7 @@ public static class OptimalityStudy
         text.AppendLine("| Instance | Exercises | Solver status |");
         text.AppendLine("| --- | --- | --- |");
         foreach (var row in summary.Rows)
-            text.AppendLine($"| `{row.Name}` | {row.Features} | {row.Status} |");
+            text.AppendLine(CultureInfo.InvariantCulture, $"| `{row.Name}` | {row.Features} | {row.Status} |");
 
         text.AppendLine();
         text.AppendLine(string.Create(
