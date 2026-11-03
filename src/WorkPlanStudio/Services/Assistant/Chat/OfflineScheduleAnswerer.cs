@@ -203,7 +203,7 @@ public sealed partial class OfflineScheduleAnswerer
         var byKind = all.GroupBy(x => x.Kind).OrderByDescending(g => g.Sum(x => x.DurationSeconds))
             .Select(g => $"{_l[$"Segment_{g.Key}"]}: {Hours(g.Sum(x => x.DurationSeconds))}");
         string text = _l["Chat_ClosedTime", c.Schedule.Rows.Count] + "\n" + string.Join("\n", byKind);
-        var holidays = c.HolidaysInHorizon.Select(h => $"{_l[$"Holiday_{h.Key}"]} ({h.Date.ToString("ddd d. MMM", CultureInfo.CurrentUICulture)})").ToList();
+        var holidays = c.HolidaysInHorizon.Select(h => $"{_l[$"Holiday_{h.Key}"]} ({h.Date.ToString("ddd d. MMM", CultureInfo.CurrentCulture)})").ToList();
         if (holidays.Count > 0)
             text += "\n" + _l["Chat_ClosedHolidays", string.Join(", ", holidays)];
         return text;
@@ -217,7 +217,7 @@ public sealed partial class OfflineScheduleAnswerer
         string text = _l["Chat_Compliance", r.State.Name(), r.State, sunday, holiday, r.DailyCap.TotalHours, r.MinimumRest.TotalHours,
             r.BreakAfterSixHours.TotalMinutes, r.BreakAfterNineHours.TotalMinutes];
         if (c.HolidaysInHorizon.Count > 0)
-            text += " " + _l["Chat_ClosedHolidays", string.Join(", ", c.HolidaysInHorizon.Select(h => $"{_l[$"Holiday_{h.Key}"]} ({h.Date.ToString("ddd d. MMM", CultureInfo.CurrentUICulture)})"))];
+            text += " " + _l["Chat_ClosedHolidays", string.Join(", ", c.HolidaysInHorizon.Select(h => $"{_l[$"Holiday_{h.Key}"]} ({h.Date.ToString("ddd d. MMM", CultureInfo.CurrentCulture)})"))];
         return text;
     }
 
@@ -277,8 +277,8 @@ public sealed partial class OfflineScheduleAnswerer
 
     private static string Hours(long seconds) => Format.Hours(seconds / 60m);
 
-    private static string Percent(double ratio) => (ratio * 100).ToString("0", CultureInfo.CurrentUICulture) + " %";
+    private static string Percent(double ratio) => (ratio * 100).ToString("0", CultureInfo.CurrentCulture) + " %";
 
     private static string Stamp(long seconds, DateTime? horizon) =>
-        horizon is { } h ? h.AddSeconds(seconds).ToString("ddd d.M. HH:mm", CultureInfo.CurrentUICulture) : Hours(seconds);
+        horizon is { } h ? h.AddSeconds(seconds).ToString("ddd d.M. HH:mm", CultureInfo.CurrentCulture) : Hours(seconds);
 }

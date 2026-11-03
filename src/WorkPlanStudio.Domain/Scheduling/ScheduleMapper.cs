@@ -1,3 +1,4 @@
+using System.Globalization;
 using WorkPlanStudio.Models;
 using WorkPlanStudio.Scheduling;
 using WorkPlanStudio.WorkingTime;
@@ -18,12 +19,9 @@ public static class ScheduleMapper
     /// <summary>Whole-lot processing time of an operation, rounded to whole seconds (banker's rounding).</summary>
     public static long ToSeconds(decimal setupMinutes, decimal perPieceMinutes, int lotSize)
     {
-        if (setupMinutes < 0)
-            throw new ArgumentOutOfRangeException(nameof(setupMinutes));
-        if (perPieceMinutes < 0)
-            throw new ArgumentOutOfRangeException(nameof(perPieceMinutes));
-        if (lotSize <= 0)
-            throw new ArgumentOutOfRangeException(nameof(lotSize));
+        ArgumentOutOfRangeException.ThrowIfNegative(setupMinutes);
+        ArgumentOutOfRangeException.ThrowIfNegative(perPieceMinutes);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(lotSize);
 
         return checked((long)decimal.Round(
             checked((setupMinutes + checked(perPieceMinutes * lotSize)) * 60m),
@@ -213,7 +211,7 @@ public static class ScheduleMapper
             // names can since have been deactivated or removed, and that is a real
             // problem the planner has to be told about.
             if (!centerById.TryGetValue(operation.WorkCenterId, out var center))
-                Add(operation.OperationNumber, SchedulePreparationErrorCode.MissingWorkCenter, operation.WorkCenterId.ToString());
+                Add(operation.OperationNumber, SchedulePreparationErrorCode.MissingWorkCenter, operation.WorkCenterId.ToString(CultureInfo.InvariantCulture));
             else if (!center.IsActive)
                 Add(operation.OperationNumber, SchedulePreparationErrorCode.InactiveWorkCenter, center.Code);
             else if (center.ParallelCapacity is < 1 or > Validation.WorkCenterValidator.MaxCapacity)

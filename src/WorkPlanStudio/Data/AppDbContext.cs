@@ -41,9 +41,9 @@ public class AppDbContext : DbContext
     public DbSet<WorkCenterAbsence> WorkCenterAbsences => Set<WorkCenterAbsence>();
     public DbSet<PlantSettings> PlantSettings => Set<PlantSettings>();
 
-    protected override void OnModelCreating(ModelBuilder model)
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        model.Entity<CostCenter>(e =>
+        modelBuilder.Entity<CostCenter>(e =>
         {
             e.Property(x => x.Code).HasMaxLength(20).IsRequired().UseCollation("NOCASE");
             e.Property(x => x.Name).HasMaxLength(100).IsRequired();
@@ -57,7 +57,7 @@ public class AppDbContext : DbContext
             });
         });
 
-        model.Entity<WorkCenter>(e =>
+        modelBuilder.Entity<WorkCenter>(e =>
         {
             e.Property(x => x.Code).HasMaxLength(20).IsRequired().UseCollation("NOCASE");
             e.Property(x => x.Name).HasMaxLength(100).IsRequired();
@@ -86,7 +86,7 @@ public class AppDbContext : DbContext
              .OnDelete(DeleteBehavior.Cascade);
         });
 
-        model.Entity<WorkCenterAbsence>(e =>
+        modelBuilder.Entity<WorkCenterAbsence>(e =>
         {
             e.Property(x => x.Label).HasMaxLength(80);
             e.HasIndex(x => new { x.WorkCenterId, x.Start });
@@ -97,7 +97,7 @@ public class AppDbContext : DbContext
             });
         });
 
-        model.Entity<PlantSettings>(e =>
+        modelBuilder.Entity<PlantSettings>(e =>
         {
             e.Property(x => x.State).HasMaxLength(2).IsRequired();
             e.ToTable(table =>
@@ -120,7 +120,7 @@ public class AppDbContext : DbContext
             });
         });
 
-        model.Entity<WorkPlan>(e =>
+        modelBuilder.Entity<WorkPlan>(e =>
         {
             e.Property(x => x.PlanNumber).HasMaxLength(20).IsRequired().UseCollation("NOCASE");
             e.Property(x => x.PartNumber).HasMaxLength(40).UseCollation("NOCASE");
@@ -143,7 +143,7 @@ public class AppDbContext : DbContext
              .OnDelete(DeleteBehavior.Cascade);
         });
 
-        model.Entity<Operation>(e =>
+        modelBuilder.Entity<Operation>(e =>
         {
             e.Property(x => x.Description).HasMaxLength(120).IsRequired();
             e.Property(x => x.SetupTimeMinutes).HasColumnType(DecimalColumnType);
@@ -166,7 +166,7 @@ public class AppDbContext : DbContext
              .OnDelete(DeleteBehavior.Restrict);
         });
 
-        model.Entity<ProductionOrder>(e =>
+        modelBuilder.Entity<ProductionOrder>(e =>
         {
             e.Property(x => x.OrderNumber).HasMaxLength(30).IsRequired().UseCollation("NOCASE");
             e.Property(x => x.RoutingRevision).HasMaxLength(10).UseCollation("NOCASE");
@@ -198,7 +198,7 @@ public class AppDbContext : DbContext
             });
         });
 
-        model.Entity<OrderRoutingCenter>(e =>
+        modelBuilder.Entity<OrderRoutingCenter>(e =>
         {
             e.HasKey(x => new { x.ProductionOrderId, x.WorkCenterId });
             e.HasIndex(x => x.WorkCenterId);

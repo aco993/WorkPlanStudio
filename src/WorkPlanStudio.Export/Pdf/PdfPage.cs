@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Globalization;
 using System.Text;
 
@@ -14,7 +15,10 @@ namespace WorkPlanStudio.Export.Pdf;
 /// </summary>
 public sealed class PdfPage
 {
-    private readonly MemoryStream _content = new();
+    // An append-only byte buffer, not a stream: the content is written once and
+    // read once. A MemoryStream here owned nothing that needed releasing and
+    // only made the type look as though it did.
+    private readonly ArrayBufferWriter<byte> _content = new();
 
     internal PdfPage(PdfPageSize size, PdfMargins margins)
     {
@@ -139,7 +143,7 @@ public sealed class PdfPage
         Rect(x, y, width, height, lineWidth, stroke);
     }
 
-    internal byte[] ContentBytes() => _content.ToArray();
+    internal byte[] ContentBytes() => _content.WrittenSpan.ToArray();
 
     private void Rectangle(double x, double y, double width, double height)
     {
@@ -166,8 +170,8 @@ public sealed class PdfPage
     private void Ascii(string text)
     {
         var bytes = Encoding.ASCII.GetBytes(text);
-        _content.Write(bytes, 0, bytes.Length);
+        _content.Write(bytes);
     }
 
-    private void Raw(byte[] bytes) => _content.Write(bytes, 0, bytes.Length);
+    private void Raw(byte[] bytes) => _content.Write(bytes);
 }

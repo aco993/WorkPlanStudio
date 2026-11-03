@@ -155,7 +155,7 @@ public sealed class ThreeFromTheSamePassTests : AppBunitContext
     [Theory]
     [InlineData("README.md", "**Coverage gated per assembly in CI", "badges above")]
     [InlineData("README.de.md", "**Abdeckung je Assembly in der CI abgesichert", "Badges oben")]
-    public void Neither_readme_carries_coverage_numbers_by_hand(string file, string marker, string pointer)
+    public void Neither_readme_carries_coverage_numbers_by_hand(string file, string marker, string signpost)
     {
         var readme = File.ReadAllText(Path.Join(RepoFiles.Root, file));
         var start = readme.IndexOf(marker, StringComparison.Ordinal);
@@ -165,7 +165,7 @@ public sealed class ThreeFromTheSamePassTests : AppBunitContext
         // Thresholds are policy and stay; measurements are output and must not be
         // copied here. Every "(**nn.n %**)" in that bullet was a copy.
         Assert.DoesNotContain("(**", bullet, StringComparison.Ordinal);
-        Assert.Contains(pointer, bullet, StringComparison.Ordinal);
+        Assert.Contains(signpost, bullet, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -177,7 +177,7 @@ public sealed class ThreeFromTheSamePassTests : AppBunitContext
 
         var row = cut.Find("tbody tr");
         var remarks = row.QuerySelector("input[maxlength=\"250\"]")!;
-        var setup = row.QuerySelectorAll("input[type=number]").Last();
+        var setup = row.QuerySelectorAll("input[type=number]")[^1];
 
         Assert.Equal("false", remarks.GetAttribute("aria-invalid"));
         Assert.Equal("false", setup.GetAttribute("aria-invalid"));

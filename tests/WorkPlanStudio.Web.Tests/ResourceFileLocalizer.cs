@@ -44,7 +44,7 @@ internal sealed class ResourceFileLocalizer<T> : IStringLocalizer<T>
             var found = this[name];
             return found.ResourceNotFound
                 ? found
-                : new LocalizedString(name, string.Format(CultureInfo.CurrentUICulture, found.Value, arguments), false);
+                : new LocalizedString(name, string.Format(CultureInfo.CurrentCulture, found.Value, arguments), false);
         }
     }
 

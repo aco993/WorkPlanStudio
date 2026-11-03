@@ -199,6 +199,44 @@ public sealed class PersistenceTests
         Assert.True(offenders.Length == 0, "time-zone conversions: " + string.Join(", ", offenders));
     }
 
+    /// <summary>
+    /// The clock is a service, and stays one.
+    /// </summary>
+    /// <remarks>
+    /// <c>TimeProvider</c> was already how <c>TokenStore</c> and the backend read
+    /// the time, while every audit stamp and every date a form opened on called
+    /// the static <c>DateTime</c> directly. Applying the pattern everywhere is
+    /// worth little on its own - nothing was broken - but a convention that half
+    /// the code follows is one the next edit will quietly drop, so this is the
+    /// half that keeps it.
+    ///
+    /// The pure libraries are covered by their own architecture tests and by
+    /// <c>DeterministicRandom</c>; this guards the two assemblies that write rows.
+    /// </remarks>
+    [Theory]
+    [InlineData("WorkPlanStudio")]
+    [InlineData("WorkPlanStudio.Api")]
+    public void No_source_file_reads_the_clock_directly(string project)
+    {
+        string[] forbidden = ["DateTime.UtcNow", "DateTime.Now", "DateTime.Today"];
+
+        var offenders = Directory
+            .EnumerateFiles(Path.Join(RepoFiles.Root, "src", project), "*.*", SearchOption.AllDirectories)
+            .Where(file => file.EndsWith(".cs", StringComparison.Ordinal) || file.EndsWith(".razor", StringComparison.Ordinal))
+            .Where(file => !file.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
+            // EF writes its own migrations and re-writes them on every scaffold;
+            // asserting on generated code only teaches people to regenerate it.
+            .Where(file => !file.Contains($"{Path.DirectorySeparatorChar}Migrations{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
+            .SelectMany(file => File.ReadAllLines(file).Select((line, index) => (File: file, Number: index + 1, Line: line)))
+            .Where(entry => forbidden.Any(token => entry.Line.Contains(token, StringComparison.Ordinal)))
+            .Select(entry => $"{Path.GetFileName(entry.File)}:{entry.Number}")
+            .ToArray();
+
+        Assert.True(
+            offenders.Length == 0,
+            $"{project} reads the clock directly - inject TimeProvider instead: " + string.Join(", ", offenders));
+    }
+
     [Fact]
     public void A_validation_issue_with_arguments_equals_an_identical_one()
     {

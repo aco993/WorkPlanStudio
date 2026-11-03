@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace WorkPlanStudio.Services.Remote;
 
@@ -31,7 +32,10 @@ public static class RemoteServiceCollectionExtensions
         if (options.Address is null)
             return options;
 
-        services.AddSingleton(TimeProvider.System);
+        // Also registered in Program.cs, which runs first in the application but
+        // not in a test that composes only these services. TryAdd so whichever
+        // gets there first wins and neither has to know about the other.
+        services.TryAddSingleton(TimeProvider.System);
         services.AddScoped<IRefreshTokenStorage, SessionRefreshTokenStorage>();
 
         // Two clients on purpose. The auth client has no bearer handler, because

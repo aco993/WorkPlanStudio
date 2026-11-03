@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace WorkPlanStudio.Scheduling;
 
 /// <summary>Central deterministic safety limits for browser and library callers.</summary>
@@ -61,6 +63,17 @@ public static class SchedulingParameterLimits
     /// </remarks>
     public const long MaxHorizonSeconds = 1_000_000_000_000L;
 
+    /// <summary>The one method parameter every throw below reports.</summary>
+    /// <remarks>
+    /// Every one of these failures is a property of <c>parameters</c>, not an
+    /// argument of this method, so <c>paramName</c> is the argument and the
+    /// property is named in the message — which also carries the offending
+    /// value. The previous shape put the property name in <c>paramName</c>,
+    /// where a caller reading <c>ParamName</c> was told "DispatchRule" about a
+    /// method that has no such parameter, and the message said nothing at all.
+    /// </remarks>
+    private const string Argument = "parameters";
+
     /// <summary>Throws when any parameter is outside the supported deterministic range.</summary>
     public static void Validate(SchedulingParameters parameters)
     {
@@ -76,35 +89,48 @@ public static class SchedulingParameterLimits
         long total = (long)parameters.MultiStartRuns * parameters.LocalSearchMaxSteps;
         if (total > MaxTotalEvaluations)
             throw new ArgumentOutOfRangeException(
-                nameof(parameters.LocalSearchMaxSteps),
+                Argument,
                 total,
                 $"MultiStartRuns × LocalSearchMaxSteps must not exceed {MaxTotalEvaluations}.");
 
         if (!double.IsFinite(parameters.TwkFlowFactor) ||
             parameters.TwkFlowFactor < MinTwkFlowFactor ||
             parameters.TwkFlowFactor > MaxTwkFlowFactor)
-            throw new ArgumentOutOfRangeException(nameof(parameters.TwkFlowFactor));
+            throw new ArgumentOutOfRangeException(
+                Argument, parameters.TwkFlowFactor,
+                $"TwkFlowFactor must be a finite value between {MinTwkFlowFactor} and {MaxTwkFlowFactor}.");
 
         NonNegativeFinite(parameters.MakespanWeight, nameof(parameters.MakespanWeight));
         NonNegativeFinite(parameters.TardinessWeight, nameof(parameters.TardinessWeight));
         NonNegativeFinite(parameters.LatePenalty, nameof(parameters.LatePenalty));
         if (!Enum.IsDefined(parameters.DispatchRule))
-            throw new ArgumentOutOfRangeException(nameof(parameters.DispatchRule));
+            throw new ArgumentOutOfRangeException(
+                Argument, parameters.DispatchRule, $"DispatchRule is not a defined DispatchRule value.");
         if (!Enum.IsDefined(parameters.DueDateRule))
-            throw new ArgumentOutOfRangeException(nameof(parameters.DueDateRule));
+            throw new ArgumentOutOfRangeException(
+                Argument, parameters.DueDateRule, $"DueDateRule is not a defined DueDateRule value.");
         if (!Enum.IsDefined(parameters.LocalSearchAcceptance))
-            throw new ArgumentOutOfRangeException(nameof(parameters.LocalSearchAcceptance));
+            throw new ArgumentOutOfRangeException(
+                Argument, parameters.LocalSearchAcceptance, $"LocalSearchAcceptance is not a defined LocalSearchAcceptance value.");
     }
 
-    private static void Range(long value, long minimum, long maximum, string parameterName)
+    [SuppressMessage("Usage", "CA2208:Instantiate argument exceptions correctly",
+        Justification = "Throws on behalf of Validate, whose argument is what paramName names. "
+                      + "The rule reads one method at a time and cannot see the call site.")]
+    private static void Range(long value, long minimum, long maximum, string propertyName)
     {
         if (value < minimum || value > maximum)
-            throw new ArgumentOutOfRangeException(parameterName, value, $"Value must be between {minimum} and {maximum}.");
+            throw new ArgumentOutOfRangeException(
+                Argument, value, $"{propertyName} must be between {minimum} and {maximum}.");
     }
 
-    private static void NonNegativeFinite(double value, string parameterName)
+    [SuppressMessage("Usage", "CA2208:Instantiate argument exceptions correctly",
+        Justification = "Throws on behalf of Validate, whose argument is what paramName names. "
+                      + "The rule reads one method at a time and cannot see the call site.")]
+    private static void NonNegativeFinite(double value, string propertyName)
     {
         if (!double.IsFinite(value) || value < 0)
-            throw new ArgumentOutOfRangeException(parameterName);
+            throw new ArgumentOutOfRangeException(
+                Argument, value, $"{propertyName} must be a finite value of at least zero.");
     }
 }

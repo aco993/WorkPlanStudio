@@ -13,6 +13,8 @@
     <!-- Reproducible builds + treat warnings as errors so nothing rots silently. -->
     <Deterministic>true</Deterministic>
     <AnalysisLevel>latest</AnalysisLevel>
+    <AnalysisMode>Recommended</AnalysisMode>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
 
     <!-- WASM0001 is an unavoidable, benign warning from relinking native SQLite

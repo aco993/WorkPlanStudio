@@ -164,5 +164,5 @@ public class PromptHardeningTests
         "## On-device answer to the last question (facts you may rephrase)"
     ];
 
-    private static int Occurrences(string text, string token) => Regex.Matches(text, Regex.Escape(token)).Count;
+    private static int Occurrences(string text, string token) => Regex.Count(text, Regex.Escape(token));
 }

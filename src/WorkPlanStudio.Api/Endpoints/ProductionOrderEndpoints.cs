@@ -57,9 +57,9 @@ public static class ProductionOrderEndpoints
         })
         .WithSummary("One production order.");
 
-        group.MapPost("/", async (ProductionOrderDto request, ApiDbContext db, CancellationToken cancellationToken) =>
+        group.MapPost("/", async (ProductionOrderDto request, ApiDbContext db, TimeProvider clock, CancellationToken cancellationToken) =>
         {
-            var order = new ProductionOrder { CreatedUtc = DateTime.UtcNow };
+            var order = new ProductionOrder { CreatedUtc = clock.GetUtcNow().UtcDateTime };
             order.CopyFrom(request);
 
             var issues = ProductionOrderValidator.Validate(order);
@@ -82,7 +82,7 @@ public static class ProductionOrderEndpoints
         .RequireAuthorization(PolicyNames.ManageOrders)
         .WithSummary("Creates a draft production order.");
 
-        group.MapPut("/{id:int}", async (int id, ProductionOrderDto request, ApiDbContext db, CancellationToken cancellationToken) =>
+        group.MapPut("/{id:int}", async (int id, ProductionOrderDto request, ApiDbContext db, TimeProvider clock, CancellationToken cancellationToken) =>
         {
             if (string.IsNullOrWhiteSpace(request.ConcurrencyStamp))
                 return Problems.Validation(nameof(ProductionOrderDto.ConcurrencyStamp), "Val_Required");
@@ -109,7 +109,7 @@ public static class ProductionOrderEndpoints
             if (await db.ProductionOrders.AnyAsync(o => o.OrderNumber == order.OrderNumber && o.Id != id, cancellationToken))
                 return Problems.Conflict(nameof(ProductionOrderDto.OrderNumber), "Val_OrderNumberTaken");
 
-            order.ModifiedUtc = DateTime.UtcNow;
+            order.ModifiedUtc = clock.GetUtcNow().UtcDateTime;
             var entry = db.Entry(order);
             ApiDbContext.Restamp(entry, request.ConcurrencyStamp);
 
@@ -127,7 +127,7 @@ public static class ProductionOrderEndpoints
         .RequireAuthorization(PolicyNames.ManageOrders)
         .WithSummary("Replaces a draft production order. Requires the concurrency stamp that was read.");
 
-        group.MapPost("/{id:int}/release", async (int id, ApiDbContext db, CancellationToken cancellationToken) =>
+        group.MapPost("/{id:int}/release", async (int id, ApiDbContext db, TimeProvider clock, CancellationToken cancellationToken) =>
         {
             var order = await db.ProductionOrders
                 .Include(o => o.RoutingCenters)
@@ -153,7 +153,7 @@ public static class ProductionOrderEndpoints
             order.RoutingSnapshotJson = snapshot.Serialize();
             order.RoutingRevision = plan.Revision ?? "";
             order.Status = ProductionOrderStatus.Released;
-            order.ModifiedUtc = DateTime.UtcNow;
+            order.ModifiedUtc = clock.GetUtcNow().UtcDateTime;
 
             // Lift the work-centre ids out of the blob so the database can protect
             // them. Without these rows nothing stops a planner deleting a machine
@@ -172,7 +172,7 @@ public static class ProductionOrderEndpoints
         .RequireAuthorization(PolicyNames.ManageOrders)
         .WithSummary("Freezes the current routing onto the order and releases it.");
 
-        group.MapPost("/{id:int}/cancel", async (int id, ApiDbContext db, CancellationToken cancellationToken) =>
+        group.MapPost("/{id:int}/cancel", async (int id, ApiDbContext db, TimeProvider clock, CancellationToken cancellationToken) =>
         {
             var order = await db.ProductionOrders
                 .Include(o => o.RoutingCenters)
@@ -182,7 +182,7 @@ public static class ProductionOrderEndpoints
                 return Problems.NotFound("production-order");
 
             order.Status = ProductionOrderStatus.Cancelled;
-            order.ModifiedUtc = DateTime.UtcNow;
+            order.ModifiedUtc = clock.GetUtcNow().UtcDateTime;
 
             // The dependency is over, so the rows that recorded it go. The
             // snapshot stays: it is the record of what the shop was told to build.

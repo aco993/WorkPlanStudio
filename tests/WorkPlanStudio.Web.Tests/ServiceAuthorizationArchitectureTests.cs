@@ -1,4 +1,5 @@
 using System.Reflection;
+using WorkPlanStudio.Data;
 using WorkPlanStudio.Services;
 using WorkPlanStudio.Services.Auth;
 
@@ -48,7 +49,18 @@ public sealed class ServiceAuthorizationArchitectureTests
         var database = files.CreateDatabase($"{service.Name}.{methodName}.db", new FakeStorage());
         Assert.True((await database.EnsureReadyAsync()).IsReady);
 
-        var instance = Activator.CreateInstance(service, database, new RoleGuard(WorkspaceRole.Guest))!;
+        // Built from the constructor's own parameters rather than a fixed list.
+        // What is under test is whether the method asks the guard; a service that
+        // takes one more dependency - a clock, say - should not fail here on its
+        // constructor's shape, and the next one to gain a parameter should not
+        // have to come back and edit this.
+        var constructor = service.GetConstructors().Single();
+        var instance = constructor.Invoke([.. constructor.GetParameters().Select(parameter =>
+            parameter.ParameterType == typeof(BrowserDatabase) ? database
+            : parameter.ParameterType == typeof(IPermissionGuard) ? new RoleGuard(WorkspaceRole.Guest)
+            : parameter.HasDefaultValue ? parameter.DefaultValue
+            : throw new InvalidOperationException(
+                $"{service.Name} takes a required {parameter.ParameterType.Name} this test cannot supply."))]);
         var method = service.GetMethod(methodName, BindingFlags.Public | BindingFlags.Instance)!;
 
         var task = (Task)method.Invoke(instance, Arguments(method))!;

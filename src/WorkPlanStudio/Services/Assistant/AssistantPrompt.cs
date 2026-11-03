@@ -26,11 +26,11 @@ internal static class AssistantPrompt
         var sb = new StringBuilder();
         var s = e.Summary;
         sb.AppendLine("Schedule facts:");
-        sb.AppendLine($"- Jobs: {s.JobCount}; on time: {s.OnTimeCount}; late: {s.JobCount - s.OnTimeCount}.");
-        sb.AppendLine($"- Makespan: {Hours(s.MakespanSeconds)}; total tardiness: {Hours(s.TotalTardinessSeconds)}; average utilisation: {Percent(s.AverageUtilization)}.");
+        sb.AppendLine(CultureInfo.InvariantCulture, $"- Jobs: {s.JobCount}; on time: {s.OnTimeCount}; late: {s.JobCount - s.OnTimeCount}.");
+        sb.AppendLine(CultureInfo.InvariantCulture, $"- Makespan: {Hours(s.MakespanSeconds)}; total tardiness: {Hours(s.TotalTardinessSeconds)}; average utilisation: {Percent(s.AverageUtilization)}.");
 
         if (e.Bottleneck is { } b)
-            sb.AppendLine($"- Busiest work center: {b.WorkCenterName} at {Percent(b.Utilization)} utilisation across {b.OperationCount} operations.");
+            sb.AppendLine(CultureInfo.InvariantCulture, $"- Busiest work center: {b.WorkCenterName} at {Percent(b.Utilization)} utilisation across {b.OperationCount} operations.");
 
         foreach (var j in e.LateJobs)
         {

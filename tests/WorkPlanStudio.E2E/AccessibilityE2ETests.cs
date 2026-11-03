@@ -51,7 +51,7 @@ public sealed class AccessibilityE2ETests : IClassFixture<PlaywrightFixture>
     /// Routes with open accessibility defects, pinned by rule id.
     ///
     /// The bar for every other route is zero violations. A route listed here is
-    /// still scanned and still asserted — against exactly this set, so a fourth
+    /// still scanned and still asserted — against exactly this set, so one more
     /// violation fails the build and so does fixing one of these without
     /// removing the entry. That is deliberate: an approved-violations list that
     /// cannot go stale is the difference between a known defect and a hidden
@@ -64,17 +64,6 @@ public sealed class AccessibilityE2ETests : IClassFixture<PlaywrightFixture>
     /// visible here because this scan now uses the same tag set as every page
     /// scan; it previously omitted <c>best-practice</c> and so held the dialog
     /// to a lower bar than the pages around it.
-    ///
-    /// <c>/work-plans/1</c> — the populated work-plan editor. Its operations
-    /// table renders bare inputs and a select per row with no accessible name
-    /// (<c>label</c>, <c>select-name</c>, both WCAG 2.1 A) and an empty header
-    /// cell above the delete column (<c>empty-table-header</c>). The fix lives
-    /// in <c>src/WorkPlanStudio/Pages/WorkPlanEditor.razor</c>, which this test
-    /// project does not own: give each row control an <c>aria-label</c> naming
-    /// its column and its operation, and give the last <c>th</c> a visually
-    /// hidden caption. The empty editor (<c>/work-plans/new</c>) passes because
-    /// it renders no operation rows, which is exactly why the populated route
-    /// had to be scanned separately.
     /// </summary>
     private static Dictionary<string, string[]> OpenViolations { get; } = new(StringComparer.Ordinal)
     {

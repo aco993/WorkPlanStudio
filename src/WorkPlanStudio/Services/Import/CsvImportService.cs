@@ -83,12 +83,14 @@ public sealed partial class CsvImportService
     private readonly BrowserDatabase _db;
     private readonly IBrowserDatabaseStorage _storage;
     private readonly IPermissionGuard _guard;
+    private readonly TimeProvider _clock;
 
-    public CsvImportService(BrowserDatabase db, IBrowserDatabaseStorage storage, IPermissionGuard? guard = null)
+    public CsvImportService(BrowserDatabase db, IBrowserDatabaseStorage storage, IPermissionGuard? guard = null, TimeProvider? clock = null)
     {
         _db = db;
         _storage = storage;
         _guard = guard ?? AllowAllGuard.Instance;
+        _clock = clock ?? TimeProvider.System;
     }
 
     /// <summary>The policy a given sheet needs. Orders are the supervisor's; master data is not.</summary>
@@ -174,7 +176,7 @@ public sealed partial class CsvImportService
 
         Resolution resolution;
         await using (var db = await _db.CreateContextAsync(cancellationToken))
-            resolution = await ApplyAsync(db, staged, options, write: false, cancellationToken);
+            resolution = await ApplyAsync(db, staged, options, write: false, _clock.GetUtcNow().UtcDateTime, cancellationToken);
 
         var stored = await _storage.LoadAsync(cancellationToken);
         var current = stored?.Data.Length ?? 0;
@@ -211,7 +213,7 @@ public sealed partial class CsvImportService
             _db,
             async (db, token) =>
             {
-                var applied = await ApplyAsync(db, plan.Staged, plan.Options, write: true, token);
+                var applied = await ApplyAsync(db, plan.Staged, plan.Options, write: true, _clock.GetUtcNow().UtcDateTime, token);
 
                 // The preview is a promise. If resolving the same rows against the
                 // database now gives different answers, something changed under

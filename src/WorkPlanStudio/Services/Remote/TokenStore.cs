@@ -78,7 +78,7 @@ public sealed class SessionRefreshTokenStorage : IRefreshTokenStorage
 /// logging the user out.
 /// </para>
 /// </summary>
-public sealed class TokenStore
+public sealed class TokenStore : IDisposable
 {
     /// <summary>How long before real expiry a token is considered stale, so a request is not sent with a token about to die.</summary>
     public static readonly TimeSpan ExpiryMargin = TimeSpan.FromSeconds(30);
@@ -223,4 +223,14 @@ public sealed class TokenStore
         _accessTokenExpiresAt = _clock.GetUtcNow().AddSeconds(tokens.ExpiresInSeconds);
         User = tokens.User;
     }
+
+    /// <summary>Releases the gate that serialises refreshes so two callers cannot rotate the same token.</summary>
+    /// <remarks>
+    /// Registered as a scoped service, so the container calls this at teardown.
+    /// A <see cref="SemaphoreSlim"/> only allocates a wait handle if somebody asks
+    /// for one, so this releases little in practice - but a type that owns a
+    /// disposable and says it does not is a claim that stops being true the day
+    /// the field changes.
+    /// </remarks>
+    public void Dispose() => _gate.Dispose();
 }

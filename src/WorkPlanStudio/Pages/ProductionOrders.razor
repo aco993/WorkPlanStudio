@@ -5,6 +5,7 @@
 @inject ProductionOrderService Orders
 @inject WorkPlanService Plans
 @inject UiAnnouncer Announcer
+@inject TimeProvider Clock
 
 @using WorkPlanStudio.Services.Forms
 
@@ -291,12 +292,15 @@ else
     private int? _quantity;
 
     // Plant-local wall-clock dates, like everything else the shop calendar reads.
-    private DateTime _releaseDate = DateTime.Today;
-    private DateTime _dueDate = DateTime.Today.AddDays(7);
+    // Set in OnInitialized rather than here: a field initialiser cannot reach an
+    // injected service, and the clock is one now.
+    private DateTime _releaseDate;
+    private DateTime _dueDate;
     private readonly FormErrorState _errors = new();
 
     protected override void OnInitialized()
     {
+        ResetDates();
         _errors.Declare("OrderNumber", "po-number", L["Orders_Number"]);
         _errors.Declare("WorkPlanId", "po-plan", L["Orders_Routing"]);
         _errors.Declare("Quantity", "po-qty", L["Orders_Quantity"]);
@@ -367,8 +371,7 @@ else
     {
         _errors.Clear();
         _error = null;
-        _releaseDate = DateTime.Today;
-        _dueDate = DateTime.Today.AddDays(7);
+        ResetDates();
         _quantity = 100;
         _editing = new ProductionOrder
         {
@@ -493,4 +496,11 @@ else
         ProductionOrderStatus.Cancelled => L["Orders_StatusCancelled"],
         _ => status.ToString()
     };
+
+    /// <summary>Today and a week out, the default window a new order opens on.</summary>
+    private void ResetDates()
+    {
+        _releaseDate = Clock.GetLocalNow().Date;
+        _dueDate = _releaseDate.AddDays(7);
+    }
 }

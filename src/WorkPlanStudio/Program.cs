@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.JSInterop;
 using WorkPlanStudio;
@@ -23,6 +24,15 @@ builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.
 // as the .resx files (WorkPlanStudio.Resources), so the resource base name
 // matches the embedded resource name exactly.
 builder.Services.AddLocalization();
+
+// The clock, as a service. Audit stamps and the dates a form opens on are the
+// only things in the browser app that ask what time it is, and they asked the
+// static DateTime directly - which is untestable and, more to the point,
+// inconsistent with TokenStore and the backend, which already took it this way.
+// Registered here rather than with the optional backend: that registration sits
+// after an early return, so with no API configured - which is what the published
+// site runs - nothing provided a TimeProvider at all.
+builder.Services.TryAddSingleton(TimeProvider.System);
 
 // Authorization: the standard pipeline (policies, AuthorizeView, IAuthorizationService)
 // fed by a persona chosen in the UI and remembered per browser. The service layer

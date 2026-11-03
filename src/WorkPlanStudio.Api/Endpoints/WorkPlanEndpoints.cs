@@ -53,7 +53,7 @@ public static class WorkPlanEndpoints
         })
         .WithSummary("One work plan.");
 
-        group.MapPost("/", async (WorkPlanDto request, ApiDbContext db, CancellationToken cancellationToken) =>
+        group.MapPost("/", async (WorkPlanDto request, ApiDbContext db, TimeProvider clock, CancellationToken cancellationToken) =>
         {
             var plan = new WorkPlan();
             plan.CopyHeaderFrom(request);
@@ -67,7 +67,7 @@ public static class WorkPlanEndpoints
             if (await db.WorkPlans.AnyAsync(p => p.PlanNumber == plan.PlanNumber, cancellationToken))
                 return Problems.Conflict(nameof(WorkPlanDto.PlanNumber), "Val_PlanNumberTaken");
 
-            plan.CreatedUtc = plan.ModifiedUtc = DateTime.UtcNow;
+            plan.CreatedUtc = plan.ModifiedUtc = clock.GetUtcNow().UtcDateTime;
             var entry = db.WorkPlans.Add(plan);
             ApiDbContext.Restamp(entry, expected: null);
             await db.SaveChangesAsync(cancellationToken);
@@ -77,7 +77,7 @@ public static class WorkPlanEndpoints
         .RequireAuthorization(PolicyNames.ManageMasterData)
         .WithSummary("Creates a work plan with its operations.");
 
-        group.MapPut("/{id:int}", async (int id, WorkPlanDto request, ApiDbContext db, CancellationToken cancellationToken) =>
+        group.MapPut("/{id:int}", async (int id, WorkPlanDto request, ApiDbContext db, TimeProvider clock, CancellationToken cancellationToken) =>
         {
             if (string.IsNullOrWhiteSpace(request.ConcurrencyStamp))
                 return Problems.Validation(nameof(WorkPlanDto.ConcurrencyStamp), "Val_Required");
@@ -102,7 +102,7 @@ public static class WorkPlanEndpoints
                 return Problems.Conflict(nameof(WorkPlanDto.PlanNumber), "Val_PlanNumberTaken");
 
             plan.CopyHeaderFrom(request);
-            plan.ModifiedUtc = DateTime.UtcNow;
+            plan.ModifiedUtc = clock.GetUtcNow().UtcDateTime;
             db.Operations.RemoveRange(plan.Operations);
             plan.Operations = candidate.Operations;
 
