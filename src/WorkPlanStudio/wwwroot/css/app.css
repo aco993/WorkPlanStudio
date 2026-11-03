@@ -517,7 +517,12 @@ select.input { cursor: pointer; }
 }
 
 /* ----- Scheduling ----- */
-.sched-layout { display: grid; grid-template-columns: 290px 1fr; gap: 1rem; align-items: start; }
+/* Result first, parameter rail second - see the comment at the top of
+   Pages/Schedule.razor and docs/adr/0026. The rail is on the right because that
+   is the only side where the markup order, the focus order and the reading order
+   all agree with the single-column order a phone gets. It stays sticky, so it
+   is still in reach while the reader is somewhere down the Gantt. */
+.sched-layout { display: grid; grid-template-columns: 1fr 290px; gap: 1rem; align-items: start; }
 .param-card { position: sticky; top: 76px; }
 .param-grid { display: flex; flex-direction: column; gap: .85rem; }
 .sched-results { display: flex; flex-direction: column; gap: 1rem; min-width: 0; }
