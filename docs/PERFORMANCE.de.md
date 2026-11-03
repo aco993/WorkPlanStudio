@@ -111,9 +111,25 @@ bei, neu zu starten statt hinzusehen, und dann ist er Rauschen statt Signal.
 ## Seitenaufbau
 
 Die App liefert .NET-Laufzeit, EF Core und SQLite als WebAssembly aus. Veröffentlicht
-sind das **103 Dateien und 19,8 MB unkomprimiert**, davon **5,8 MB** als vorkomprimierte
+sind das **114 Dateien und 21,0 MB unkomprimiert**, davon **6,1 MB** als vorkomprimierte
 Brotli-Geschwister — der Lighthouse-Leistungswert ist also der einer
 WebAssembly-Laufzeit, und er wird berichtet statt blockiert.
+
+Was ein Kaltstart tatsächlich überträgt, ist eine andere Zahl, und seit
+[ADR 0027](adr/0027-pay-the-cold-start-once.md) ist sie die, die blockiert.
+Derselbe Job prüft sie, bevor er irgendetwas ausliefert:
+
+```
+python3 .github/scripts/transfer_budget.py publish/wwwroot
+```
+
+Auf diesem Stand gemessen: **7.501 KB**, gegenüber **7.399 KB**, die ein Browser
+tatsächlich von der veröffentlichten Seite übertragen hat — ein Näherungswert
+innerhalb von 1,4 %. Er rechnet mit dem größten der drei ICU-Shards, von denen
+ein Besucher einen lädt, und liegt damit für alle mit EFIGS-Browser rund 136 KB
+auf der sicheren Seite. Ein Punktwert schwankt mit dem Runner, eine Summe von
+Dateigrößen nicht — deshalb darf diese Prüfung einen Build rot machen und der
+Lighthouse-Wert nicht.
 
 Gemessen am 11.09.2026 mit Lighthouse 13.4.1, Desktop-Voreinstellung, gegen das
 veröffentlichte `wwwroot`, mit Brotli ausgeliefert wie in `performance.yml`:

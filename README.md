@@ -39,6 +39,7 @@
 - 👥 **Personas, and optionally real accounts** — Planner, Supervisor and Guest go through the real ASP.NET Core authorization pipeline. Point the app at the included backend and the *same policy table* is enforced by a server against a JWT, with Identity, password hashing and rotating refresh tokens.
 - 🌗 **Light, dark and system theme**, WCAG 2.2 AA verified by axe on every route in light, dark **and German**, keyboard paths with a skip link and focus management, `prefers-reduced-motion`, forced-colours support, and a mobile layout with a drawer.
 - 🌍 **Bilingual UI (EN / DE)** with culture-correct numbers, dates and currency.
+- 📲 **Installable, and the second visit is free** — a manifest, maskable icons and a service worker whose precache list the SDK writes, so the runtime and the database engine are fetched once rather than on every visit. One ICU shard replaced the complete table, which is about 240 KB off a cold start, and the boot screen names the phase it is in instead of repeating a percentage that has already reached 100. Shared links carry a real preview card ([ADR 0027](docs/adr/0027-pay-the-cold-start-once.md)).
 - 💾 **A real database in the browser** — EF Core over SQLite compiled to WebAssembly, at schema version 7, with a **real migration** from 5 and 6 that preserves primary keys; WAL-safe atomic snapshots, and incompatible data entering an explicit export/import/reset recovery flow instead of being lost.
 
 ## Screenshots
@@ -286,7 +287,7 @@ It refuses to start without a signing key, which is the point. In Development it
 dotnet publish src/WorkPlanStudio/WorkPlanStudio.csproj -c Release -o publish
 ```
 
-The deployable site is in `publish/wwwroot/` — 103 files, 19.8 MB, of which 5.8 MB of Brotli siblings is what a browser transfers — and can be served by any static file host.
+The deployable site is in `publish/wwwroot/` — 114 files, 21.0 MB, plus 6.1 MB of pre-compressed Brotli siblings — and can be served by any static file host. A cold start transfers about 7.5 MB of that; `python3 .github/scripts/transfer_budget.py publish/wwwroot` prints the number and the Performance workflow fails the build when it grows.
 
 ## Deployment
 
@@ -300,7 +301,7 @@ The deployable site is in `publish/wwwroot/` — 103 files, 19.8 MB, of which 5.
 - **Proving optimality freezes the tab** for up to the two seconds it is allowed. The search is a tight loop with no hand-back, and slicing it was not attempted.
 - **No external MILP solver was run.** The LP files are written and checked two ways inside the repository; neither HiGHS nor CBC was installed on the machine that measured the study, and the recipe in [ADR 0015](docs/adr/0015-exact-solver.md) is offered untested.
 - **The app cannot be built with threads at all.** `SQLitePCLRaw`'s `browser-wasm` binary is compiled without `atomics`, so `WasmEnableThreads=true` fails at the linker — threads or a database, not both. The scheduling run is sliced on the one thread instead, which costs wall clock. Measured in [ADR 0019](docs/adr/0019-off-thread-scheduling.md).
-- **Loading a .NET runtime and SQLite** is 5.8 MB compressed; the boot screen paints at 0.3 s and the dashboard at about 7.7 s on a desktop connection. Lighthouse scores the page load 36 and reports it rather than gating it.
+- **Loading a .NET runtime and SQLite** is about 7.5 MB transferred; the boot screen paints at 0.3 s and the dashboard at about 7.7 s on a desktop connection. Lighthouse scores the page load 36 and reports it rather than gating it. A **second** visit is served from the service-worker cache, and one ICU shard replaced the complete table for about 240 KB — but the first load is the first load, and nothing here changes its order of magnitude ([ADR 0027](docs/adr/0027-pay-the-cold-start-once.md)).
 - **The chat's on-device recogniser is keyword-based.** It now says so when it cannot resolve a reference instead of answering about something else, but it is still a recogniser, not a parser.
 - **Prompt injection is mitigated, not solved.** The facts sent to a model are bounded, sanitised and fenced, and the model is told the fence is data — but the text inside it is what a person typed into a part name.
 - **Model calls go browser-to-provider**, so the provider must allow CORS; a production deployment would put a proxy in front and keep the key there.

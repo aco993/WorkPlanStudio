@@ -39,6 +39,7 @@
 - 👥 **Rollen, wahlweise mit echten Konten** — Planer, Meister und Gast laufen durch die echte Autorisierungspipeline von ASP.NET Core. Richtet man die App auf das mitgelieferte Backend, setzt *dieselbe Richtlinientabelle* ein Server gegen ein JWT durch, mit Identity, Passwort-Hashing und rotierenden Refresh-Tokens.
 - 🌗 **Helles, dunkles und System-Farbschema**, WCAG 2.2 AA per axe auf jeder Route in hell, dunkel **und auf Deutsch** geprüft, Tastaturpfade mit Sprunglink und Fokusverwaltung, `prefers-reduced-motion`, Unterstützung für den Kontrastmodus und ein mobiles Layout mit Navigationsschublade.
 - 🌍 **Zweisprachige Oberfläche (DE / EN)** mit kulturkorrekten Zahlen, Datumsangaben und Währungen.
+- 📲 **Installierbar, und der zweite Besuch ist umsonst** — ein Manifest, maskierbare Icons und ein Service Worker, dessen Precache-Liste das SDK schreibt: Laufzeit und Datenbank-Engine werden einmal geladen statt bei jedem Besuch. Ein ICU-Shard ersetzt die vollständige Tabelle, das sind rund 240 KB weniger beim Kaltstart, und der Startschirm benennt die Phase, statt einen Prozentwert zu wiederholen, der längst bei 100 steht. Geteilte Links tragen eine echte Vorschaukarte ([ADR 0027](docs/adr/0027-pay-the-cold-start-once.md)).
 - 💾 **Eine echte Datenbank im Browser** — EF Core über SQLite in WebAssembly, Schemastand 7, mit einer **echten Migration** von 5 und 6, die die Primärschlüssel erhält; WAL-sichere atomare Snapshots, und inkompatible Daten landen in einem ausdrücklichen Export-/Import-/Zurücksetzen-Ablauf, statt verloren zu gehen.
 
 ## Bildschirmfotos
@@ -286,7 +287,7 @@ Ohne Signaturschlüssel startet es nicht, und genau das ist der Sinn. In der Ent
 dotnet publish src/WorkPlanStudio/WorkPlanStudio.csproj -c Release -o publish
 ```
 
-Die auslieferbare Seite liegt in `publish/wwwroot/` — 103 Dateien, 19,8 MB, davon 5,8 MB als vorkomprimierte Brotli-Geschwister, die der Browser tatsächlich überträgt — und kann von jedem statischen Webserver ausgeliefert werden.
+Die auslieferbare Seite liegt in `publish/wwwroot/` — 114 Dateien, 21,0 MB, dazu 6,1 MB vorkomprimierte Brotli-Geschwister — und kann von jedem statischen Webserver ausgeliefert werden. Ein Kaltstart überträgt davon rund 7,5 MB; `python3 .github/scripts/transfer_budget.py publish/wwwroot` gibt die Zahl aus, und der Performance-Workflow lässt den Build scheitern, wenn sie wächst.
 
 ## Auslieferung
 
@@ -300,7 +301,7 @@ Die auslieferbare Seite liegt in `publish/wwwroot/` — 103 Dateien, 19,8 MB, da
 - **Der Optimalitätsbeweis friert den Tab ein**, für die bis zu zwei Sekunden, die er bekommt. Die Suche ist eine enge Schleife ohne Rückgabe an den Browser; sie zu zerlegen wurde nicht versucht.
 - **Es wurde kein externer MILP-Löser ausgeführt.** Die LP-Dateien werden geschrieben und im Repository auf zwei Wegen geprüft; weder HiGHS noch CBC war auf der Maschine installiert, auf der die Studie gemessen wurde, und das Rezept in [ADR 0015](docs/adr/0015-exact-solver.md) ist ungetestet angegeben.
 - **Die App lässt sich überhaupt nicht mit Threads bauen.** Das `browser-wasm`-Binary von `SQLitePCLRaw` ist ohne `atomics` übersetzt, deshalb scheitert `WasmEnableThreads=true` schon am Linker — Threads oder Datenbank, nicht beides. Der Planungslauf wird stattdessen auf dem einen Thread zerlegt, was Laufzeit kostet. Gemessen in [ADR 0019](docs/adr/0019-off-thread-scheduling.md).
-- **Das Laden von .NET-Laufzeit und SQLite** sind 5,8 MB komprimiert; der Startschirm zeichnet nach 0,3 s, die Übersicht nach rund 7,7 s an einer Desktop-Verbindung. Lighthouse bewertet den Seitenaufbau mit 36 und berichtet das, statt es zu blockieren.
+- **Das Laden von .NET-Laufzeit und SQLite** sind rund 7,5 MB Übertragung; der Startschirm zeichnet nach 0,3 s, die Übersicht nach rund 7,7 s an einer Desktop-Verbindung. Lighthouse bewertet den Seitenaufbau mit 36 und berichtet das, statt es zu blockieren. Ein **zweiter** Besuch kommt aus dem Service-Worker-Cache, und ein ICU-Shard ersetzt die vollständige Tabelle und spart rund 240 KB — aber der erste Aufruf bleibt der erste Aufruf, und daran ändert das nichts in der Größenordnung ([ADR 0027](docs/adr/0027-pay-the-cold-start-once.md)).
 - **Die Erkennung des Chats auf dem Gerät ist stichwortbasiert.** Sie sagt jetzt, wenn sie eine Bezugnahme nicht auflösen kann, statt über etwas anderes zu antworten — ein Parser ist sie damit nicht.
 - **Prompt Injection ist gemindert, nicht gelöst.** Die Fakten an ein Modell sind begrenzt, bereinigt und eingefasst, und dem Modell wird gesagt, dass die Einfassung Daten sind — der Text darin ist aber das, was jemand in eine Teilebezeichnung geschrieben hat.
 - **Modellaufrufe gehen vom Browser zum Anbieter**, der Anbieter muss also CORS erlauben; ein Produktivbetrieb würde einen Proxy davorsetzen und den Schlüssel dort halten.

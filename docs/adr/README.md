@@ -42,3 +42,5 @@ with a one-line summary of each.
 | [0023](0023-accessible-gantt-and-responsive-tables.md) | Make the chart operable without a mouse and stop the cards clipping the tables | Accepted |
 | [0024](0024-arbzg-in-the-ui.md) | Put the Arbeitszeitgesetz on the screen, and only as far as it is computed | Accepted |
 | [0025](0025-hostile-input-on-the-model-path.md) | Hostile input on the model path: what a browser-only app can promise about a key and about prompt injection | Accepted |
+| [0026](0026-result-before-parameters.md) | Put the result before the parameters that produced it | Accepted |
+| [0027](0027-pay-the-cold-start-once.md) | Pay the cold start once, and say what it is doing while it happens | Accepted |
