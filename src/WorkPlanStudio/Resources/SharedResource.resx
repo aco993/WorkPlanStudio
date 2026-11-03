@@ -296,6 +296,7 @@
   <data name="Sched_Ai_FailureUnavailable" xml:space="preserve"><value>provider unavailable</value></data>
   <data name="Sched_RuleEquivalent" xml:space="preserve"><value>With these targets this is the same order as: {0}</value></data>
   <data name="Common_Loading" xml:space="preserve"><value>Loading…</value></data>
+  <data name="Boot_OpeningDatabase" xml:space="preserve"><value>Opening the in-browser database</value></data>
   <data name="Orders_Title" xml:space="preserve"><value>Production Orders</value></data>
   <data name="Orders_Subtitle" xml:space="preserve"><value>What actually gets scheduled. Releasing an order freezes the routing it will be built to.</value></data>
   <data name="Orders_New" xml:space="preserve"><value>New order</value></data>

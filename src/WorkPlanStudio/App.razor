@@ -4,7 +4,22 @@
 
 @if (_readiness is null)
 {
-    <div class="loading-row" role="status"><span class="spinner" aria-hidden="true"></span><span class="sr-only">@L["Common_Loading"]</span></div>
+    @*
+        The boot screen in index.html is gone the moment this component renders,
+        and opening the database - on a first visit creating and seeding it - is
+        seconds more work. What the reader used to get for those seconds was a
+        bare 28px spinner on an empty page, which looks like the application
+        failed rather than like the last step of starting it.
+
+        So this is the boot screen again, same mark and same note slot, and the
+        hand-over from the static one is invisible. `boot` already carries the
+        full-height centring; `role="status"` keeps the phase announced.
+    *@
+    <div class="boot" role="status" aria-live="polite">
+        <div class="boot-mark" aria-hidden="true">WP</div>
+        <span class="spinner" aria-hidden="true"></span>
+        <p class="boot-note">@L["Boot_OpeningDatabase"]</p>
+    </div>
 }
 else if (!_readiness.IsReady)
 {

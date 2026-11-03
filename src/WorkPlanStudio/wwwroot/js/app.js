@@ -5,7 +5,24 @@
 //                       AI assistant configuration). Values stay in this browser.
 
 window.blazorCulture = {
-    get: () => window.localStorage['BlazorCulture']
+    get: () => window.localStorage['BlazorCulture'],
+
+    // The culture the .NET runtime boots in, decided before it starts.
+    //
+    // It is decided here rather than in Program.cs because the application no
+    // longer carries the complete ICU table - it fetches one regional shard - and
+    // Blazor refuses a culture change during start-up in that configuration. The
+    // supported way round it is to hand the culture to Blazor.start(), which this
+    // feeds (see index.html); by the time managed code runs, CurrentCulture is
+    // already right and nothing has to change it.
+    //
+    // The two names are a whitelist, not a formality. This value comes out of
+    // localStorage, which anyone can write, and a culture outside the shipped
+    // shard would be a start-up failure rather than a wrong date.
+    resolved: function () {
+        const stored = window.localStorage['BlazorCulture'];
+        return stored === 'de-DE' || stored === 'en-US' ? stored : 'en-US';
+    }
 };
 
 // A language switch needs a reload, and a reload can be refused - the work-plan
@@ -36,6 +53,69 @@ window.blazorCulture = {
     if (!culture.startsWith('de')) { return; }
     document.documentElement.lang = 'de';
     document.querySelectorAll('[data-de]').forEach(el => el.textContent = el.getAttribute('data-de'));
+})();
+
+// The progress ring measures one thing: how much of the application has been
+// downloaded. It reaches 100 % and then the page sits unchanged for seconds while
+// the .NET runtime starts and relinked SQLite initialises - the slowest part of a
+// cold start is the part with no feedback at all, which reads as a hang.
+//
+// Blazor publishes its own progress as a custom property on <html>, so the moment
+// it reads 100 % is observable without taking over the loader (autostart="false"
+// plus a hand-rolled Blazor.start() would be a lot of surface to own for one
+// sentence of text). A warm cache is the awkward case: the loader can finish
+// before it ever publishes a number, and polling for a value that never arrives
+// would leave the note claiming to download through the whole runtime start. So
+// an empty reading that stays empty counts as done too.
+(function nameTheBootPhases() {
+    const note = document.querySelector('.boot-note');
+    if (!note) { return; }
+
+    const german = (window.localStorage['BlazorCulture'] || '').startsWith('de');
+    const runtime = note.getAttribute(german ? 'data-phase-runtime-de' : 'data-phase-runtime');
+    if (!runtime) { return; }
+
+    const startedAt = performance.now();
+    const timer = setInterval(() => {
+        // The node goes away when Blazor renders the app over the boot screen.
+        if (!note.isConnected) { clearInterval(timer); return; }
+
+        const raw = getComputedStyle(document.documentElement)
+            .getPropertyValue('--blazor-load-percentage').trim();
+        const downloaded = parseFloat(raw) >= 100;
+        const neverCounted = raw === '' && performance.now() - startedAt > 1500;
+        if (!downloaded && !neverCounted) { return; }
+
+        clearInterval(timer);
+        note.textContent = runtime;
+    }, 120);
+})();
+
+// Register the service worker, and register it late.
+//
+// Two details that are easy to get wrong here and silent when wrong:
+//
+// `document.baseURI`, not a bare relative path. register() resolves against the
+// *document* URL rather than <base href>, so on a deep link such as
+// /WorkPlanStudio/work-plans/1 a bare 'service-worker.js' asks for
+// /WorkPlanStudio/work-plans/service-worker.js - a 404, and a worker that only
+// ever installs for visitors who arrived at the root.
+//
+// On `load`, not immediately. The worker precaches the whole published asset
+// list; starting that while the runtime is still downloading puts the precache
+// in competition with the boot it is meant to speed up. By `load` the
+// application has what it needs and the connection is free.
+(function registerServiceWorker() {
+    if (!('serviceWorker' in navigator)) { return; }
+
+    window.addEventListener('load', () => {
+        navigator.serviceWorker
+            .register(new URL('service-worker.js', document.baseURI))
+            // A failed registration is not a failed application: the site works
+            // exactly as it did before, it just pays full price again next time.
+            // Worth a console line, not worth anything the reader has to see.
+            .catch(error => console.warn('Service worker registration failed:', error));
+    });
 })();
 
 window.documentLanguage = {

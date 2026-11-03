@@ -111,12 +111,19 @@ builder.Services.AddScoped<ScheduleExportService>();
 
 var host = builder.Build();
 
-// Apply the language the user picked last time (stored in the browser).
+// The language is already applied by the time this line runs: index.html reads
+// the remembered culture and hands it to Blazor.start(), so the runtime boots
+// in it. This used to read it over JS interop and assign
+// DefaultThreadCurrentCulture here instead, which is a culture change *during*
+// start-up - and since the app stopped shipping the complete ICU table and
+// started fetching one regional shard, Blazor refuses exactly that and the app
+// never gets past the boot screen. Changing it back is a 240 KB download, so
+// the culture moved to where it can be decided before managed code exists.
+//
+// What is left is the part only managed code knows: telling the document which
+// language it is in, for assistive technology and for the hyphenation and
+// quotation rules the browser applies.
 var js = host.Services.GetRequiredService<IJSRuntime>();
-var stored = await js.InvokeAsync<string?>("blazorCulture.get");
-var culture = CultureInfo.GetCultureInfo(string.IsNullOrWhiteSpace(stored) ? "en-US" : stored);
-CultureInfo.DefaultThreadCurrentCulture = culture;
-CultureInfo.DefaultThreadCurrentUICulture = culture;
-await js.InvokeVoidAsync("documentLanguage.set", culture.TwoLetterISOLanguageName);
+await js.InvokeVoidAsync("documentLanguage.set", CultureInfo.CurrentCulture.TwoLetterISOLanguageName);
 
 await host.RunAsync();

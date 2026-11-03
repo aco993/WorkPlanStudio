@@ -11,6 +11,37 @@
     <meta name="description" content="Manage manufacturing routings and generate a finite-capacity production schedule - entirely in the browser." />
 
     <!--
+      Link previews. A crawler reads this head and never runs the application,
+      so everything it needs has to be static markup: it will not see a title
+      the router sets, a description a component writes, or a canvas the app
+      draws. Without these five tags a shared link renders as a bare URL.
+
+      The URLs are absolute because og:image is fetched by a service that has no
+      base to resolve against - a relative path here is simply dropped. They
+      name this deployment, and the deploy workflow rewrites the origin for a
+      fork the same way it rewrites <base href>, so a fork advertises its own
+      site rather than this one.
+
+      og:image is the committed card from tools/brand-assets/render.py. Declaring its
+      dimensions lets a client reserve the space before the bytes arrive, which
+      is the difference between a card that appears and one that pops in.
+    -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="WorkPlan Studio" />
+    <meta property="og:title" content="WorkPlan Studio - finite-capacity production scheduling in the browser" />
+    <meta property="og:description" content="Manufacturing routings, work centers and production orders with a finite-capacity scheduler that respects shift calendars and the German Working Hours Act - and a branch-and-bound solver that says how far from optimal the plan is. No install, no sign-up." />
+    <meta property="og:url" content="https://aco993.github.io/WorkPlanStudio/" />
+    <meta property="og:image" content="https://aco993.github.io/WorkPlanStudio/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="WorkPlan Studio - finite-capacity production scheduling for manufacturing routings" />
+    <!-- The UI ships in both languages; a crawler that honours this picks the right one. -->
+    <meta property="og:locale" content="en_GB" />
+    <meta property="og:locale:alternate" content="de_DE" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="canonical" href="https://aco993.github.io/WorkPlanStudio/" />
+
+    <!--
       The app has no backend and loads no third-party asset, so everything is
       pinned to the same origin. What each relaxation buys, and why:
 
@@ -30,9 +61,15 @@
       entirely until the user configures a key, and the schedule explanation
       itself is computed on-device - see docs/AI-ASSISTANT.md.
 
+      worker-src and manifest-src are listed because both fall back to
+      default-src, and 'none' refuses them silently: no console error that names
+      the policy, just a registration that never resolves and a browser that
+      never offers to install the app. Both are 'self' - the worker is this
+      repository's own file and the manifest sits beside it.
+
       So script-src and connect-src are not the directives doing the work here.
-      default-src 'none' is: no plugins, no frames, no workers, no media, and
-      nothing loads from another origin unless it is listed above.
+      default-src 'none' is: no plugins, no frames, no media, and nothing loads
+      from another origin unless it is listed above.
       frame-ancestors is omitted because <meta> CSP ignores it - clickjacking
       protection needs a real response header, which GitHub Pages cannot set.
     -->
@@ -43,6 +80,8 @@
       img-src 'self' data:;
       font-src 'self';
       connect-src 'self' https:;
+      worker-src 'self';
+      manifest-src 'self';
       base-uri 'self';
       form-action 'none'" />
     <meta name="referrer" content="no-referrer" />
@@ -50,6 +89,19 @@
     <link rel="preload" id="webassembly" />
     <link rel="stylesheet" href="css/app.css" />
     <link rel="icon" type="image/png" href="favicon.png" />
+
+    <!--
+      Installable. The icons and the card are generated together by
+      tools/brand-assets/render.py, so there is one definition of the mark rather
+      than five exported files. Every path in the manifest is relative to the
+      manifest itself, which is what makes this work unchanged from a repository
+      sub-path on GitHub Pages and from a fork's own site.
+    -->
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="WorkPlan" />
+
     <script type="importmap"></script>
 </head>
 
@@ -63,12 +115,21 @@
             </svg>
             <div class="loading-progress-text"></div>
             <!--
-              These four strings render before the .NET runtime exists, so they cannot
-              come from IStringLocalizer. app.js translates them from the remembered
+              These strings render before the .NET runtime exists, so they cannot come
+              from IStringLocalizer. app.js translates them from the remembered
               language on its first line instead; English is the markup fallback for a
               first visit, where no language has been chosen yet.
+
+              The note names the phase, not the file count. The percentage above it
+              only measures the download; when it reads 100 the runtime still has to
+              start, and app.js swaps in data-phase-runtime for that stretch. The
+              third phase - opening the database - belongs to App.razor, because by
+              then this element has been replaced by the rendered application.
             -->
-            <p class="boot-note" data-de="WorkPlan Studio · Datenbank im Browser wird geladen">WorkPlan Studio · loading the in-browser database</p>
+            <p class="boot-note"
+               data-de="WorkPlan Studio · Anwendung wird geladen"
+               data-phase-runtime="Starting the .NET runtime"
+               data-phase-runtime-de="Die .NET-Laufzeit wird gestartet">WorkPlan Studio · downloading the application</p>
         </div>
     </div>
 
@@ -79,7 +140,23 @@
     </div>
     <script src="js/app.js"></script>
     <script src="js/download.js"></script>
-    <script src="_framework/blazor.webassembly#[.{fingerprint}].js"></script>
+    <!--
+      autostart="false", so that the culture can be handed to the runtime before
+      it boots. The app ships one regional ICU shard rather than the complete
+      table, and in that configuration Blazor refuses a culture change made
+      during start-up - which is what Program.cs used to do, reading the
+      remembered language over JS interop once managed code was already running.
+      Passing it to start() instead means the runtime comes up in the right
+      culture and nothing has to change it afterwards.
+
+      This costs one inline script, which the policy above already permits for
+      Blazor's own fingerprinted importmap. app.js has run by now, so a language
+      asked for in the address is already in localStorage and this reads it.
+    -->
+    <script src="_framework/blazor.webassembly#[.{fingerprint}].js" autostart="false"></script>
+    <script>
+        Blazor.start({ applicationCulture: window.blazorCulture.resolved() });
+    </script>
 </body>
 
 </html>

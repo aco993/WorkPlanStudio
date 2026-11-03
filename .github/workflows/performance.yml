@@ -9,7 +9,10 @@ name: Performance
 #   • lighthouse — Lighthouse CI against the published site, served the way
 #     GitHub Pages serves it (static files, pre-compressed assets honoured).
 #     Accessibility, best practices and SEO are asserted; the performance
-#     score of a 30 MB WebAssembly runtime is reported, not gated.
+#     score of a 30 MB WebAssembly runtime is reported, not gated. The same job
+#     asserts the cold-start transfer budget before it serves anything, because
+#     a sum of file sizes - unlike a score - says the same thing on every
+#     runner and so can be allowed to fail a build.
 # Runs on main, weekly, and on demand — not on every pull request, where the
 # runner noise would say more than the code.
 
@@ -131,6 +134,49 @@ jobs:
 
       - name: Publish
         run: dotnet publish src/WorkPlanStudio/WorkPlanStudio.csproj -c Release -o release
+
+      # The one performance number in this workflow that asserts.
+      #
+      # It can, because it is a sum of file sizes rather than a timing: identical
+      # on every machine, so when it moves, the build moved. The Lighthouse score
+      # below cannot, for the reason the wall-clock budgets were moved here in the
+      # first place - a gate that reddens on runner noise teaches the author to
+      # re-run rather than look.
+      #
+      # It runs here rather than on every pull request because nothing else on a
+      # pull request publishes the app, and a publish is five minutes of runner
+      # time. The same command runs locally against a publish folder, which is
+      # how an author checks before pushing:
+      #
+      #   python3 .github/scripts/transfer_budget.py publish/wwwroot
+      #
+      # Measured on this tip: 7,501 KB, against 7,399 KB that a browser actually
+      # transferred from the published site - the proxy is within 1.4 % of the
+      # real thing. The budget sits about two per cent above that, the same way
+      # the coverage gates sit about two points below theirs, and --slack-kb
+      # fails the build when it drifts far enough above to stop defending
+      # anything.
+      #
+      # The output is captured rather than piped into tee. A `run:` step runs
+      # under `bash -e` without pipefail, so a pipe would report tee's exit code
+      # and the gate would pass while over budget; `if` is also what keeps `-e`
+      # from ending the step before the summary has been written.
+      - name: Cold-start transfer budget
+        run: |
+          if python3 .github/scripts/transfer_budget.py release/wwwroot \
+               --budget-kb 7650 --slack-kb 400 > budget.txt 2>&1; then
+            status=0
+          else
+            status=$?
+          fi
+          {
+            echo '### Cold-start transfer budget'
+            echo '```'
+            cat budget.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          cat budget.txt
+          exit "$status"
 
       # Serve the published folder like a static host: SPA fallback, and the
       # pre-compressed .br/.gz siblings served when the browser accepts them.

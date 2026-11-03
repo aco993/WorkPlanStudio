@@ -76,6 +76,19 @@ jobs:
       - name: Rewrite base href for project page
         run: sed -i 's#<base href="/" />#<base href="/${{ github.event.repository.name }}/" />#g' release/wwwroot/index.html
 
+      # The link-preview tags carry absolute URLs, because og:image is fetched by
+      # a service with no base to resolve against. index.html names this
+      # deployment; a fork rewrites them to its own site here, so a forked demo
+      # does not advertise somebody else's screenshot.
+      - name: Rewrite link-preview URLs for this site
+        run: |
+          site="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/"
+          sed -i "s#https://aco993.github.io/WorkPlanStudio/#${site}#g" release/wwwroot/index.html
+          # Three lines carry the site URL: og:url, og:image and canonical. A
+          # miss here means the literal in index.html drifted and every fork
+          # would ship this repository's URLs.
+          test "$(grep -c "$site" release/wwwroot/index.html)" -ge 3
+
       # Single-page-app fallback so deep links (e.g. /work-plans/3) resolve.
       - name: Add SPA 404 fallback
         run: cp release/wwwroot/index.html release/wwwroot/404.html
