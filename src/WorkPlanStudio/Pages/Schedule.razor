@@ -52,144 +52,22 @@
     </div>
 </div>
 
+@*
+    The result comes first, the parameters that produced it second — in the
+    markup as well as on the screen. Measured on a 375x812 phone with the
+    parameters first: the KPI row began 934 px down and the Gantt 1,181 px down,
+    so a reader on a phone scrolled a screen and a half of a nine-field form
+    before reaching anything the form had computed. The page opened on its
+    settings.
+
+    The rail could have been reordered with CSS instead, but a layout whose
+    visual order and focus order disagree moves the problem rather than fixing
+    it: tabbing would leave the header, jump to a form below the fold and come
+    back up. Putting the rail after the result in the markup and on the right at
+    desktop width keeps reading order, focus order and visual order the same at
+    every width, in both directions of the grid. See docs/adr/0026.
+*@
 <div class="sched-layout">
-    <section class="card param-card">
-        <div class="card-head"><h2>@L["Sched_Parameters"]</h2></div>
-        <div class="card-body">
-            @*
-                The hints live outside the <label>, not inside it. Everything inside a
-                label becomes part of the control's accessible name, so the
-                "equivalent rules" line — which changes after every run — used to
-                rename the select each time it was regenerated.
-            *@
-            <div class="param-grid">
-                <div class="field">
-                    <label for="sched-rule">@L["Sched_DispatchRule"]</label>
-                    <select id="sched-rule" class="input" @bind="_form.DispatchRule"
-                            aria-describedby="@(_result is { EquivalentRules.Count: > 0 } ? "sched-rule-hint" : null)">
-                        @foreach (var r in Enum.GetValues<DispatchRule>())
-                        {
-                            <option value="@r">@DispatchLabel(r)</option>
-                        }
-                    </select>
-                    @if (_result is { EquivalentRules.Count: > 0 })
-                    {
-                        <span id="sched-rule-hint" class="field-hint">
-                            @string.Format(
-                                L["Sched_RuleEquivalent"],
-                                string.Join(", ", _result.EquivalentRules.Select(DispatchLabel)))
-                        </span>
-                    }
-                </div>
-
-                @*
-                    The acceptance rule sits beside the dispatch rule because the two
-                    together are the strategy: one decides the order the jobs are tried
-                    in, the other how the polish spends its budget. Its explanation is
-                    a sibling of the <select> rather than a child of a wrapping label,
-                    for the reason written above — it changes with the selection, and
-                    inside a label it would rename the control each time.
-                *@
-                <div class="field">
-                    <label for="sched-acceptance">@L["Run_Acceptance"]</label>
-                    <select id="sched-acceptance" class="input" @bind="_form.LocalSearchAcceptance"
-                            aria-describedby="sched-acceptance-hint">
-                        @foreach (var a in Enum.GetValues<LocalSearchAcceptance>())
-                        {
-                            <option value="@a">@AcceptanceLabel(a)</option>
-                        }
-                    </select>
-                    <span id="sched-acceptance-hint" class="field-hint">@AcceptanceHint(_form.LocalSearchAcceptance)</span>
-                </div>
-
-                <div class="field">
-                    <label for="sched-duerule">@L["Sched_DueRule"]</label>
-                    <select id="sched-duerule" class="input" @bind="_form.DueDateRule">
-                        @foreach (var r in Enum.GetValues<DueDateRule>())
-                        {
-                            <option value="@r">@DueLabel(r)</option>
-                        }
-                    </select>
-                </div>
-
-                @switch (_form.DueDateRule)
-                {
-                    case DueDateRule.TotalWorkContent:
-                        <div class="field">
-                            <label for="sched-twk">@L["Sched_TwkFactor"]</label>
-                            <input id="sched-twk" class="input num" type="number" inputmode="decimal" step="0.1"
-                                   min="@Form.TwkMin.ToString(CultureInfo.InvariantCulture)" max="@Form.TwkMax.ToString(CultureInfo.InvariantCulture)"
-                                   aria-describedby="sched-twk-hint"
-                                   @bind="_form.TwkFlowFactor" @bind:after="_form.Clamp" />
-                            <span id="sched-twk-hint" class="field-hint">@Range(Form.TwkMin, Form.TwkMax)</span>
-                        </div>
-                        break;
-                    case DueDateRule.NumberOfOperations:
-                        <div class="field">
-                            <label for="sched-nop">@L["Sched_NopMinutes"]</label>
-                            <input id="sched-nop" class="input num" type="number" inputmode="numeric" min="0" max="@Form.MinutesMax"
-                                   aria-describedby="sched-nop-hint" @bind="_form.NopMinutesPerOp" @bind:after="_form.Clamp" />
-                            <span id="sched-nop-hint" class="field-hint">@Range(0, Form.MinutesMax)</span>
-                        </div>
-                        break;
-                    case DueDateRule.EqualSlack:
-                        <div class="field">
-                            <label for="sched-slack">@L["Sched_SlackMinutes"]</label>
-                            <input id="sched-slack" class="input num" type="number" inputmode="numeric" min="0" max="@Form.MinutesMax"
-                                   aria-describedby="sched-slack-hint" @bind="_form.SlackMinutes" @bind:after="_form.Clamp" />
-                            <span id="sched-slack-hint" class="field-hint">@Range(0, Form.MinutesMax)</span>
-                        </div>
-                        break;
-                    default:
-                        <div class="field">
-                            <label for="sched-con">@L["Sched_ConMinutes"]</label>
-                            <input id="sched-con" class="input num" type="number" inputmode="numeric" min="0" max="@Form.MinutesMax"
-                                   aria-describedby="sched-con-hint" @bind="_form.ConMinutes" @bind:after="_form.Clamp" />
-                            <span id="sched-con-hint" class="field-hint">@Range(0, Form.MinutesMax)</span>
-                        </div>
-                        break;
-                }
-
-                @*
-                    These two multiply. Each is inside its own range at 64 and 20 000
-                    and their product is 1.28 million candidate schedules, which the
-                    engine refuses - and refuses by throwing, which the page could
-                    only show as "review the inputs" over a form with eight of them.
-                    The pair is therefore validated here, the error belongs to both
-                    fields, and Generate is unavailable while it stands.
-                *@
-                <div class="field">
-                    <label for="sched-multistart">@L["Sched_MultiStart"]</label>
-                    <input id="sched-multistart" class="input num @BudgetStyle()" type="number" inputmode="numeric" min="1" max="@Form.MultiStartMax"
-                           aria-invalid="@BudgetInvalid()" aria-describedby="@BudgetDescribedBy("sched-multistart-hint")"
-                           @bind="_form.MultiStartRuns" @bind:after="_form.Clamp" />
-                    <span id="sched-multistart-hint" class="field-hint">@Range(1, Form.MultiStartMax)</span>
-                </div>
-                <div class="field">
-                    <label for="sched-localsearch">@L["Sched_LocalSearch"]</label>
-                    <input id="sched-localsearch" class="input num @BudgetStyle()" type="number" inputmode="numeric" min="0" max="@Form.LocalSearchMax"
-                           aria-invalid="@BudgetInvalid()" aria-describedby="@BudgetDescribedBy("sched-localsearch-hint")"
-                           @bind="_form.LocalSearchMaxSteps" @bind:after="_form.Clamp" />
-                    <span id="sched-localsearch-hint" class="field-hint">@Range(0, Form.LocalSearchMax)</span>
-                </div>
-                @if (_form.ExceedsEvaluationBudget)
-                {
-                    <p id="sched-budget-error" class="field-error" role="alert">
-                        @string.Format(
-                            L["Run_BudgetExceeded"],
-                            Format.Number(_form.TotalEvaluations),
-                            Format.Number(SchedulingParameterLimits.MaxTotalEvaluations))
-                    </p>
-                }
-                <label class="field">
-                    <span>@L["Sched_Seed"]</span>
-                    <input class="input num" type="number" inputmode="numeric" min="0" max="@int.MaxValue"
-                           @bind="_form.Seed" @bind:after="_form.Clamp" />
-                </label>
-            </div>
-        </div>
-    </section>
-
     <div class="sched-results" aria-busy="@(_running ? "true" : "false")">
         @*
             Regenerating replaces four KPI cards, the chart, the jobs table and the
@@ -587,6 +465,143 @@
             </section>
         }
     </div>
+
+    <section class="card param-card">
+        <div class="card-head"><h2>@L["Sched_Parameters"]</h2></div>
+        <div class="card-body">
+            @*
+                The hints live outside the <label>, not inside it. Everything inside a
+                label becomes part of the control's accessible name, so the
+                "equivalent rules" line — which changes after every run — used to
+                rename the select each time it was regenerated.
+            *@
+            <div class="param-grid">
+                <div class="field">
+                    <label for="sched-rule">@L["Sched_DispatchRule"]</label>
+                    <select id="sched-rule" class="input" @bind="_form.DispatchRule"
+                            aria-describedby="@(_result is { EquivalentRules.Count: > 0 } ? "sched-rule-hint" : null)">
+                        @foreach (var r in Enum.GetValues<DispatchRule>())
+                        {
+                            <option value="@r">@DispatchLabel(r)</option>
+                        }
+                    </select>
+                    @if (_result is { EquivalentRules.Count: > 0 })
+                    {
+                        <span id="sched-rule-hint" class="field-hint">
+                            @string.Format(
+                                L["Sched_RuleEquivalent"],
+                                string.Join(", ", _result.EquivalentRules.Select(DispatchLabel)))
+                        </span>
+                    }
+                </div>
+
+                @*
+                    The acceptance rule sits beside the dispatch rule because the two
+                    together are the strategy: one decides the order the jobs are tried
+                    in, the other how the polish spends its budget. Its explanation is
+                    a sibling of the <select> rather than a child of a wrapping label,
+                    for the reason written above — it changes with the selection, and
+                    inside a label it would rename the control each time.
+                *@
+                <div class="field">
+                    <label for="sched-acceptance">@L["Run_Acceptance"]</label>
+                    <select id="sched-acceptance" class="input" @bind="_form.LocalSearchAcceptance"
+                            aria-describedby="sched-acceptance-hint">
+                        @foreach (var a in Enum.GetValues<LocalSearchAcceptance>())
+                        {
+                            <option value="@a">@AcceptanceLabel(a)</option>
+                        }
+                    </select>
+                    <span id="sched-acceptance-hint" class="field-hint">@AcceptanceHint(_form.LocalSearchAcceptance)</span>
+                </div>
+
+                <div class="field">
+                    <label for="sched-duerule">@L["Sched_DueRule"]</label>
+                    <select id="sched-duerule" class="input" @bind="_form.DueDateRule">
+                        @foreach (var r in Enum.GetValues<DueDateRule>())
+                        {
+                            <option value="@r">@DueLabel(r)</option>
+                        }
+                    </select>
+                </div>
+
+                @switch (_form.DueDateRule)
+                {
+                    case DueDateRule.TotalWorkContent:
+                        <div class="field">
+                            <label for="sched-twk">@L["Sched_TwkFactor"]</label>
+                            <input id="sched-twk" class="input num" type="number" inputmode="decimal" step="0.1"
+                                   min="@Form.TwkMin.ToString(CultureInfo.InvariantCulture)" max="@Form.TwkMax.ToString(CultureInfo.InvariantCulture)"
+                                   aria-describedby="sched-twk-hint"
+                                   @bind="_form.TwkFlowFactor" @bind:after="_form.Clamp" />
+                            <span id="sched-twk-hint" class="field-hint">@Range(Form.TwkMin, Form.TwkMax)</span>
+                        </div>
+                        break;
+                    case DueDateRule.NumberOfOperations:
+                        <div class="field">
+                            <label for="sched-nop">@L["Sched_NopMinutes"]</label>
+                            <input id="sched-nop" class="input num" type="number" inputmode="numeric" min="0" max="@Form.MinutesMax"
+                                   aria-describedby="sched-nop-hint" @bind="_form.NopMinutesPerOp" @bind:after="_form.Clamp" />
+                            <span id="sched-nop-hint" class="field-hint">@Range(0, Form.MinutesMax)</span>
+                        </div>
+                        break;
+                    case DueDateRule.EqualSlack:
+                        <div class="field">
+                            <label for="sched-slack">@L["Sched_SlackMinutes"]</label>
+                            <input id="sched-slack" class="input num" type="number" inputmode="numeric" min="0" max="@Form.MinutesMax"
+                                   aria-describedby="sched-slack-hint" @bind="_form.SlackMinutes" @bind:after="_form.Clamp" />
+                            <span id="sched-slack-hint" class="field-hint">@Range(0, Form.MinutesMax)</span>
+                        </div>
+                        break;
+                    default:
+                        <div class="field">
+                            <label for="sched-con">@L["Sched_ConMinutes"]</label>
+                            <input id="sched-con" class="input num" type="number" inputmode="numeric" min="0" max="@Form.MinutesMax"
+                                   aria-describedby="sched-con-hint" @bind="_form.ConMinutes" @bind:after="_form.Clamp" />
+                            <span id="sched-con-hint" class="field-hint">@Range(0, Form.MinutesMax)</span>
+                        </div>
+                        break;
+                }
+
+                @*
+                    These two multiply. Each is inside its own range at 64 and 20 000
+                    and their product is 1.28 million candidate schedules, which the
+                    engine refuses - and refuses by throwing, which the page could
+                    only show as "review the inputs" over a form with eight of them.
+                    The pair is therefore validated here, the error belongs to both
+                    fields, and Generate is unavailable while it stands.
+                *@
+                <div class="field">
+                    <label for="sched-multistart">@L["Sched_MultiStart"]</label>
+                    <input id="sched-multistart" class="input num @BudgetStyle()" type="number" inputmode="numeric" min="1" max="@Form.MultiStartMax"
+                           aria-invalid="@BudgetInvalid()" aria-describedby="@BudgetDescribedBy("sched-multistart-hint")"
+                           @bind="_form.MultiStartRuns" @bind:after="_form.Clamp" />
+                    <span id="sched-multistart-hint" class="field-hint">@Range(1, Form.MultiStartMax)</span>
+                </div>
+                <div class="field">
+                    <label for="sched-localsearch">@L["Sched_LocalSearch"]</label>
+                    <input id="sched-localsearch" class="input num @BudgetStyle()" type="number" inputmode="numeric" min="0" max="@Form.LocalSearchMax"
+                           aria-invalid="@BudgetInvalid()" aria-describedby="@BudgetDescribedBy("sched-localsearch-hint")"
+                           @bind="_form.LocalSearchMaxSteps" @bind:after="_form.Clamp" />
+                    <span id="sched-localsearch-hint" class="field-hint">@Range(0, Form.LocalSearchMax)</span>
+                </div>
+                @if (_form.ExceedsEvaluationBudget)
+                {
+                    <p id="sched-budget-error" class="field-error" role="alert">
+                        @string.Format(
+                            L["Run_BudgetExceeded"],
+                            Format.Number(_form.TotalEvaluations),
+                            Format.Number(SchedulingParameterLimits.MaxTotalEvaluations))
+                    </p>
+                }
+                <label class="field">
+                    <span>@L["Sched_Seed"]</span>
+                    <input class="input num" type="number" inputmode="numeric" min="0" max="@int.MaxValue"
+                           @bind="_form.Seed" @bind:after="_form.Clamp" />
+                </label>
+            </div>
+        </div>
+    </section>
 </div>
 
 <Modal @bind-Visible="_showAiSettings" Title="@L["Sched_Ai_SettingsTitle"]">

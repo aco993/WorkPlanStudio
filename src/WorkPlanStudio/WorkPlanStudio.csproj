@@ -4,10 +4,43 @@
     <TargetFramework>net10.0</TargetFramework>
     <OverrideHtmlAssetPlaceholders>true</OverrideHtmlAssetPlaceholders>
 
-    <!-- Load full ICU data so German (de-DE) number, date and currency
-         formatting is correct in the browser, not just the invariant culture. -->
-    <BlazorWebAssemblyLoadAllGlobalizationData>true</BlazorWebAssemblyLoadAllGlobalizationData>
+    <!-- Globalization data. `true` ships one complete ICU table and fetches it
+         on every cold start; measured against the published site, that single
+         file was 455 KB of the download. `false` ships the three regional
+         shards instead and the loader fetches exactly one, chosen at run time
+         from the browser's own languages - EFIGS (English, French, Italian,
+         German, Spanish) for the two cultures this UI offers, CJK or no-CJK for
+         a reader whose browser asks for something else. So this is not the
+         invariant culture and not a narrowing of who the app works for: German
+         number, date and currency formatting stays correct, and
+         LocalizationTests asserts that rather than trusting this comment.
+
+         Measured from the publish output: icudt_EFIGS.dat is 537.9 KB raw,
+         214.9 KB gzipped, 140.6 KB Brotli - against 455 KB transferred for the
+         full table today. Roughly 240 KB off a cold start on GitHub Pages,
+         which gzips on the fly, and more where the host serves the .br sibling.
+
+         The trade is on disk, not on the wire: all three shards are published,
+         so the deployed site grows by about 1.5 MB of files that a given
+         visitor never requests. A static host is paid for in bytes transferred,
+         so that is the right side to spend on. -->
+    <BlazorWebAssemblyLoadAllGlobalizationData>false</BlazorWebAssemblyLoadAllGlobalizationData>
+
+    <!-- Makes the SDK emit service-worker-assets.js next to the worker: every
+         published file with its fingerprinted name and integrity hash. The
+         worker reads that rather than carrying a hand-written precache list,
+         which is the only version of this that cannot go stale. -->
+    <ServiceWorkerAssetsManifest>service-worker-assets.js</ServiceWorkerAssetsManifest>
   </PropertyGroup>
+
+  <!-- Development gets the inert worker, a published build gets the caching one.
+       The substitution happens at publish, so `dotnet run` - and therefore the
+       whole browser suite - never serves a cached asset over the build under
+       test. -->
+  <ItemGroup>
+    <ServiceWorker Include="wwwroot\service-worker.js"
+                   PublishedContent="wwwroot\service-worker.published.js" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" />

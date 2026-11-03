@@ -9,7 +9,23 @@
     permission model.
 *@
 <details class="persona" @ref="_details" @onkeydown="OnKeyDown">
-    <summary class="persona-summary" aria-label="@L["Persona_Title"]" title="@L["Persona_Title"]">
+    @*
+        The accessible name is built from the content rather than imposed by a
+        label attribute. It used to be the Persona_Title string alone, while the
+        visible text was the persona itself - Planner, Supervisor or Guest. A
+        name that does not contain the visible label is WCAG 2.5.3 Label in Name
+        (level A): someone driving the page by voice says the word written on the
+        control, and nothing matches it. Letting the name come from the content
+        joins the two, so it both contains what the reader can see and still says
+        what the control is for. The title stays the hover hint it always was.
+
+        A newer axe-core reports this as label-content-name-mismatch, which is how
+        it surfaced: the rule landed with a test-stack bump and turned 38 of the
+        76 browser tests red at once, because this control is in the layout on
+        every route.
+    *@
+    <summary class="persona-summary" title="@L["Persona_Title"]">
+        <span class="sr-only">@L["Persona_Title"]</span>
         <span class="persona-avatar role-@Auth.CurrentRole.ToString().ToLowerInvariant()" aria-hidden="true">@Initial(Auth.CurrentRole)</span>
         <span class="persona-name">@L[$"Role_{Auth.CurrentRole}"]</span>
         <svg class="persona-caret" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>

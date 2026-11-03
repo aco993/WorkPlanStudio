@@ -109,9 +109,24 @@ re-run rather than to look, and then it is noise rather than signal.
 ## Page load
 
 The app ships the .NET runtime, EF Core and SQLite as WebAssembly. Published, that
-is **103 files and 19.8 MB uncompressed**, of which the pre-compressed Brotli
-siblings total **5.8 MB** — so its Lighthouse performance score is what a
+is **114 files and 21.0 MB uncompressed**, of which the pre-compressed Brotli
+siblings total **6.1 MB** — so its Lighthouse performance score is what a
 WebAssembly runtime scores, and it is reported rather than gated.
+
+What a cold start actually transfers is a different number, and since
+[ADR 0027](adr/0027-pay-the-cold-start-once.md) it is the one that gates. The
+same job asserts it before it serves anything:
+
+```
+python3 .github/scripts/transfer_budget.py publish/wwwroot
+```
+
+Measured on this tip: **7,501 KB**, against **7,399 KB** that a browser really
+transferred from the published site — a proxy within 1.4 % of the real thing. It
+bills the largest of the three ICU shards, of which a visitor fetches one, so it
+is conservative by about 136 KB for anyone whose browser matches EFIGS. A score
+moves with the runner; a sum of file sizes does not, which is why this one is
+allowed to fail a build and the Lighthouse score is not.
 
 Measured on 2026-09-11 with Lighthouse 13.4.1, desktop preset, against the
 published `wwwroot` served with Brotli the way `performance.yml` serves it:
