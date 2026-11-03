@@ -1,0 +1,76 @@
+name: Dependabot auto-merge
+
+# Four Dependabot pull requests sat open for up to three weeks, three of them
+# with every check green. Nothing was wrong with them; merging a green
+# dependency bump by hand is simply a task that gets postponed, and an
+# otherwise-current repository then advertises four open pull requests to
+# anyone who looks at it.
+#
+# So this enables GitHub's auto-merge on the ones that are safe to take
+# unattended. Auto-merge does not bypass anything: the branch ruleset still
+# holds, every required check still has to pass, and a red run leaves the pull
+# request open exactly as it is today. What it removes is the gap between "the
+# checks went green" and "someone noticed".
+#
+# What it deliberately does not cover:
+#   • major version bumps — a major is a change in behaviour that someone
+#     should read the release notes for, so those stay manual;
+#   • anything that is not Dependabot's, which the actor check enforces.
+#
+# The version metadata comes from dependabot/fetch-metadata rather than from
+# parsing the title, because a title is prose and this decides whether code
+# merges without a human.
+
+on: pull_request_target
+
+# A newer push to the same pull request supersedes the run in flight.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# pull_request_target runs with a writable token against the *base* repository,
+# so the job below must never check out or execute the pull request's code. It
+# does not: it reads metadata and calls the API, and nothing else.
+permissions:
+  contents: read
+
+jobs:
+  auto-merge:
+    name: Enable auto-merge for minor and patch bumps
+    runs-on: ubuntu-latest
+    if: github.actor == 'dependabot[bot]'
+    timeout-minutes: 5
+    permissions:
+      contents: write        # to enable auto-merge on the pull request
+      pull-requests: write   # to approve it
+    steps:
+      - name: Fetch the update metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98  # v3.1.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      # A ruleset that requires a review needs one, and Dependabot cannot
+      # approve its own pull request. This is the repository owner's standing
+      # answer to patch and minor bumps, recorded once here rather than clicked
+      # four times a month.
+      - name: Approve
+        if: steps.metadata.outputs.update-type != 'version-update:semver-major'
+        run: gh pr review --approve "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Enable auto-merge
+        if: steps.metadata.outputs.update-type != 'version-update:semver-major'
+        run: gh pr merge --auto --squash "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Say why a major was left alone
+        if: steps.metadata.outputs.update-type == 'version-update:semver-major'
+        run: |
+          echo "### Left for a human" >> "$GITHUB_STEP_SUMMARY"
+          echo "${{ steps.metadata.outputs.dependency-names }} is a major version bump." >> "$GITHUB_STEP_SUMMARY"
+          echo "Read the release notes and merge it by hand." >> "$GITHUB_STEP_SUMMARY"
