@@ -243,6 +243,18 @@ a:hover { text-decoration: underline; }
 .page-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1.4rem; }
 .page-sub { color: var(--text-muted); font-size: .9rem; margin-top: .25rem; }
 .head-actions { display: flex; gap: .5rem; }
+/* WCAG 2.2 AA 2.5.8 Target Size (Minimum), for the controls that are controls in
+   their own right. The criterion excepts a link sitting inside a sentence, whose
+   height is set by the surrounding line-height; none of these are that. Each was
+   measured under the floor at 375 px: a card-head "View all" at 51x20, a work
+   plan number in a table cell at 44x13, the import page's example download at
+   304x20, and a column's sort button at 29x15. Only the height was ever wrong,
+   so only the height is set - the text keeps its own size. */
+.link,
+.data-table a,
+.field > a,
+.th-sort { min-height: 24px; display: inline-flex; align-items: center; }
+
 .link.back { font-size: .82rem; color: var(--text-muted); display: inline-flex; align-items: center; min-height: 24px; padding: .25rem .35rem .25rem 0; margin-bottom: .1rem; }
 .link.back:hover { color: var(--primary); }
 
@@ -253,6 +265,10 @@ a:hover { text-decoration: underline; }
     padding: .5rem .9rem; font-size: .88rem; font-weight: 600;
     cursor: pointer; transition: background .12s, border-color .12s, color .12s;
     white-space: nowrap; line-height: 1;
+    /* WCAG 2.2 AA 2.5.8 Target Size (Minimum). Set on the base rather than on
+       the one variant that was short, so a future size modifier cannot drop a
+       button back under the floor by changing padding or font size. */
+    min-height: 24px;
 }
 .btn-plus { font-size: 1.1em; line-height: 0; margin-top: -1px; }
 .btn-primary { background: var(--primary); color: var(--on-primary); }
@@ -408,7 +424,11 @@ a:hover { text-decoration: underline; }
    because anything inside a label is folded into the control's accessible name. */
 .field > span:not(.field-hint):not(.field-error),
 .field > label { font-size: .82rem; font-weight: 600; color: var(--text-muted); }
-.field.check { flex-direction: row; align-items: center; gap: .5rem; }
+/* The label is the target: clicking the words toggles the box, so 2.5.8
+   measures this and not the 13px control inside it. Four of the five wrap
+   onto two lines and clear 24px on their own; the one whose text fits on
+   one line came to 19. */
+.field.check { flex-direction: row; align-items: center; gap: .5rem; min-height: 24px; }
 .field.check span { color: var(--text); }
 .input { width: 100%; padding: .5rem .7rem; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); font-size: .9rem; background: var(--surface); color: var(--text); font-family: inherit; }
 .input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); }
@@ -536,14 +556,17 @@ select.input { cursor: pointer; }
 .gantt:focus-visible, .chat-thread:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; border-radius: var(--radius-sm); }
 .gantt-row { display: flex; align-items: center; gap: .8rem; }
 .gantt-label { width: 150px; flex-shrink: 0; font-size: .8rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.gantt-track { position: relative; flex: 1; height: 26px; background: var(--surface-2); border-radius: 6px; min-width: 340px; }
+/* 32px, so a bar inset by 4 is 24 tall and clears 2.5.8 in that dimension.
+   Their width is the one thing here that cannot be padded - it is the
+   operation's duration - see docs/TESTING.md on target size. */
+.gantt-track { position: relative; flex: 1; height: 32px; background: var(--surface-2); border-radius: 6px; min-width: 340px; }
 .gantt-grid { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--border-strong); opacity: .7; }
 /* Bars and closed stretches are <button>s: they carry the only explanation of why
    a machine ran or stood still, so they have to be reachable by something other
    than a mouse pointer. A sliver of a bar is still a 24 px-tall target, and the
    roving tabindex (see Schedule.razor) keeps the whole chart to one tab stop. */
 .gantt-bar, .gantt-closed { border: 0; font: inherit; margin: 0; background-color: transparent; }
-.gantt-bar { position: absolute; top: 3px; bottom: 3px; min-width: 3px; border-radius: 4px; display: flex; align-items: center; padding: 0 .4rem; overflow: hidden; box-shadow: var(--shadow-sm); cursor: pointer; }
+.gantt-bar { position: absolute; top: 4px; bottom: 4px; min-width: 3px; border-radius: 4px; display: flex; align-items: center; padding: 0 .4rem; overflow: hidden; box-shadow: var(--shadow-sm); cursor: pointer; }
 .gantt-bar span { font-size: .7rem; font-weight: 600; color: #fff; white-space: nowrap; text-shadow: 0 1px 1px rgba(0, 0, 0, .3); }
 .gantt-bar:focus-visible, .gantt-closed:focus-visible { outline: 3px solid var(--primary); outline-offset: 1px; z-index: 5; }
 .gantt-bar[aria-pressed="true"], .gantt-closed[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--primary); z-index: 4; }

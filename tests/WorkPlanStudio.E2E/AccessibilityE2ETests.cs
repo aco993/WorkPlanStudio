@@ -91,6 +91,41 @@ public sealed class AccessibilityE2ETests : IClassFixture<PlaywrightFixture>
         await AssertNoViolationsAsync(page, $"{route} ({theme})", route);
     }
 
+    /// <summary>
+    /// The same bar, at the width most visitors arrive on.
+    /// </summary>
+    /// <remarks>
+    /// Every other scan in this file runs at 1320 x 980. The mobile layout is a
+    /// different tree - the navigation becomes a drawer, tables start scrolling
+    /// inside their cards, the schedule stacks - and none of it had ever been
+    /// scanned. One theme is enough here: what changes below 920 px is the
+    /// layout, and the colours were already covered twice over.
+    /// </remarks>
+    [Theory]
+    [MemberData(nameof(RoutesOnly))]
+    public async Task Every_page_has_no_wcag_aa_violations_on_a_phone(string route)
+    {
+        await using var context = await _fixture.Browser.NewContextAsync(new BrowserNewContextOptions
+        {
+            ViewportSize = new ViewportSize { Width = 375, Height = 812 }
+        });
+        var page = await context.NewPageAsync();
+
+        await AppReady.GotoAsync(page, $"{_fixture.BaseUrl}{route}");
+        await page.WaitForSelectorAsync(AppReady.ContentSelector, new() { Timeout = AppReady.BootTimeoutMilliseconds });
+        await AppReady.SettledAsync(page);
+
+        await AssertNoViolationsAsync(page, $"{route} (375 x 812)", route);
+    }
+
+    public static TheoryData<string> RoutesOnly()
+    {
+        var data = new TheoryData<string>();
+        foreach (var route in Routes)
+            data.Add(route);
+        return data;
+    }
+
     [Fact]
     public async Task An_open_dialog_has_no_wcag_aa_violations()
     {

@@ -286,6 +286,43 @@ fixed by another change, the pin then failed with "the page got better", and the
 entry was removed. One pin remains, `heading-order` on the modal dialog, which
 titles itself with an `<h3>` under a page whose only other heading is the `<h1>`.
 
+### 📏 Target size — the part axe cannot see
+
+axe-core has **no rule** for WCAG 2.2 AA **2.5.8 Target Size (Minimum)**. The
+accessibility scans above can run every route, in both themes and both languages,
+and come back clean while a control is three pixels wide — which is what they did.
+Measured against the published site at 375 x 812, **109** interactive elements sat
+under 24 x 24 CSS px. The suite was green the whole time, because nothing in it
+looked.
+
+`TargetSizeE2ETests` looks. It walks every route at phone width, measures the
+*effective* target of each control, and fails with the size and the accessible
+name of anything under the floor. Two details decide whether it measures the right
+thing:
+
+- **A control wrapped in its own `<label>` is measured as the label.** Clicking
+  the words toggles the checkbox, so the label is the target; measuring the 13 px
+  box instead reports five defects the application does not have.
+- **The Gantt's marks are excepted on width, and only on width.** A bar's width
+  *is* the operation's duration and a closed stretch's width is how long the work
+  centre stood still, so widening a sliver to reach 24 px would not make the chart
+  more usable — it would make it say something untrue. That is 2.5.8's
+  **Essential** exception almost to the letter, and the **Equivalent** exception
+  covers it a second time: the same data is a table on the same page, one visible
+  toggle away. A second test asserts that the table is really there, that the
+  toggle is itself a full-size target, and that the table has rows — because an
+  exception you claim without checking is a suppression with better manners.
+
+Their **height** had no such excuse: the bars were 20 px because the lane was 26.
+The lane is 32 now. What else the measurement found had nothing to do with the
+chart — a card's "View all" at 51 x 20, a work-plan number in a table cell at
+44 x 13, the import page's example download at 304 x 20, a column's sort button at
+29 x 15, and one checkbox label that fitted on a single line at 305 x 19. All are
+controls in their own right, none is a link inside a sentence (which the criterion
+excepts), and in every case only the height was ever wrong.
+
+See [ADR 0028](adr/0028-target-size-and-the-chart.md).
+
 Automated rules catch roughly a third of WCAG. Keyboard and focus behaviour is
 covered by the flows above; bUnit checks dialog semantics, table scopes and
 accessible names; and the Gantt's own keyboard model — arrow keys along a lane,
