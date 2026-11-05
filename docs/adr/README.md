@@ -44,3 +44,4 @@ with a one-line summary of each.
 | [0025](0025-hostile-input-on-the-model-path.md) | Hostile input on the model path: what a browser-only app can promise about a key and about prompt injection | Accepted |
 | [0026](0026-result-before-parameters.md) | Put the result before the parameters that produced it | Accepted |
 | [0027](0027-pay-the-cold-start-once.md) | Pay the cold start once, and say what it is doing while it happens | Accepted |
+| [0028](0028-target-size-and-the-chart.md) | Measure target size, and except the chart on width only | Accepted |
