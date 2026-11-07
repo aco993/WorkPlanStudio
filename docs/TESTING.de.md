@@ -306,6 +306,44 @@ mit „die Seite ist besser geworden“, und der Eintrag wurde entfernt. Eine Fi
 bleibt, `heading-order` auf dem modalen Dialog, der sich mit einem `<h3>` unter einer
 Seite überschreibt, deren einzige andere Überschrift die `<h1>` ist.
 
+### 📏 Zielgröße — der Teil, den axe nicht sieht
+
+axe-core hat **keine Regel** für WCAG 2.2 AA **2.5.8 Zielgröße (Minimum)**. Die
+Prüfungen oben können jede Route in beiden Themes und beiden Sprachen durchlaufen
+und sauber zurückkommen, während ein Bedienelement drei Pixel breit ist — genau
+das ist passiert. Gemessen auf der veröffentlichten Seite bei 375 x 812 lagen
+**109** interaktive Elemente unter 24 x 24 CSS-Pixeln. Die Suite war die ganze
+Zeit grün, weil nichts darin hinsieht.
+
+`TargetSizeE2ETests` sieht hin. Die Tests gehen jede Route in Telefonbreite durch,
+messen das *wirksame* Ziel jedes Bedienelements und melden Größe und zugänglichen
+Namen von allem darunter. Zwei Details entscheiden, ob richtig gemessen wird:
+
+- **Ein von seinem eigenen `<label>` umschlossenes Element wird als Label
+  gemessen.** Ein Klick auf den Text schaltet die Checkbox, also ist das Label das
+  Ziel; die 13-px-Box zu messen meldet fünf Defekte, die es nicht gibt.
+- **Die Marken im Gantt-Diagramm sind in der Breite ausgenommen, und nur dort.**
+  Die Breite eines Balkens *ist* die Dauer des Arbeitsgangs, die Breite einer
+  schraffierten Strecke die Stillstandszeit des Arbeitsplatzes. Einen schmalen
+  Streifen auf 24 px zu verbreitern machte das Diagramm nicht bedienbarer, sondern
+  unwahr. Das ist fast wörtlich die Ausnahme **Essenziell**, und die Ausnahme
+  **Äquivalent** deckt es ein zweites Mal ab: dieselben Daten stehen als Tabelle
+  auf derselben Seite, einen sichtbaren Umschalter entfernt. Ein zweiter Test
+  prüft, dass es diese Tabelle wirklich gibt, dass der Umschalter selbst ein
+  vollwertiges Ziel ist und dass die Tabelle Zeilen hat — denn eine Ausnahme, die
+  man behauptet ohne nachzusehen, ist eine Unterdrückung mit besseren Manieren.
+
+Ihre **Höhe** hatte keine solche Entschuldigung: Die Balken waren 20 px, weil die
+Spur 26 war. Die Spur ist jetzt 32. Was die Messung sonst fand, hatte mit dem
+Diagramm nichts zu tun — ein „Alle anzeigen" in einer Karte mit 51 x 20, eine
+Arbeitsplannummer in einer Tabellenzelle mit 44 x 13, der Beispiel-Download der
+Importseite mit 304 x 20, die Sortierschaltfläche einer Spalte mit 29 x 15 und ein
+Checkbox-Label, das in eine Zeile passte, mit 305 x 19. Alle sind eigenständige
+Bedienelemente, keines ist ein Link in einem Satz (was das Kriterium ausnimmt),
+und in jedem Fall war nur die Höhe falsch.
+
+Siehe [ADR 0028](adr/0028-target-size-and-the-chart.md).
+
 Automatisierte Regeln fangen etwa ein Drittel von WCAG. Tastatur- und Fokusverhalten
 decken die Abläufe oben ab; bUnit prüft Dialogsemantik, Tabellenbezüge und zugängliche
 Namen; und das Tastaturmodell des Gantt-Diagramms selbst — Pfeiltasten entlang einer

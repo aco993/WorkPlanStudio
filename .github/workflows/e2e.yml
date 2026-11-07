@@ -92,7 +92,7 @@ jobs:
           UPDATE_VISUAL_BASELINES: ${{ inputs.update_baselines && '1' || '' }}
         run: >
           dotnet test tests/WorkPlanStudio.E2E/WorkPlanStudio.E2E.csproj -c Release --no-build
-          --minimum-expected-tests 60
+          --minimum-expected-tests 98
           --results-directory ${{ github.workspace }}/e2e-results
           --report-xunit-trx --report-xunit-trx-filename e2e.trx
 
