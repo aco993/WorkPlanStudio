@@ -42,7 +42,7 @@ jobs:
     timeout-minutes: 5
     permissions:
       contents: write        # to enable auto-merge on the pull request
-      pull-requests: write   # to approve it
+      pull-requests: write   # auto-merge is a pull-request operation
     steps:
       - name: Fetch the update metadata
         id: metadata
@@ -50,17 +50,12 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      # A ruleset that requires a review needs one, and Dependabot cannot
-      # approve its own pull request. This is the repository owner's standing
-      # answer to patch and minor bumps, recorded once here rather than clicked
-      # four times a month.
-      - name: Approve
-        if: steps.metadata.outputs.update-type != 'version-update:semver-major'
-        run: gh pr review --approve "$PR_URL"
-        env:
-          PR_URL: ${{ github.event.pull_request.html_url }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
+      # No Approve step, for two reasons found the first time this ran for real
+      # (CsCheck 5.0.0 -> 5.0.1, #86): GITHUB_TOKEN may not approve a pull
+      # request at all - "GitHub Actions is not permitted to approve pull
+      # requests" - and the branch ruleset asks for no approving review anyway
+      # (required_approving_review_count is 0). The step was unnecessary and
+      # impossible, and it failed the job while every other check was green.
       - name: Enable auto-merge
         if: steps.metadata.outputs.update-type != 'version-update:semver-major'
         run: gh pr merge --auto --squash "$PR_URL"
