@@ -14,6 +14,7 @@
 [![Abdeckung Arbeitszeit](https://img.shields.io/endpoint?url=https%3A%2F%2Faco993.github.io%2FWorkPlanStudio%2Fbadges%2FWorkPlanStudio.WorkingTime.json)](docs/TESTING.de.md#abdeckung)
 [![Abdeckung App](https://img.shields.io/endpoint?url=https%3A%2F%2Faco993.github.io%2FWorkPlanStudio%2Fbadges%2FWorkPlanStudio.json)](docs/TESTING.de.md#abdeckung)
 [![Abdeckung Domäne](https://img.shields.io/endpoint?url=https%3A%2F%2Faco993.github.io%2FWorkPlanStudio%2Fbadges%2FWorkPlanStudio.Domain.json)](docs/TESTING.de.md#abdeckung)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/aco993/WorkPlanStudio/badge)](https://scorecard.dev/viewer/?uri=github.com/aco993/WorkPlanStudio)
 [![Lizenz: MIT](https://img.shields.io/badge/Lizenz-MIT-green.svg)](LICENSE)
 
 **WorkPlan Studio** ist eine eigenständige Anwendung für die Arbeitsvorbereitung und die Feinplanung: **Arbeitspläne** mit ihren Arbeitsgängen, die **Arbeitsplätze** und **Kostenstellen**, auf denen sie laufen, **Fertigungsaufträge** mit eingefrorenem Arbeitsplan und eine **kapazitätsbeschränkte Feinplanung**, die Schichtkalender und das Arbeitszeitgesetz einhält — dazu ein Chat, der das Ergebnis erklärt, und ein Branch-and-Bound-Löser, der sagt, wie weit der Plan vom Optimum entfernt ist. Die gesamte Anwendung einschließlich ihrer relationalen Datenbank läuft im Browser als statische WebAssembly-Seite. Ein optionales ASP.NET-Core-Backend mit echten Benutzerkonten ist vorhanden und bleibt aus, solange es nicht konfiguriert wird.

@@ -1,0 +1,113 @@
+name: SBOM
+
+# A bill of materials for what this repository restores: 159 packages across the
+# app, the optional backend, the five test projects and the scenario tool.
+#
+# Why the whole solution and not just the shipped app. The browser app's own
+# dependency list is five lines of `Directory.Packages.props` and anyone can read
+# it. The interesting surface is everything CI restores and *executes* on a
+# runner holding a deployment identity — which is the test stack, the scenario
+# tool and their transitive graph. An SBOM that covered only the part with the
+# fewest dependencies would be the least useful one available.
+#
+# It is not published next to the site on purpose. The deployed folder is
+# measured by the cold-start transfer budget, and a 230 KB document no browser
+# fetches would inflate that number while telling nobody anything.
+
+on:
+  release:
+    types: [published]
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  sbom:
+    name: CycloneDX bill of materials
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68  # v6.0.0
+        with:
+          global-json-file: global.json
+
+      - name: Cache NuGet packages
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', 'Directory.Packages.props') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      # Pinned, like every other third-party thing here: a tool that writes the
+      # supply-chain document should not itself float.
+      - name: Install CycloneDX
+        run: dotnet tool install --global CycloneDX --version 6.3.1
+
+      - name: Generate
+        run: dotnet CycloneDX WorkPlanStudio.slnx -o sbom --json
+
+      # A count, not a glance at a 230 KB file. If this drops sharply, the tool
+      # stopped finding project.assets.json files and the document is a stub.
+      - name: Summarise
+        run: |
+          components=$(python3 -c "import json;print(len(json.load(open('sbom/bom.json')).get('components',[])))")
+          echo "components: $components"
+          # A floor, not a count. Measured on this tip: 159. Package graphs move
+          # more than test counts do, so the slack is wider than the two per cent
+          # ci.yml allows itself - but a run that finds thirty is a tool that
+          # stopped reading project.assets.json, and that must not pass as green.
+          test "$components" -ge 150
+          {
+            echo '### Bill of materials'
+            echo "**$components** components, CycloneDX JSON."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+        with:
+          name: sbom-cyclonedx
+          path: sbom/bom.json
+          if-no-files-found: error
+          retention-days: 90
+
+  # A release is the thing somebody downloads, so that is where the document
+  # belongs rather than in an artifact that expires. Its own job, because
+  # attaching needs contents: write and generating does not - and the job that
+  # restores and runs a third-party tool is the one that should not hold it.
+  attach:
+    name: Attach to the release
+    needs: sbom
+    if: github.event_name == 'release'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333  # v8.0.2
+        with:
+          name: sbom-cyclonedx
+
+      - name: Upload
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.event.release.tag_name }}
+          REPO: ${{ github.repository }}
+        run: |
+          mv bom.json "workplanstudio-$TAG-sbom.cdx.json"
+          gh release upload "$TAG" "workplanstudio-$TAG-sbom.cdx.json" --clobber --repo "$REPO"

@@ -14,6 +14,7 @@
 [![Working-time coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Faco993.github.io%2FWorkPlanStudio%2Fbadges%2FWorkPlanStudio.WorkingTime.json)](docs/TESTING.md#coverage)
 [![App coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Faco993.github.io%2FWorkPlanStudio%2Fbadges%2FWorkPlanStudio.json)](docs/TESTING.md#coverage)
 [![Domain coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Faco993.github.io%2FWorkPlanStudio%2Fbadges%2FWorkPlanStudio.Domain.json)](docs/TESTING.md#coverage)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/aco993/WorkPlanStudio/badge)](https://scorecard.dev/viewer/?uri=github.com/aco993/WorkPlanStudio)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 **WorkPlan Studio** is a self-contained production-planning application: manufacturing **routings** (work plans), the **work centers** and **cost centers** they run on, **production orders** with frozen routings, and a **finite-capacity scheduler** that respects shift calendars and the German Working Hours Act (ArbZG) — with a chat that explains the result and a branch-and-bound solver that will tell you how far from optimal it is. The whole application, including its relational database, runs in the browser as a static WebAssembly site. An optional ASP.NET Core backend with real accounts exists and is off unless you configure it.
