@@ -199,6 +199,37 @@ baut warnungsfrei — was dieselbe Prüfung ist, denn Warnungen sind hier Fehler
 falsifizierbaren Ausstiegskriterium ist nur dann etwas wert, wenn der Ausstieg auch
 festgehalten wird, sobald er eintritt.
 
+## Lieferkette
+
+Drei Dinge, von denen keines behauptet, dieser Code sei sicher — es geht darum,
+zu wissen, was darin steckt, und jemandem von außen Widerspruch zu erlauben.
+
+**Jede Version ist festgenagelt.** Die NuGet-Versionen stehen unter Central
+Package Management in einer Datei; jede fremde GitHub-Action ist auf einen
+Commit-SHA gepinnt, mit dem Tag als Kommentar — ein wandernder Tag ist eine
+Schreibabhängigkeit von fremden Repositories.
+
+**Es gibt eine Stückliste.** [`sbom.yml`](../.github/workflows/sbom.yml)
+schreibt ein CycloneDX-Dokument für die gesamte Projektmappe — auf diesem Stand
+159 Komponenten — und hängt es an jedes Release. Es umfasst bewusst auch die
+Testprojekte und das Szenario-Werkzeug: Die Abhängigkeiten der Browser-App sind
+fünf Zeilen, die jeder lesen kann; interessant ist alles, was CI wiederherstellt
+und auf einem Runner *ausführt*.
+
+**Eine Außensicht.** [`scorecard.yml`](../.github/workflows/scorecard.yml) führt
+die OpenSSF Scorecard wöchentlich aus und schreibt das Ergebnis neben CodeQL ins
+Code-Scanning. Wertvoll sind die Prüfungen, die schlecht ausfallen: Ein Bericht,
+der nur bestätigt, was die Autorin ohnehin glaubt, ist nichts wert.
+
+**Was hier bewusst fehlt:** NuGet-Lockdateien. Sie würden den transitiven Graphen
+festnageln, was Central Package Management nicht tut, und der Preis ist real —
+Dependabots Unterstützung für das Aktualisieren von `packages.lock.json` ist seit
+Jahren strittig, und eine veraltete Lockdatei färbt unter `--locked-mode` jeden
+Abhängigkeits-Pull-Request rot. Dieser Tausch lohnt sich für eine Anwendung mit
+Produktionsbetrieb und lohnt sich nicht für eine, deren Abhängigkeitsfluss bereits
+automatisiert und grün ist. Die Begründung steht hier, damit die nächste Person
+ihr absichtlich widersprechen kann.
+
 ## Meldung
 
 Geheimnisse oder Exploit-Daten gehören nicht in ein öffentliches Issue. Nutzen Sie die

@@ -190,6 +190,37 @@ which is the same check, because warnings are errors here.
 falsifiable exit criterion is only worth anything if the exit is written down
 when it happens.
 
+## Supply chain
+
+Three things, none of which is a claim about this code being safe — they are
+about knowing what is in it and letting somebody outside disagree.
+
+**Every version is pinned.** NuGet versions live in one file under Central
+Package Management; every third-party GitHub Action is pinned to a commit SHA
+with the tag in a comment, because a moving tag is a write-access dependency on
+somebody else's repository.
+
+**There is a bill of materials.** [`sbom.yml`](../.github/workflows/sbom.yml)
+writes a CycloneDX document for the whole solution — 159 components as measured
+on this tip — and attaches it to each release. It covers the test projects and
+the scenario tool as well as the app, deliberately: the browser app's own
+dependency list is five lines anyone can read, while the interesting surface is
+everything CI restores and *executes* on a runner.
+
+**An outside opinion.** [`scorecard.yml`](../.github/workflows/scorecard.yml)
+runs OpenSSF Scorecard weekly and writes the result into code scanning, next to
+CodeQL's. The value is the checks that come back low: a report that only
+confirms what the author already believes is worth nothing.
+
+**What is deliberately not here:** NuGet lock files. They would pin the
+transitive graph, which Central Package Management does not, and the cost is a
+real one — Dependabot's support for updating `packages.lock.json` has been
+contested for years, and a stale lock file turns every dependency pull request
+red under `--locked-mode`. That trade is worth making for an application with a
+production deployment and worth refusing for one whose dependency flow is
+already automated and green. The reason is written down here so the next person
+can disagree with it on purpose.
+
 ## Reporting
 
 Do not put secrets or exploit payloads in a public issue. Use GitHub's private
