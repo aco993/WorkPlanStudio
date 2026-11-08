@@ -1,0 +1,325 @@
+@using System.Globalization
+@using Microsoft.Extensions.Localization
+@inject IStringLocalizer<SharedResource> L
+@inject IJSRuntime JS
+
+@*
+    The schedule as a chart, and the same schedule as a table.
+
+    Lifted out of Pages/Schedule.razor, which was 1,549 lines and did four
+    unrelated jobs. This is one of them: everything the chart needs is its own
+    state, its own formatting and one JS call, and the only thing it wants from
+    the page is the result to draw. Nothing goes back the other way, which is
+    why it can be a plain parameter rather than a pair of bindings.
+
+    The keyboard model it drives lives in GanttCursor, with its own tests.
+*@
+
+<section class="card">
+    <div class="card-head">
+        <h2>@L["Sched_Gantt"]</h2>
+        <div class="gantt-head-meta">
+            @if (Result.Kpis.LateJobCount > 0)
+            {
+                <span class="gantt-legend"><span class="gantt-legend-swatch late" aria-hidden="true"></span>@L["Sched_Late"]</span>
+            }
+            @if (Result.Rows.Any(r => r.Closed.Count > 0))
+            {
+                <span class="muted gantt-legend-note"><span class="gantt-legend-swatch closed" aria-hidden="true"></span>@L["Sched_ClosedLegend"]</span>
+            }
+            @if (Result.TotalPausedSeconds > 0)
+            {
+                <span class="muted gantt-legend-note">@string.Format(L["Sched_TotalPaused"], Hours(Result.TotalPausedSeconds))</span>
+            }
+            <button type="button" class="btn btn-ghost btn-sm gantt-table-toggle" aria-expanded="@(_showTable ? "true" : "false")"
+                    aria-controls="gantt-table" @onclick="() => _showTable = !_showTable">
+                @(_showTable ? L["Ui_GanttHideTable"] : L["Ui_GanttShowTable"])
+            </button>
+        </div>
+    </div>
+    <div class="card-body">
+        @*
+            Every bar and every closed stretch is a button carrying the full
+            explanation as its accessible name, with a roving tabindex: the
+            chart is one tab stop, the arrow keys walk it, Enter reads the
+            detail out into the live region below and Escape clears it.
+            Before this the chart's own legend said "hover for the reason",
+            which was an accurate description of a defect.
+        *@
+        <div class="gantt" @ref="_chart" role="region" aria-label="@L["Sched_Gantt"]" aria-describedby="gantt-help" tabindex="0">
+            @for (var lane = 0; lane < Result.Rows.Count; lane++)
+            {
+                var laneIndex = lane;
+                var row = Result.Rows[laneIndex];
+                <div class="gantt-row">
+                    <div class="gantt-label" title="@row.WorkCenterName">@row.WorkCenterName</div>
+                    <div class="gantt-track">
+                        @for (var c = 0; c < row.Closed.Count; c++)
+                        {
+                            var closedIndex = c;
+                            var closed = row.Closed[closedIndex];
+                            var key = new CellKey(laneIndex, false, closedIndex);
+                            <button type="button" id="@key.ElementId"
+                                    class="gantt-closed closed-@closed.Kind.ToString().ToLowerInvariant()"
+                                    style="left:@Pct(closed.StartSeconds)%;width:@Pct(closed.DurationSeconds)%"
+                                    title="@ClosedTitle(closed)"
+                                    aria-label="@CellName(row, key)"
+                                    aria-pressed="@(_cursor.IsSelected(key) ? "true" : "false")"
+                                    tabindex="@(_cursor.IsFocused(key) ? "0" : "-1")"
+                                    @onclick="() => Activate(key)"
+                                    @onkeydown="args => OnCellKey(args, key)"></button>
+                        }
+                        @foreach (var d in AxisTicks())
+                        {
+                            <div class="gantt-grid" style="left:@Pct(d)%" aria-hidden="true"></div>
+                        }
+                        @for (var b = 0; b < row.Bars.Count; b++)
+                        {
+                            var barIndex = b;
+                            var bar = row.Bars[barIndex];
+                            var key = new CellKey(laneIndex, true, barIndex);
+                            <button type="button" id="@key.ElementId"
+                                    class="@BarCss(bar)"
+                                    style="left:@Pct(bar.StartSeconds)%;width:@BarWidth(bar)%"
+                                    title="@BarTitle(bar)"
+                                    aria-label="@CellName(row, key)"
+                                    aria-pressed="@(_cursor.IsSelected(key) ? "true" : "false")"
+                                    tabindex="@(_cursor.IsFocused(key) ? "0" : "-1")"
+                                    @onclick="() => Activate(key)"
+                                    @onkeydown="args => OnCellKey(args, key)">
+                                <span aria-hidden="true">@bar.JobReference</span>
+                            </button>
+                        }
+                    </div>
+                </div>
+            }
+            <div class="gantt-axis" aria-hidden="true">
+                <div class="gantt-label"></div>
+                <div class="gantt-track">
+                    @foreach (var d in AxisTicks())
+                    {
+                        <span class="gantt-tick" style="left:@Pct(d)%">@AxisLabel(d)</span>
+                    }
+                </div>
+            </div>
+        </div>
+
+        @* Rendered whether or not anything is selected: a live region inserted
+           already populated is not announced by any screen reader. *@
+        <p class="gantt-detail" role="status" aria-live="polite">@_detail</p>
+        <p id="gantt-help" class="gantt-hint">@L["Ui_GanttHelp"]</p>
+    </div>
+
+    @* The chart as text. Hidden from sight until the toggle is pressed, but
+       never hidden from assistive technology: the placement of every
+       operation and the reason behind every gap exist nowhere else. *@
+    <div id="gantt-table" class="@(_showTable ? "card-body no-pad" : "sr-only")">
+        <TableScroll Label="@L["Ui_GanttTableCaption"]">
+            <table class="data-table chart-table">
+                <caption class="sr-only">@L["Ui_GanttTableCaption"]</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">@L["Field_WorkCenter"]</th>
+                        <th scope="col">@L["Ui_ColDetail"]</th>
+                        <th scope="col">@L["Ui_ColStart"]</th>
+                        <th scope="col">@L["Ui_ColEnd"]</th>
+                        <th scope="col" class="num">@L["Ui_ColDuration"]</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (var lane = 0; lane < Result.Rows.Count; lane++)
+                    {
+                        var row = Result.Rows[lane];
+                        @foreach (var key in _cursor.Lane(lane))
+                        {
+                            <tr @key="key">
+                                <th scope="row" class="sticky-col">@row.WorkCenterName</th>
+                                <td>@CellDetail(row, key)</td>
+                                <td>@DayTime(CellStart(row, key))</td>
+                                <td>@DayTime(CellEnd(row, key))</td>
+                                <td class="num">@Hours(CellEnd(row, key) - CellStart(row, key))</td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </TableScroll>
+    </div>
+</section>
+
+@code {
+    private const long HourSeconds = 3600;
+    private const long DaySeconds = 24 * HourSeconds;
+
+    /// <summary>The run to draw. A new one rebuilds the cursor and clears the read-out.</summary>
+    [Parameter, EditorRequired] public ScheduleResult Result { get; set; } = default!;
+
+    // Which mark has the keyboard and which one is being read out.
+    private readonly GanttCursor _cursor = new();
+
+    private ElementReference _chart;
+    private bool _installed;
+    private bool _showTable;
+    private string? _detail;
+    private bool _focusOnRender;
+
+    private ScheduleResult? _drawn;
+
+    protected override void OnParametersSet()
+    {
+        // Reference equality on purpose: a run produces a new result object, and
+        // re-rendering for any other reason must not throw away the reader's place.
+        if (ReferenceEquals(_drawn, Result))
+            return;
+
+        _drawn = Result;
+        _cursor.Rebuild(Result?.Rows);
+        _detail = null;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (Result is { HasData: true } && !_installed)
+        {
+            _installed = true;
+            await JS.InvokeVoidAsync("workplanGantt.install", _chart);
+        }
+
+        if (_focusOnRender && _cursor.Focus is { } cell)
+        {
+            _focusOnRender = false;
+            await JS.InvokeVoidAsync("workplanFocus.byId", cell.ElementId);
+        }
+    }
+
+    /// <summary>Enter, Space or a click reads the cell's explanation into the live region.</summary>
+    private void Activate(CellKey key) =>
+        _detail = _cursor.Toggle(key) ? CellName(Result.Rows[key.Lane], key) : null;
+
+    /// <summary>
+    /// The roving tabindex itself belongs to <see cref="GanttCursor"/>. What stays
+    /// here is the part that is about rendering rather than about the model:
+    /// clearing the live region, and asking for the browser's focus to follow on the
+    /// next render. Enter and Space are left to the button itself.
+    /// </summary>
+    private void OnCellKey(KeyboardEventArgs args, CellKey key)
+    {
+        if (args.Key == "Escape")
+        {
+            _cursor.ClearSelection();
+            _detail = null;
+            return;
+        }
+
+        if (_cursor.Move(args.Key, key))
+            _focusOnRender = true;
+    }
+
+    /// <summary>
+    /// The accessible name of a cell. It leads with the work centre — the lane label
+    /// is a sibling <c>div</c>, so nothing else would say which machine the reader is
+    /// on — and then carries the same sentence the mouse gets as a tooltip.
+    /// </summary>
+    private string CellName(GanttRow row, CellKey key) => $"{row.WorkCenterName} · {CellDetail(row, key)}";
+
+    private string CellDetail(GanttRow row, CellKey key) =>
+        key.IsBar ? BarTitle(row.Bars[key.Index]) : ClosedTitle(row.Closed[key.Index]);
+
+    private static long CellStart(GanttRow row, CellKey key) =>
+        key.IsBar ? row.Bars[key.Index].StartSeconds : row.Closed[key.Index].StartSeconds;
+
+    private static long CellEnd(GanttRow row, CellKey key) =>
+        key.IsBar ? row.Bars[key.Index].EndSeconds : row.Closed[key.Index].EndSeconds;
+
+    private string Pct(long seconds)
+    {
+        long makespan = Result?.MakespanSeconds ?? 0;
+        double pct = makespan <= 0 ? 0 : (double)seconds / makespan * 100.0;
+        return pct.ToString("0.###", CultureInfo.InvariantCulture);
+    }
+
+    private string BarWidth(GanttBar bar)
+    {
+        long makespan = Result?.MakespanSeconds ?? 0;
+        double pct = makespan <= 0 ? 0 : (double)bar.DurationSeconds / makespan * 100.0;
+        return Math.Max(0.6, pct).ToString("0.###", CultureInfo.InvariantCulture);
+    }
+
+    private static string BarCss(GanttBar bar)
+    {
+        var css = $"gantt-bar job-color-{bar.ColorIndex}";
+        if (bar.IsLate) css += " late";
+        if (bar.PausedSeconds > 0) css += " paused";
+        return css;
+    }
+
+    private string BarTitle(GanttBar bar)
+    {
+        var title = $"{bar.JobReference} · {L["Field_OperationNo"]} {bar.StepNumber} · {Hours(bar.DurationSeconds)}";
+        if (bar.SetupSeconds > 0) title += $" · {L["Sched_Setup"]} {Hours(bar.SetupSeconds)}";
+        if (bar.PausedSeconds > 0) title += $" · {L["Sched_Paused"]} {Hours(bar.PausedSeconds)}";
+        if (Result?.Horizon is { } horizon)
+            title += $" · {Format.Stamp(horizon.AddSeconds(bar.StartSeconds))} – {Format.Stamp(horizon.AddSeconds(bar.EndSeconds))}";
+        return bar.IsLate ? $"{title} · {L["Sched_Late"]}" : title;
+    }
+
+    private string ClosedTitle(GanttClosedSegment closed)
+    {
+        var kind = L[$"Segment_{closed.Kind}"];
+        var label = closed.Kind switch
+        {
+            SegmentKind.Holiday or SegmentKind.Absence => L.HolidayLabel(closed.Label),
+            SegmentKind.Break or SegmentKind.Rest => L.ShiftName(closed.Label),
+            _ => ""
+        };
+        var text = string.IsNullOrEmpty(label) ? kind.Value : $"{kind} · {label}";
+        if (Result?.Horizon is { } horizon)
+            text += $" · {Format.Stamp(horizon.AddSeconds(closed.StartSeconds))} – {Format.Stamp(horizon.AddSeconds(closed.EndSeconds))}";
+        return text;
+    }
+
+    private IEnumerable<long> AxisTicks()
+    {
+        long makespan = Result?.MakespanSeconds ?? 0;
+        if (makespan <= 0)
+            yield break;
+
+        long step = makespan <= 36 * HourSeconds ? 6 * HourSeconds
+                  : makespan <= 15 * DaySeconds ? DaySeconds
+                  : DaySeconds * (long)Math.Ceiling(makespan / (14.0 * DaySeconds));
+
+        long first = step;
+        if (Result?.Horizon is { } horizon)
+        {
+            // Snap to the next boundary of `step` in wall-clock time.
+            long offset = (long)horizon.TimeOfDay.TotalSeconds;
+            first = step - offset % step;
+            if (first == step && offset != 0) first = step - offset;
+            if (first <= 0) first += step;
+        }
+
+        for (long t = first; t < makespan; t += step)
+            yield return t;
+    }
+
+    private string AxisLabel(long seconds)
+    {
+        if (Result?.Horizon is not { } horizon)
+            return Hours(seconds);
+
+        var moment = horizon.AddSeconds(seconds);
+        return moment.TimeOfDay == TimeSpan.Zero ? Format.DayMonth(moment) : Format.Time(moment);
+    }
+
+    private string Hours(long seconds) => Format.Hours(seconds / 60m);
+
+    private string DayTime(long seconds)
+    {
+        if (Result?.Horizon is { } horizon)
+            return Format.Stamp(horizon.AddSeconds(seconds));
+
+        long day = seconds / DaySeconds + 1;
+        long within = seconds % DaySeconds;
+        return $"{L["Sched_DayShort"]}{day} {within / 3600:00}:{within % 3600 / 60:00}";
+    }
+}

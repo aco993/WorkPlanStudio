@@ -173,137 +173,8 @@
                 <p class="proof-answer" role="status" aria-live="polite">@ProofText()</p>
             </div>
 
-            <section class="card">
-                <div class="card-head">
-                    <h2>@L["Sched_Gantt"]</h2>
-                    <div class="gantt-head-meta">
-                        @if (_result!.Kpis.LateJobCount > 0)
-                        {
-                            <span class="gantt-legend"><span class="gantt-legend-swatch late" aria-hidden="true"></span>@L["Sched_Late"]</span>
-                        }
-                        @if (_result.Rows.Any(r => r.Closed.Count > 0))
-                        {
-                            <span class="muted gantt-legend-note"><span class="gantt-legend-swatch closed" aria-hidden="true"></span>@L["Sched_ClosedLegend"]</span>
-                        }
-                        @if (_result.TotalPausedSeconds > 0)
-                        {
-                            <span class="muted gantt-legend-note">@string.Format(L["Sched_TotalPaused"], Hours(_result.TotalPausedSeconds))</span>
-                        }
-                        <button type="button" class="btn btn-ghost btn-sm gantt-table-toggle" aria-expanded="@(_showChartTable ? "true" : "false")"
-                                aria-controls="gantt-table" @onclick="() => _showChartTable = !_showChartTable">
-                            @(_showChartTable ? L["Ui_GanttHideTable"] : L["Ui_GanttShowTable"])
-                        </button>
-                    </div>
-                </div>
-                <div class="card-body">
-                    @*
-                        Every bar and every closed stretch is a button carrying the full
-                        explanation as its accessible name, with a roving tabindex: the
-                        chart is one tab stop, the arrow keys walk it, Enter reads the
-                        detail out into the live region below and Escape clears it.
-                        Before this the chart's own legend said "hover for the reason",
-                        which was an accurate description of a defect.
-                    *@
-                    <div class="gantt" @ref="_chart" role="region" aria-label="@L["Sched_Gantt"]" aria-describedby="gantt-help" tabindex="0">
-                        @for (var lane = 0; lane < _result.Rows.Count; lane++)
-                        {
-                            var laneIndex = lane;
-                            var row = _result.Rows[laneIndex];
-                            <div class="gantt-row">
-                                <div class="gantt-label" title="@row.WorkCenterName">@row.WorkCenterName</div>
-                                <div class="gantt-track">
-                                    @for (var c = 0; c < row.Closed.Count; c++)
-                                    {
-                                        var closedIndex = c;
-                                        var closed = row.Closed[closedIndex];
-                                        var key = new CellKey(laneIndex, false, closedIndex);
-                                        <button type="button" id="@CellId(key)"
-                                                class="gantt-closed closed-@closed.Kind.ToString().ToLowerInvariant()"
-                                                style="left:@Pct(closed.StartSeconds)%;width:@Pct(closed.DurationSeconds)%"
-                                                title="@ClosedTitle(closed)"
-                                                aria-label="@CellName(row, key)"
-                                                aria-pressed="@Pressed(key)"
-                                                tabindex="@TabIndex(key)"
-                                                @onclick="() => Activate(key)"
-                                                @onkeydown="args => OnCellKey(args, key)"></button>
-                                    }
-                                    @foreach (var d in AxisTicks())
-                                    {
-                                        <div class="gantt-grid" style="left:@Pct(d)%" aria-hidden="true"></div>
-                                    }
-                                    @for (var b = 0; b < row.Bars.Count; b++)
-                                    {
-                                        var barIndex = b;
-                                        var bar = row.Bars[barIndex];
-                                        var key = new CellKey(laneIndex, true, barIndex);
-                                        <button type="button" id="@CellId(key)"
-                                                class="@BarCss(bar)"
-                                                style="left:@Pct(bar.StartSeconds)%;width:@BarWidth(bar)%"
-                                                title="@BarTitle(bar)"
-                                                aria-label="@CellName(row, key)"
-                                                aria-pressed="@Pressed(key)"
-                                                tabindex="@TabIndex(key)"
-                                                @onclick="() => Activate(key)"
-                                                @onkeydown="args => OnCellKey(args, key)">
-                                            <span aria-hidden="true">@bar.JobReference</span>
-                                        </button>
-                                    }
-                                </div>
-                            </div>
-                        }
-                        <div class="gantt-axis" aria-hidden="true">
-                            <div class="gantt-label"></div>
-                            <div class="gantt-track">
-                                @foreach (var d in AxisTicks())
-                                {
-                                    <span class="gantt-tick" style="left:@Pct(d)%">@AxisLabel(d)</span>
-                                }
-                            </div>
-                        </div>
-                    </div>
-
-                    @* Rendered whether or not anything is selected: a live region inserted
-                       already populated is not announced by any screen reader. *@
-                    <p class="gantt-detail" role="status" aria-live="polite">@_chartDetail</p>
-                    <p id="gantt-help" class="gantt-hint">@L["Ui_GanttHelp"]</p>
-                </div>
-
-                @* The chart as text. Hidden from sight until the toggle is pressed, but
-                   never hidden from assistive technology: the placement of every
-                   operation and the reason behind every gap exist nowhere else. *@
-                <div id="gantt-table" class="@(_showChartTable ? "card-body no-pad" : "sr-only")">
-                    <TableScroll Label="@L["Ui_GanttTableCaption"]">
-                        <table class="data-table chart-table">
-                            <caption class="sr-only">@L["Ui_GanttTableCaption"]</caption>
-                            <thead>
-                                <tr>
-                                    <th scope="col">@L["Field_WorkCenter"]</th>
-                                    <th scope="col">@L["Ui_ColDetail"]</th>
-                                    <th scope="col">@L["Ui_ColStart"]</th>
-                                    <th scope="col">@L["Ui_ColEnd"]</th>
-                                    <th scope="col" class="num">@L["Ui_ColDuration"]</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @for (var lane = 0; lane < _result.Rows.Count; lane++)
-                                {
-                                    var row = _result.Rows[lane];
-                                    @foreach (var key in _lanes[lane])
-                                    {
-                                        <tr @key="key">
-                                            <th scope="row" class="sticky-col">@row.WorkCenterName</th>
-                                            <td>@CellDetail(row, key)</td>
-                                            <td>@DayTime(CellStart(row, key))</td>
-                                            <td>@DayTime(CellEnd(row, key))</td>
-                                            <td class="num">@Hours(CellEnd(row, key) - CellStart(row, key))</td>
-                                        </tr>
-                                    }
-                                }
-                            </tbody>
-                        </table>
-                    </TableScroll>
-                </div>
-            </section>
+            @* The chart and its text alternative; see Components/GanttChart.razor. *@
+            <GanttChart Result="_result" />
 
             <section class="card no-pad">
                 <div class="card-head pad"><h2 id="jobs-table-title">@L["Sched_JobsTable"]</h2></div>
@@ -696,20 +567,12 @@
     private bool _focusGenerateOnRender;
 
     // ----- Gantt keyboard state -----
-    private ElementReference _chart;
-    private bool _chartInstalled;
-    private bool _showChartTable;
-    private string? _chartDetail;
-    private CellKey? _selectedCell;
-    private CellKey? _focusCell;
-    private bool _focusChartOnRender;
 
     /// <summary>
     /// The chart's cells lane by lane, ordered by start time — bars and closed
     /// stretches interleaved, because "what happened next on this machine" is the
     /// order a reader expects, not "all the bars, then all the gaps".
     /// </summary>
-    private List<List<CellKey>> _lanes = [];
 
     // ----- assistant state -----
     private readonly AiForm _aiForm = new();
@@ -765,7 +628,6 @@
                 new InlineProgress<ScheduleRunProgress>(OnProgress),
                 _runCancellation.Token);
             _resultParameters = parameters;
-            BuildLanes();
             _runAnnouncement = Announcement(_result);
 
             // Instant, offline, deterministic explanation of the run just produced.
@@ -909,18 +771,6 @@
     {
         try
         {
-            if (_result is { HasData: true } && !_chartInstalled)
-            {
-                _chartInstalled = true;
-                await JS.InvokeVoidAsync("workplanGantt.install", _chart);
-            }
-
-            if (_focusChartOnRender && _focusCell is { } cell)
-            {
-                _focusChartOnRender = false;
-                await JS.InvokeVoidAsync("workplanFocus.byId", CellId(cell));
-            }
-
             // Cancel removes itself from the page, taking the focus with it. This is
             // the one place focus is moved without the reader asking, and it is
             // moved back to the control that replaced the one they pressed.
@@ -1096,183 +946,6 @@
     private const long HourSeconds = 3600;
     private const long DaySeconds = 24 * HourSeconds;
 
-    private string Pct(long seconds)
-    {
-        long makespan = _result?.MakespanSeconds ?? 0;
-        double pct = makespan <= 0 ? 0 : (double)seconds / makespan * 100.0;
-        return pct.ToString("0.###", CultureInfo.InvariantCulture);
-    }
-
-    private string BarWidth(GanttBar bar)
-    {
-        long makespan = _result?.MakespanSeconds ?? 0;
-        double pct = makespan <= 0 ? 0 : (double)bar.DurationSeconds / makespan * 100.0;
-        return Math.Max(0.6, pct).ToString("0.###", CultureInfo.InvariantCulture);
-    }
-
-    private static string BarCss(GanttBar bar)
-    {
-        var css = $"gantt-bar job-color-{bar.ColorIndex}";
-        if (bar.IsLate) css += " late";
-        if (bar.PausedSeconds > 0) css += " paused";
-        return css;
-    }
-
-    private string BarTitle(GanttBar bar)
-    {
-        var title = $"{bar.JobReference} · {L["Field_OperationNo"]} {bar.StepNumber} · {Hours(bar.DurationSeconds)}";
-        if (bar.SetupSeconds > 0) title += $" · {L["Sched_Setup"]} {Hours(bar.SetupSeconds)}";
-        if (bar.PausedSeconds > 0) title += $" · {L["Sched_Paused"]} {Hours(bar.PausedSeconds)}";
-        if (_result?.Horizon is { } horizon)
-            title += $" · {Format.Stamp(horizon.AddSeconds(bar.StartSeconds))} – {Format.Stamp(horizon.AddSeconds(bar.EndSeconds))}";
-        return bar.IsLate ? $"{title} · {L["Sched_Late"]}" : title;
-    }
-
-    private string ClosedTitle(GanttClosedSegment closed)
-    {
-        var kind = L[$"Segment_{closed.Kind}"];
-        var label = closed.Kind switch
-        {
-            SegmentKind.Holiday or SegmentKind.Absence => L.HolidayLabel(closed.Label),
-            SegmentKind.Break or SegmentKind.Rest => L.ShiftName(closed.Label),
-            _ => ""
-        };
-        var text = string.IsNullOrEmpty(label) ? kind.Value : $"{kind} · {label}";
-        if (_result?.Horizon is { } horizon)
-            text += $" · {Format.Stamp(horizon.AddSeconds(closed.StartSeconds))} – {Format.Stamp(horizon.AddSeconds(closed.EndSeconds))}";
-        return text;
-    }
-
-    // ----- the chart as something other than a picture -----
-
-    /// <summary>
-    /// Identifies one cell of the chart: which lane, whether it is an operation or a
-    /// closed stretch, and its index within that kind. Index-within-kind rather than
-    /// a flat position, because the two kinds are rendered in separate loops (closed
-    /// stretches paint underneath the bars) while the keyboard walks them as one.
-    /// </summary>
-    private readonly record struct CellKey(int Lane, bool IsBar, int Index);
-
-    private void BuildLanes()
-    {
-        _lanes = [];
-        _selectedCell = null;
-        _chartDetail = null;
-
-        if (_result is null)
-        {
-            _focusCell = null;
-            return;
-        }
-
-        for (var lane = 0; lane < _result.Rows.Count; lane++)
-        {
-            var row = _result.Rows[lane];
-            var cells = new List<(long Start, CellKey Key)>(row.Bars.Count + row.Closed.Count);
-            for (var i = 0; i < row.Closed.Count; i++)
-                cells.Add((row.Closed[i].StartSeconds, new CellKey(lane, false, i)));
-            for (var i = 0; i < row.Bars.Count; i++)
-                cells.Add((row.Bars[i].StartSeconds, new CellKey(lane, true, i)));
-            _lanes.Add([.. cells.OrderBy(c => c.Start).Select(c => c.Key)]);
-        }
-
-        // One tab stop for the whole chart: the first cell that exists owns it.
-        _focusCell = null;
-        foreach (var lane in _lanes)
-        {
-            if (lane.Count == 0)
-                continue;
-            _focusCell = lane[0];
-            break;
-        }
-    }
-
-    private static string CellId(CellKey key) => $"gantt-{(key.IsBar ? "bar" : "gap")}-{key.Lane}-{key.Index}";
-
-    private string TabIndex(CellKey key) => _focusCell == key ? "0" : "-1";
-
-    private string Pressed(CellKey key) => _selectedCell == key ? "true" : "false";
-
-    /// <summary>
-    /// The accessible name of a cell. It leads with the work centre — the lane label
-    /// is a sibling <c>div</c>, so nothing else would say which machine the reader is
-    /// on — and then carries the same sentence the mouse gets as a tooltip.
-    /// </summary>
-    private string CellName(GanttRow row, CellKey key) => $"{row.WorkCenterName} · {CellDetail(row, key)}";
-
-    private string CellDetail(GanttRow row, CellKey key) =>
-        key.IsBar ? BarTitle(row.Bars[key.Index]) : ClosedTitle(row.Closed[key.Index]);
-
-    private static long CellStart(GanttRow row, CellKey key) =>
-        key.IsBar ? row.Bars[key.Index].StartSeconds : row.Closed[key.Index].StartSeconds;
-
-    private static long CellEnd(GanttRow row, CellKey key) =>
-        key.IsBar ? row.Bars[key.Index].EndSeconds : row.Closed[key.Index].EndSeconds;
-
-    /// <summary>Enter, Space or a click reads the cell's explanation into the live region.</summary>
-    private void Activate(CellKey key)
-    {
-        _focusCell = key;
-        if (_selectedCell == key)
-        {
-            _selectedCell = null;
-            _chartDetail = null;
-            return;
-        }
-
-        _selectedCell = key;
-        _chartDetail = _result is null ? null : CellName(_result.Rows[key.Lane], key);
-    }
-
-    /// <summary>
-    /// The roving tabindex. Left/right walk one machine's day; up/down change machine
-    /// and keep the position, so a reader can follow one moment across the plant;
-    /// Home/End jump to the ends of the lane; Escape clears the explanation.
-    /// Enter and Space are left to the button itself.
-    /// </summary>
-    private void OnCellKey(KeyboardEventArgs args, CellKey key)
-    {
-        if (args.Key == "Escape")
-        {
-            _selectedCell = null;
-            _chartDetail = null;
-            return;
-        }
-
-        if (_lanes.Count == 0)
-            return;
-
-        var lane = key.Lane;
-        var position = _lanes[lane].IndexOf(key);
-        if (position < 0)
-            return;
-
-        switch (args.Key)
-        {
-            case "ArrowRight": position++; break;
-            case "ArrowLeft": position--; break;
-            case "Home": position = 0; break;
-            case "End": position = _lanes[lane].Count - 1; break;
-            case "ArrowDown": lane = NextLane(lane, +1); break;
-            case "ArrowUp": lane = NextLane(lane, -1); break;
-            default: return;
-        }
-
-        position = Math.Clamp(position, 0, _lanes[lane].Count - 1);
-        _focusCell = _lanes[lane][position];
-        _focusChartOnRender = true;
-    }
-
-    /// <summary>Skips lanes with nothing on them; an empty lane cannot hold focus.</summary>
-    private int NextLane(int from, int step)
-    {
-        for (var lane = from + step; lane >= 0 && lane < _lanes.Count; lane += step)
-        {
-            if (_lanes[lane].Count > 0)
-                return lane;
-        }
-        return from;
-    }
 
     /// <summary>
     /// A, B, C … per job colour. The eight hues were the only thing separating two
@@ -1344,42 +1017,6 @@
             : value.ToString("0.###", CultureInfo.CurrentUICulture);
 
     /// <summary>
-    /// Axis ticks in seconds from the horizon: every 6 h for a short schedule,
-    /// every midnight for up to a fortnight, every few days beyond. Anchored to
-    /// real midnights when a horizon is known.
-    /// </summary>
-    private IEnumerable<long> AxisTicks()
-    {
-        long makespan = _result?.MakespanSeconds ?? 0;
-        if (makespan <= 0)
-            yield break;
-
-        long step = makespan <= 36 * HourSeconds ? 6 * HourSeconds
-                  : makespan <= 15 * DaySeconds ? DaySeconds
-                  : DaySeconds * (long)Math.Ceiling(makespan / (14.0 * DaySeconds));
-
-        long first = step;
-        if (_result?.Horizon is { } horizon)
-        {
-            // Snap to the next boundary of `step` in wall-clock time.
-            long offset = (long)horizon.TimeOfDay.TotalSeconds;
-            first = step - offset % step;
-            if (first == step && offset != 0) first = step - offset;
-            if (first <= 0) first += step;
-        }
-
-        for (long t = first; t < makespan; t += step)
-            yield return t;
-    }
-
-    private string AxisLabel(long seconds)
-    {
-        if (_result?.Horizon is not { } horizon)
-            return Hours(seconds);
-
-        var moment = horizon.AddSeconds(seconds);
-        return moment.TimeOfDay == TimeSpan.Zero ? Format.DayMonth(moment) : Format.Time(moment);
-    }
 
     private string Hours(long seconds) => Format.Hours(seconds / 60m);
 
