@@ -108,7 +108,7 @@ public sealed class DocumentationImagesTests : IClassFixture<PlaywrightFixture>
         var light = await OpenAsync(Desktop, "light");
         var schedule = new SchedulePage(light, _fixture.BaseUrl);
         await schedule.GotoAsync();
-        await schedule.SetDueRuleAsync("Twk");
+        await schedule.SetDueRuleAsync("TotalWorkContent");
 
         await schedule.SetFlowFactorAsync("5.0");
         await schedule.GenerateAsync();
