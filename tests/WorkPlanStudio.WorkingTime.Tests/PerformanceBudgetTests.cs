@@ -13,6 +13,7 @@ namespace WorkPlanStudio.WorkingTime.Tests;
 /// could not have failed for any reason short of a hang.
 /// </para>
 /// </summary>
+[Collection(WallClock.Name)]
 public class PerformanceBudgetTests
 {
     private static readonly DateTime From = new(2026, 6, 1);
@@ -20,6 +21,7 @@ public class PerformanceBudgetTests
     [Fact]
     public void A_three_shift_timeline_over_400_days_builds_within_its_budget()
     {
+        Assert.SkipUnless(WallClock.Enabled, WallClock.SkipReason);
         var to = From.AddDays(400);
         _ = WorkingTimelineBuilder.Build(ShiftPatterns.ThreeShift, WorkingTimeRules.Statutory, [], From, to);   // warm up
 
@@ -35,6 +37,7 @@ public class PerformanceBudgetTests
     [Fact]
     public void Segments_over_the_whole_materialised_range_stay_linear()
     {
+        Assert.SkipUnless(WallClock.Enabled, WallClock.SkipReason);
         // The exception overlay used to rescan every exception for every segment.
         // Over five years that is ~8 700 segments against 56 exceptions, and the
         // scan had no early exit — the shape this budget exists to catch.
@@ -56,6 +59,7 @@ public class PerformanceBudgetTests
     [Fact]
     public void The_compliance_evaluation_over_400_days_stays_within_its_budget()
     {
+        Assert.SkipUnless(WallClock.Enabled, WallClock.SkipReason);
         var to = From.AddDays(400);
         var timeline = WorkingTimelineBuilder.Build(ShiftPatterns.ThreeShift, WorkingTimeRules.Statutory, [], From, to);
         _ = WorkingTimelineBuilder.Build(ShiftPatterns.ThreeShift, WorkingTimeRules.Statutory, [], From, to).Compliance;
@@ -71,6 +75,7 @@ public class PerformanceBudgetTests
     [Fact]
     public void Holidays_for_every_state_and_a_decade_compute_within_their_budget()
     {
+        Assert.SkipUnless(WallClock.Enabled, WallClock.SkipReason);
         // Years no other test touches, so this measures the computation rather
         // than the cache the app actually benefits from.
         _ = GermanHolidays.ForYear(2149, GermanState.NW);
@@ -89,6 +94,7 @@ public class PerformanceBudgetTests
     [Fact]
     public void A_cached_year_costs_nothing_to_ask_for_again()
     {
+        Assert.SkipUnless(WallClock.Enabled, WallClock.SkipReason);
         for (int year = 2160; year < 2170; year++)
             foreach (var state in Enum.GetValues<GermanState>())
                 _ = GermanHolidays.ForYear(year, state);
