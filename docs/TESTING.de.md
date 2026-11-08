@@ -380,6 +380,15 @@ sind eine heiße CPU und ein gewachsener Heap nach sechzig Sekunden Testlauf —
 dagegen hilft keine Ablaufsteuerung, und ein eigener Lauf ist der einzige
 ehrliche Ort für eine Stoppuhr.
 
+Eine Sache brauchte die Schaltung noch. `--minimum-expected-tests` zählt einen
+*übersprungenen* Test als gefunden und merkt daher nicht, wenn der Schalter aus
+ist: gemessen beendet sich der gefilterte Lauf mit 0, „Zero tests ran" und
+„skipped: 3". Eine Prüfung, die durchgeht, während sie nichts misst, ist genau
+der Fehlerfall, den dieses Repository sonst überall ablehnt — deshalb prüft
+jeder Budget-Schritt in `performance.yml` zusätzlich auf `skipped: 0`. Nimmt man
+`RUN_WALL_CLOCK_BUDGETS` aus einem Schritt heraus, fällt dieser Schritt um, und
+genau dafür steht die Prüfung dort.
+
 `AllocationBudgetTests` gehört zur Collection, ist aber nicht zugeschaltet: Die
 Klasse zählt Bytes mit `GetAllocatedBytesForCurrentThread`, was pro Thread gilt
 und unter Parallelität korrekt ist. Serialisiert ist sie aus dem umgekehrten
