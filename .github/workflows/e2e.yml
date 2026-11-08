@@ -24,6 +24,13 @@ on:
           change that happens to break it.
         type: boolean
         default: false
+      capture_doc_images:
+        description: >
+          Recapture the screenshots the README shows and upload them to be
+          committed. Manual only, and for the same reason: nothing automatic may
+          rewrite what the documentation claims the application looks like.
+        type: boolean
+        default: false
   workflow_call:
 
 # A newer push to the same branch supersedes the run in flight — but not when
@@ -90,11 +97,27 @@ jobs:
           E2E_BASE_URL: http://localhost:5235
           E2E_ARTIFACTS: ${{ github.workspace }}/e2e-artifacts
           UPDATE_VISUAL_BASELINES: ${{ inputs.update_baselines && '1' || '' }}
+          CAPTURE_DOC_IMAGES: ${{ inputs.capture_doc_images && '1' || '' }}
         run: >
           dotnet test tests/WorkPlanStudio.E2E/WorkPlanStudio.E2E.csproj -c Release --no-build
           --minimum-expected-tests 98
           --results-directory ${{ github.workspace }}/e2e-results
           --report-xunit-trx --report-xunit-trx-filename e2e.trx
+
+      # Only when a human asked for it: the recaptured README screenshots.
+      - name: Upload recaptured documentation images
+        if: ${{ inputs.capture_doc_images }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+        with:
+          name: documentation-images
+          path: |
+            docs/images/schedule-dark.png
+            docs/images/schedule-mobile.png
+            docs/schedule-ontime.png
+            docs/schedule-late.png
+          if-no-files-found: error
+          retention-days: 14
+          overwrite: true
 
       # Only when a human asked for it: the regenerated baselines, ready to commit.
       - name: Upload regenerated visual baselines
