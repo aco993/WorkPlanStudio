@@ -155,12 +155,14 @@ public sealed class VisualRegressionTests : IClassFixture<PlaywrightFixture>
     /// one means adding a CI leg that runs on it — otherwise the new folder is
     /// exactly the dead weight this list exists to prevent.
     /// </summary>
-    private static string[] MaintainedBaselineDirectories { get; } = ["linux"];
+    // internal, because DocumentationImagesTests captures into docs/ under the
+    // same ADR 0021 rule and must answer the question the same way.
+    internal static string[] MaintainedBaselineDirectories { get; } = ["linux"];
 
-    private static string CurrentOperatingSystem =>
+    internal static string CurrentOperatingSystem =>
         OperatingSystem.IsWindows() ? "windows" : OperatingSystem.IsMacOS() ? "macos" : "linux";
 
-    private static bool BaselinesAreMaintainedHere =>
+    internal static bool BaselinesAreMaintainedHere =>
         MaintainedBaselineDirectories.Contains(CurrentOperatingSystem) || UpdatingBaselines;
 
     private static string BaselineDirectory { get; } =
@@ -175,7 +177,7 @@ public sealed class VisualRegressionTests : IClassFixture<PlaywrightFixture>
         return path;
     }
 
-    private static string RepositoryRoot()
+    internal static string RepositoryRoot()
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
         while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "WorkPlanStudio.slnx")))
