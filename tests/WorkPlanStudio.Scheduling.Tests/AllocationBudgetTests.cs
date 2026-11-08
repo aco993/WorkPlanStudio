@@ -15,6 +15,7 @@ namespace WorkPlanStudio.Scheduling.Tests;
 /// candidates.
 /// </para>
 /// </summary>
+[Collection(WallClock.Name)]
 public class AllocationBudgetTests
 {
     private static SchedulingContext Medium(int multiStart, int localSearch) =>

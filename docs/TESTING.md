@@ -330,6 +330,39 @@ up and down between lanes, Enter to read a mark, a roving tabindex so the chart 
 two tab stops rather than 137 — has its own component tests
 ([ADR 0023](adr/0023-accessible-gantt-and-responsive-tables.md)).
 
+### ⏱️ Why the wall-clock tripwires are opt-in
+
+They measure the machine as much as the code, so they run **only** when
+`RUN_WALL_CLOCK_BUDGETS=1` — which `performance.yml` sets and nothing else does.
+Everywhere else they skip with that reason, including a developer's own full
+run.
+
+This was not a policy decision taken in advance; it is what the numbers forced.
+xunit runs test classes in parallel, so a stopwatch in one of them times the
+engine *plus* whatever the other two hundred tests are doing to the cores:
+
+| | medium problem, calendars on | bound |
+| --- | ---: | ---: |
+| inside a parallel 294-test run | 11,513 ms | 4,000 ms |
+| after serialising the collection | 4,763 ms | 4,000 ms |
+| the class on its own | ~4.6 s for all three, passing | — |
+
+The twenty-instance optimality study was worse, at **244,940 ms** against a
+20,000 ms bound, because its solve happens in a static initialiser that used to
+run alongside everything else.
+
+So both now sit in a `WallClock` collection with `DisableParallelization`, which
+removed most of it, and are gated on the variable, which removes the rest. What
+the serialising could not fix is a hot CPU and a grown heap after sixty seconds
+of suite — no amount of scheduling helps that, and a run of their own is the
+only honest place for a stopwatch.
+
+`AllocationBudgetTests` joins the collection but is not gated: it counts bytes
+with `GetAllocatedBytesForCurrentThread`, which is per-thread and therefore
+correct under parallelism. It is serialised for the opposite reason — it calls
+`GC.Collect()`, and a forced collection in the middle of somebody else's timing
+is the same problem pointed the other way.
+
 ### 📸 Visual regression — pixel baselines
 
 `VisualRegressionTests` take full-page screenshots of the dashboard, the schedule

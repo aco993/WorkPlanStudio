@@ -33,7 +33,12 @@ public static class OptimalityStudy
     /// <param name="Heuristic">What <see cref="SchedulingEngine"/> found.</param>
     /// <param name="Status">Whether the solver proved optimality.</param>
     /// <param name="Nodes">Search nodes the solver opened.</param>
-    /// <param name="SolverMilliseconds">Wall clock of the solve; reported, never asserted.</param>
+    /// <param name="SolverMilliseconds">
+    /// Wall clock of the solve. Reported, and bounded loosely by
+    /// <c>OptimalityStudyTests.The_whole_study_solves_in_a_few_seconds</c> so the
+    /// study stays cheap enough to keep running — this said "never asserted",
+    /// which stopped being true when that test was written.
+    /// </param>
     /// <param name="ExactSchedule">
     /// The optimal schedule itself, so a caller can run it through an independent
     /// feasibility check rather than trusting the number attached to it.

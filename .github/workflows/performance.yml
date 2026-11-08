@@ -61,12 +61,35 @@ jobs:
       # The budgets themselves are unchanged and still assert; only where they
       # run has moved. --minimum-expected-tests keeps the filter honest: a typo
       # that matched no class would otherwise pass as an empty run.
+      # RUN_WALL_CLOCK_BUDGETS is what switches these on at all. They skip
+      # everywhere else, including a developer's own full run, because a
+      # stopwatch inside a 294-test suite measures the suite: serialising the
+      # collection took the medium problem from 11,513 ms to 4,763 ms against a
+      # 4,000 ms bound, and the same class on its own takes 4.6 s for all three
+      # tests and passes. What was left after the scheduling fix was a hot CPU
+      # and a large heap, which only a run of their own removes. This is that
+      # run.
       - name: Scheduling engine budgets
+        env:
+          RUN_WALL_CLOCK_BUDGETS: '1'
         run: >
           dotnet test tests/WorkPlanStudio.Scheduling.Tests/WorkPlanStudio.Scheduling.Tests.csproj -c Release
           --filter-class *.PerformanceBudgetTests --minimum-expected-tests 3
 
+      # The twenty-instance study bounds its own solve time, and it is not in
+      # PerformanceBudgetTests, so the filter above does not reach it. Without
+      # this step the assertion would skip in every workflow and be guarded by
+      # nothing - which is how a gate quietly stops existing.
+      - name: Optimality study budget
+        env:
+          RUN_WALL_CLOCK_BUDGETS: '1'
+        run: >
+          dotnet test tests/WorkPlanStudio.Scheduling.Tests/WorkPlanStudio.Scheduling.Tests.csproj -c Release
+          --filter-class *.OptimalityStudyTests --minimum-expected-tests 4
+
       - name: Working-time budgets
+        env:
+          RUN_WALL_CLOCK_BUDGETS: '1'
         run: >
           dotnet test tests/WorkPlanStudio.WorkingTime.Tests/WorkPlanStudio.WorkingTime.Tests.csproj -c Release
           --filter-class *.PerformanceBudgetTests --minimum-expected-tests 2

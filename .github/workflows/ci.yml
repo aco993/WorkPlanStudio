@@ -100,6 +100,12 @@ env:
   # than look, and then it is noise. They run unchanged in the Performance
   # workflow, on main, weekly and on demand, where a slow runner is worth
   # investigating rather than worth re-running.
+  #
+  # Since the budgets became opt-in (RUN_WALL_CLOCK_BUDGETS, which only
+  # performance.yml sets) this filter no longer carries the decision on its own
+  # — the tests would skip here anyway. It stays because it also keeps their
+  # several seconds of warm-up runs out of this job, and because a gate that
+  # depends on exactly one mechanism is a gate with one way to fail open.
   EXCLUDE_BUDGETS: --filter-not-class *.PerformanceBudgetTests
   BADGE_ARGS: ${{ inputs.badges && '--badge badges' || '' }}
 

@@ -10,6 +10,7 @@ namespace WorkPlanStudio.Scheduling.Tests;
 /// pass says nothing precise and a failure says something went quadratic.
 /// Measured after a warm-up run so JIT time is not counted.
 /// </summary>
+[Collection(WallClock.Name)]
 public class PerformanceBudgetTests
 {
     private static SchedulingContext Medium(bool calendars) => ProblemFactory.Build(jobs: 100, operationsPerJob: 6, workCenters: 10, capacity: 2, multiStart: 8, localSearch: 2_000, withCalendars: calendars);
@@ -19,6 +20,7 @@ public class PerformanceBudgetTests
     [InlineData(true, 4_000)]
     public void The_medium_problem_schedules_within_its_budget(bool withCalendars, int budgetMilliseconds)
     {
+        Assert.SkipUnless(WallClock.Enabled, WallClock.SkipReason);
         var context = Medium(withCalendars);
         _ = new SchedulingEngine().Run(context);   // warm up
 
@@ -34,6 +36,7 @@ public class PerformanceBudgetTests
     [Fact]
     public void A_single_rule_dispatch_of_the_large_problem_is_fast()
     {
+        Assert.SkipUnless(WallClock.Enabled, WallClock.SkipReason);
         var context = ProblemFactory.Build(jobs: 250, operationsPerJob: 8, workCenters: 20, capacity: 2, multiStart: 1, localSearch: 0);
         _ = new SchedulingEngine().Run(context);
 

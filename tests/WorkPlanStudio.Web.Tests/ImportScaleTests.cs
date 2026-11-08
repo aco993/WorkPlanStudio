@@ -147,11 +147,44 @@ public sealed class ImportScaleTests
         // continuations run rather than synchronously; what matters is that the
         // first one is early, the last one is the whole file, and there are not so
         // many that each one costs the browser a throttled timer.
-        await Task.Yield();
+        //
+        // A single Task.Yield() used to stand in for that wait, which is not a
+        // wait: it drains the queue on an idle machine and does not on a busy
+        // one, so this test passed here and failed on a loaded CI runner with a
+        // list that was correct but not finished arriving. The condition is the
+        // last report, so wait for the condition.
+        await WaitForFinalReportAsync(reported, Rows, cancellationToken);
+
         Assert.InRange(reported.Count, 5, 30);
         Assert.InRange(reported[0], 1, 500);
         Assert.Equal(Rows, reported[^1]);
         Assert.True(reported.SequenceEqual(reported.Order()), "progress went backwards");
+    }
+
+    /// <summary>
+    /// Waits until the last posted progress report is <paramref name="expected"/>,
+    /// or fails saying what did arrive.
+    /// </summary>
+    /// <remarks>
+    /// Polling rather than a fixed delay: the reports are posted to the captured
+    /// context and arrive when its continuations run, so there is no moment this
+    /// test can compute in advance. A sleep long enough for the slowest runner
+    /// would be wasted on every other one.
+    /// </remarks>
+    private static async Task WaitForFinalReportAsync(
+        List<int> reported, int expected, CancellationToken cancellationToken)
+    {
+        var deadline = DateTime.UtcNow.AddSeconds(10);
+        while (DateTime.UtcNow < deadline)
+        {
+            if (reported.Count > 0 && reported[^1] == expected)
+                return;
+            await Task.Delay(10, cancellationToken);
+        }
+
+        Assert.Fail(
+            $"progress never reached {expected}; {reported.Count} report(s) arrived" +
+            (reported.Count > 0 ? $", the last of them {reported[^1]}" : ""));
     }
 
     /// <summary>

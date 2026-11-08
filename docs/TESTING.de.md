@@ -351,6 +351,41 @@ Spur, auf und ab zwischen den Spuren, Eingabetaste zum Vorlesen einer Marke, ein
 wandernder Tabstopp, damit das Diagramm zwei Tabstopps hat statt 137 — hat eigene
 Komponententests ([ADR 0023](adr/0023-accessible-gantt-and-responsive-tables.md)).
 
+### ⏱️ Warum die Zeitstolperdrähte zugeschaltet werden müssen
+
+Sie messen die Maschine ebenso wie den Code und laufen deshalb **nur** mit
+`RUN_WALL_CLOCK_BUDGETS=1` — was `performance.yml` setzt und sonst nichts.
+Überall sonst werden sie mit genau dieser Begründung übersprungen, auch im
+vollständigen Lauf auf dem Rechner der Entwicklerin.
+
+Das war keine vorab getroffene Richtlinie, sondern das, wozu die Zahlen
+gezwungen haben. xunit führt Testklassen parallel aus, eine Stoppuhr darin misst
+also die Engine *plus* das, was die anderen zweihundert Tests gerade mit den
+Kernen machen:
+
+| | mittleres Problem, mit Kalendern | Grenze |
+| --- | ---: | ---: |
+| im parallelen Lauf über 294 Tests | 11.513 ms | 4.000 ms |
+| nach Serialisierung der Collection | 4.763 ms | 4.000 ms |
+| die Klasse für sich allein | rund 4,6 s für alle drei, bestanden | — |
+
+Die Optimalitätsstudie über zwanzig Instanzen war schlimmer: **244.940 ms**
+gegen eine Grenze von 20.000 ms, weil ihr Lösen in einem statischen
+Initialisierer stattfindet, der bisher neben allem anderen lief.
+
+Beide liegen jetzt in einer `WallClock`-Collection mit
+`DisableParallelization`, was das meiste beseitigt hat, und hängen an der
+Variablen, die den Rest beseitigt. Was die Serialisierung nicht beheben konnte,
+sind eine heiße CPU und ein gewachsener Heap nach sechzig Sekunden Testlauf —
+dagegen hilft keine Ablaufsteuerung, und ein eigener Lauf ist der einzige
+ehrliche Ort für eine Stoppuhr.
+
+`AllocationBudgetTests` gehört zur Collection, ist aber nicht zugeschaltet: Die
+Klasse zählt Bytes mit `GetAllocatedBytesForCurrentThread`, was pro Thread gilt
+und unter Parallelität korrekt ist. Serialisiert ist sie aus dem umgekehrten
+Grund — sie ruft `GC.Collect()` auf, und eine erzwungene Sammlung mitten in der
+Zeitmessung eines anderen Tests ist dasselbe Problem von der anderen Seite.
+
 ### 📸 Bildvergleich — Pixel-Baselines
 
 `VisualRegressionTests` nehmen ganzseitige Bildschirmfotos von Übersicht, Planung und
