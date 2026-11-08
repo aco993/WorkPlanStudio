@@ -357,6 +357,14 @@ the serialising could not fix is a hot CPU and a grown heap after sixty seconds
 of suite — no amount of scheduling helps that, and a run of their own is the
 only honest place for a stopwatch.
 
+One more thing the gate needed. `--minimum-expected-tests` counts a *skipped*
+test as discovered, so it does not notice the switch being off: measured, the
+filtered run exits 0 with "Zero tests ran" and "skipped: 3". A gate that passes
+while measuring nothing is the failure mode this repository refuses everywhere
+else, so each budget step in `performance.yml` also asserts `skipped: 0`.
+Remove `RUN_WALL_CLOCK_BUDGETS` from a step and that step fails, which is the
+point of putting it there.
+
 `AllocationBudgetTests` joins the collection but is not gated: it counts bytes
 with `GetAllocatedBytesForCurrentThread`, which is per-thread and therefore
 correct under parallelism. It is serialised for the opposite reason — it calls

@@ -72,27 +72,34 @@ jobs:
       - name: Scheduling engine budgets
         env:
           RUN_WALL_CLOCK_BUDGETS: '1'
-        run: >
-          dotnet test tests/WorkPlanStudio.Scheduling.Tests/WorkPlanStudio.Scheduling.Tests.csproj -c Release
-          --filter-class *.PerformanceBudgetTests --minimum-expected-tests 3
+        run: |
+          dotnet test tests/WorkPlanStudio.Scheduling.Tests/WorkPlanStudio.Scheduling.Tests.csproj -c Release             --filter-class *.PerformanceBudgetTests --minimum-expected-tests 3 | tee budget.log
+          grep -qE "skipped: 0" budget.log             || { echo "::error::the budgets did not run - RUN_WALL_CLOCK_BUDGETS had no effect"; exit 1; }
 
       # The twenty-instance study bounds its own solve time, and it is not in
       # PerformanceBudgetTests, so the filter above does not reach it. Without
       # this step the assertion would skip in every workflow and be guarded by
       # nothing - which is how a gate quietly stops existing.
+      # --minimum-expected-tests counts a skipped test as discovered, so it does
+      # NOT catch the switch being off: measured locally, the filtered run exits
+      # 0 with "Zero tests ran" and "skipped: 3". A gate that passes while
+      # measuring nothing is the one failure mode this repository refuses, so
+      # each step below also asserts that nothing was skipped. Remove
+      # RUN_WALL_CLOCK_BUDGETS from a step and that step fails, which is the
+      # point.
       - name: Optimality study budget
         env:
           RUN_WALL_CLOCK_BUDGETS: '1'
-        run: >
-          dotnet test tests/WorkPlanStudio.Scheduling.Tests/WorkPlanStudio.Scheduling.Tests.csproj -c Release
-          --filter-class *.OptimalityStudyTests --minimum-expected-tests 4
+        run: |
+          dotnet test tests/WorkPlanStudio.Scheduling.Tests/WorkPlanStudio.Scheduling.Tests.csproj -c Release             --filter-class *.OptimalityStudyTests --minimum-expected-tests 4 | tee budget.log
+          grep -qE "skipped: 0" budget.log             || { echo "::error::the budgets did not run - RUN_WALL_CLOCK_BUDGETS had no effect"; exit 1; }
 
       - name: Working-time budgets
         env:
           RUN_WALL_CLOCK_BUDGETS: '1'
-        run: >
-          dotnet test tests/WorkPlanStudio.WorkingTime.Tests/WorkPlanStudio.WorkingTime.Tests.csproj -c Release
-          --filter-class *.PerformanceBudgetTests --minimum-expected-tests 2
+        run: |
+          dotnet test tests/WorkPlanStudio.WorkingTime.Tests/WorkPlanStudio.WorkingTime.Tests.csproj -c Release             --filter-class *.PerformanceBudgetTests --minimum-expected-tests 2 | tee budget.log
+          grep -qE "skipped: 0" budget.log             || { echo "::error::the budgets did not run - RUN_WALL_CLOCK_BUDGETS had no effect"; exit 1; }
 
   benchmarks:
     name: BenchmarkDotNet (short job)
