@@ -836,6 +836,20 @@
   <data name="Sched_Proof_Nothing" xml:space="preserve"><value>Nichts zu beweisen — es gibt keinen Plan.</value></data>
   <data name="Sched_Proof_Failed" xml:space="preserve"><value>Die Optimalitätsprüfung konnte nicht abgeschlossen werden.</value></data>
   <data name="Sched_Proof_NotProvedNoBound" xml:space="preserve"><value>Innerhalb von {0} nicht bewiesen: die Suche hat weder die Lücke geschlossen noch eine brauchbare Schranke gefunden.</value></data>
+  <data name="Sched_Proof_Title" xml:space="preserve"><value>Ist das der bestmögliche Plan?</value></data>
+  <data name="Sched_Proof_Lead" xml:space="preserve"><value>Der Plan oben stammt aus einer Suche über die Reihenfolge, in der Aufträge eingelastet werden – und die beste Reihenfolge ist nicht immer der beste Plan. Ein exakter Branch-and-Bound-Löser, der keinen Code mit dieser Suche teilt, beantwortet die Frage für Werke, die klein genug sind, um fertig zu werden, während Sie warten.</value></data>
+  <data name="Sched_Proof_Verdict_Optimal" xml:space="preserve"><value>Optimalität bewiesen</value></data>
+  <data name="Sched_Proof_Verdict_Better" xml:space="preserve"><value>Es gibt einen besseren Plan</value></data>
+  <data name="Sched_Proof_Verdict_FoundBetter" xml:space="preserve"><value>Besseres gefunden, nicht bewiesen</value></data>
+  <data name="Sched_Proof_Verdict_NoneBetter" xml:space="preserve"><value>Nichts Besseres gefunden</value></data>
+  <data name="Sched_Proof_Verdict_NotProved" xml:space="preserve"><value>Nicht bewiesen</value></data>
+  <data name="Sched_Proof_Verdict_TooLarge" xml:space="preserve"><value>Zu groß zum Entscheiden</value></data>
+  <data name="Sched_Proof_Fact_Gap" xml:space="preserve"><value>Über dem Optimum</value></data>
+  <data name="Sched_Proof_Fact_Improvement" xml:space="preserve"><value>Besserer Plan gefunden</value></data>
+  <data name="Sched_Proof_Fact_Bound" xml:space="preserve"><value>Höchstens über dem Optimum</value></data>
+  <data name="Sched_Proof_Fact_Nodes" xml:space="preserve"><value>Suchknoten</value></data>
+  <data name="Sched_Proof_Fact_Time" xml:space="preserve"><value>Zeit</value></data>
+  <data name="Sched_Proof_Fact_Operations" xml:space="preserve"><value>Arbeitsgänge</value></data>
   <data name="Chat_SupersededByNewRun" xml:space="preserve"><value>Der Plan hat sich geändert, während diese Frage beantwortet wurde — die Antwort hätte einen Plan beschrieben, der nicht mehr angezeigt wird. Bitte erneut fragen.</value></data>
   <data name="Confirm_LeaveTitle" xml:space="preserve"><value>Ohne Speichern verlassen?</value></data>
   <data name="Confirm_LeaveBody" xml:space="preserve"><value>Dieser Arbeitsplan hat Änderungen, die nie gespeichert wurden. Wer jetzt geht, wirft sie weg.</value></data>

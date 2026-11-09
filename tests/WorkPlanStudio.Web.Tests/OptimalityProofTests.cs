@@ -51,12 +51,12 @@ public sealed class OptimalityProofTests : AppBunitContext
     private IRenderedComponent<SchedulePage> Rendered()
     {
         var cut = Render<SchedulePage>();
-        cut.WaitForAssertion(() => Assert.NotEmpty(cut.FindAll(".proof-row")));
+        cut.WaitForAssertion(() => Assert.NotEmpty(cut.FindAll(".proof-card")));
         return cut;
     }
 
     private static async Task PressAsync(IRenderedComponent<SchedulePage> cut) =>
-        await cut.InvokeAsync(() => cut.Find(".proof-row button").Click());
+        await cut.InvokeAsync(() => cut.Find(".proof-card .proof-action").Click());
 
     [Fact]
     public void The_answer_region_exists_from_the_first_paint_and_is_empty()
@@ -185,5 +185,100 @@ public sealed class OptimalityProofTests : AppBunitContext
         await PressAsync(cut);
 
         cut.WaitForAssertion(() => Assert.Contains("Sched_Proof_NotProvedNoBound", cut.Find(".proof-answer").TextContent, StringComparison.Ordinal));
+    }
+
+    // ----- the card: badge and facts -----
+
+    private async Task<IRenderedComponent<SchedulePage>> VerdictAsync(OptimalityProof proof)
+    {
+        Arrange();
+        _prover.Proof = proof;
+        var cut = Rendered();
+        await PressAsync(cut);
+        cut.WaitForAssertion(() => Assert.NotEmpty(cut.FindAll(".proof-verdict")));
+        return cut;
+    }
+
+    private static string[] Terms(IRenderedComponent<SchedulePage> cut) =>
+        [.. cut.FindAll(".proof-facts dt").Select(d => d.TextContent.Trim())];
+
+    [Fact]
+    public void Before_anything_is_asked_the_card_offers_the_question_and_no_verdict()
+    {
+        Arrange();
+        var cut = Rendered();
+
+        Assert.Contains("Sched_Proof_Title", cut.Find(".proof-card h2").TextContent, StringComparison.Ordinal);
+        Assert.Empty(cut.FindAll(".proof-verdict"));
+    }
+
+    [Fact]
+    public async Task Only_a_finished_proof_wears_the_proved_badge()
+    {
+        var cut = await VerdictAsync(new OptimalityProof(
+            OptimalityProofStatus.ScheduleIsOptimal, 42, 42, 42, 12, 1234, TimeSpan.FromSeconds(1.26)));
+
+        var badge = cut.Find(".proof-verdict .badge");
+        Assert.Contains("verdict-proved", badge.ClassList);
+        Assert.Contains("Sched_Proof_Verdict_Optimal", badge.TextContent, StringComparison.Ordinal);
+        Assert.Equal(["Sched_Proof_Fact_Gap", "Sched_Proof_Fact_Nodes", "Sched_Proof_Fact_Time"], Terms(cut));
+    }
+
+    [Theory]
+    [InlineData(OptimalityProofStatus.NotProved)]
+    [InlineData(OptimalityProofStatus.NotProvedNoneBetterFound)]
+    public async Task An_unfinished_search_never_wears_the_proved_badge_or_shows_a_gap(OptimalityProofStatus status)
+    {
+        var cut = await VerdictAsync(new OptimalityProof(status, 120, null, 90, 30, 50_000, TimeSpan.FromSeconds(2)));
+
+        var badge = cut.Find(".proof-verdict .badge");
+        Assert.DoesNotContain("verdict-proved", badge.ClassList);
+        Assert.DoesNotContain("Sched_Proof_Verdict_Optimal", badge.TextContent, StringComparison.Ordinal);
+        Assert.DoesNotContain("Sched_Proof_Fact_Gap", Terms(cut));
+    }
+
+    /// <summary>
+    /// The sample plant's own answer, measured: millions of nodes, nothing
+    /// better, no proof. It must read as the useful half of a failure, and the
+    /// bound's weakness - which is what the percentage would measure - stays out.
+    /// </summary>
+    [Fact]
+    public async Task Nothing_better_found_shows_the_effort_and_not_the_bound()
+    {
+        var cut = await VerdictAsync(new OptimalityProof(
+            OptimalityProofStatus.NotProvedNoneBetterFound, 120, null, 90, 30, 4_000_000, TimeSpan.FromSeconds(2), BestFound: 120));
+
+        Assert.Contains("Sched_Proof_Verdict_NoneBetter", cut.Find(".proof-verdict .badge").TextContent, StringComparison.Ordinal);
+        Assert.Equal(["Sched_Proof_Fact_Nodes", "Sched_Proof_Fact_Time"], Terms(cut));
+    }
+
+    [Fact]
+    public async Task A_search_that_ran_out_shows_its_bound_as_a_ceiling()
+    {
+        var cut = await VerdictAsync(new OptimalityProof(
+            OptimalityProofStatus.NotProved, 120, null, 100, 30, 50_000, TimeSpan.FromSeconds(2)));
+
+        Assert.Equal(["Sched_Proof_Fact_Bound", "Sched_Proof_Fact_Nodes", "Sched_Proof_Fact_Time"], Terms(cut));
+        Assert.StartsWith("≤", cut.FindAll(".proof-facts dd")[0].TextContent.Trim(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_better_schedule_found_without_proof_shows_the_improvement()
+    {
+        var cut = await VerdictAsync(new OptimalityProof(
+            OptimalityProofStatus.NotProved, 120, null, 90, 30, 50_000, TimeSpan.FromSeconds(2), BestFound: 108));
+
+        var badge = cut.Find(".proof-verdict .badge");
+        Assert.Contains("verdict-better", badge.ClassList);
+        Assert.Contains("Sched_Proof_Verdict_FoundBetter", badge.TextContent, StringComparison.Ordinal);
+        Assert.Equal("Sched_Proof_Fact_Improvement", Terms(cut)[0]);
+    }
+
+    [Fact]
+    public async Task Too_large_shows_the_size_and_no_search_numbers()
+    {
+        var cut = await VerdictAsync(OptimalityProof.NotAttempted(OptimalityProofStatus.TooLarge, 120));
+
+        Assert.Equal(["Sched_Proof_Fact_Operations"], Terms(cut));
     }
 }
