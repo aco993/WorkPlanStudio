@@ -21,6 +21,14 @@
 
 > **Live-Demo:** <https://aco993.github.io/WorkPlanStudio/> — Englisch und Deutsch, hell und dunkel, Desktop und Mobilgerät. Nichts zu installieren, keine Anmeldung.
 
+**Neunzig Sekunden, drei Links:**
+
+| | |
+| --- | --- |
+| **Ansehen** — 30 s | Öffnen Sie [den Plan](https://aco993.github.io/WorkPlanStudio/schedule): sieben Fertigungsaufträge auf sieben Arbeitsplätzen, eingeplant um Schichten, Pausen und einen Feiertag. Dann **Optimalität beweisen** drücken. |
+| **Lesen** — 30 s | [`SchedulingEngine.cs`](src/WorkPlanStudio.Scheduling/SchedulingEngine.cs): die Engine, in einer Bibliothek ohne Paketreferenz — ganzzahlige Sekunden, eine Suche mit Seed, jedes Mal derselbe Plan. |
+| **Der Befund** — 30 s | [§6c der Planungsnotizen](docs/SCHEDULING.de.md#6c-das-optimum-bewiesen): ein exakter Löser, geschrieben, um die Heuristik zu prüfen, hat alle zwanzig Benchmark-Instanzen bewiesen — und gezeigt, dass die Heuristik in 18 davon die beste Auftragsreihenfolge trifft, das wahre Optimum aber nur in 7. Die Seite sagt Ihnen, welches von beiden Sie bekommen haben. |
+
 ![Rundgang: Termine lockern, Termine straffen, geschlossene Zeit lesen, den Chat fragen, das Farbschema wechseln](docs/images/tour.gif)
 
 ---

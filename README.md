@@ -21,6 +21,14 @@
 
 > **Live demo:** <https://aco993.github.io/WorkPlanStudio/> — English and German, light and dark, desktop and mobile. Nothing to install, nothing to sign up for.
 
+**Ninety seconds, three links:**
+
+| | |
+| --- | --- |
+| **See it** — 30 s | Open [the schedule](https://aco993.github.io/WorkPlanStudio/schedule): seven production orders on seven work centers, planned around shifts, breaks and a public holiday. Then press **Prove this is optimal**. |
+| **Read it** — 30 s | [`SchedulingEngine.cs`](src/WorkPlanStudio.Scheduling/SchedulingEngine.cs): the engine, in a library with no package reference — integer seconds, a seeded search, the same schedule every time. |
+| **The finding** — 30 s | [§6c of the scheduling notes](docs/SCHEDULING.md#6c-the-optimum-proved): an exact solver, written to check the heuristic, proved all twenty benchmark instances — and showed the heuristic matches the best dispatch order on 18 of them but the true optimum on only 7. The page tells you which of the two you got. |
+
 ![Tour: loosen the targets, tighten them, read the closed time, ask the chat, switch the theme](docs/images/tour.gif)
 
 ---

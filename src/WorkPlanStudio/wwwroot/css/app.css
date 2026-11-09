@@ -193,6 +193,9 @@ a:hover { text-decoration: underline; }
 .nav-link.active { background: var(--sidebar-active); color: #fff; }
 .nav-link.active .nav-icon { color: var(--sidebar-accent); }
 .nav-icon { width: 19px; height: 19px; flex-shrink: 0; color: var(--sidebar-muted); fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.nav-group { display: flex; flex-direction: column; gap: 2px; margin-top: .7rem; }
+.nav-group + .nav-link { margin-top: .7rem; }
+.nav-heading { padding: .2rem .75rem .3rem; font-size: .68rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--sidebar-muted); }
 
 .sidebar-footer {
     padding: .9rem 1.2rem;
