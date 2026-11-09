@@ -281,4 +281,22 @@ public sealed class OptimalityProofTests : AppBunitContext
 
         Assert.Equal(["Sched_Proof_Fact_Operations"], Terms(cut));
     }
+
+    /// <summary>
+    /// A verdict belongs to the schedule it judged. Before the card was its own
+    /// component nothing cleared it: regenerate after a proof, and the badge went
+    /// on saying "Proved optimal" beside a schedule nobody had proved anything
+    /// about.
+    /// </summary>
+    [Fact]
+    public async Task A_new_run_takes_the_old_verdict_away()
+    {
+        var cut = await VerdictAsync(new OptimalityProof(
+            OptimalityProofStatus.ScheduleIsOptimal, 42, 42, 42, 12, 1234, TimeSpan.FromSeconds(1.26)));
+
+        await cut.InvokeAsync(() => cut.Find(".page-head .btn-primary").Click());
+
+        cut.WaitForAssertion(() => Assert.Empty(cut.FindAll(".proof-verdict")));
+        Assert.Equal("", cut.Find(".proof-answer").TextContent.Trim());
+    }
 }

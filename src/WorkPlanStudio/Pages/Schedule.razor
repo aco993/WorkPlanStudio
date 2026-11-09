@@ -1,18 +1,11 @@
 @page "/schedule"
 @using System.Globalization
-@using WorkPlanStudio.Services.Chat
 @using WorkPlanStudio.Services.Scheduling
-@using WorkPlanStudio.WorkingTime
 @implements IDisposable
 @inject IStringLocalizer<SharedResource> L
 @inject IProductionScheduleService Scheduler
-@inject ScheduleAssistant Assistant
-@inject ScheduleChat Chat
-@inject PlantSettingsService PlantSettings
 @inject ILogger<Schedule> Logger
-@inject IAssistantConfig AssistantConfig
 @inject IJSRuntime JS
-@inject IOptimalityProver Prover
 
 <PageTitle>@L["Sched_Title"] · WorkPlan Studio</PageTitle>
 
@@ -160,43 +153,8 @@
             @* The chart and its text alternative; see Components/GanttChart.razor. *@
             <GanttChart Result="_result" />
 
-            @*
-                The question the KPI cards invite and never answer, given a card of
-                its own because it is the strongest thing on the page: the
-                heuristic searches the order jobs are dispatched in, the best
-                dispatch order is not the best schedule, and an exact solver that
-                shares no code with the heuristic settles which is which. It sits
-                under the chart, not between it and the KPIs: measured at 375 px,
-                that position pushed the Gantt from 463 px to 858 px, undoing the
-                result-first layout (ADR 0026). It runs only when
-                asked - the solve holds the browser's one thread for up to its
-                budget - and the verdict never says "optimal" unless it was proved.
-            *@
-            <section class="card proof-card" aria-labelledby="proof-title">
-                <div class="proof-head">
-                    <div class="proof-intro">
-                        <h2 id="proof-title">@L["Sched_Proof_Title"]</h2>
-                        <p class="proof-lead">@L["Sched_Proof_Lead"]</p>
-                    </div>
-                    <button type="button" class="btn btn-primary proof-action" @onclick="ProveOptimalAsync"
-                            disabled="@(_proving || _running)">
-                        @(_proving ? L["Sched_Proof_Busy"] : L["Sched_Proof_Action"])
-                    </button>
-                </div>
-                @if (_proof is { } verdict && verdict.Status != OptimalityProofStatus.NothingToProve)
-                {
-                    <div class="proof-verdict">
-                        <span class="badge @VerdictTone(verdict)">@VerdictLabel(verdict)</span>
-                        <dl class="proof-facts">
-                            @foreach (var (term, value) in VerdictFacts(verdict))
-                            {
-                                <div><dt>@term</dt><dd>@value</dd></div>
-                            }
-                        </dl>
-                    </div>
-                }
-                <p class="proof-answer" role="status" aria-live="polite">@ProofText()</p>
-            </section>
+            @* Is this the best possible schedule? See Components/OptimalityProofCard.razor. *@
+            <OptimalityProofCard Parameters="_resultParameters" Disabled="_running" />
 
             <section class="card no-pad">
                 <div class="card-head pad"><h2 id="jobs-table-title">@L["Sched_JobsTable"]</h2></div>
@@ -239,123 +197,8 @@
                 </TableScroll>
             </section>
 
-            <section class="card assistant-card">
-                <div class="card-head">
-                    <div class="assistant-head-left">
-                        <h2>@L["Sched_Ai_Title"]</h2>
-                        @if (_narration is not null)
-                        {
-                            <span class="pill @(_narration.Source == NarrationSource.Ai ? "ai" : "off")">@_narration.SourceLabel</span>
-                        }
-                    </div>
-                    <div class="assistant-actions">
-                        @if (_aiEnabled)
-                        {
-                            <button class="btn btn-outline btn-sm" @onclick="AskAiAsync" disabled="@_aiBusy">
-                                @(_aiBusy ? L["Sched_Ai_Thinking"] : L["Sched_Ai_AskAi"])
-                            </button>
-                        }
-                        <button class="icon-btn" aria-label="@L["Sched_Ai_Configure"]" title="@L["Sched_Ai_Configure"]" @onclick="OpenAiSettingsAsync">
-                            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3m-4.9-7.1-2.1 2.1m-8 8-2.1 2.1m0-12.2 2.1 2.1m8 8 2.1 2.1"/></svg>
-                        </button>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <p class="assistant-sub muted">@L["Sched_Ai_Subtitle"]</p>
-                    @if (_narration is null)
-                    {
-                        <div class="loading-row" role="status"><span class="spinner" aria-hidden="true"></span><span class="sr-only">@L["Common_Loading"]</span></div>
-                    }
-                    else
-                    {
-                        <ul class="assistant-lines">
-                            @foreach (var line in _narration.Lines)
-                            {
-                                <li class="assistant-line @ToneClass(line.Tone)">
-                                    <span class="assistant-dot"></span>
-                                    <span>@line.Text</span>
-                                </li>
-                            }
-                        </ul>
-                        @if (_narration.Note is not null)
-                        {
-                            <p class="assistant-note">@_narration.Note</p>
-                        }
-                    }
-
-                    <div class="chat" role="region" aria-labelledby="chat-title">
-                        <h3 id="chat-title" class="chat-title">@L["Chat_Title"]</h3>
-                        <p class="chat-intro muted">@L["Chat_Intro"]</p>
-
-                        @*
-                            Rendered even when empty. A live region has to be in the DOM
-                            *before* its content changes: inserting it together with its
-                            first two turns is why the first answer of every conversation
-                            was never announced, and the second one was.
-                        *@
-                        <ol class="chat-thread @(Chat.Turns.Count == 0 ? "empty" : null)"
-                            aria-live="polite" aria-relevant="additions" aria-label="@L["Chat_Title"]"
-                            tabindex="@(Chat.Turns.Count == 0 ? -1 : 0)">
-                            @foreach (var turn in Chat.Turns)
-                            {
-                                <li class="chat-turn @(turn.Role == ChatRole.User ? "user" : "assistant")">
-                                    <div class="chat-bubble">@turn.Text</div>
-                                    @if (turn.Role == ChatRole.Assistant)
-                                    {
-                                        <span class="chat-source pill @(turn.Source == NarrationSource.Ai ? "ai" : "off")">@turn.SourceLabel</span>
-                                    }
-                                    @if (turn.Note is not null)
-                                    {
-                                        <p class="assistant-note chat-note">@turn.Note</p>
-                                    }
-                                </li>
-                            }
-                        </ol>
-
-                        @if (_chatBusy)
-                        {
-                            <div class="chat-busy" role="status"><span class="spinner" aria-hidden="true"></span><span>@L["Chat_Thinking"]</span></div>
-                        }
-                        @if (_chatError is not null)
-                        {
-                            <div class="form-banner error" role="alert">@_chatError</div>
-                        }
-                        @*
-                            A question the page had to drop is an outcome, not a
-                            failure — the same distinction a cancelled run gets — so
-                            it uses the card's own note style and a status role,
-                            not the red banner and an alert.
-                        *@
-                        @if (_chatNotice is not null)
-                        {
-                            <p class="assistant-note chat-note" role="status">@_chatNotice</p>
-                        }
-
-                        <div class="chat-suggestions">
-                            @foreach (var suggestion in Chat.Suggestions)
-                            {
-                                <button type="button" class="chip" disabled="@(_chatBusy || Chat.IsBusy || _running)" @onclick="() => AskAsync(suggestion)">@suggestion</button>
-                            }
-                        </div>
-
-                        <form class="chat-input" @onsubmit="SubmitQuestionAsync" @onsubmit:preventDefault>
-                            <label class="sr-only" for="chat-question">@L["Chat_Title"]</label>
-                            @* maxlength mirrors the service's own limit: the service
-                               refuses a longer question anyway, and without this the
-                               field accepts a pasted megabyte and re-renders it. *@
-                            <input id="chat-question" class="input" autocomplete="off" maxlength="1000" placeholder="@L["Chat_Placeholder"]"
-                                   disabled="@(_chatBusy || Chat.IsBusy || _running)" @bind="_question" @bind:event="oninput" />
-                            <button type="submit" class="btn btn-primary" disabled="@(_chatBusy || Chat.IsBusy || _running || string.IsNullOrWhiteSpace(_question))">@L["Chat_Send"]</button>
-                            @if (Chat.Turns.Count > 0)
-                            {
-                                @* Chat.IsBusy is the authority: _chatBusy only knows about
-                                   the question this page asked. *@
-                                <button type="button" class="btn btn-ghost" disabled="@(_chatBusy || Chat.IsBusy)" @onclick="ClearChat">@L["Chat_Clear"]</button>
-                            }
-                        </form>
-                    </div>
-                </div>
-            </section>
+            @* The narration and the conversation about this run; see Components/ScheduleAssistantPanel.razor. *@
+            <ScheduleAssistantPanel Result="_result" Parameters="_resultParameters" Running="_running" />
         }
     </div>
 
@@ -497,67 +340,6 @@
     </section>
 </div>
 
-<Modal @bind-Visible="_showAiSettings" Title="@L["Sched_Ai_SettingsTitle"]">
-    <ChildContent>
-        <div class="form-grid">
-            <label class="field check wide">
-                <input type="checkbox" @bind="_aiForm.Enabled" />
-                <span>@L["Sched_Ai_EnableLabel"]</span>
-            </label>
-            <label class="field wide">
-                <span>@L["Sched_Ai_Provider"]</span>
-                <select class="input" @bind="_aiForm.Provider" @bind:after="ProviderChanged">
-                    <option value="@AssistantProvider.OpenAiCompatible">@L["Provider_OpenAiCompatible"]</option>
-                    <option value="@AssistantProvider.Anthropic">@L["Provider_Anthropic"]</option>
-                    <option value="@AssistantProvider.Gemini">@L["Provider_Gemini"]</option>
-                </select>
-            </label>
-            <label class="field wide">
-                <span>@L["Sched_Ai_Endpoint"]</span>
-                <input class="input" type="url" inputmode="url" spellcheck="false" autocomplete="off" @bind="_aiForm.Endpoint" @bind:event="oninput" />
-            </label>
-            <label class="field">
-                <span>@L["Sched_Ai_Model"]</span>
-                <input class="input" @bind="_aiForm.Model" @bind:event="oninput" />
-            </label>
-            <label class="field">
-                <span>@L["Sched_Ai_ApiKey"]</span>
-                @* Never populated from storage. An input's value is readable by any
-                   script on this origin, and a blank field means "keep the stored
-                   key", so the dialog never has to hold the secret at all. *@
-                <input class="input" type="password" autocomplete="off" spellcheck="false"
-                       placeholder="@(_aiKeyStored ? L["Ai_KeyStored", _aiForm.Provider] : L["Ai_KeyNone"])"
-                       @bind="_aiForm.ApiKey" @bind:event="oninput" />
-            </label>
-            @if (_aiKeyStored)
-            {
-                <div class="field">
-                    <button type="button" class="btn btn-ghost small" @onclick="ForgetAiKeyAsync">@L["Ai_KeyForget"]</button>
-                </div>
-            }
-            @if (_aiKeyNotice is not null)
-            {
-                <p class="assistant-privacy wide" role="status">@_aiKeyNotice</p>
-            }
-            @*
-                One paragraph. There were two, and they said the same three
-                things in different words - browser storage is not a vault,
-                not on a shared computer, a deployment needs a proxy - so a
-                reader looked for the difference between them.
-            *@
-            <p class="assistant-privacy wide">@L["Ai_KeyRisk"]</p>
-            <p class="assistant-privacy wide">@L["Sched_Ai_CorsNote"]</p>
-            @if (_aiSettingsError is not null)
-            {
-                <div class="form-banner error wide" role="alert">@_aiSettingsError</div>
-            }
-        </div>
-    </ChildContent>
-    <Footer>
-        <button class="btn btn-ghost" @onclick="() => _showAiSettings = false">@L["Common_Cancel"]</button>
-        <button class="btn btn-primary" @onclick="SaveAiSettingsAsync">@L["Common_Save"]</button>
-    </Footer>
-</Modal>
 
 @code {
     private readonly Form _form = new();
@@ -588,34 +370,8 @@
     private ScheduleRunProgress? _progress;
     private bool _focusGenerateOnRender;
 
-    // ----- Gantt keyboard state -----
-
-    /// <summary>
-    /// The chart's cells lane by lane, ordered by start time — bars and closed
-    /// stretches interleaved, because "what happened next on this machine" is the
-    /// order a reader expects, not "all the bars, then all the gaps".
-    /// </summary>
-
-    // ----- assistant state -----
-    private readonly AiForm _aiForm = new();
-    private NarrationResult? _narration;
-    private bool _aiEnabled;
-    private bool _aiBusy;
-    private bool _showAiSettings;
-    private string? _aiSettingsError;
-
-    // ----- chat state -----
-    private string _question = "";
-    private bool _chatBusy;
-    private string? _chatError;
-
-    /// <summary>Something the reader should know that is not a failure; see the supersede case in <see cref="AskAsync"/>.</summary>
-    private string? _chatNotice;
-    private bool _scrollChat;
-
     protected override async Task OnInitializedAsync()
     {
-        _aiEnabled = await Assistant.IsAiEnabledAsync();
         await GenerateAsync();
     }
 
@@ -629,14 +385,8 @@
         _runCancellation?.Dispose();
         _runCancellation = CancellationTokenSource.CreateLinkedTokenSource(_lifetimeCancellation.Token);
 
-        // Held so a cancelled run can put back what was on screen. Everything else
-        // the results region reads - the schedule, the chart's lanes, the
-        // conversation - is only written on success, so it survives by itself.
-        var previousNarration = _narration;
-
         _running = true;
         _runError = null;
-        _narration = null;
         _progress = new ScheduleRunProgress(0, _form.MultiStartRuns, double.PositiveInfinity);
         _runAnnouncement = L["Run_Started"];
         StateHasChanged();
@@ -651,12 +401,6 @@
                 _runCancellation.Token);
             _resultParameters = parameters;
             _runAnnouncement = Announcement(_result);
-
-            // Instant, offline, deterministic explanation of the run just produced.
-            if (_result.Explanation is not null)
-                _narration = await Assistant.ExplainAsync(_result.Explanation);
-
-            await ResetChatAsync(parameters);
         }
         catch (OperationCanceledException) when (_lifetimeCancellation.IsCancellationRequested)
         {
@@ -666,8 +410,9 @@
         {
             // A cancelled run is an outcome rather than a failure, so it gets the
             // status region and not the error banner. The schedule on screen is the
-            // one from before the run, and it was never touched.
-            _narration = previousNarration;
+            // one from before the run, and it was never touched - nor was anything
+            // that describes it: the narration, the conversation and the proof are
+            // keyed to the result object, and a cancelled run never replaces it.
             _runAnnouncement = L["Run_Cancelled"];
             _focusGenerateOnRender = true;
         }
@@ -697,98 +442,6 @@
 
     private void CancelRun() => _runCancellation?.Cancel();
 
-    private async Task AskAiAsync()
-    {
-        if (_result?.Explanation is null)
-            return;
-
-        _aiBusy = true;
-        StateHasChanged();
-        try
-        {
-            _narration = await Assistant.ExplainWithAiAsync(_result.Explanation);
-        }
-        finally
-        {
-            _aiBusy = false;
-        }
-    }
-
-    /// <summary>Points the conversation at the run just produced; an old conversation would describe an old schedule.</summary>
-    private async Task ResetChatAsync(SchedulingParameters parameters)
-    {
-        _chatError = null;
-        _chatNotice = null;
-        if (_result is not { HasData: true, Horizon: { } horizon })
-        {
-            Chat.Reset(null);
-            return;
-        }
-
-        var settings = await PlantSettings.GetAsync(_lifetimeCancellation.Token);
-        var rules = settings.ToRules();
-        var holidays = GermanHolidays.Between(
-            DateOnly.FromDateTime(horizon),
-            DateOnly.FromDateTime(horizon.AddSeconds(_result.MakespanSeconds)),
-            rules.State, rules.IncludePartialHolidays);
-        Chat.Reset(new ScheduleChatContext(_result, parameters, rules, holidays));
-    }
-
-    private Task SubmitQuestionAsync() => AskAsync(_question);
-
-    private async Task AskAsync(string question)
-    {
-        // Every one of these is already disabled in the markup; a keyboard
-        // activation against a render that has not caught up yet can still
-        // arrive here, the same way it can at Generate. _running is the one that
-        // matters most: the run about to land will point the conversation at a
-        // different schedule, so a question let through now is answered into a
-        // thread that is about to be cleared.
-        if (_chatBusy || Chat.IsBusy || _running || string.IsNullOrWhiteSpace(question))
-            return;
-
-        _chatBusy = true;
-        _chatError = null;
-        _chatNotice = null;
-        _question = "";
-        StateHasChanged();
-        try
-        {
-            await Chat.AskAsync(question, _lifetimeCancellation.Token);
-            _scrollChat = true;
-        }
-        catch (OperationCanceledException) when (_lifetimeCancellation.IsCancellationRequested)
-        {
-            // Navigated away; there is nothing left to render into.
-        }
-        catch (OperationCanceledException)
-        {
-            // Not the page going away: a run landed while this question was in
-            // flight and pointed the conversation at the new schedule, so the
-            // answer would have described a plan that is no longer on screen.
-            // The chat controls are disabled for the length of a run precisely
-            // so this is hard to reach, but a question started a moment before
-            // Generate is still in flight when the run resets the thread.
-            //
-            // Say so rather than re-ask. Re-asking would spend a model call the
-            // reader did not ask for a second time, and a what-if would re-run
-            // the scheduler again seconds after a run just finished; worse, the
-            // question may not even mean the same thing about the new plan.
-            // Dropping it silently is what made a question asked during a run
-            // vanish with no trace at all.
-            _chatNotice = L["Chat_SupersededByNewRun"];
-        }
-        catch (Exception exception)
-        {
-            Logger.LogError(exception, "Chat question failed");
-            _chatError = L["Error_ScheduleFailed"];
-        }
-        finally
-        {
-            _chatBusy = false;
-        }
-    }
-
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         try
@@ -801,12 +454,6 @@
                 _focusGenerateOnRender = false;
                 await JS.InvokeVoidAsync("workplanFocus.byId", "sched-generate");
             }
-
-            if (_scrollChat)
-            {
-                _scrollChat = false;
-                await JS.InvokeVoidAsync("workplanChat.scrollToEnd");
-            }
         }
         catch (JSException)
         {
@@ -814,203 +461,8 @@
         }
     }
 
-    private void ClearChat()
-    {
-        Chat.Reset(Chat.Context);
-        _chatError = null;
-        _chatNotice = null;
-    }
-
     private string PreparationError(SchedulePreparationErrorCode code) =>
         L[$"Sched_Error_{code}"];
-
-    private bool _aiKeyStored;
-    private string? _aiKeyNotice;
-
-    private async Task OpenAiSettingsAsync()
-    {
-        var settings = await AssistantConfig.LoadAsync(_lifetimeCancellation.Token);
-        _aiForm.Enabled = settings.Enabled;
-        _aiForm.Provider = settings.Provider;
-        _aiForm.PreviousProvider = settings.Provider;
-        _aiForm.Endpoint = settings.Endpoint;
-        _aiForm.Model = settings.Model;
-
-        // The stored key never re-enters the page; the placeholder says whether
-        // one exists, which is all the dialog needs to be usable.
-        _aiForm.ApiKey = "";
-        _aiKeyStored = await AssistantConfig.HasKeyForAsync(settings.Provider, _lifetimeCancellation.Token);
-        _aiKeyNotice = null;
-        _aiSettingsError = null;
-        _showAiSettings = true;
-    }
-
-    private async Task ForgetAiKeyAsync()
-    {
-        await AssistantConfig.ForgetApiKeyAsync(_lifetimeCancellation.Token);
-        _aiForm.ApiKey = "";
-        _aiKeyStored = false;
-        _aiKeyNotice = L["Ai_KeyForgotten", _aiForm.Provider];
-        _aiEnabled = await Assistant.IsAiEnabledAsync(_lifetimeCancellation.Token);
-    }
-
-    /// <summary>Switching provider fills in that provider's endpoint and model unless the user typed their own.</summary>
-    private async Task ProviderChanged()
-    {
-        var previous = _aiForm.PreviousProvider;
-        if (string.IsNullOrWhiteSpace(_aiForm.Endpoint) || _aiForm.Endpoint == AssistantSettings.DefaultEndpoint(previous))
-            _aiForm.Endpoint = AssistantSettings.DefaultEndpoint(_aiForm.Provider);
-        if (string.IsNullOrWhiteSpace(_aiForm.Model) || _aiForm.Model == AssistantSettings.DefaultModel(previous))
-            _aiForm.Model = AssistantSettings.DefaultModel(_aiForm.Provider);
-        _aiForm.PreviousProvider = _aiForm.Provider;
-
-        // Keys are stored per provider, so switching provider switches which key
-        // applies. Ask the store rather than guess: a wrong indicator here either
-        // hides a key the user has or promises one they do not.
-        _aiForm.ApiKey = "";
-        _aiKeyNotice = null;
-        _aiKeyStored = await AssistantConfig.HasKeyForAsync(_aiForm.Provider, _lifetimeCancellation.Token);
-    }
-
-    // ----- proving the schedule optimal -----
-
-    private bool _proving;
-    private OptimalityProof? _proof;
-    private string? _proofError;
-
-    private async Task ProveOptimalAsync()
-    {
-        _proving = true;
-        _proof = null;
-        _proofError = null;
-        try
-        {
-            _proof = await Prover.ProveAsync(_resultParameters ?? _form.ToParameters(), _lifetimeCancellation.Token);
-        }
-        catch (OperationCanceledException)
-        {
-            // Navigating away, not a failure.
-        }
-        catch (Exception exception)
-        {
-            Logger.LogError(exception, "Proving the schedule optimal failed");
-            _proofError = L["Sched_Proof_Failed"];
-        }
-        finally
-        {
-            _proving = false;
-        }
-    }
-
-    /// <summary>
-    /// The sentence under the KPI cards. Every branch states what was proved and
-    /// what was not — "not proved" is an outcome the search reaches often enough
-    /// that hiding it would make the other answers worth less.
-    /// </summary>
-    private string ProofText()
-    {
-        if (_proofError is not null)
-            return _proofError;
-        if (_proof is null)
-            return "";
-
-        var proof = _proof;
-        return proof.Status switch
-        {
-            OptimalityProofStatus.NothingToProve => L["Sched_Proof_Nothing"],
-            OptimalityProofStatus.TooLarge => L["Sched_Proof_TooLarge", proof.Operations],
-            OptimalityProofStatus.ScheduleIsOptimal =>
-                L["Sched_Proof_Optimal", Format.Number(proof.Nodes), Format.Seconds(proof.Elapsed)],
-            OptimalityProofStatus.BetterScheduleExists =>
-                L["Sched_Proof_Better", Format.Number((decimal)(proof.GapPercent ?? 0), 1),
-                  Format.Number(proof.Nodes), Format.Seconds(proof.Elapsed)],
-            // A failed proof is not one outcome. "We looked at four million
-            // schedules and none beat yours" and "we found a better one but
-            // cannot say how much better" are different answers, and both used
-            // to come out as a percentage above a lower bound that measures the
-            // bound's weakness rather than the plan.
-            OptimalityProofStatus.NotProvedNoneBetterFound =>
-                L["Sched_Proof_NoneBetter", Format.Number(proof.Nodes), Format.Seconds(proof.Elapsed)],
-            _ when proof.FoundBetterPercent is { } better =>
-                L["Sched_Proof_FoundBetter", Format.Number((decimal)better, 1),
-                  Format.Number(proof.Nodes), Format.Seconds(proof.Elapsed)],
-            _ => proof.BoundGapPercent is { } bound
-                ? L["Sched_Proof_NotProved", Format.Seconds(proof.Elapsed), Format.Number((decimal)bound, 1)]
-                : L["Sched_Proof_NotProvedNoBound", Format.Seconds(proof.Elapsed)]
-        };
-    }
-
-    /// <summary>
-    /// The verdict in two or three words, for the badge. The sentence below it
-    /// still carries the whole answer; the badge is what a person scanning the
-    /// card reads first, so it may only say what the status established.
-    /// </summary>
-    private string VerdictLabel(OptimalityProof proof) => proof.Status switch
-    {
-        OptimalityProofStatus.ScheduleIsOptimal => L["Sched_Proof_Verdict_Optimal"],
-        OptimalityProofStatus.BetterScheduleExists => L["Sched_Proof_Verdict_Better"],
-        OptimalityProofStatus.TooLarge => L["Sched_Proof_Verdict_TooLarge"],
-        OptimalityProofStatus.NotProvedNoneBetterFound => L["Sched_Proof_Verdict_NoneBetter"],
-        _ when proof.FoundBetterPercent is not null => L["Sched_Proof_Verdict_FoundBetter"],
-        _ => L["Sched_Proof_Verdict_NotProved"]
-    };
-
-    private static string VerdictTone(OptimalityProof proof) => proof.Status switch
-    {
-        OptimalityProofStatus.ScheduleIsOptimal => "verdict-proved",
-        OptimalityProofStatus.BetterScheduleExists => "verdict-better",
-        _ when proof.FoundBetterPercent is not null => "verdict-better",
-        _ => "verdict-open"
-    };
-
-    /// <summary>
-    /// The numbers the verdict rests on, and only those: a gap is shown when an
-    /// optimum was proved, a bound when only a bound was, an improvement when
-    /// the search found one. A fact the status did not establish is left out
-    /// rather than shown as zero.
-    /// </summary>
-    private IEnumerable<(string Term, string Value)> VerdictFacts(OptimalityProof proof)
-    {
-        if (proof.Status == OptimalityProofStatus.TooLarge)
-        {
-            yield return (L["Sched_Proof_Fact_Operations"], Format.Number(proof.Operations));
-            yield break;
-        }
-
-        if (proof.GapPercent is { } gap)
-            yield return (L["Sched_Proof_Fact_Gap"], $"{Format.Number((decimal)gap, 1)} %");
-        else if (proof.FoundBetterPercent is { } better)
-            yield return (L["Sched_Proof_Fact_Improvement"], $"{Format.Number((decimal)better, 1)} %");
-        else if (proof.Status == OptimalityProofStatus.NotProved && proof.BoundGapPercent is { } bound)
-            yield return (L["Sched_Proof_Fact_Bound"], $"≤ {Format.Number((decimal)bound, 1)} %");
-
-        yield return (L["Sched_Proof_Fact_Nodes"], Format.Number(proof.Nodes));
-        yield return (L["Sched_Proof_Fact_Time"], Format.Seconds(proof.Elapsed));
-    }
-
-    private async Task SaveAiSettingsAsync()
-    {
-        var settings = new AssistantSettings
-        {
-            Enabled = _aiForm.Enabled,
-            Provider = _aiForm.Provider,
-            Endpoint = _aiForm.Endpoint.Trim(),
-            Model = _aiForm.Model.Trim(),
-            ApiKey = _aiForm.ApiKey.Trim()
-        };
-
-        // A blank key means "keep the stored one", so completeness is judged
-        // without it: the settings are incomplete only when nothing is stored.
-        if (settings.Enabled && !(settings.IsUsableApartFromTheKey && (settings.HasApiKey || _aiKeyStored)))
-        {
-            _aiSettingsError = L["Sched_Ai_InvalidSettings"];
-            return;
-        }
-
-        await AssistantConfig.SaveAsync(settings, _lifetimeCancellation.Token);
-        _aiEnabled = await Assistant.IsAiEnabledAsync(_lifetimeCancellation.Token);
-        _showAiSettings = false;
-    }
 
     // ----- display helpers (CSS numbers MUST be invariant; text uses UI culture) -----
     private const long HourSeconds = 3600;
@@ -1112,13 +564,6 @@
     /// to be hard-coded to the German convention in both languages.
     /// </summary>
     private static string Percent(double rate) => Format.Percent(rate);
-
-    private static string ToneClass(FindingTone tone) => tone switch
-    {
-        FindingTone.Good => "tone-good",
-        FindingTone.Info => "tone-info",
-        _ => "tone-warning"
-    };
 
     private string DispatchLabel(DispatchRule r) => r switch
     {
@@ -1233,17 +678,6 @@
         };
 
         private static int ToMinutes(long seconds) => (int)(seconds / 60);
-    }
-
-    /// <summary>Mutable view-model for the AI assistant settings dialog.</summary>
-    private sealed class AiForm
-    {
-        public bool Enabled { get; set; }
-        public AssistantProvider Provider { get; set; } = AssistantProvider.OpenAiCompatible;
-        public AssistantProvider PreviousProvider { get; set; } = AssistantProvider.OpenAiCompatible;
-        public string Endpoint { get; set; } = AssistantSettings.DefaultEndpoint(AssistantProvider.OpenAiCompatible);
-        public string Model { get; set; } = AssistantSettings.DefaultModel(AssistantProvider.OpenAiCompatible);
-        public string ApiKey { get; set; } = "";
     }
 
     public void Dispose()

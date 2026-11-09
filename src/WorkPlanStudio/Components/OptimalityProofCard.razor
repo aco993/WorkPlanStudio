@@ -1,0 +1,40 @@
+@using WorkPlanStudio.Services.Scheduling
+@implements IDisposable
+
+@*
+    The question the KPI cards invite and never answer, given a card of
+    its own because it is the strongest thing on the page: the
+    heuristic searches the order jobs are dispatched in, the best
+    dispatch order is not the best schedule, and an exact solver that
+    shares no code with the heuristic settles which is which. It sits
+    under the chart, not between it and the KPIs: measured at 375 px,
+    that position pushed the Gantt from 463 px to 858 px, undoing the
+    result-first layout (ADR 0026). It runs only when
+    asked - the solve holds the browser's one thread for up to its
+    budget - and the verdict never says "optimal" unless it was proved.
+*@
+<section class="card proof-card" aria-labelledby="proof-title">
+    <div class="proof-head">
+        <div class="proof-intro">
+            <h2 id="proof-title">@L["Sched_Proof_Title"]</h2>
+            <p class="proof-lead">@L["Sched_Proof_Lead"]</p>
+        </div>
+        <button type="button" class="btn btn-primary proof-action" @onclick="ProveOptimalAsync"
+                disabled="@(_proving || Disabled)">
+            @(_proving ? L["Sched_Proof_Busy"] : L["Sched_Proof_Action"])
+        </button>
+    </div>
+    @if (_proof is { } verdict && verdict.Status != OptimalityProofStatus.NothingToProve)
+    {
+        <div class="proof-verdict">
+            <span class="badge @VerdictTone(verdict)">@VerdictLabel(verdict)</span>
+            <dl class="proof-facts">
+                @foreach (var (term, value) in VerdictFacts(verdict))
+                {
+                    <div><dt>@term</dt><dd>@value</dd></div>
+                }
+            </dl>
+        </div>
+    }
+    <p class="proof-answer" role="status" aria-live="polite">@ProofText()</p>
+</section>
