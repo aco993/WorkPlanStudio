@@ -51,16 +51,20 @@ flowchart TD
 | --- | --- | --- |
 | `src/WorkPlanStudio` | the Blazor WebAssembly app | everything below except the API |
 | `src/WorkPlanStudio.Scheduling` | the finite-capacity engine, the explainer and the exact solver | base class library only |
-| `src/WorkPlanStudio.WorkingTime` | shift patterns, the ArbZG rules, German public holidays, machine calendars | base class library only |
+| `src/WorkPlanStudio.WorkingTime` | shift patterns, the ArbZG rules, German public holidays, machine calendars | the scheduling engine and the base class library |
 | `src/WorkPlanStudio.Export` | CSV, xlsx and PDF writers | base class library only |
 | `src/WorkPlanStudio.Contracts` | the DTOs and policy names the app and the API share | base class library only |
-| `src/WorkPlanStudio.Domain` | the entities, the validation rules, the policy table and the EF→engine mapping | the authorization abstractions, nothing else |
+| `src/WorkPlanStudio.Domain` | the entities, the validation rules, the policy table and the EF→engine mapping | the authorization abstractions and the two pure libraries above, nothing else |
 | `src/WorkPlanStudio.Api` | the optional backend: Identity, JWT, EF migrations, minimal API | ASP.NET Core 10 |
 
-`ArchitectureTests` in the scheduling and working-time test projects reflect over those assemblies
-and fail the build if `Microsoft.AspNetCore`, `Microsoft.EntityFrameworkCore`, `Microsoft.JSInterop`
-or `SQLitePCLRaw` ever appears in their reference graph. The export library carries no package
-reference at all, which is the same property enforced by its `.csproj` rather than by a test.
+Every row of that table is a test, not a sentence. `ArchitectureTests` in the scheduling, working-time
+and export test projects reflect over those assemblies and fail the build if `Microsoft.AspNetCore`,
+`Microsoft.EntityFrameworkCore`, `Microsoft.JSInterop` or `SQLitePCLRaw` ever appears among their
+references — the export writers may not even reference the engine, since they take tables, not
+schedules. `BoundaryArchitectureTests` in the web test project holds the other three: the contracts
+are records over the base class library, the domain knows authorization and the two pure libraries
+and nothing else, and the browser app compiles against the contracts but never against
+`WorkPlanStudio.Api`, Identity or the JWT handler.
 
 The app and the API both **reference `WorkPlanStudio.Domain`**, so the entity shapes, the validators
 and the policy table are one copy rather than two that drift. That shared assembly is also the

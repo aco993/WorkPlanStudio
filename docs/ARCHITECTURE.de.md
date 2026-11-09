@@ -55,17 +55,20 @@ flowchart TD
 | --- | --- | --- |
 | `src/WorkPlanStudio` | die Blazor-WebAssembly-App | allem außer der API |
 | `src/WorkPlanStudio.Scheduling` | die kapazitätsbeschränkte Engine, der Erklärer und der exakte Löser | nur der Basisklassenbibliothek |
-| `src/WorkPlanStudio.WorkingTime` | Schichtmodelle, ArbZG-Regeln, gesetzliche Feiertage, Maschinenkalender | nur der Basisklassenbibliothek |
+| `src/WorkPlanStudio.WorkingTime` | Schichtmodelle, ArbZG-Regeln, gesetzliche Feiertage, Maschinenkalender | der Planungs-Engine und der Basisklassenbibliothek |
 | `src/WorkPlanStudio.Export` | CSV-, xlsx- und PDF-Writer | nur der Basisklassenbibliothek |
 | `src/WorkPlanStudio.Contracts` | die DTOs und Richtliniennamen, die App und API teilen | nur der Basisklassenbibliothek |
-| `src/WorkPlanStudio.Domain` | die Entitäten, die Validierungsregeln, die Richtlinientabelle und die EF→Engine-Abbildung | den Autorisierungs-Abstraktionen, sonst nichts |
+| `src/WorkPlanStudio.Domain` | die Entitäten, die Validierungsregeln, die Richtlinientabelle und die EF→Engine-Abbildung | den Autorisierungs-Abstraktionen und den beiden reinen Bibliotheken darüber, sonst nichts |
 | `src/WorkPlanStudio.Api` | das optionale Backend: Identity, JWT, EF-Migrationen, Minimal API | ASP.NET Core 10 |
 
-`ArchitectureTests` in den Testprojekten für Planung und Arbeitszeit spiegeln über diese Assemblies
-und lassen den Build scheitern, sobald `Microsoft.AspNetCore`, `Microsoft.EntityFrameworkCore`,
-`Microsoft.JSInterop` oder `SQLitePCLRaw` in ihrem Referenzgraphen auftaucht. Die Export-Bibliothek
-hat überhaupt keine Paketreferenz — dieselbe Eigenschaft, durchgesetzt von ihrer `.csproj` statt von
-einem Test.
+Jede Zeile dieser Tabelle ist ein Test, kein Satz. `ArchitectureTests` in den Testprojekten für
+Planung, Arbeitszeit und Export spiegeln über diese Assemblies und lassen den Build scheitern, sobald
+`Microsoft.AspNetCore`, `Microsoft.EntityFrameworkCore`, `Microsoft.JSInterop` oder `SQLitePCLRaw`
+unter ihren Referenzen auftaucht — die Export-Writer dürfen nicht einmal die Engine referenzieren, denn
+sie nehmen Tabellen entgegen, keine Pläne. `BoundaryArchitectureTests` im Web-Testprojekt hält die
+übrigen drei: die Verträge sind Records über der Basisklassenbibliothek, die Domäne kennt die
+Autorisierung und die beiden reinen Bibliotheken und sonst nichts, und die Browser-App kompiliert gegen
+die Verträge, aber nie gegen `WorkPlanStudio.Api`, Identity oder den JWT-Handler.
 
 App und API **referenzieren beide `WorkPlanStudio.Domain`**, damit die Entitätsformen, die
 Validatoren und die Richtlinientabelle eine Kopie bleiben statt zweier, die auseinanderlaufen. Diese
