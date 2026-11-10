@@ -66,6 +66,8 @@
   <data name="Nav_WorkPlans" xml:space="preserve"><value>Arbeitspläne</value></data>
   <data name="Nav_WorkCenters" xml:space="preserve"><value>Arbeitsplätze</value></data>
   <data name="Nav_About" xml:space="preserve"><value>Über</value></data>
+  <data name="Nav_Group_Planning" xml:space="preserve"><value>Planung</value></data>
+  <data name="Nav_Group_MasterData" xml:space="preserve"><value>Stammdaten</value></data>
 
   <data name="Common_New" xml:space="preserve"><value>Neu</value></data>
   <data name="Common_Save" xml:space="preserve"><value>Speichern</value></data>
