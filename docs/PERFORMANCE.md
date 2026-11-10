@@ -160,6 +160,23 @@ list — a Web Worker for the scheduler, because
 [ADR 0019](adr/0019-off-thread-scheduling.md) establishes that this app cannot be
 built with threads at all while SQLite is linked into the module.
 
+### Four levers, measured, none shipped
+
+Measured on 2026-11-10 by publishing the app once per setting and comparing
+`transfer_budget.py` and the per-file `.gz` sizes against an unchanged publish
+(**7,504 KB**). Recorded so the next person does not spend the same afternoon.
+
+| Lever | Measured | Why it did not ship |
+| --- | --- | --- |
+| `UseSystemResourceKeys=true` | `System.Private.CoreLib` byte-identical | no effect on this build |
+| `System.Data.DataSet.XmlSerializationIsSupported=false` | `System.Private.Xml` and `System.Data.Common` came back with the same hashes | the switch exists but does not reach what keeps XML here |
+| Lazy-load `System.Private.Xml` (436 KB gzipped, the largest file the app never executes) | the app could not open its database: `TypeLoadException: VTable setup of type Microsoft.Data.Sqlite.SqliteConnection failed` | `DbConnection.GetSchema` returns a `DataTable`, `DataTable` implements XML serialisation, and the runtime resolves every type in a class's virtual methods when it builds the vtable. Nothing *calls* XML; opening a connection still *needs* the assembly present. Caught by a browser test written to prove the opposite. |
+| `BlazorEnableTimeZoneSupport=false` | **−75 KB** (7,504 → 7,429), from tables embedded in `dotnet.native.wasm` | `TimeZoneInfo.Local` becomes UTC. The planning model never uses a zone, but the export header's timestamp (`DateTimeOffset.Now`) and "today" on Production orders and Working time (`TimeProvider.GetLocalNow`) do, and a German user near midnight would get yesterday's date. One per cent of the download is not worth a wrong date. |
+
+What is left is the architecture itself: the runtime with SQLite linked into it,
+EF Core and its relational layer are among the largest files on the wire, and the
+first screen opens the database, so none of them can be deferred.
+
 ## Complexity and limits
 
 One forward dispatch is approximately `O(operations × capacity)` because each step
