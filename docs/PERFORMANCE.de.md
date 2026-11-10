@@ -163,6 +163,24 @@ nicht mehr auf der Liste: ein Web Worker für die Planung, denn
 [ADR 0019](adr/0019-off-thread-scheduling.md) hält fest, dass sich diese App mit
 Threads überhaupt nicht bauen lässt, solange SQLite in das Modul gelinkt ist.
 
+### Vier Hebel, gemessen, keiner übernommen
+
+Gemessen am 2026-11-10, indem die App je Einstellung einmal veröffentlicht und
+`transfer_budget.py` sowie die `.gz`-Größen je Datei mit einer unveränderten
+Veröffentlichung (**7.504 KB**) verglichen wurden. Festgehalten, damit niemand
+denselben Nachmittag noch einmal verbringt.
+
+| Hebel | Gemessen | Warum nicht übernommen |
+| --- | --- | --- |
+| `UseSystemResourceKeys=true` | `System.Private.CoreLib` byte-identisch | keine Wirkung auf diesen Build |
+| `System.Data.DataSet.XmlSerializationIsSupported=false` | `System.Private.Xml` und `System.Data.Common` mit denselben Hashes | der Schalter existiert, erreicht aber nicht, was XML hier hält |
+| `System.Private.Xml` nachladen (436 KB gzip, die größte Datei, die die App nie ausführt) | die App konnte ihre Datenbank nicht öffnen: `TypeLoadException: VTable setup of type Microsoft.Data.Sqlite.SqliteConnection failed` | `DbConnection.GetSchema` liefert eine `DataTable`, `DataTable` implementiert XML-Serialisierung, und die Laufzeit löst beim Aufbau der VTable jeden Typ in den virtuellen Methoden auf. Nichts *ruft* XML auf; eine Verbindung zu öffnen *braucht* die Assembly trotzdem. Gefunden von einem Browsertest, der das Gegenteil beweisen sollte. |
+| `BlazorEnableTimeZoneSupport=false` | **−75 KB** (7.504 → 7.429), aus Tabellen in `dotnet.native.wasm` | `TimeZoneInfo.Local` wird UTC. Das Planungsmodell nutzt keine Zone, aber der Zeitstempel im Export-Kopf (`DateTimeOffset.Now`) und „heute“ auf Fertigungsaufträge und Arbeitszeit (`TimeProvider.GetLocalNow`) schon, und wer in Deutschland kurz vor Mitternacht arbeitet, bekäme das Datum von gestern. Ein Prozent des Downloads ist kein falsches Datum wert. |
+
+Was bleibt, ist die Architektur selbst: die Laufzeit mit eingelinktem SQLite, EF Core
+und seine relationale Schicht gehören zu den größten Dateien auf der Leitung, und der
+erste Bildschirm öffnet die Datenbank — keine davon lässt sich aufschieben.
+
 ## Komplexität und Grenzen
 
 Eine Vorwärtseinplanung ist ungefähr `O(Arbeitsgänge × Kapazität)`, weil jeder Schritt
