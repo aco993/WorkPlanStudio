@@ -53,8 +53,8 @@ public sealed class AFailedProofStillSaysSomethingTests : AppBunitContext
         _prover.Proof = proof;
 
         var cut = Render<SchedulePage>();
-        cut.WaitForAssertion(() => Assert.NotEmpty(cut.FindAll(".proof-row")));
-        await cut.InvokeAsync(() => cut.Find(".proof-row button").Click());
+        cut.WaitForAssertion(() => Assert.NotEmpty(cut.FindAll(".proof-card")));
+        await cut.InvokeAsync(() => cut.Find(".proof-card .proof-action").Click());
         cut.WaitForAssertion(() => Assert.NotEqual("", cut.Find(".proof-answer").TextContent.Trim()));
         return cut.Find(".proof-answer").TextContent;
     }

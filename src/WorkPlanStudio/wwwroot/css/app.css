@@ -1029,11 +1029,27 @@ select.input { cursor: pointer; }
    Sits under the KPI cards because that is what it qualifies. The answer is a
    sentence, not a badge: "optimal", "n % above the optimum" and "not proved"
    are three different things and a coloured pill would blur them. */
-.proof-row {
-    display: flex; flex-wrap: wrap; align-items: center; gap: .6rem 1rem;
-    margin: -.4rem 0 1.2rem;
-}
-.proof-answer { margin: 0; color: var(--text-soft); font-size: .86rem; max-width: 70ch; }
+/* The optimality proof. A card rather than a link-sized button under the KPIs:
+   it is the one question on the page whose answer the heuristic cannot give. */
+.proof-card { padding: 1.1rem 1.2rem; margin-bottom: 1.2rem; border-left: 4px solid var(--primary); }
+.proof-head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: .8rem 1.5rem; }
+.proof-intro { flex: 1 1 32ch; min-width: 0; }
+.proof-intro h2 { margin: 0 0 .3rem; font-size: 1.05rem; }
+.proof-lead { margin: 0; color: var(--text-soft); font-size: .88rem; max-width: 72ch; }
+.proof-action { flex: 0 0 auto; min-height: 44px; }
+.proof-verdict { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem 1.4rem; margin-top: 1rem; padding-top: .9rem; border-top: 1px solid var(--border); }
+.proof-verdict .badge { font-size: .82rem; padding: .3rem .75rem; }
+.badge.verdict-proved { background: var(--green-soft); color: var(--green); }
+.badge.verdict-better { background: var(--amber-soft); color: var(--amber); }
+.badge.verdict-open { background: var(--surface-2); color: var(--text); }
+.proof-facts { display: flex; flex-wrap: wrap; gap: .4rem 1.4rem; margin: 0; }
+.proof-facts > div { display: flex; flex-direction: column; }
+.proof-facts dt { font-size: .72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; }
+.proof-facts dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
+.proof-answer { margin: .7rem 0 0; color: var(--text-soft); font-size: .86rem; max-width: 72ch; }
+/* Not display:none: a live region that is hidden when the answer arrives is not announced. */
+.proof-answer:empty { margin: 0; }
+@media (max-width: 640px) { .proof-action { width: 100%; } }
 
 /* Another tab wrote to the shared database. A notice, not a dialog: reading is
    still fine, and only the next save would be refused. */
