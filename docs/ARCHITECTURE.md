@@ -238,6 +238,25 @@ before that changed. There is still exactly one multi-start loop in the codebase
 the sliced and straight-through runs produce the identical schedule. See
 [ADR 0019](adr/0019-off-thread-scheduling.md).
 
+## The schedule page
+
+`Pages/Schedule.razor` owns three things: the parameter form, the run (start, progress, cancel)
+and the result on screen. Everything that *describes* that result is its own component, and each
+one is handed the result and the parameters that produced it:
+
+| Component | What it owns |
+| --- | --- |
+| `GanttChart` + `GanttCursor` | the chart, its text alternative, and the keyboard model — a plain class, tested without rendering |
+| `OptimalityProofCard` | "is this the best possible schedule?" and the verdict |
+| `ScheduleAssistantPanel` | the offline narration, the optional model-written one, and the conversation |
+| `AiSettingsDialog` | provider, endpoint, model, and a key that is write-only from the page |
+
+A run is identified by its parameters object: the page takes a fresh one from the form for every
+run and hands it down only when the run succeeds. That is the one event on which the narration is
+rewritten, the conversation re-pointed and a proof verdict withdrawn — and a cancelled run, which
+hands back the same object, disturbs none of them without the page saving and restoring anything.
+Components whose logic outgrows their markup keep it in a `.razor.cs` partial class.
+
 ## Export
 
 `WorkPlanStudio.Export` writes CSV, an xlsx workbook and a PDF report by hand, with **no package

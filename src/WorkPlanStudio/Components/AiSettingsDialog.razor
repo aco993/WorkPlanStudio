@@ -1,0 +1,64 @@
+@using WorkPlanStudio.Services.Chat
+@implements IDisposable
+
+<Modal @bind-Visible="_visible" Title="@L["Sched_Ai_SettingsTitle"]">
+    <ChildContent>
+        <div class="form-grid">
+            <label class="field check wide">
+                <input type="checkbox" @bind="_form.Enabled" />
+                <span>@L["Sched_Ai_EnableLabel"]</span>
+            </label>
+            <label class="field wide">
+                <span>@L["Sched_Ai_Provider"]</span>
+                <select class="input" @bind="_form.Provider" @bind:after="ProviderChanged">
+                    <option value="@AssistantProvider.OpenAiCompatible">@L["Provider_OpenAiCompatible"]</option>
+                    <option value="@AssistantProvider.Anthropic">@L["Provider_Anthropic"]</option>
+                    <option value="@AssistantProvider.Gemini">@L["Provider_Gemini"]</option>
+                </select>
+            </label>
+            <label class="field wide">
+                <span>@L["Sched_Ai_Endpoint"]</span>
+                <input class="input" type="url" inputmode="url" spellcheck="false" autocomplete="off" @bind="_form.Endpoint" @bind:event="oninput" />
+            </label>
+            <label class="field">
+                <span>@L["Sched_Ai_Model"]</span>
+                <input class="input" @bind="_form.Model" @bind:event="oninput" />
+            </label>
+            <label class="field">
+                <span>@L["Sched_Ai_ApiKey"]</span>
+                @* Never populated from storage. An input's value is readable by any
+                   script on this origin, and a blank field means "keep the stored
+                   key", so the dialog never has to hold the secret at all. *@
+                <input class="input" type="password" autocomplete="off" spellcheck="false"
+                       placeholder="@(_keyStored ? L["Ai_KeyStored", _form.Provider] : L["Ai_KeyNone"])"
+                       @bind="_form.ApiKey" @bind:event="oninput" />
+            </label>
+            @if (_keyStored)
+            {
+                <div class="field">
+                    <button type="button" class="btn btn-ghost small" @onclick="ForgetKeyAsync">@L["Ai_KeyForget"]</button>
+                </div>
+            }
+            @if (_keyNotice is not null)
+            {
+                <p class="assistant-privacy wide" role="status">@_keyNotice</p>
+            }
+            @*
+                One paragraph. There were two, and they said the same three
+                things in different words - browser storage is not a vault,
+                not on a shared computer, a deployment needs a proxy - so a
+                reader looked for the difference between them.
+            *@
+            <p class="assistant-privacy wide">@L["Ai_KeyRisk"]</p>
+            <p class="assistant-privacy wide">@L["Sched_Ai_CorsNote"]</p>
+            @if (_error is not null)
+            {
+                <div class="form-banner error wide" role="alert">@_error</div>
+            }
+        </div>
+    </ChildContent>
+    <Footer>
+        <button class="btn btn-ghost" @onclick="() => _visible = false">@L["Common_Cancel"]</button>
+        <button class="btn btn-primary" @onclick="SaveAsync">@L["Common_Save"]</button>
+    </Footer>
+</Modal>

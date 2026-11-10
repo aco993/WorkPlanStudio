@@ -260,6 +260,26 @@ und derselbe Lauf blieb zuvor zehn Sekunden lang bei 25 % stehen. Es gibt weiter
 Multi-Start-Schleife im Code, und ein Test prüft, dass zerlegter und durchlaufender Lauf denselben
 Plan erzeugen. Siehe [ADR 0019](adr/0019-off-thread-scheduling.md).
 
+## Die Planungsseite
+
+`Pages/Schedule.razor` besitzt drei Dinge: das Parameterformular, den Lauf (Start, Fortschritt,
+Abbruch) und das Ergebnis auf dem Bildschirm. Alles, was dieses Ergebnis *beschreibt*, ist eine
+eigene Komponente, und jede bekommt das Ergebnis und die Parameter, die es erzeugt haben:
+
+| Komponente | Was sie besitzt |
+| --- | --- |
+| `GanttChart` + `GanttCursor` | das Diagramm, seine Textalternative und das Tastaturmodell — eine einfache Klasse, ohne Rendern getestet |
+| `OptimalityProofCard` | „Ist das der bestmögliche Plan?“ und das Urteil |
+| `ScheduleAssistantPanel` | die Offline-Erzählung, die optionale vom Modell geschriebene und das Gespräch |
+| `AiSettingsDialog` | Anbieter, Endpunkt, Modell und einen Schlüssel, den die Seite nur schreiben kann |
+
+Ein Lauf wird an seinem Parameterobjekt erkannt: die Seite nimmt für jeden Lauf ein frisches aus dem
+Formular und reicht es nur weiter, wenn der Lauf gelingt. Das ist das einzige Ereignis, bei dem die
+Erzählung neu geschrieben, das Gespräch neu ausgerichtet und ein Beweisurteil zurückgezogen wird —
+und ein abgebrochener Lauf, der dasselbe Objekt zurückgibt, berührt nichts davon, ohne dass die Seite
+etwas sichern und wiederherstellen müsste. Komponenten, deren Logik über ihr Markup hinauswächst,
+halten sie in einer partiellen Klasse `.razor.cs`.
+
 ## Export
 
 `WorkPlanStudio.Export` schreibt CSV, eine xlsx-Arbeitsmappe und einen PDF-Bericht von Hand, **ohne

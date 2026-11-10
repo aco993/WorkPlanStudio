@@ -1,0 +1,124 @@
+@using WorkPlanStudio.Services.Chat
+@implements IDisposable
+
+<section class="card assistant-card">
+    <div class="card-head">
+        <div class="assistant-head-left">
+            <h2>@L["Sched_Ai_Title"]</h2>
+            @if (!Running && _narration is not null)
+            {
+                <span class="pill @(_narration.Source == NarrationSource.Ai ? "ai" : "off")">@_narration.SourceLabel</span>
+            }
+        </div>
+        <div class="assistant-actions">
+            @if (_aiEnabled)
+            {
+                <button class="btn btn-outline btn-sm" @onclick="AskAiAsync" disabled="@_aiBusy">
+                    @(_aiBusy ? L["Sched_Ai_Thinking"] : L["Sched_Ai_AskAi"])
+                </button>
+            }
+            <button class="icon-btn" aria-label="@L["Sched_Ai_Configure"]" title="@L["Sched_Ai_Configure"]" @onclick="() => SettingsDialog.OpenAsync()">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3m-4.9-7.1-2.1 2.1m-8 8-2.1 2.1m0-12.2 2.1 2.1m8 8 2.1 2.1"/></svg>
+            </button>
+        </div>
+    </div>
+    <div class="card-body">
+        <p class="assistant-sub muted">@L["Sched_Ai_Subtitle"]</p>
+        @if (Running || _narration is null)
+        {
+            <div class="loading-row" role="status"><span class="spinner" aria-hidden="true"></span><span class="sr-only">@L["Common_Loading"]</span></div>
+        }
+        else
+        {
+            <ul class="assistant-lines">
+                @foreach (var line in _narration.Lines)
+                {
+                    <li class="assistant-line @ToneClass(line.Tone)">
+                        <span class="assistant-dot"></span>
+                        <span>@line.Text</span>
+                    </li>
+                }
+            </ul>
+            @if (_narration.Note is not null)
+            {
+                <p class="assistant-note">@_narration.Note</p>
+            }
+        }
+
+        <div class="chat" role="region" aria-labelledby="chat-title">
+            <h3 id="chat-title" class="chat-title">@L["Chat_Title"]</h3>
+            <p class="chat-intro muted">@L["Chat_Intro"]</p>
+
+            @*
+                Rendered even when empty. A live region has to be in the DOM
+                *before* its content changes: inserting it together with its
+                first two turns is why the first answer of every conversation
+                was never announced, and the second one was.
+            *@
+            <ol class="chat-thread @(Chat.Turns.Count == 0 ? "empty" : null)"
+                aria-live="polite" aria-relevant="additions" aria-label="@L["Chat_Title"]"
+                tabindex="@(Chat.Turns.Count == 0 ? -1 : 0)">
+                @foreach (var turn in Chat.Turns)
+                {
+                    <li class="chat-turn @(turn.Role == ChatRole.User ? "user" : "assistant")">
+                        <div class="chat-bubble">@turn.Text</div>
+                        @if (turn.Role == ChatRole.Assistant)
+                        {
+                            <span class="chat-source pill @(turn.Source == NarrationSource.Ai ? "ai" : "off")">@turn.SourceLabel</span>
+                        }
+                        @if (turn.Note is not null)
+                        {
+                            <p class="assistant-note chat-note">@turn.Note</p>
+                        }
+                    </li>
+                }
+            </ol>
+
+            @if (_chatBusy)
+            {
+                <div class="chat-busy" role="status"><span class="spinner" aria-hidden="true"></span><span>@L["Chat_Thinking"]</span></div>
+            }
+            @if (_chatError is not null)
+            {
+                <div class="form-banner error" role="alert">@_chatError</div>
+            }
+            @*
+                A question the page had to drop is an outcome, not a
+                failure — the same distinction a cancelled run gets — so
+                it uses the card's own note style and a status role,
+                not the red banner and an alert.
+            *@
+            @if (_chatNotice is not null)
+            {
+                <p class="assistant-note chat-note" role="status">@_chatNotice</p>
+            }
+
+            <div class="chat-suggestions">
+                @foreach (var suggestion in Chat.Suggestions)
+                {
+                    <button type="button" class="chip" disabled="@(_chatBusy || Chat.IsBusy || Running)" @onclick="() => AskAsync(suggestion)">@suggestion</button>
+                }
+            </div>
+
+            <form class="chat-input" @onsubmit="SubmitQuestionAsync" @onsubmit:preventDefault>
+                <label class="sr-only" for="chat-question">@L["Chat_Title"]</label>
+                @* maxlength mirrors the service's own limit: the service
+                   refuses a longer question anyway, and without this the
+                   field accepts a pasted megabyte and re-renders it. *@
+                <input id="chat-question" class="input" autocomplete="off" maxlength="1000" placeholder="@L["Chat_Placeholder"]"
+                       disabled="@(_chatBusy || Chat.IsBusy || Running)" @bind="_question" @bind:event="oninput" />
+                <button type="submit" class="btn btn-primary" disabled="@(_chatBusy || Chat.IsBusy || Running || string.IsNullOrWhiteSpace(_question))">@L["Chat_Send"]</button>
+                @if (Chat.Turns.Count > 0)
+                {
+                    @* Chat.IsBusy is the authority: _chatBusy only knows about
+                       the question this page asked. *@
+                    <button type="button" class="btn btn-ghost" disabled="@(_chatBusy || Chat.IsBusy)" @onclick="ClearChat">@L["Chat_Clear"]</button>
+                }
+            </form>
+        </div>
+    </div>
+</section>
+
+@* Outside the card: the dialog's backdrop is fixed to the viewport, and nothing
+   about it belongs inside the card's border or its overflow. *@
+<AiSettingsDialog @ref="SettingsDialog" SettingsChanged="RefreshAiEnabledAsync" />
