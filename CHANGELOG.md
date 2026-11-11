@@ -7,6 +7,97 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] — 2026-11-11
+
+Every release before this one was started by driving the published application
+and fixing what it said wrong. This one was started by reading the repository the
+way a reviewer does — the first sixty seconds, then the file the README sends you
+to, then the claims — and scoring it on eighteen axes. The code scored well. The
+losses were in what a visitor meets first, and in claims the repository made that
+no test held up. 1.0.0 is the release where both of those stopped being true.
+
+### The first sixty seconds
+
+- **The result comes before the parameters** ([ADR 0026](docs/adr/0026-result-before-parameters.md)).
+  On a 375 px phone the Gantt chart started 1,181 px down, behind a nine-field
+  form. It starts at 416 px now; the parameters sit after it in the markup and
+  beside it on a desktop, so reading, focus and visual order agree at every width.
+- **The second visit is free** ([ADR 0027](docs/adr/0027-pay-the-cold-start-once.md)).
+  A service worker precaches what the SDK's asset manifest lists; measured on the
+  published site, a repeat visit transfers 0 KB and 93 of 93 framework requests
+  come from the cache. One ICU shard replaced the complete table, which shipped
+  455 KB of scripts the UI cannot select.
+- **The boot screen names what it is waiting for** after the download reaches
+  100 %: starting the runtime, opening the database, loading the demo plant.
+- **A link to the demo now previews as one.** Open Graph and Twitter cards, a
+  1200×630 image, a manifest, maskable icons and a GitHub social preview, all
+  rendered from one generator (`tools/brand-assets/render.py`). Before: zero tags.
+- **The optimality proof has a card of its own.** It was a 137×23 px link under
+  the KPIs; it is now the question "Is this the best possible schedule?" with a
+  verdict badge that may only say what the solver established, and the numbers
+  it rests on.
+- **The README opens with a ninety-second path** — the schedule to open, the
+  engine file to read, and the finding — and the navigation is grouped into
+  Planning and Master data instead of the order the pages were written in.
+
+### Fixed
+
+- **WCAG 2.5.3 Label in Name, level A, on every route.** The persona switch was
+  named "Working as" while it showed "Planner". Found by the newer axe a
+  Dependabot pull request brought in, which failed 38 of 76 browser tests at once.
+- **The service worker cached nothing in production.** The deploy edits
+  `index.html` after publishing, the manifest's integrity hash no longer matched,
+  and `addAll` is all-or-nothing. The deploy now re-seals the files it declares it
+  edited and fails if any other file moved (#85).
+- **A proof verdict outlived the schedule it judged.** Regenerate after a proof and
+  the badge kept saying "Proved optimal" beside a plan nobody had proved anything
+  about. The card is keyed to the run now, and a test fails against the old page.
+- **The budget gate passed when the budgets were skipped.** `--minimum-expected-tests`
+  counts a skipped test as found; the step now also asserts `skipped: 0` (#94).
+- **Six analyzer findings** surfaced by raising `AnalysisMode` to `Recommended`,
+  among them culture-dependent formatting (CA1305) and an undisposed field
+  (CA1001). Every `DateTime.Now`/`UtcNow`/`Today` in `src/` now goes through an
+  injected `TimeProvider`, and a test keeps it that way.
+- **Two rows of the architecture table were wrong**: WorkingTime depends on the
+  engine, and the domain on both pure libraries.
+
+### Structure
+
+- `Schedule.razor` went from 1,533 lines and 121 members at 0.4.1 to 689 and 59. The page
+  owns the form, the run and the result; `GanttChart` (with `GanttCursor`, a
+  keyboard model tested without rendering), `OptimalityProofCard`,
+  `ScheduleAssistantPanel` and `AiSettingsDialog` own the rest, with `.razor.cs`
+  code-behind where the logic outgrew the markup.
+
+### Tests and gates
+
+- **Every boundary the architecture table draws is now a test**: export, contracts
+  and domain dependencies, and "the browser app never references the API".
+- **WCAG 2.5.8 Target Size is measured**, since axe has no rule for it — 109
+  targets were under 24 px on a phone; the chart is excepted on width only
+  ([ADR 0028](docs/adr/0028-target-size-and-the-chart.md)). axe also scans every
+  route at 375×812 now.
+- **The cold start is a gated number**, not only a Lighthouse score: a sum of file
+  sizes within 1.4 % of what a browser transfers.
+- **Wall-clock tripwires run alone**, in the Performance workflow, instead of
+  racing the rest of the suite; the import-scale test waits for its last report
+  instead of yielding once.
+- 1 801 unit and integration tests and 102 browser tests, every count measured;
+  the CI floors were raised to within two per cent of them.
+
+### Supply chain
+
+- A CycloneDX SBOM per build, an OpenSSF Scorecard run and badge, and auto-merge
+  for minor and patch dependency updates. Lock files were considered and declined,
+  with the reason in `SECURITY.md`.
+
+### Measured and not shipped
+
+- Four cold-start levers, each in its own publish: two changed nothing, lazy-loading
+  `System.Private.Xml` stops the database from opening, and dropping time-zone
+  data saves 75 KB but would date exports in UTC. The table is in
+  `docs/PERFORMANCE.md`.
+
 ## [0.4.1] — 2026-09-15
 
 Two findings from scoring the published 0.4.0, both small, both the same species
@@ -818,7 +909,8 @@ Initial public release.
 - **CI/CD** — per-layer test workflows on pull requests and a test-gated
   GitHub Pages deployment.
 
-[Unreleased]: https://github.com/aco993/WorkPlanStudio/compare/v0.4.1...HEAD
+[Unreleased]: https://github.com/aco993/WorkPlanStudio/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/aco993/WorkPlanStudio/compare/v0.4.1...v1.0.0
 [0.4.1]: https://github.com/aco993/WorkPlanStudio/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/aco993/WorkPlanStudio/compare/v0.3.9...v0.4.0
 [0.3.9]: https://github.com/aco993/WorkPlanStudio/compare/v0.3.8...v0.3.9
