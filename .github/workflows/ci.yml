@@ -70,16 +70,16 @@ env:
   # success. Kept within about two per cent of the real count, so adding tests
   # needs no edit and deleting a handful does - a suite that quietly stops
   # loading half of itself is the failure these exist to catch, and floors far
-  # below the truth cannot see it. Counts on fd490bc as this machine runs them:
-  # engine 294, working time 255, web 945, api 88, export 148. CI runs the
+  # below the truth cannot see it. Counts on c9764e2 as this machine runs them:
+  # engine 294, working time 255, web 1009, api 89, export 154. CI runs the
   # engine's performance budgets in performance.yml instead, so its engine count
   # is three lower, and the working-time floor keeps a little more room than two
   # per cent for the same reason.
   MIN_TESTS_ENGINE: 288
   MIN_TESTS_WORKING_TIME: 248
-  MIN_TESTS_WEB: 925
-  MIN_TESTS_API: 86
-  MIN_TESTS_EXPORT: 145
+  MIN_TESTS_WEB: 989
+  MIN_TESTS_API: 87
+  MIN_TESTS_EXPORT: 151
   GATE_API: 68
 
   # Samples per property, per run. CsCheck reads this variable itself.
