@@ -22,6 +22,9 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <!-- Telemetry is asserted at the exporter, through the real pipeline:
+         what an operator would receive, filters included. -->
+    <PackageReference Include="OpenTelemetry.Exporter.InMemory" />
     <PackageReference Include="xunit.v3.mtp-v2" />
     <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" />
   </ItemGroup>

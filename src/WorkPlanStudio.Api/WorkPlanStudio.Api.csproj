@@ -34,6 +34,14 @@
          framework's own AddOpenApi(). The package ships its assets embedded, so
          the Development-only doc page pulls nothing from a CDN. -->
     <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" />
+
+    <!-- Traces, metrics and logs in the OpenTelemetry format. The SDK and the
+         ASP.NET Core instrumentation are always on and cost nothing without an
+         exporter; the OTLP exporter is added only when an endpoint is
+         configured (see Telemetry/TelemetrySetup.cs and docs/adr/0029). -->
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" />
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" />
   </ItemGroup>
 
   <ItemGroup>

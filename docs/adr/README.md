@@ -45,3 +45,4 @@ with a one-line summary of each.
 | [0026](0026-result-before-parameters.md) | Put the result before the parameters that produced it | Accepted |
 | [0027](0027-pay-the-cold-start-once.md) | Pay the cold start once, and say what it is doing while it happens | Accepted |
 | [0028](0028-target-size-and-the-chart.md) | Measure target size, and except the chart on width only | Accepted |
+| [0029](0029-opentelemetry-in-the-api.md) | OpenTelemetry in the API, exported only when somebody is listening | Accepted |

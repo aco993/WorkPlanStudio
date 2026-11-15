@@ -318,6 +318,13 @@ faking last-write-wins. `ScheduleEndpointTests.The_server_produces_the_schedule_
 asserts the two hosts agree on the schedule signature. See
 [ADR 0020](adr/0020-optional-backend-and-real-auth.md).
 
+It is observable with OpenTelemetry: a `schedule.run` span with the reads and the search as
+children, the run's duration by outcome, operations placed, and refused sign-ins by reason — with no
+user name or id in any tag — plus the ASP.NET Core request spans and metrics and the logs, all
+exported over OTLP when `OTEL_EXPORTER_OTLP_ENDPOINT` is set and not otherwise. Health probes are
+not traced. `docker compose --profile observability` adds the .NET Aspire dashboard to look at them.
+See [ADR 0029](adr/0029-opentelemetry-in-the-api.md).
+
 ## Failure handling
 
 Validation, conflict, not-found, forbidden, cancelled and persistence outcomes use small typed
