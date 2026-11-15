@@ -46,3 +46,4 @@ with a one-line summary of each.
 | [0027](0027-pay-the-cold-start-once.md) | Pay the cold start once, and say what it is doing while it happens | Accepted |
 | [0028](0028-target-size-and-the-chart.md) | Measure target size, and except the chart on width only | Accepted |
 | [0029](0029-opentelemetry-in-the-api.md) | OpenTelemetry in the API, exported only when somebody is listening | Accepted |
+| [0030](0030-render-the-first-paint-at-build-time.md) | Render the first paint at build time, and hand it over to the live app | Accepted |

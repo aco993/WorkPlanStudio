@@ -195,9 +195,10 @@ jobs:
       #
       #   python3 .github/scripts/transfer_budget.py publish/wwwroot
       #
-      # Measured on this tip: 7,501 KB, against 7,399 KB that a browser actually
-      # transferred from the published site - the proxy is within 1.4 % of the
-      # real thing. The budget sits about two per cent above that, the same way
+      # Measured on 0f77493: 7,508 KB, against 7,399 KB that a browser actually
+      # transferred from the published site on an earlier tip - the proxy is
+      # within 1.4 % of the real thing. The build-time first paint (ADR 0030)
+      # adds 34 KB: 7,542 KB. The budget sits about two per cent above that, the same way
       # the coverage gates sit about two points below theirs, and --slack-kb
       # fails the build when it drifts far enough above to stop defending
       # anything.

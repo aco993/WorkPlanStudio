@@ -131,30 +131,45 @@ auf der sicheren Seite. Ein Punktwert schwankt mit dem Runner, eine Summe von
 Dateigrößen nicht — deshalb darf diese Prüfung einen Build rot machen und der
 Lighthouse-Wert nicht.
 
-Gemessen am 11.09.2026 mit Lighthouse 13.4.1, Desktop-Voreinstellung, gegen das
-veröffentlichte `wwwroot`, mit Brotli ausgeliefert wie in `performance.yml`:
+Gemessen am 16.11.2026 vom Performance-Workflow — Lighthouse 12.6.1 über
+`treosh/lighthouse-ci-action`, Desktop-Voreinstellung, zwei Läufe je Seite — gegen das
+veröffentlichte `wwwroot`, mit Brotli und gzip ausgeliefert wie in `performance.yml`.
+Vorher ist `main` bei `0f77493` (Lauf 43765145877); nachher derselbe Workflow mit dem
+beim Build gerenderten ersten Bildschirm aus
+[ADR 0030](adr/0030-render-the-first-paint-at-build-time.md) (Lauf 43775424282).
+Barrierefreiheit, Best Practices und SEO liegen in jedem Lauf bei 100.
 
-| Seite | Leistung | Barrierefreiheit | Best Practices | SEO | FCP | LCP | TBT | CLS |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| `/` | 36 | 100 | 100 | 100 | 0,3 s | 7,7 s | 2 134 ms | 0,000 |
-| `/schedule` | 36 | 100 | 100 | 100 | 0,3 s | 7,7 s | 2 210 ms | 0,001 |
-| `/working-time` | 36 | 100 | 100 | 100 | 0,3 s | 7,8 s | 2 179 ms | 0,000 |
+| Seite | Leistung | FCP | LCP | TBT | Speed Index | CLS |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `/` vorher | 35–37 | 0,3 s | 7,8–7,9 s | 3,3–3,6 s | 3,6–5,8 s | 0 |
+| `/` nachher | **70** | 0,3 s | **0,3–0,5 s** | 3,0–3,2 s | **0,3 s** | 0 |
+| `/schedule` vorher | 35–36 | 0,3 s | 7,8 s | 3,6–3,7 s | 5,1–5,3 s | 0,001 |
+| `/schedule` nachher | **70** | 0,3 s | **0,3–0,5 s** | 2,9–3,1 s | **0,3 s** | 0 |
+| `/working-time` vorher | 35 | 0,3 s | 7,8 s | 3,4 s | 6,3 s | 0,05 |
+| `/working-time` nachher | **70** | 0,3 s | **0,3–0,5 s** | 2,7–2,8 s | **0,3 s** | **0** |
 
 So lässt sich das nachstellen:
 
 ```bash
 dotnet publish src/WorkPlanStudio/WorkPlanStudio.csproj -c Release -o release
+dotnet run --project tools/WorkPlanStudio.Prerender -c Release -- release/wwwroot
 npx http-server release/wwwroot -p 8080 -P "http://localhost:8080?" --gzip --brotli -s &
 npx lighthouse http://localhost:8080/ --preset=desktop
 ```
 
-**Sechsunddreißig ist die Zahl, und sie gehört der Laufzeit, nicht der Anwendung.** Der
-Startschirm zeichnet nach 0,3 s; der größte Inhaltsaufbau ist die Übersicht, nachdem
-die Laufzeit geladen und gestartet ist, SQLite geöffnet und der Demo-Betrieb angelegt
-wurde. Zwei Sekunden Blockierzeit sind das Übersetzen des WebAssembly-Moduls. Die
-Layoutverschiebung ist praktisch null, Barrierefreiheit und Best Practices sind
-vollständig — und diese drei **werden** blockierend geprüft. Der Leistungswert ist der
-eine, der veröffentlicht wird, ohne verteidigt zu werden.
+**Siebzig ist die Zahl, und die fehlenden dreißig gehören der Laufzeit.** Was der Leser
+sehen will, zeichnet jetzt nach 0,3–0,5 s: die Seite wird beim Build gerendert, vor der
+Laufzeit angezeigt und an die laufende Anwendung übergeben, sobald diese bereit ist
+([ADR 0030](adr/0030-render-the-first-paint-at-build-time.md)). Was bleibt, ist die
+Blockierzeit — das Übersetzen des WebAssembly-Moduls und der Start der Laufzeit auf dem
+einen Thread — und das Bild verschleiert das nicht: es ist inert, und eine Statuszeile
+sagt, dass die Anwendung startet. Der Wert wird weiterhin berichtet statt blockierend
+geprüft; Barrierefreiheit, Best Practices und SEO werden geprüft.
+
+Beim Messen fiel auch die einzige Layoutverschiebung der App auf, 0,05 auf
+`/working-time`: das bearbeitbare Formular renderte nichts, solange die Rolle gelesen
+wurde, und kam einen Frame zu spät. Es rendert für diesen Moment jetzt dieselben
+Steuerelemente deaktiviert, und CLS ist auf jeder gemessenen Seite 0.
 
 Die Hebel, nach Wirkung geordnet, falls sich das je bewegen muss: die Assemblies
 nachladen, die der erste Bildschirm nicht braucht, eine kleinere Laufzeit über
