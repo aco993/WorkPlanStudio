@@ -359,10 +359,16 @@ else
                 <h2>@L["WorkingTime_Absences"]</h2>
                 <p class="page-sub">@L["WorkingTime_AbsencesNote"]</p>
             </div>
+            @* Same as Save above: the place is held while the persona is read. *@
             <AuthorizeView Policy="@Permissions.ManageAbsences">
-                <button class="btn btn-outline" @onclick="NewAbsence">
-                    <span class="btn-plus">+</span> @L["WorkingTime_AddAbsence"]
-                </button>
+                <Authorizing>
+                    <span class="btn btn-outline placeholder" aria-hidden="true"><span class="btn-plus">+</span> @L["WorkingTime_AddAbsence"]</span>
+                </Authorizing>
+                <Authorized>
+                    <button class="btn btn-outline" @onclick="NewAbsence">
+                        <span class="btn-plus">+</span> @L["WorkingTime_AddAbsence"]
+                    </button>
+                </Authorized>
             </AuthorizeView>
         </div>
         @if (_absences.Count == 0)
