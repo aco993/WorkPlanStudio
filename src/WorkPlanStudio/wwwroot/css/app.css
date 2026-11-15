@@ -246,6 +246,8 @@ a:hover { text-decoration: underline; }
 .page-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1.4rem; }
 .page-sub { color: var(--text-muted); font-size: .9rem; margin-top: .25rem; }
 .head-actions { display: flex; gap: .5rem; }
+/* Holds the place of a control that is about to appear, so its arrival moves nothing. */
+.placeholder { visibility: hidden; }
 /* WCAG 2.2 AA 2.5.8 Target Size (Minimum), for the controls that are controls in
    their own right. The criterion excepts a link sitting inside a sentence, whose
    height is set by the surrounding line-height; none of these are that. Each was

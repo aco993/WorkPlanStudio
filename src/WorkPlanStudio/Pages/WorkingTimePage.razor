@@ -156,8 +156,18 @@ else
                     </div>
                 </EditableArea>
                 <p class="sr-only" role="status" aria-live="polite">@_ruleAnnouncement</p>
+                @*
+                    The row keeps its height while the persona is still being read.
+                    On a cold start the authentication state needs one round trip to
+                    storage, AuthorizeView renders nothing for it, and the Save button
+                    then arrived and pushed every card below it down: Lighthouse
+                    measured a 0.05 layout shift on this page, the only one in the app.
+                *@
                 <div class="head-actions wt-actions">
                     <AuthorizeView Policy="@Permissions.ManagePlantRules">
+                        <Authorizing>
+                            <span class="btn btn-primary placeholder" aria-hidden="true">@L["Common_Save"]</span>
+                        </Authorizing>
                         <Authorized>
                             <button class="btn btn-primary" @onclick="SaveAsync" disabled="@_saving">@L["Common_Save"]</button>
                         </Authorized>
