@@ -1,0 +1,51 @@
+// The repository, ready to build and run, without installing anything locally.
+//
+// Building the browser app needs the .NET 10 SDK *and* the wasm-tools workload,
+// because SQLite is relinked into the WebAssembly module (docs/adr/0019). That
+// pair is the whole reason a reviewer gives up before the first build, so this
+// container exists to make it one click. CI builds this exact container and runs
+// the solution's build and the engine tests inside it (devcontainer.yml), so the
+// claim that it works is checked, not hoped.
+{
+  "name": "WorkPlan Studio",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu-24.04",
+  "features": {
+    // "10.0" installs the newest SDK on the 10.0 channel, which satisfies
+    // global.json (10.0.300, rollForward latestFeature).
+    "ghcr.io/devcontainers/features/dotnet:2": {
+      "version": "10.0",
+      "workloads": "wasm-tools"
+    },
+    // Python runs the repository checks in .github/scripts.
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.12"
+    }
+  },
+  // The WebAssembly relink is the heavy part of a build; two cores make the
+  // first one painfully slow.
+  "hostRequirements": {
+    "cpus": 4,
+    "memory": "8gb"
+  },
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+  "forwardPorts": [5235, 8080],
+  "portsAttributes": {
+    "5235": { "label": "WorkPlan Studio (browser app)", "onAutoForward": "openBrowser" },
+    "8080": { "label": "Optional API", "onAutoForward": "silent" }
+  },
+  "containerEnv": {
+    "DOTNET_NOLOGO": "true",
+    "DOTNET_CLI_TELEMETRY_OPTOUT": "true"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-dotnettools.csdevkit",
+        "editorconfig.editorconfig"
+      ]
+    },
+    "codespaces": {
+      "openFiles": ["AGENTS.md", "src/WorkPlanStudio.Scheduling/SchedulingEngine.cs"]
+    }
+  }
+}

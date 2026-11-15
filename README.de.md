@@ -20,6 +20,8 @@
 **WorkPlan Studio** ist eine eigenständige Anwendung für die Arbeitsvorbereitung und die Feinplanung: **Arbeitspläne** mit ihren Arbeitsgängen, die **Arbeitsplätze** und **Kostenstellen**, auf denen sie laufen, **Fertigungsaufträge** mit eingefrorenem Arbeitsplan und eine **kapazitätsbeschränkte Feinplanung**, die Schichtkalender und das Arbeitszeitgesetz einhält — dazu ein Chat, der das Ergebnis erklärt, und ein Branch-and-Bound-Löser, der sagt, wie weit der Plan vom Optimum entfernt ist. Die gesamte Anwendung einschließlich ihrer relationalen Datenbank läuft im Browser als statische WebAssembly-Seite. Ein optionales ASP.NET-Core-Backend mit echten Benutzerkonten ist vorhanden und bleibt aus, solange es nicht konfiguriert wird.
 
 > **Live-Demo:** <https://aco993.github.io/WorkPlanStudio/> — Englisch und Deutsch, hell und dunkel, Desktop und Mobilgerät. Nichts zu installieren, keine Anmeldung.
+>
+> **Der Code, startklar:** [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/aco993/WorkPlanStudio?quickstart=1) — .NET 10 SDK und WebAssembly-Workload vorinstalliert, die Solution bereits gebaut.
 
 **Neunzig Sekunden, drei Links:**
 
@@ -243,6 +245,8 @@ WorkPlanStudio/
 ```
 
 ## Erste Schritte
+
+**Ohne etwas zu installieren:** Öffnen Sie das Repository in GitHub Codespaces (Badge oben) oder in einem Editor, der Devcontainer unterstützt. `.devcontainer/` bringt das SDK, die `wasm-tools`-Workload und Python mit, stellt beim Anlegen des Containers die Pakete wieder her, baut die Solution und leitet Port 5235 weiter. Der Workflow `Devcontainer` baut genau diesen Container und führt darin die Engine- und Arbeitszeit-Tests aus — der Button ist also getestet, nicht erhofft.
 
 ### Voraussetzungen
 
