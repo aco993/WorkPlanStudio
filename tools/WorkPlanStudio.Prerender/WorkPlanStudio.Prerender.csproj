@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!--
+    Build-time prerendering for the static GitHub Pages deployment
+    (docs/adr/0030). Run after `dotnet publish`: it serves the published
+    wwwroot, renders the chosen routes in a real Chromium in both languages,
+    writes them into index.html as <template> elements together with the
+    inline first-paint script, and then verifies the result in the browser.
+
+    A web project only for Kestrel and the static-file middleware; it hosts
+    nothing in production.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>WorkPlanStudio.Prerender</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <NoDefaultLaunchSettingsFile>true</NoDefaultLaunchSettingsFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Playwright" />
+    <EmbeddedResource Include="first-paint.js" LogicalName="first-paint.js" />
+  </ItemGroup>
+
+</Project>

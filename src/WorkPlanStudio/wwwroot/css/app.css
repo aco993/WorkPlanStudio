@@ -1081,3 +1081,17 @@ select.input { cursor: pointer; }
 /* 24 px is the floor WCAG 2.2 sets for a pointer target, and .3rem of padding
    measured 23 px on a phone - close enough to look right and still wrong. */
 .btn-small { padding: .35rem .7rem; font-size: .85rem; min-height: 24px; min-width: 24px; }
+
+/* The build-time picture of the page a first visit is about to get (ADR 0030).
+   It is inert until the live page takes over, so the status line says why the
+   buttons do not answer yet, and carries the download percentage the boot
+   screen would have shown. */
+#prerendered[hidden] { display: none; }
+.prerender-status {
+    position: fixed; z-index: 1000; left: 50%; bottom: 1rem; transform: translateX(-50%);
+    margin: 0; padding: .45rem .9rem; border-radius: 100px;
+    background: var(--surface); color: var(--text); border: 1px solid var(--border); box-shadow: var(--shadow-sm);
+    font-size: .82rem; font-weight: 500; white-space: nowrap;
+}
+.prerender-status::after { content: " " var(--blazor-load-percentage-text, ""); font-variant-numeric: tabular-nums; color: var(--text-muted); }
+.prerender-snapshot { cursor: progress; }
