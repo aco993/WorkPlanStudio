@@ -4,6 +4,7 @@ using Microsoft.Extensions.Options;
 using WorkPlanStudio.Api.Auth;
 using WorkPlanStudio.Api.Data;
 using WorkPlanStudio.Api.Http;
+using WorkPlanStudio.Api.Telemetry;
 using WorkPlanStudio.Contracts;
 using WorkPlanStudio.Validation;
 
@@ -37,12 +38,22 @@ public static class AuthEndpoints
             SignInManager<ApiUser> signIn,
             TokenService tokens,
             ILoggerFactory loggers,
+            ApiTelemetry telemetry,
             CancellationToken cancellationToken) =>
         {
             var log = loggers.CreateLogger("WorkPlanStudio.Api.Auth");
 
-            if (string.IsNullOrWhiteSpace(request.UserName) || string.IsNullOrEmpty(request.Password))
+            // Counted by reason only. The log line below may name the account
+            // for an investigator with access to the logs; a metric is exported
+            // to wherever the operator points it, and must not.
+            IResult Rejected(string reason)
+            {
+                telemetry.SignInRejected.Add(1, new KeyValuePair<string, object?>("reason", reason));
                 return Unauthorized();
+            }
+
+            if (string.IsNullOrWhiteSpace(request.UserName) || string.IsNullOrEmpty(request.Password))
+                return Rejected("invalid_credentials");
 
             var user = await users.FindByNameAsync(request.UserName);
             if (user is null)
@@ -51,7 +62,7 @@ public static class AuthEndpoints
                 // counter cannot help here; the rate limiter on this route is
                 // what makes guessing user names expensive.
                 log.LogInformation("Sign-in rejected for an unknown account");
-                return Unauthorized();
+                return Rejected("invalid_credentials");
             }
 
             var result = await signIn.CheckPasswordSignInAsync(user, request.Password, lockoutOnFailure: true);
@@ -59,7 +70,7 @@ public static class AuthEndpoints
             {
                 log.LogInformation(
                     "Sign-in rejected for {UserId} (lockedOut: {LockedOut})", user.Id, result.IsLockedOut);
-                return Unauthorized();
+                return Rejected(result.IsLockedOut ? "locked_out" : "invalid_credentials");
             }
 
             var roles = await users.GetRolesAsync(user);

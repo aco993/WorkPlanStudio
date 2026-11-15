@@ -14,6 +14,7 @@ using WorkPlanStudio.Api.Endpoints;
 using WorkPlanStudio.Api.Health;
 using WorkPlanStudio.Api.Http;
 using WorkPlanStudio.Api.Services;
+using WorkPlanStudio.Api.Telemetry;
 using WorkPlanStudio.Services.Auth;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -169,6 +170,13 @@ builder.Services.AddRateLimiter(options =>
             });
     });
 });
+
+// ---------------------------------------------------------------------------
+// Observability: OpenTelemetry traces, metrics and logs. Always collected in
+// process; exported over OTLP only when OTEL_EXPORTER_OTLP_ENDPOINT is set.
+// See Telemetry/TelemetrySetup.cs and docs/adr/0029.
+// ---------------------------------------------------------------------------
+builder.AddApiTelemetry();
 
 builder.Services.AddHealthChecks()
     .AddCheck<DatabaseHealthCheck>("database", tags: ["ready"]);

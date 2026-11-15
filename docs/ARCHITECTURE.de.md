@@ -348,6 +348,14 @@ Oberfläche sagt das, statt „letzter gewinnt“ vorzutäuschen.
 beide Wirte auf dieselbe Plan-Signatur kommen. Siehe
 [ADR 0020](adr/0020-optional-backend-and-real-auth.md).
 
+Es ist mit OpenTelemetry beobachtbar: ein Span `schedule.run` mit dem Lesen und der Suche als
+Kindern, die Dauer des Laufs nach Ergebnis, die eingeplanten Arbeitsgänge und abgelehnte Anmeldungen
+nach Grund — ohne Benutzernamen oder ID in irgendeinem Tag — dazu die Request-Spans und -Metriken von
+ASP.NET Core und die Logs, alles per OTLP exportiert, wenn `OTEL_EXPORTER_OTLP_ENDPOINT` gesetzt ist,
+und sonst nicht. Health-Checks werden nicht verfolgt. `docker compose --profile observability` fügt
+das .NET-Aspire-Dashboard hinzu, um sie anzusehen. Siehe
+[ADR 0029](adr/0029-opentelemetry-in-the-api.md).
+
 ## Fehlerbehandlung
 
 Validierung, Konflikt, Nicht-gefunden, Verboten, Abgebrochen und Persistenzfehler laufen über kleine

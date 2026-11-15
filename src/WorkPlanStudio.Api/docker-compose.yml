@@ -2,6 +2,13 @@
 #
 #   Jwt__SigningKey=$(openssl rand -base64 48) docker compose -f src/WorkPlanStudio.Api/docker-compose.yml up --build
 #
+# With traces, metrics and logs in a local dashboard (http://localhost:18888;
+# the login token is printed in the dashboard container's log):
+#
+#   Jwt__SigningKey=$(openssl rand -base64 48) #   OTEL_EXPORTER_OTLP_ENDPOINT=http://dashboard:18889 #   docker compose -f src/WorkPlanStudio.Api/docker-compose.yml --profile observability up --build
+#
+# Without OTEL_EXPORTER_OTLP_ENDPOINT the API exports nothing (docs/adr/0029).
+#
 # The build context is the repository root because the API compiles shared
 # source from the browser application. Nothing secret is in this file: the
 # signing key comes from the environment and the application refuses to start
@@ -23,12 +30,24 @@ services:
       # The origin the browser client is served from. Empty means same-origin only.
       Cors__AllowedOrigins__0: ${CLIENT_ORIGIN:-http://localhost:5235}
       Seed__SampleData: "true"
+      # Empty unless the caller sets it; empty means no exporter is registered.
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
       # Seeded accounts are opt-in and never defaulted here; a container that
       # creates a known account on first start is a back door with a nice name.
     volumes:
       # The SQLite file outlives the container. Owned by the image's non-root
       # user, which is why the path matches the one the Dockerfile prepares.
       - api-data:/data
+
+  # The .NET Aspire dashboard as a stand-alone OTLP receiver and viewer. Only
+  # with --profile observability; the default `up` starts the API alone.
+  dashboard:
+    image: mcr.microsoft.com/dotnet/aspire-dashboard:13.5
+    profiles: [ observability ]
+    ports:
+      - "18888:18888"   # the dashboard UI
+    expose:
+      - "18889"         # OTLP over gRPC, reachable from the api service only
 
 volumes:
   api-data:
