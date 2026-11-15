@@ -1,0 +1,58 @@
+name: Devcontainer
+
+# The README offers "Open in GitHub Codespaces". That button is a promise that
+# the container builds and the solution builds inside it, with the WebAssembly
+# workload a local machine usually lacks. This workflow keeps the promise
+# checked: it builds .devcontainer/ exactly as Codespaces would, runs its
+# post-create step (restore + Release build of the whole solution), and then
+# runs the engine and working-time suites inside the container.
+#
+# Not on every pull request: building the image and the WebAssembly relink is
+# about ten minutes of runner. It runs when the container or the toolchain pins
+# change, weekly so an upstream image or feature cannot break it unseen, and on
+# request.
+
+on:
+  pull_request:
+    paths:
+      - '.devcontainer/**'
+      - '.github/workflows/devcontainer.yml'
+      - 'global.json'
+      - 'Directory.Packages.props'
+  push:
+    branches: [ main ]
+    paths:
+      - '.devcontainer/**'
+      - '.github/workflows/devcontainer.yml'
+      - 'global.json'
+  schedule:
+    - cron: '17 4 * * 1'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  devcontainer:
+    name: Build the devcontainer and test inside it
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Build the container and run the suites in it
+        uses: devcontainers/ci@513af61f4de4f75d37e4438f184ba4358f0fc1ca  # v0.3.1900000450
+        with:
+          push: never
+          runCmd: |
+            set -euo pipefail
+            dotnet workload list | grep -q wasm-tools
+            ./tests/WorkPlanStudio.Scheduling.Tests/bin/Release/net10.0/WorkPlanStudio.Scheduling.Tests
+            ./tests/WorkPlanStudio.WorkingTime.Tests/bin/Release/net10.0/WorkPlanStudio.WorkingTime.Tests
+            python3 -m unittest discover -s .github/scripts -p 'test_*.py'

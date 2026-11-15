@@ -20,6 +20,8 @@
 **WorkPlan Studio** is a self-contained production-planning application: manufacturing **routings** (work plans), the **work centers** and **cost centers** they run on, **production orders** with frozen routings, and a **finite-capacity scheduler** that respects shift calendars and the German Working Hours Act (ArbZG) — with a chat that explains the result and a branch-and-bound solver that will tell you how far from optimal it is. The whole application, including its relational database, runs in the browser as a static WebAssembly site. An optional ASP.NET Core backend with real accounts exists and is off unless you configure it.
 
 > **Live demo:** <https://aco993.github.io/WorkPlanStudio/> — English and German, light and dark, desktop and mobile. Nothing to install, nothing to sign up for.
+>
+> **The code, ready to run:** [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/aco993/WorkPlanStudio?quickstart=1) — the .NET 10 SDK and the WebAssembly workload preinstalled, the solution already built.
 
 **Ninety seconds, three links:**
 
@@ -243,6 +245,8 @@ WorkPlanStudio/
 ```
 
 ## Getting started
+
+**Without installing anything:** open the repository in GitHub Codespaces (badge above) or in any devcontainer-capable editor. `.devcontainer/` brings the SDK, the `wasm-tools` workload and Python, restores and builds the solution when the container is created, and forwards port 5235. The `Devcontainer` workflow builds that exact container and runs the engine and working-time suites inside it, so the button is tested rather than hoped for.
 
 ### Prerequisites
 
