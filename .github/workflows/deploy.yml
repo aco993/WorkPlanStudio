@@ -51,7 +51,7 @@ jobs:
   build:
     needs: [tests, e2e]
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 40
     permissions:
       contents: read
       pages: write
@@ -73,6 +73,17 @@ jobs:
 
       # GitHub Pages serves the app from https://<user>.github.io/<repo>/,
       # so the <base href> must point at the repository sub-path.
+      # The first paint, rendered at build time (docs/adr/0030). It serves the
+      # published folder, renders the dashboard, the schedule and working time in
+      # Chromium in both languages, writes them into index.html, and then checks
+      # in the browser that the picture paints first, hands over to the live page
+      # and stays away from a returning visitor - failing the job if not.
+      - name: Prerender the first paint
+        run: |
+          dotnet build tools/WorkPlanStudio.Prerender -c Release
+          pwsh tools/WorkPlanStudio.Prerender/bin/Release/net10.0/playwright.ps1 install --with-deps chromium
+          dotnet tools/WorkPlanStudio.Prerender/bin/Release/net10.0/WorkPlanStudio.Prerender.dll release/wwwroot
+
       - name: Rewrite base href for project page
         run: sed -i 's#<base href="/" />#<base href="/${{ github.event.repository.name }}/" />#g' release/wwwroot/index.html
 

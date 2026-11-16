@@ -143,7 +143,7 @@ jobs:
   lighthouse:
     name: Lighthouse CI on the published site
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
@@ -165,6 +165,21 @@ jobs:
       - name: Publish
         run: dotnet publish src/WorkPlanStudio/WorkPlanStudio.csproj -c Release -o release
 
+      # The first paint, rendered at build time (docs/adr/0030), the same
+      # step the deploy runs, so Lighthouse measures what GitHub Pages serves. It serves the
+      # published folder, renders the dashboard, the schedule and working time in
+      # Chromium in both languages, writes them into index.html, and then checks
+      # in the browser that the picture paints first, hands over to the live page
+      # and stays away from a returning visitor - failing the job if not.
+      - name: Prerender the first paint
+        run: |
+          dotnet build tools/WorkPlanStudio.Prerender -c Release
+          pwsh tools/WorkPlanStudio.Prerender/bin/Release/net10.0/playwright.ps1 install --with-deps chromium
+          dotnet tools/WorkPlanStudio.Prerender/bin/Release/net10.0/WorkPlanStudio.Prerender.dll release/wwwroot
+
+      - name: Re-seal the service worker asset manifest
+        run: python3 .github/scripts/reseal_sw_assets.py release/wwwroot --resealed index.html
+
       # The one performance number in this workflow that asserts.
       #
       # It can, because it is a sum of file sizes rather than a timing: identical
@@ -180,9 +195,10 @@ jobs:
       #
       #   python3 .github/scripts/transfer_budget.py publish/wwwroot
       #
-      # Measured on this tip: 7,501 KB, against 7,399 KB that a browser actually
-      # transferred from the published site - the proxy is within 1.4 % of the
-      # real thing. The budget sits about two per cent above that, the same way
+      # Measured on 0f77493: 7,508 KB, against 7,399 KB that a browser actually
+      # transferred from the published site on an earlier tip - the proxy is
+      # within 1.4 % of the real thing. The build-time first paint (ADR 0030)
+      # adds 34 KB: 7,542 KB. The budget sits about two per cent above that, the same way
       # the coverage gates sit about two points below theirs, and --slack-kb
       # fails the build when it drifts far enough above to stop defending
       # anything.

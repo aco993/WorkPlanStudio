@@ -78,6 +78,7 @@ WebAssembly, running in the browser) and localisation sit around them. There is 
 | `tests/WorkPlanStudio.E2E/` | Playwright flows, axe, visual baselines (`visual-baselines/linux/`) |
 | `tests/WorkPlanStudio.Scheduling.Testing/` | the one problem generator and the twenty optimality instances — use it rather than writing a fourth copy |
 | `tests/WorkPlanStudio.Benchmarks/` | BenchmarkDotNet |
+| `tools/WorkPlanStudio.Prerender/` | renders the first paint at build time and verifies the hand-over in Chromium; runs after `dotnet publish` in deploy and Performance ([ADR 0030](docs/adr/0030-render-the-first-paint-at-build-time.md)) |
 | `tools/WorkPlanStudio.Scheduling.Scenarios/` | reproducible scenarios: `scenarios`, `acceptance`, `allocation`, `budget`, `optimality`, `exact`, `exactwall`, `exactbudget`, `milp` |
 | `docs/` | ARCHITECTURE, SCHEDULING, TESTING, AI-ASSISTANT, PERFORMANCE, SECURITY — each with a `.de` twin — plus `adr/` |
 

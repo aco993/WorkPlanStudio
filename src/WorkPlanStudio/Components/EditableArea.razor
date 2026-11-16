@@ -10,8 +10,19 @@
 
     The child content is rendered in exactly one branch, so nothing is
     duplicated, and AuthorizeView re-renders it when the persona changes.
+
+    While the persona is still being read the controls are already there,
+    disabled. Rendering nothing for that moment - AuthorizeView's default - made
+    the working-time form arrive a frame after the rest of the page on a cold
+    start, and every card below it jumped: a 0.05 layout shift, the only one in
+    the app, measured by Lighthouse and traced in a browser to this component.
+    Disabled is also the honest state for that moment: nothing typed yet could
+    be saved.
 *@
 <AuthorizeView Policy="@Policy" Context="area">
+    <Authorizing>
+        <fieldset class="form-fieldset" disabled>@ChildContent</fieldset>
+    </Authorizing>
     <Authorized>
         <fieldset class="form-fieldset">@ChildContent</fieldset>
     </Authorized>

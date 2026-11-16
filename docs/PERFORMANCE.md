@@ -128,30 +128,44 @@ is conservative by about 136 KB for anyone whose browser matches EFIGS. A score
 moves with the runner; a sum of file sizes does not, which is why this one is
 allowed to fail a build and the Lighthouse score is not.
 
-Measured on 2026-09-11 with Lighthouse 13.4.1, desktop preset, against the
-published `wwwroot` served with Brotli the way `performance.yml` serves it:
+Measured on 2026-11-16 by the Performance workflow — Lighthouse 12.6.1 through
+`treosh/lighthouse-ci-action`, desktop preset, two runs per page — against the
+published `wwwroot` served with Brotli and gzip the way `performance.yml` serves
+it. Before is `main` at `0f77493` (run 43765145877); after is the same workflow with
+the build-time first paint of [ADR 0030](adr/0030-render-the-first-paint-at-build-time.md)
+(run 43775424282). Accessibility, best practices and SEO are 100 in every run.
 
-| Page | Performance | Accessibility | Best practices | SEO | FCP | LCP | TBT | CLS |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| `/` | 36 | 100 | 100 | 100 | 0.3 s | 7.7 s | 2 134 ms | 0.000 |
-| `/schedule` | 36 | 100 | 100 | 100 | 0.3 s | 7.7 s | 2 210 ms | 0.001 |
-| `/working-time` | 36 | 100 | 100 | 100 | 0.3 s | 7.8 s | 2 179 ms | 0.000 |
+| Page | Performance | FCP | LCP | TBT | Speed Index | CLS |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `/` before | 35–37 | 0.3 s | 7.8–7.9 s | 3.3–3.6 s | 3.6–5.8 s | 0 |
+| `/` after | **70** | 0.3 s | **0.3–0.5 s** | 3.0–3.2 s | **0.3 s** | 0 |
+| `/schedule` before | 35–36 | 0.3 s | 7.8 s | 3.6–3.7 s | 5.1–5.3 s | 0.001 |
+| `/schedule` after | **70** | 0.3 s | **0.3–0.5 s** | 2.9–3.1 s | **0.3 s** | 0 |
+| `/working-time` before | 35 | 0.3 s | 7.8 s | 3.4 s | 6.3 s | 0.05 |
+| `/working-time` after | **70** | 0.3 s | **0.3–0.5 s** | 2.7–2.8 s | **0.3 s** | **0** |
 
 Reproduce it with:
 
 ```bash
 dotnet publish src/WorkPlanStudio/WorkPlanStudio.csproj -c Release -o release
+dotnet run --project tools/WorkPlanStudio.Prerender -c Release -- release/wwwroot
 npx http-server release/wwwroot -p 8080 -P "http://localhost:8080?" --gzip --brotli -s &
 npx lighthouse http://localhost:8080/ --preset=desktop
 ```
 
-**Thirty-six is the number, and it is the runtime's, not the application's.** The
-branded boot screen paints at 0.3 s; the largest contentful paint is the dashboard
-after the runtime has downloaded, started, opened SQLite and seeded the demo
-plant. Two seconds of total blocking time is the WebAssembly module compiling.
-Layout shift is effectively zero, accessibility and best practices are perfect,
-and those three *are* gated — the performance score is the one that is published
-without being defended.
+**Seventy is the number, and the thirty it is missing are the runtime's.** What the
+reader came for now paints at 0.3–0.5 s: the page is rendered when the site is
+built, shown before the runtime exists, and handed over to the live application
+when it is ready ([ADR 0030](adr/0030-render-the-first-paint-at-build-time.md)).
+What is left is total blocking time — the WebAssembly module compiling and the
+runtime starting on the one thread — and the picture does not hide that: it is
+inert, and a status line says the application is starting. The score is still
+reported rather than gated; accessibility, best practices and SEO are gated.
+
+Measuring it also found the app's only layout shift, 0.05 on `/working-time`: the
+editable form rendered nothing while the persona was being read and arrived a frame
+late. It renders the same controls disabled for that moment now, and CLS is 0 on
+every measured page.
 
 The levers, in order of effect, if this ever needs to move: lazy-loading the
 assemblies the first screen does not need, a smaller runtime through trimming
