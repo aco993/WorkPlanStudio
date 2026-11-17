@@ -48,12 +48,14 @@
         'wasm-unsafe-eval'  the .NET WebAssembly runtime instantiates its module
         'unsafe-inline' (style)  Blazor writes element styles inline - the Gantt
                             bar positions are computed per render
-        'unsafe-inline' (script)  Blazor publishes a fingerprinted inline
-                            <script type="importmap">. Its content changes on
-                            every build, so a hash goes stale immediately, and a
-                            static host cannot mint a nonce. Verified against the
-                            published artifact: without this the runtime does not
-                            start at all.
+        'unsafe-inline' (script)  in this source only. Blazor writes a
+                            fingerprinted inline import map whose content changes
+                            on every build, so no hash written here could hold.
+                            The published page does not change once deployed, so
+                            the deploy hashes every inline script it really carries
+                            and replaces this keyword with those hashes, then
+                            checks in a browser that the app still starts
+                            (.github/scripts/pin_inline_scripts.py, ADR 0031).
 
       connect-src has to allow https: because the optional bring-your-own-key
       narrator posts to a user-supplied endpoint (api.openai.com by default).

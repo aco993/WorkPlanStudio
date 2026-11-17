@@ -32,6 +32,21 @@ Nichts im Folgenden behauptet, dass die Demo Daten schützt. Sie tut es nicht.
   Berechtigungsrichtlinie, denn alle Zeilen zu ersetzen ist ein Schreibvorgang, wie die
   Aufrufstelle auch aussieht.
 
+### Was die Seite ausführen darf
+
+Die veröffentlichte Seite trägt eine Content-Security-Policy mit `default-src 'none'`.
+`script-src` erlaubt die eigenen Dateien der Seite, `'wasm-unsafe-eval'` für die
+.NET-Laufzeit und **genau die Inline-Skripte, die die ausgelieferte Seite enthält, per
+SHA-256-Hash** — nicht `'unsafe-inline'`. Blazors Import-Map trägt je Build einen
+Fingerabdruck, daher ließe sich im Quelltext kein Hash festschreiben; das Deployment
+hasht die Seite nach der letzten Änderung an einem Skript und startet die App danach
+in einem Browser gegen die festgelegte Richtlinie — wird etwas verweigert, scheitert
+das Deployment ([ADR 0031](adr/0031-pin-inline-scripts-by-hash.md)). Ein eingeschleustes
+Inline-Skript oder Event-Handler-Attribut verweigert der Browser daher. `style-src`
+erlaubt weiterhin Inline-Styles, die Blazors je Rendern gesetzte Element-Styles
+brauchen; `frame-ancestors` lässt sich per `<meta>` nicht setzen, und GitHub Pages
+erlaubt der Seite keine eigenen Header.
+
 ### Importierte und hochgeladene Inhalte
 
 Der CSV-Import liest eine Datei, die der Besucher ausgewählt hat — die eine Stelle, an

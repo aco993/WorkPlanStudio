@@ -14,19 +14,37 @@ using WorkPlanStudio.Prerender;
 // Routes are relative to the base href, without slashes: "" is the dashboard.
 // The defaults are the three pages the Performance workflow measures and the
 // README links to.
-if (args.Length < 1 || !Directory.Exists(args[0]))
+//
+// With --verify first, nothing is rendered or written: the browser checks run
+// against the folder as it stands. The deploy uses that after the last edit to
+// index.html - the inline-script hashes of the Content-Security-Policy - so a
+// script the policy refuses fails the job instead of the published site.
+var verifyOnly = args.Length > 0 && args[0] == "--verify";
+var rest = verifyOnly ? args[1..] : args;
+if (rest.Length < 1 || !Directory.Exists(rest[0]))
 {
-    Console.Error.WriteLine("usage: WorkPlanStudio.Prerender <published wwwroot> [route ...]");
+    Console.Error.WriteLine("usage: WorkPlanStudio.Prerender [--verify] <published wwwroot> [route ...]");
     return 2;
 }
 
-var root = Path.GetFullPath(args[0]);
-string[] routes = args.Length > 1 ? [.. args.Skip(1).Select(r => r.Trim('/'))] : ["", "schedule", "working-time"];
+var root = Path.GetFullPath(rest[0]);
+string[] routes = rest.Length > 1 ? [.. rest.Skip(1).Select(r => r.Trim('/'))] : ["", "schedule", "working-time"];
 string[] cultures = ["en-US", "de-DE"];
 
 await using var site = await StaticSite.StartAsync(root);
 using var playwright = await Playwright.CreateAsync();
 await using var browser = await playwright.Chromium.LaunchAsync(new() { Headless = true });
+
+if (verifyOnly)
+{
+    var problems = await Verify.RunAsync(browser, site.BaseUrl, routes);
+    foreach (var problem in problems)
+        Console.Error.WriteLine("FAIL: " + problem);
+    if (problems.Count > 0)
+        return 1;
+    Console.WriteLine("verified as published: first paint, hand-over, returning visitor, no console errors");
+    return 0;
+}
 
 var snapshots = new List<Snapshot>();
 foreach (var culture in cultures)

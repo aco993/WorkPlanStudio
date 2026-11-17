@@ -29,6 +29,20 @@ Nothing below is a claim that the demo protects data. It does not.
   reset — and the reset and the import both ask the authorization policy, because
   replacing every row is a mutation whatever the call site looks like.
 
+### What the page may execute
+
+The published page carries a Content-Security-Policy with `default-src 'none'`.
+`script-src` allows the site's own files, `'wasm-unsafe-eval'` for the .NET
+runtime, and **the exact inline scripts the deployed page contains, by SHA-256 hash**
+— not `'unsafe-inline'`. Blazor's import map is fingerprinted per build, so no hash
+could be written into the source; the deploy hashes the page after its last edit
+to a script and then starts the app in a browser against the pinned policy, failing
+the deploy if anything is refused ([ADR 0031](adr/0031-pin-inline-scripts-by-hash.md)).
+An injected inline script or event handler attribute is therefore refused by the
+browser. `style-src` still allows inline styles, which Blazor's per-render element
+styles need; `frame-ancestors` cannot be set from a `<meta>` tag, and GitHub Pages
+does not let the site send headers.
+
 ### Imported and uploaded content
 
 The CSV import reads a file the visitor chose, which is the one place untrusted
