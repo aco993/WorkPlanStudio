@@ -157,6 +157,21 @@ npx http-server release/wwwroot -p 8080 -P "http://localhost:8080?" --gzip --bro
 npx lighthouse http://localhost:8080/ --preset=desktop
 ```
 
+Und so, wie ein Telefon sie sieht — Lighthouses Mobilprofil: 412 px, simuliertes
+langsames 4G, eine viermal langsamere CPU — derselbe Workflow (Lauf 44043342064):
+
+| Seite | Leistung | Barrierefreiheit | Best Practices | SEO | FCP | LCP | TBT | CLS |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| `/` | 70 | 100 | 100 | 100 | 1,2 s | 1,4 s | 12,5–12,9 s | 0 |
+| `/schedule` | 70 | 100 | 100 | 100 | 1,2 s | 1,4 s | 12,8–12,9 s | 0 |
+| `/working-time` | 70 | 100 | 100 | 100 | 1,2 s | 1,4 s | 12,0–12,3 s | 0 |
+
+Der erste Mobillauf ergab Best Practices 96 auf `/`: nur 43,8 % des Texts der
+Übersicht waren auf dem Telefon 12 px oder größer. Die Beschriftungen darunter sind
+unter 640 px jetzt mindestens 12 px, und die Übersicht liegt bei 100 %. Die
+Blockierzeit im Mobilprofil ist derselbe Laufzeitstart wie am Desktop, per Definition
+viermal langsamer.
+
 **Siebzig ist die Zahl, und die fehlenden dreißig gehören der Laufzeit.** Was der Leser
 sehen will, zeichnet jetzt nach 0,3–0,5 s: die Seite wird beim Build gerendert, vor der
 Laufzeit angezeigt und an die laufende Anwendung übergeben, sobald diese bereit ist
