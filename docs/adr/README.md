@@ -47,3 +47,4 @@ with a one-line summary of each.
 | [0028](0028-target-size-and-the-chart.md) | Measure target size, and except the chart on width only | Accepted |
 | [0029](0029-opentelemetry-in-the-api.md) | OpenTelemetry in the API, exported only when somebody is listening | Accepted |
 | [0030](0030-render-the-first-paint-at-build-time.md) | Render the first paint at build time, and hand it over to the live app | Accepted |
+| [0031](0031-pin-inline-scripts-by-hash.md) | Pin script-src to the published page's own inline scripts | Accepted |

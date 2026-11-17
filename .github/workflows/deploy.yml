@@ -84,6 +84,17 @@ jobs:
           pwsh tools/WorkPlanStudio.Prerender/bin/Release/net10.0/playwright.ps1 install --with-deps chromium
           dotnet tools/WorkPlanStudio.Prerender/bin/Release/net10.0/WorkPlanStudio.Prerender.dll release/wwwroot
 
+      # The published page no longer changes from here on except outside its
+      # scripts (base href, link-preview URLs), so its inline scripts can be
+      # hashed and script-src stops allowing every inline script (ADR 0031).
+      # The browser checks then run again on the pinned page: a script the
+      # policy refuses is a console error there, and fails this job instead of
+      # the published site.
+      - name: Pin script-src to the page's own inline scripts
+        run: |
+          python3 .github/scripts/pin_inline_scripts.py release/wwwroot/index.html
+          dotnet tools/WorkPlanStudio.Prerender/bin/Release/net10.0/WorkPlanStudio.Prerender.dll --verify release/wwwroot
+
       - name: Rewrite base href for project page
         run: sed -i 's#<base href="/" />#<base href="/${{ github.event.repository.name }}/" />#g' release/wwwroot/index.html
 
