@@ -113,6 +113,11 @@ jobs:
           path: |
             docs/images/schedule-dark.png
             docs/images/schedule-mobile.png
+            docs/images/dashboard-light.png
+            docs/images/dashboard-dark.png
+            docs/images/working-time-light.png
+            docs/images/chat-en.png
+            docs/images/chat-de.png
             docs/schedule-ontime.png
             docs/schedule-late.png
           if-no-files-found: error
