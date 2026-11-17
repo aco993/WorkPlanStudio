@@ -7,6 +7,70 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] — 2026-11-17
+
+What 1.0.0 left open, closed: a reviewer can run the code without installing
+anything, the backend can be observed, a first visit sees the page instead of a
+spinner, and the published page no longer lets any inline script run.
+
+### First visit
+
+- **The first paint is rendered when the site is built** ([ADR 0030](docs/adr/0030-render-the-first-paint-at-build-time.md)).
+  GitHub Pages is static, but a first visit always starts from the same demo
+  plant, so `tools/WorkPlanStudio.Prerender` renders the dashboard, the schedule
+  and working time in Chromium in both languages after `dotnet publish` and
+  writes them into `index.html`; an inline script shows the right one before the
+  runtime exists and hands over to the live app in one step. Only a first visit
+  sees it, it is inert, and the tool verifies all of that in a browser in every
+  deploy. Lighthouse (desktop, Performance workflow): **35–37 → 70** on all three
+  pages, LCP 7.8 s → 0.3–0.5 s, Speed Index → 0.3 s, CLS 0. Total blocking time
+  — the runtime starting — is what the score still loses.
+
+### Security
+
+- **`script-src` no longer allows every inline script** ([ADR 0031](docs/adr/0031-pin-inline-scripts-by-hash.md)).
+  The deploy hashes the inline scripts the published page actually carries and
+  replaces `'unsafe-inline'` with those hashes, then starts the app in a browser
+  against the pinned policy. The browser check caught the first version, which
+  had hashed a comment quoting `<script type="importmap">` together with the real
+  import map.
+- **Framework packages stay on the framework's major.** Dependabot had grouped
+  `Microsoft.AspNetCore.Authorization` 11.0.0 — a .NET 11 package — with ten
+  10.0.x patches, and the API failed at start-up. Majors of the framework-shipped
+  packages are ignored now; patches and minors still flow.
+
+### Fixed
+
+- **The app's only layout shift** (0.05 on `/working-time`). `EditableArea`
+  rendered nothing while the persona was being read, so the rules form arrived a
+  frame late and pushed every card down. It renders the same controls disabled
+  for that moment now.
+- **A question asked as a new run landed could vanish.** Since the assistant panel
+  was split out, the conversation was re-pointed after the run rather than inside
+  it, and for that await the suggestions were clickable against the old context.
+  CI found it on three pull requests in one night; the chat is closed while it is
+  being re-pointed.
+
+### Operations and onboarding
+
+- **OpenTelemetry in the API** ([ADR 0029](docs/adr/0029-opentelemetry-in-the-api.md)):
+  a `schedule.run` span with the reads and the search beneath it, run duration by
+  outcome, refused sign-ins by reason with no account in any tag, exported over
+  OTLP only when an endpoint is configured.
+- **A devcontainer and an "Open in GitHub Codespaces" button**, with a workflow
+  that builds that exact container and runs the engine and working-time suites in
+  it.
+- **Lighthouse on a phone, too**: the Performance workflow runs the mobile profile
+  on the same pages with the same gates — 70 on all three, accessibility, best
+  practices and SEO 100, LCP 1.4 s, CLS 0. Its first run found that only 43.8 % of
+  the dashboard's text was 12 px or larger on a phone; the small labels are at
+  least 12 px under 640 px now, and the dashboard reads 100 %.
+
+### Documentation
+
+- **Every README screenshot retaken**, and the capture test now produces all nine
+  rather than four, so none can go stale unseen again.
+
 ## [1.0.0] — 2026-11-11
 
 Every release before this one was started by driving the published application
@@ -909,7 +973,8 @@ Initial public release.
 - **CI/CD** — per-layer test workflows on pull requests and a test-gated
   GitHub Pages deployment.
 
-[Unreleased]: https://github.com/aco993/WorkPlanStudio/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/aco993/WorkPlanStudio/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/aco993/WorkPlanStudio/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/aco993/WorkPlanStudio/compare/v0.4.1...v1.0.0
 [0.4.1]: https://github.com/aco993/WorkPlanStudio/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/aco993/WorkPlanStudio/compare/v0.3.9...v0.4.0
