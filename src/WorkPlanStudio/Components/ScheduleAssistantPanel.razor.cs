@@ -67,6 +67,20 @@ public sealed partial class ScheduleAssistantPanel
     private string? _chatNotice;
     private bool _scrollChat;
 
+    /// <summary>
+    /// True from the moment a new run is handed in until the conversation has
+    /// been pointed at it. Re-pointing awaits the plant settings, and while the
+    /// page owned the conversation that happened before the run was declared
+    /// finished, inside the run itself. Once it moved here it happened after,
+    /// and for that await the suggestions were clickable against the old
+    /// context: a question asked then was wiped by the reset a moment later.
+    /// CI found it - three pull requests failed the chat tests in one night.
+    /// </summary>
+    private bool _preparing;
+
+    /// <summary>Whether the conversation can take a question right now.</summary>
+    private bool ChatClosed => _chatBusy || Chat.IsBusy || Running || _preparing;
+
     protected override async Task OnInitializedAsync() =>
         _aiEnabled = await Assistant.IsAiEnabledAsync(_lifetime.Token);
 
@@ -75,12 +89,19 @@ public sealed partial class ScheduleAssistantPanel
         if (ReferenceEquals(_narrated, Parameters))
             return;
         _narrated = Parameters;
+        _preparing = true;
+        try
+        {
+            // Instant, offline, deterministic explanation of the run just produced.
+            _narration = Result.Explanation is null ? null : await Assistant.ExplainAsync(Result.Explanation);
 
-        // Instant, offline, deterministic explanation of the run just produced.
-        _narration = Result.Explanation is null ? null : await Assistant.ExplainAsync(Result.Explanation);
-
-        // An old conversation would describe an old schedule.
-        await ResetChatAsync();
+            // An old conversation would describe an old schedule.
+            await ResetChatAsync();
+        }
+        finally
+        {
+            _preparing = false;
+        }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -148,7 +169,7 @@ public sealed partial class ScheduleAssistantPanel
         // matters most: the run about to land will point the conversation at a
         // different schedule, so a question let through now is answered into a
         // thread that is about to be cleared.
-        if (_chatBusy || Chat.IsBusy || Running || string.IsNullOrWhiteSpace(question))
+        if (ChatClosed || string.IsNullOrWhiteSpace(question))
             return;
 
         _chatBusy = true;
