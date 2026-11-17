@@ -1097,3 +1097,14 @@ select.input { cursor: pointer; }
 }
 .prerender-status::after { content: " " var(--blazor-load-percentage-text, ""); font-variant-numeric: tabular-nums; color: var(--text-muted); }
 .prerender-snapshot { cursor: progress; }
+
+/* Legible on a phone. Lighthouse's mobile run measured 56 % of the dashboard's
+   text under 12 px - the persona menu's descriptions, the plant-at-a-glance
+   labels, badges, table headings, codes - all set in fractions of a 15 px root
+   that land at 11.1 to 11.7 px. On a desktop they are secondary labels at
+   reading distance; on a phone they are the text. */
+@media (max-width: 640px) {
+    .persona-desc, .persona-hint, .persona-avatar,
+    .glance-list dt, .glance-kpi span,
+    .badge, .data-table th, .mono { font-size: max(12px, .8rem); }
+}

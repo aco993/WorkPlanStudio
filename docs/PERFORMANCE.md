@@ -153,6 +153,20 @@ npx http-server release/wwwroot -p 8080 -P "http://localhost:8080?" --gzip --bro
 npx lighthouse http://localhost:8080/ --preset=desktop
 ```
 
+And as a phone sees them — Lighthouse's mobile profile: 412 px, simulated slow 4G,
+a 4× slower CPU — same workflow (run 44043342064):
+
+| Page | Performance | Accessibility | Best practices | SEO | FCP | LCP | TBT | CLS |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| `/` | 70 | 100 | 100 | 100 | 1.2 s | 1.4 s | 12.5–12.9 s | 0 |
+| `/schedule` | 70 | 100 | 100 | 100 | 1.2 s | 1.4 s | 12.8–12.9 s | 0 |
+| `/working-time` | 70 | 100 | 100 | 100 | 1.2 s | 1.4 s | 12.0–12.3 s | 0 |
+
+The first mobile run had best practices at 96 on `/`: only 43.8 % of the dashboard's
+text was 12 px or larger on a phone. The labels below that size are at least 12 px
+under 640 px now, and the dashboard reads 100 %. Total blocking time on the mobile
+profile is the same runtime start as on desktop, four times slower by definition.
+
 **Seventy is the number, and the thirty it is missing are the runtime's.** What the
 reader came for now paints at 0.3–0.5 s: the page is rendered when the site is
 built, shown before the runtime exists, and handed over to the live application
