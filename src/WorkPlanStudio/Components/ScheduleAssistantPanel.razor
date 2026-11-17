@@ -96,7 +96,7 @@
             <div class="chat-suggestions">
                 @foreach (var suggestion in Chat.Suggestions)
                 {
-                    <button type="button" class="chip" disabled="@(_chatBusy || Chat.IsBusy || Running)" @onclick="() => AskAsync(suggestion)">@suggestion</button>
+                    <button type="button" class="chip" disabled="@(ChatClosed)" @onclick="() => AskAsync(suggestion)">@suggestion</button>
                 }
             </div>
 
@@ -106,8 +106,8 @@
                    refuses a longer question anyway, and without this the
                    field accepts a pasted megabyte and re-renders it. *@
                 <input id="chat-question" class="input" autocomplete="off" maxlength="1000" placeholder="@L["Chat_Placeholder"]"
-                       disabled="@(_chatBusy || Chat.IsBusy || Running)" @bind="_question" @bind:event="oninput" />
-                <button type="submit" class="btn btn-primary" disabled="@(_chatBusy || Chat.IsBusy || Running || string.IsNullOrWhiteSpace(_question))">@L["Chat_Send"]</button>
+                       disabled="@(ChatClosed)" @bind="_question" @bind:event="oninput" />
+                <button type="submit" class="btn btn-primary" disabled="@(ChatClosed || string.IsNullOrWhiteSpace(_question))">@L["Chat_Send"]</button>
                 @if (Chat.Turns.Count > 0)
                 {
                     @* Chat.IsBusy is the authority: _chatBusy only knows about
