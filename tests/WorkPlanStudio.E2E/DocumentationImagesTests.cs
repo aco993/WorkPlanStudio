@@ -42,7 +42,7 @@ public sealed class DocumentationImagesTests : IClassFixture<PlaywrightFixture>
     private static (int Width, int Height) Desktop => (1320, 980);
     private static (int Width, int Height) Phone => (390, 844);
 
-    private async Task<IPage> OpenAsync((int Width, int Height) viewport, string theme)
+    private async Task<IPage> OpenAsync((int Width, int Height) viewport, string theme, string culture = "en-US")
     {
         var context = await _fixture.Browser.NewContextAsync(new BrowserNewContextOptions
         {
@@ -59,21 +59,53 @@ public sealed class DocumentationImagesTests : IClassFixture<PlaywrightFixture>
         var page = await context.NewPageAsync();
         await page.GotoAsync($"{_fixture.BaseUrl}/");
         await page.EvaluateAsync("t => localStorage.setItem('workplanstudio.settings.theme', t)", theme);
+        await page.EvaluateAsync("c => localStorage.setItem('BlazorCulture', c)", culture);
         return page;
     }
 
-    private static async Task SaveAsync(IPage page, string relativePath)
+    private static string Target(string relativePath)
     {
         var target = Path.Combine(DocsDirectory, relativePath);
         Directory.CreateDirectory(Path.GetDirectoryName(target)!);
-        await page.ScreenshotAsync(new()
+        Xunit.TestContext.Current.SendDiagnosticMessage($"documentation image written: {target}");
+        return target;
+    }
+
+    private static Task SaveAsync(IPage page, string relativePath, bool fullPage = true) =>
+        page.ScreenshotAsync(new()
         {
-            Path = target,
-            FullPage = true,
+            Path = Target(relativePath),
+            FullPage = fullPage,
             Animations = ScreenshotAnimations.Disabled,
             Caret = ScreenshotCaret.Hide
         });
-        Xunit.TestContext.Current.SendDiagnosticMessage($"documentation image written: {target}");
+
+    private static Task SaveAsync(ILocator element, string relativePath) =>
+        element.ScreenshotAsync(new()
+        {
+            Path = Target(relativePath),
+            Animations = ScreenshotAnimations.Disabled,
+            Caret = ScreenshotCaret.Hide
+        });
+
+    /// <summary>Opens a route, waits for the live page to settle, and returns it.</summary>
+    private async Task<IPage> SettledAtAsync((int Width, int Height) viewport, string theme, string route, string culture = "en-US")
+    {
+        var page = await OpenAsync(viewport, theme, culture);
+        await AppReady.GotoAsync(page, $"{_fixture.BaseUrl}{route}");
+        await page.WaitForSelectorAsync(AppReady.ContentSelector, new() { Timeout = AppReady.BootTimeoutMilliseconds });
+        await AppReady.SettledAsync(page);
+        return page;
+    }
+
+    /// <summary>The schedule's assistant card after one suggested question has been answered on the device.</summary>
+    private async Task CaptureChatAsync(string culture, string relativePath)
+    {
+        var page = await SettledAtAsync(Desktop, "light", "/schedule", culture);
+        await page.ClickAsync(".chat-suggestions .chip");
+        await page.WaitForSelectorAsync(".chat-turn.assistant");
+        await AppReady.SettledAsync(page);
+        await SaveAsync(page.Locator(".assistant-card"), relativePath);
     }
 
     [Fact]
@@ -99,6 +131,17 @@ public sealed class DocumentationImagesTests : IClassFixture<PlaywrightFixture>
         await phoneSchedule.GotoAsync();
         await AppReady.SettledAsync(phone);
         await SaveAsync(phone, Path.Combine("images", "schedule-mobile.png"));
+
+        // --- the dashboard, both themes, the first screen a visitor gets ---
+        await SaveAsync(await SettledAtAsync(Desktop, "light", "/"), Path.Combine("images", "dashboard-light.png"), fullPage: false);
+        await SaveAsync(await SettledAtAsync(Desktop, "dark", "/"), Path.Combine("images", "dashboard-dark.png"), fullPage: false);
+
+        // --- working time: the rules, the averaging, the holidays ---
+        await SaveAsync(await SettledAtAsync(Desktop, "light", "/working-time"), Path.Combine("images", "working-time-light.png"));
+
+        // --- the chat, answered on the device, in both languages ---
+        await CaptureChatAsync("en-US", Path.Combine("images", "chat-en.png"));
+        await CaptureChatAsync("de-DE", Path.Combine("images", "chat-de.png"));
 
         // --- the pair the README uses to show one parameter changing everything ---
         //
