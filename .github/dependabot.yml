@@ -25,6 +25,22 @@ updates:
         patterns:
           - "Microsoft.*"
           - "System.*"
+    # The packages that ship with the shared framework carry its major version:
+    # Microsoft.AspNetCore.Authorization 11.0.0 is a .NET 11 package, and on the
+    # .NET 10 runtime it fails at start-up - MissingMethodException for
+    # IAuthorizationPolicyProvider.AllowsCachingPolicies, every API test red
+    # (pull request #108). Their majors arrive with a TargetFramework change,
+    # which is a decision with an ADR, not a weekly bump. Patches and minors on
+    # the 10.x line still flow, and auto-merge them.
+    ignore:
+      - dependency-name: "Microsoft.AspNetCore.*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "Microsoft.EntityFrameworkCore*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "Microsoft.Extensions.*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "System.*"
+        update-types: ["version-update:semver-major"]
 
   # Keep the GitHub Actions in the workflows current. The workflows pin each
   # action to a commit SHA with the tag in a trailing comment; Dependabot
