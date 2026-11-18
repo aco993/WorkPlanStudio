@@ -44,7 +44,7 @@ public sealed class ThreeFromTheSamePassTests : AppBunitContext
             CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("en-US");
             var cut = Render<WorkPlanStudio.Components.CultureSelector>();
 
-            cut.FindAll("button.culture-btn").Single(b => b.TextContent.Trim() == "DE").Click();
+            cut.FindAll("button.culture-btn").Single(b => b.GetAttribute("lang") == "de-DE").Click();
         }
         finally
         {

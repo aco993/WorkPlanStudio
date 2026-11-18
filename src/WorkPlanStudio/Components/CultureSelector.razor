@@ -20,7 +20,7 @@
                 aria-pressed="@(IsCurrent(option.Code) ? "true" : "false")"
                 title="@option.Name"
                 @onclick="() => SetCulture(option.Code)">
-            @option.Short
+            @option.Short<span class="sr-only"> · @option.Name</span>
         </button>
     }
 </div>

@@ -33,12 +33,12 @@ Die Zahlen wurden auf diesem Stand durch Ausführen jeder Suite gemessen; siehe
 | --- | --- | --: | --- | :---: | --- |
 | Engine: Unit, Property, Optimalität, exakter Löser, Architektur, Budgets | `tests/WorkPlanStudio.Scheduling.Tests` | **294** | Determinismus, Zulässigkeit, Regeln, Kalender und Sperrzeiten, Eingabeprüfung, allokationsfreie Bewertung, die Optimalitätsstudie über zwanzig Instanzen, das LP-Modell, ein abhängigkeitsfreier Kern | nein | ~5 s |
 | Arbeitszeit: Unit, Property, Architektur, Budgets | `tests/WorkPlanStudio.WorkingTime.Tests` | **255** | Feiertage aller 16 Länder über 1990–2200, Schichtmodelle, jede ArbZG-Vorschrift mit ihrem Parameter, die Ausgleichszeiträume, beide Zeitumstellungen, die Invarianten des Zeitleistenbauers | nein | ~1 s |
-| Daten, Mapping, Berechtigungen, Import, Komponenten, Assistent, Fernzugriff | `tests/WorkPlanStudio.Web.Tests` | **1 011** | echte SQLite-Bedingungen und Schemaaufwertungen, das Alles-oder-nichts-Mapping, die Rollenrichtlinien als geschlossene Menge, das Versprechen des Imports (Vorschau = Übernahme), lokalisierte Komponentenzustände, der zerlegte Lauf, der Optimalitätsbeweis, der Chat gegen feindliche Antworten | ja¹ | ~5 s |
+| Daten, Mapping, Berechtigungen, Import, Komponenten, Assistent, Fernzugriff | `tests/WorkPlanStudio.Web.Tests` | **1 014** | echte SQLite-Bedingungen und Schemaaufwertungen, das Alles-oder-nichts-Mapping, die Rollenrichtlinien als geschlossene Menge, das Versprechen des Imports (Vorschau = Übernahme), lokalisierte Komponentenzustände, der zerlegte Lauf, der Optimalitätsbeweis, der Chat gegen feindliche Antworten | ja¹ | ~5 s |
 | Backend: HTTP-Integration gegen eine echte SQLite-Datei | `tests/WorkPlanStudio.Api.Tests` | **93** | Anmeldung, Kontosperre, Ratenbegrenzung, Rotation und Wiederverwendungserkennung der Refresh-Tokens, 401/403 je Route, Concurrency-Stempel — und dass der Server den Plan erzeugt, den auch der Browser erzeugt hätte | nein | ~3 s |
 | Export-Writer: CSV, xlsx, PDF | `tests/WorkPlanStudio.Export.Tests` | **154** | die Bytes, zurückgelesen: Formel-Injektion, Maskierung, die Teile der Arbeitsmappe, die Objekttabelle des PDF, die Datumsregeln beider Sprachen | nein | <1 s |
 | End-to-End, Barrierefreiheit, Bildvergleich | `tests/WorkPlanStudio.E2E` | **102** | echtes Chromium: Planänderungen, Determinismus, Sprache, Arbeitszeit im Gantt, Fertigungsaufträge von Anfang bis Ende, Speicherwiederherstellung, Rollen, Farbschema, Tastatur, Mobilgerät, der Chat in beiden Sprachen; axe WCAG 2.2 AA auf jeder Route in hell, dunkel und auf Deutsch; neun Bildschirm-Baselines | Browser² | ~75 s |
 
-**1 807 Unit- und Integrationstests, dazu 102 Browsertests.** Zehn der Browsertests
+**1 810 Unit- und Integrationstests, dazu 102 Browsertests.** Zehn der Browsertests
 sind die Pixelvergleiche, und sie werden außerhalb von Linux mit einer Begründung
 *übersprungen*, die [ADR 0021](adr/0021-visual-baselines-linux-only.md) nennt, statt
 gegen eine Baseline zu vergleichen, die niemand erzeugt hat.
@@ -305,6 +305,37 @@ Mängel wurden von einer anderen Änderung behoben, die Fixierung scheiterte dar
 mit „die Seite ist besser geworden“, und der Eintrag wurde entfernt. Eine Fixierung
 bleibt, `heading-order` auf dem modalen Dialog, der sich mit einem `<h3>` unter einer
 Seite überschreibt, deren einzige andere Überschrift die `<h1>` ist.
+
+### 🔊 Was ein Screenreader bekommt — der Baum, den axe nicht vorliest
+
+axe prüft Regeln; es hört nicht zu. Am 18.11.2026 wurde jede Route in Chrome geöffnet
+und je zweierlei festgehalten: der Barrierefreiheitsbaum, den Chromium an NVDA, JAWS
+und VoiceOver übergibt (Playwrights `ariaSnapshot`), und ein vollständiger Gang durch
+die Seite mit Tab, mit Name und sichtbarem Fokus jeder Station.
+
+Was schon stimmte: ein `h1` je Seite, keine übersprungenen Überschriftenebenen, keine
+doppelten IDs, keine ins Leere zeigenden `aria-labelledby`/`describedby`, jede
+Tab-Station benannt, jeder Fokus sichtbar, zuerst ein Sprunglink, Live-Regionen auf
+jeder Seite, die etwas ändert.
+
+Was falsch war, obwohl keine Regel es meldet — auf der Live-Seite vor dieser Änderung:
+
+| Gefunden | Zu hören | Jetzt |
+| --- | --- | --- |
+| 51 unbenannte Bilder über die Routen, aus 19 dekorativen Symbolen ohne `aria-hidden` (Listen, Suche, Zeilenaktionen) | „Bild, Bild, Bild“ | verborgen; `ScreenReaderNamesTests` scheitert an einem unmarkierten `<svg>` |
+| Zeilenaktionen „Bearbeiten“, „Löschen“ | „Bearbeiten, Bearbeiten, Bearbeiten“ durch die Tabelle | „CNC-200 bearbeiten“, „WP-1003 löschen“, „Arbeitsgang 20 löschen“ |
+| „+“ vor jeder Neu-Schaltfläche | „plus Neuer Arbeitsplatz“ | das Zeichen ist verborgen |
+| Sprachschalter „EN“, „DE“ | buchstabiert | „EN · English“, „DE · Deutsch“ |
+| „Alle anzeigen“ auf der Übersicht | alle was? | „Alle anzeigen · Arbeitspläne“ |
+
+Erneut gegen den korrigierten Build: null unbenannte Bilder, derselbe vollständige
+Tab-Gang.
+
+**Nicht gemacht: eine Sitzung mit einem echten Screenreader.** NVDA ist auf der
+Maschine, auf der das gemacht wurde, nicht installiert, und der Baum ist, was ein
+Screenreader liest, nicht was er sagt — Ausführlichkeit, Lesereihenfolge über
+Live-Regionen und der wandernde Fokus des Gantt im Lesemodus lernt man nur durch
+Zuhören. Diese Sitzung ist der ehrliche nächste Schritt.
 
 ### 📏 Zielgröße — der Teil, den axe nicht sieht
 

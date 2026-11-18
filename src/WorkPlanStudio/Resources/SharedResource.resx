@@ -75,6 +75,10 @@
   <data name="Common_Close" xml:space="preserve"><value>Close</value></data>
   <data name="Common_Delete" xml:space="preserve"><value>Delete</value></data>
   <data name="Common_Edit" xml:space="preserve"><value>Edit</value></data>
+  <data name="Common_EditItem" xml:space="preserve"><value>Edit {0}</value></data>
+  <data name="Common_DeleteItem" xml:space="preserve"><value>Delete {0}</value></data>
+  <data name="Common_InUseItem" xml:space="preserve"><value>{0}: {1}</value></data>
+  <data name="Editor_DeleteOperation" xml:space="preserve"><value>Delete operation {0}</value></data>
   <data name="Common_View" xml:space="preserve"><value>View</value></data>
   <data name="Common_Back" xml:space="preserve"><value>Back</value></data>
   <data name="Common_Actions" xml:space="preserve"><value>Actions</value></data>
