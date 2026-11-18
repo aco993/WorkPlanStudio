@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.1] — 2026-11-18
+
+Two things a person meets before reading a line of code: what a link answers,
+and what a screen reader says.
+
 ### Fixed
 
 - **A direct link answered 404.** GitHub Pages served `/schedule` from `404.html`,
@@ -990,7 +995,8 @@ Initial public release.
 - **CI/CD** — per-layer test workflows on pull requests and a test-gated
   GitHub Pages deployment.
 
-[Unreleased]: https://github.com/aco993/WorkPlanStudio/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/aco993/WorkPlanStudio/compare/v1.1.1...HEAD
+[1.1.1]: https://github.com/aco993/WorkPlanStudio/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/aco993/WorkPlanStudio/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/aco993/WorkPlanStudio/compare/v0.4.1...v1.0.0
 [0.4.1]: https://github.com/aco993/WorkPlanStudio/compare/v0.4.0...v0.4.1
