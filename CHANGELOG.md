@@ -15,6 +15,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   route, read from the `@page` directives; those answer 200 without a redirect.
   Routes with a parameter keep the fallback.
 
+- **What a screen reader was handed.** axe passed every route; the accessibility
+  tree did not. 51 unnamed images from 19 decorative icons without `aria-hidden`,
+  row actions all named "Edit" or "Delete", a spoken "plus" before every New
+  button, language buttons spelled out letter by letter, and a "View all" with no
+  object. Icons are hidden, row actions name their row ("Edit CNC-200", "Delete
+  operation 20"), the languages say their names, and `ScreenReaderNamesTests`
+  holds all of it at the source. Checked on the tree and a full Tab walk of every
+  route; not yet with NVDA itself, which `docs/TESTING.md` says.
+
 ## [1.1.0] — 2026-11-17
 
 What 1.0.0 left open, closed: a reviewer can run the code without installing

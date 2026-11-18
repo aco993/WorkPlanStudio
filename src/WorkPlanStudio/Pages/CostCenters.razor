@@ -15,7 +15,7 @@
     </div>
     <AuthorizeView Policy="@Permissions.ManageMasterData">
         <button class="btn btn-primary" @onclick="() => New()">
-            <span class="btn-plus">+</span> @L["Md_CostCenters_New"]
+            <span class="btn-plus" aria-hidden="true">+</span> @L["Md_CostCenters_New"]
         </button>
     </AuthorizeView>
 </div>
@@ -34,7 +34,7 @@
 else if (_costCenters.Count == 0)
 {
     <div class="empty-state">
-        <svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2" /><path d="M3 10h18M7 15h4" /></svg>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="13" rx="2" /><path d="M3 10h18M7 15h4" /></svg>
         <p>@L["Md_CostCenters_Empty"]</p>
     </div>
 }
@@ -42,7 +42,7 @@ else
 {
     <div class="toolbar">
         <div class="search">
-            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
             <input type="search" aria-label="@L["Md_CostCenters_SearchPlaceholder"]"
                    placeholder="@L["Md_CostCenters_SearchPlaceholder"]"
                    value="@_search" @oninput="OnSearch" />
@@ -84,19 +84,19 @@ else
                             <td class="num muted">@usage</td>
                             <td class="actions-col">
                                 <AuthorizeView Policy="@Permissions.ManageMasterData">
-                                    <button class="icon-btn" aria-label="@L["Common_Edit"]" title="@L["Common_Edit"]" @onclick="() => Edit(costCenter)">
-                                        <svg viewBox="0 0 24 24"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
+                                    <button class="icon-btn" aria-label="@L["Common_EditItem", costCenter.Code]" title="@L["Common_Edit"]" @onclick="() => Edit(costCenter)">
+                                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
                                     </button>
                                     @if (usage > 0)
                                     {
-                                        <button class="icon-btn" disabled aria-label="@L["Md_CostCenters_InUse"]" title="@L["Md_CostCenters_InUse"]">
-                                            <svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" /></svg>
+                                        <button class="icon-btn" disabled aria-label="@L["Common_InUseItem", costCenter.Code, L["Md_CostCenters_InUse"]]" title="@L["Md_CostCenters_InUse"]">
+                                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" /></svg>
                                         </button>
                                     }
                                     else
                                     {
-                                        <button class="icon-btn danger" aria-label="@L["Common_Delete"]" title="@L["Common_Delete"]" @onclick="() => AskDelete(costCenter)">
-                                            <svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" /></svg>
+                                        <button class="icon-btn danger" aria-label="@L["Common_DeleteItem", costCenter.Code]" title="@L["Common_Delete"]" @onclick="() => AskDelete(costCenter)">
+                                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" /></svg>
                                         </button>
                                     }
                                 </AuthorizeView>

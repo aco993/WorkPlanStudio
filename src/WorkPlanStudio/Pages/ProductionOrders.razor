@@ -18,7 +18,7 @@
     </div>
     <AuthorizeView Policy="@Permissions.ManageOrders">
         <button class="btn btn-primary" @onclick="New">
-            <span class="btn-plus">+</span> @L["Orders_New"]
+            <span class="btn-plus" aria-hidden="true">+</span> @L["Orders_New"]
         </button>
     </AuthorizeView>
 </div>
@@ -37,7 +37,7 @@
 else if (_orders.Count == 0)
 {
     <div class="empty-state">
-        <svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2" /><path d="M9 9h6M9 13h6M9 17h3" /></svg>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2" /><path d="M9 9h6M9 13h6M9 17h3" /></svg>
         <p>@L["Orders_Empty"]</p>
     </div>
 }
@@ -50,7 +50,7 @@ else
     *@
     <div class="toolbar">
         <div class="search">
-            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
             <input type="search" aria-label="@L["Md_Orders_SearchPlaceholder"]"
                    placeholder="@L["Md_Orders_SearchPlaceholder"]"
                    value="@_search" @oninput="OnSearch" />
@@ -115,8 +115,8 @@ else
                                     @if (order.Status == ProductionOrderStatus.Draft)
                                     {
                                         <button class="btn btn-outline" @onclick="() => ReleaseAsync(order)">@L["Orders_Release"]</button>
-                                        <button class="icon-btn danger" aria-label="@L["Common_Delete"]" title="@L["Common_Delete"]" @onclick="() => AskDelete(order)">
-                                            <svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" /></svg>
+                                        <button class="icon-btn danger" aria-label="@L["Common_DeleteItem", order.OrderNumber]" title="@L["Common_Delete"]" @onclick="() => AskDelete(order)">
+                                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" /></svg>
                                         </button>
                                     }
                                     else if (order.Status == ProductionOrderStatus.Released)

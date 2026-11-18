@@ -113,7 +113,7 @@ public sealed class SchedulePage
 
     public async Task SwitchToGermanAsync()
     {
-        await Page.GetByRole(AriaRole.Button, new() { Name = "DE", Exact = true }).ClickAsync();
+        await Page.GetByRole(AriaRole.Button, new() { Name = "DE · Deutsch", Exact = true }).ClickAsync();
         await Page.WaitForSelectorAsync(".gantt, .empty-state", new() { Timeout = AppReady.BootTimeoutMilliseconds });
         _words = Vocabulary.German;
     }

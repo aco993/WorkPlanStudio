@@ -31,12 +31,12 @@ Counts measured on this tip by running each suite; see *Running the tests* below
 | --- | --- | --: | --- | :---: | --- |
 | Engine: unit, property, optimality, exact solver, architecture, budget | `tests/WorkPlanStudio.Scheduling.Tests` | **294** | determinism, feasibility, rules, calendars and blackouts, input validation, zero-allocation scoring, the twenty-instance optimality study, the LP model, a dependency-free core | no | ~5 s |
 | Working time: unit, property, architecture, budget | `tests/WorkPlanStudio.WorkingTime.Tests` | **255** | holidays for all 16 states across 1990–2200, shift patterns, every ArbZG rule with its parameter, the averaging windows, both daylight-saving transitions, the timeline builder's invariants | no | ~1 s |
-| Data, mapper, authorization, import, components, assistant, remote | `tests/WorkPlanStudio.Web.Tests` | **1 011** | real SQLite constraints and schema upgrades, the all-or-nothing mapper, the persona policies as a closed set, the CSV import's preview-equals-commit promise, localized component states, the sliced run, the optimality proof, the chat against hostile responses | yes¹ | ~5 s |
+| Data, mapper, authorization, import, components, assistant, remote | `tests/WorkPlanStudio.Web.Tests` | **1 014** | real SQLite constraints and schema upgrades, the all-or-nothing mapper, the persona policies as a closed set, the CSV import's preview-equals-commit promise, localized component states, the sliced run, the optimality proof, the chat against hostile responses | yes¹ | ~5 s |
 | Backend: HTTP integration against a real SQLite file | `tests/WorkPlanStudio.Api.Tests` | **93** | login, lockout, rate limiting, refresh-token rotation and reuse detection, 401/403 per route, concurrency stamps, and that the server produces the schedule the browser would have | no | ~3 s |
 | Export writers: CSV, xlsx, PDF | `tests/WorkPlanStudio.Export.Tests` | **154** | the bytes, read back: formula injection, quoting, the workbook's parts, the PDF's object table, both cultures' date rules | no | <1 s |
 | End-to-end, accessibility, visual regression | `tests/WorkPlanStudio.E2E` | **102** | real Chromium: schedule changes, determinism, language, working time on the Gantt, production orders end to end, storage recovery, personas, theme, keyboard, mobile, the chat in both languages; axe WCAG 2.2 AA on every route in light, dark and German; nine screen baselines | browser² | ~75 s |
 
-**1 807 unit and integration tests, plus 102 browser tests.** Ten of the browser
+**1 810 unit and integration tests, plus 102 browser tests.** Ten of the browser
 tests are the pixel comparisons, and they *skip* off Linux with a reason naming
 [ADR 0021](adr/0021-visual-baselines-linux-only.md) rather than comparing against
 a baseline nothing produced.
@@ -285,6 +285,34 @@ already proved that: the two defects pinned on the populated work-plan editor we
 fixed by another change, the pin then failed with "the page got better", and the
 entry was removed. One pin remains, `heading-order` on the modal dialog, which
 titles itself with an `<h3>` under a page whose only other heading is the `<h1>`.
+
+### 🔊 What a screen reader is handed — the tree axe does not read aloud
+
+axe checks rules; it does not listen. On 2026-11-18 every route was opened in
+Chrome and two things were recorded for each: the accessibility tree Chromium
+hands to NVDA, JAWS and VoiceOver (Playwright's `ariaSnapshot`), and a full walk of
+the page with Tab, noting each stop's name and whether its focus was visible.
+
+What was already right: one `h1` per page, no skipped heading levels, no duplicate
+ids, no broken `aria-labelledby`/`describedby`, every Tab stop named, every focus
+visible, a skip link first, live regions on every page that changes something.
+
+What was wrong, though no rule flags it — on the live site before this change:
+
+| Found | Heard | Now |
+| --- | --- | --- |
+| 51 unnamed images across the routes, from 19 decorative icons without `aria-hidden` (lists, search, row actions) | "image, image, image" | hidden; `ScreenReaderNamesTests` fails on an unmarked `<svg>` |
+| Row actions named "Edit", "Delete" | "Edit, Edit, Edit" down a table | "Edit CNC-200", "Delete WP-1003", "Delete operation 20" |
+| "+" in front of every New button | "plus New work center" | the sign is hidden |
+| Language buttons "EN", "DE" | letters spelled out | "EN · English", "DE · Deutsch" |
+| "View all" on the dashboard | all of what? | "View all · Work Plans" |
+
+Re-run on the fixed build: zero unnamed images, the same complete Tab walk.
+
+**Not done: a session with a real screen reader.** NVDA is not installed on the
+machine this was done on, and the tree is what a screen reader reads, not what it
+says — verbosity, reading order across live regions and the Gantt's roving focus
+in browse mode are only learned by listening. That session is the honest next step.
 
 ### 📏 Target size — the part axe cannot see
 

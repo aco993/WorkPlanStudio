@@ -198,7 +198,7 @@ else
             <div class="card-head pad">
                 <h2>@L["Editor_OperationsSection"]</h2>
                 <button class="btn btn-outline" @onclick="AddOperation">
-                    <span class="btn-plus">+</span> @L["Editor_AddOperation"]
+                    <span class="btn-plus" aria-hidden="true">+</span> @L["Editor_AddOperation"]
                 </button>
             </div>
 
@@ -302,8 +302,8 @@ else
                                     }
                                 </td>
                                 <td class="actions-col">
-                                    <button class="icon-btn danger" aria-label="@L["Common_Delete"]" title="@L["Common_Delete"]" @onclick="() => RemoveOperation(row)">
-                                        <svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" /></svg>
+                                    <button class="icon-btn danger" aria-label="@L["Editor_DeleteOperation", row.OperationNumber?.ToString(CultureInfo.CurrentCulture) ?? ""]" title="@L["Common_Delete"]" @onclick="() => RemoveOperation(row)">
+                                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" /></svg>
                                     </button>
                                 </td>
                             </tr>
