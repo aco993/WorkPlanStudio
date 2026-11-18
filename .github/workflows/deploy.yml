@@ -133,6 +133,13 @@ jobs:
       - name: Add SPA 404 fallback
         run: cp release/wwwroot/index.html release/wwwroot/404.html
 
+      # 404.html keeps the app running on any address, but answers it with
+      # status 404. Every top-level route gets its own <route>.html copy, which
+      # GitHub Pages serves for /<route> with 200 and no redirect; the list is
+      # read from the @page directives, so a new page is covered by itself.
+      - name: Give each route a page of its own
+        run: python3 .github/scripts/route_pages.py release/wwwroot src/WorkPlanStudio/Pages
+
       # Stop GitHub Pages' Jekyll from ignoring the _framework folder.
       - name: Add .nojekyll
         run: touch release/wwwroot/.nojekyll
