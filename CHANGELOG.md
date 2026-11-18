@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **A direct link answered 404.** GitHub Pages served `/schedule` from `404.html`,
+  so the app ran but the response said "not found" to crawlers, link checkers and
+  the browser console. The deploy now writes one `<route>.html` per top-level
+  route, read from the `@page` directives; those answer 200 without a redirect.
+  Routes with a parameter keep the fallback.
+
 ## [1.1.0] — 2026-11-17
 
 What 1.0.0 left open, closed: a reviewer can run the code without installing
