@@ -173,6 +173,7 @@ Die Kopfleiste lässt Sie **Planer** (alles), **Meister** (Aufträge freigeben u
 | --- | --- | --- |
 | Projektübersicht | [README.md](README.md) | dieses README |
 | Architektur | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | [docs/ARCHITECTURE.de.md](docs/ARCHITECTURE.de.md) |
+| Erwischt (was die Prüfungen fanden) | [docs/CAUGHT.md](docs/CAUGHT.md) | [docs/CAUGHT.de.md](docs/CAUGHT.de.md) |
 | Planungsalgorithmus | [docs/SCHEDULING.md](docs/SCHEDULING.md) | [docs/SCHEDULING.de.md](docs/SCHEDULING.de.md) |
 | Planungs-Assistent und Chat | [docs/AI-ASSISTANT.md](docs/AI-ASSISTANT.md) | [docs/AI-ASSISTANT.de.md](docs/AI-ASSISTANT.de.md) |
 | Teststrategie | [docs/TESTING.md](docs/TESTING.md) | [docs/TESTING.de.md](docs/TESTING.de.md) |
@@ -210,6 +211,7 @@ Dies ist ein öffentliches **Portfolio-Projekt**. Es nutzt eine generische Ferti
 | **Front-End** | `Pages/`, `wwwroot/css/app.css` | Blazor WebAssembly, ein Token-Designsystem, ein Gantt, das ohne Maus funktioniert, WCAG AA in zwei Sprachen |
 | **DevOps** | `.github/workflows` | CI je Schicht, Browser-Suite, CodeQL, Leistung, Abdeckungs-Badges, Auslieferung mit minimalen Rechten |
 | **Dokumentation** | `docs/`, ADRs, `AGENTS.md` | Entscheidungen festgehalten, Zahlen gemessen, Grenzen benannt |
+| **Urteilsvermögen** | [`docs/CAUGHT.de.md`](docs/CAUGHT.de.md) | jeder Fehler und jede falsche Behauptung, die die Prüfungen gefunden haben — auch die ersten Vermutungen des Autors — und was sie gefunden hat |
 
 Wenig Zeit? Der schnellste Rundgang ist `AGENTS.md` → `SchedulingEngine.cs` → `Exact/DisjunctiveBranchAndBound.cs` → `WorkingTimelineBuilder.cs` → `ScheduleMapper.cs` → `Pages/Schedule.razor`.
 
@@ -327,7 +329,7 @@ Die auslieferbare Seite liegt in `publish/wwwroot/` — 114 Dateien, 21,0 MB, da
 
 ## Hinweis zur KI-gestützten Entwicklung
 
-KI-Werkzeuge wurden intensiv eingesetzt, um Code, Tests und Dokumentation zu erzeugen und zu prüfen. Das Projekt wird nicht als vollständig handgeschrieben dargestellt. Der Autor bleibt verantwortlich für Spezifikation, Prüfung, Fehlersuche, Tests, Integration und die endgültigen Entscheidungen und kann jeden übernommenen Teil erklären. Ein Prozentsatz „KI-geschriebener Zeilen“ wird nicht behauptet, weil diese Zahl weder bekannt noch aussagekräftig ist; KI-Ausgabe wird nur nach Prüfung und ausführbarem Nachweis übernommen.
+KI-Werkzeuge wurden intensiv eingesetzt, um Code, Tests und Dokumentation zu erzeugen und zu prüfen. Das Projekt wird nicht als vollständig handgeschrieben dargestellt. Der Autor bleibt verantwortlich für Spezifikation, Prüfung, Fehlersuche, Tests, Integration und die endgültigen Entscheidungen und kann jeden übernommenen Teil erklären. Ein Prozentsatz „KI-geschriebener Zeilen“ wird nicht behauptet, weil diese Zahl weder bekannt noch aussagekräftig ist; KI-Ausgabe wird nur nach Prüfung und ausführbarem Nachweis übernommen. **[docs/CAUGHT.de.md](docs/CAUGHT.de.md)** hält fest, was dieser Nachweis gefunden hat — jeden Fehler und jede falsche Behauptung, was sie gefunden hat und wo die Korrektur steht.
 
 ## Lizenz
 
