@@ -494,6 +494,16 @@ Auftrag mit einem Satz statt eines Stack-Trace.
    Excel-Arbeitsmappe oder eine CSV-Datei
    ([ADR 0017](adr/0017-in-browser-export.md)).
 
+Ab dem zweiten Lauf stellt die Seite den Lauf neben den vorherigen (`RunComparison`,
+`RunComparisonCard`): die vier Kennzahlen vorher und nachher, *besser* oder
+*schlechter* nur dort, wo eine Richtung an sich besser ist (die Auslastung wird
+berichtet, nicht bewertet), und die geänderten Parameter. Sie sagt auch, warum sich
+die Läufe unterscheiden. Gleiche Parameter und gleiche Zahlen sind der Determinismus
+aus §8, sichtbar gemacht; gleiche Parameter und andere Zahlen heißen, dass sich die
+Daten des Werks geändert haben, nicht dass die Suche abgewichen ist; ein geänderter
+Parameter, der nichts bewegt hat, wird ausdrücklich so genannt. Im Beispielwerk ist der
+Wechsel von EDD zu FIFO genau dieser Fall, aus dem Grund in §5.
+
 ## 10. Umfang und mögliche Erweiterungen
 
 Bewusst außerhalb des Umfangs gelassen, um einfach und beweisbar korrekt zu bleiben:

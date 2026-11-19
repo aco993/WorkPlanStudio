@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Each run beside the one before it.** From the second run on, the schedule page
+  shows the four KPIs before and after, *better* or *worse* only where a direction is
+  better in itself, the parameters that changed, and why the runs differ — including
+  "same parameters, same schedule" (the search is deterministic), "same parameters,
+  different figures" (the data changed), and "you changed a rule and nothing moved",
+  which on the sample plant is what EDD → FIFO does. Open-source planning tools with a
+  Gantt generally stop at replacing one chart with the next.
+
 ### Fixed
 
 - **What NVDA actually said.** Run against Chrome with NVDA 2026.3, the app announced

@@ -1,0 +1,67 @@
+@using WorkPlanStudio.Services.Scheduling
+@inject IStringLocalizer<SharedResource> L
+
+@*
+    The previous run beside this one. Shown from the second run on, so the first
+    screen a visitor gets is the one ADR 0026 measured; a region with a heading
+    rather than a live region, because the run's own status line already announces
+    that a run finished, and this is something to read, not to be told.
+*@
+<section class="card run-comparison" aria-labelledby="run-comparison-title">
+    <div class="run-comparison-head">
+        <h2 id="run-comparison-title">@L["Cmp_Title"]</h2>
+        <p class="run-comparison-why">@Why</p>
+    </div>
+    <dl class="run-comparison-kpis">
+        @foreach (var row in Kpis)
+        {
+            <div class="cmp-kpi @Tone(row.Verdict)">
+                <dt>@row.Label</dt>
+                <dd>
+                    <span class="cmp-before">@row.Before</span>
+                    <span class="cmp-arrow" aria-hidden="true">→</span>
+                    <span class="sr-only">@L["Cmp_To"]</span>
+                    <span class="cmp-after">@row.After</span>
+                    @if (row.Verdict is Verdict.Better or Verdict.Worse)
+                    {
+                        <span class="cmp-verdict">@L[$"Cmp_{row.Verdict}"]</span>
+                    }
+                </dd>
+            </div>
+        }
+    </dl>
+    @if (Parameters.Count > 0)
+    {
+        <p class="run-comparison-changed">
+            <strong>@L["Cmp_Changed"]</strong>@(" ")
+            @for (var i = 0; i < Parameters.Count; i++)
+            {
+                var p = Parameters[i];
+                <span class="cmp-param">@p.Label: @p.Before <span aria-hidden="true">→</span><span class="sr-only"> @L["Cmp_To"] </span> @p.After</span>@(i < Parameters.Count - 1 ? " · " : "")
+            }
+        </p>
+    }
+</section>
+
+@code {
+    /// <summary>One line of the comparison, already formatted for this culture.</summary>
+    public sealed record Row(string Label, string Before, string After, Verdict Verdict);
+
+    /// <summary>The four KPIs, before and after.</summary>
+    [Parameter, EditorRequired] public IReadOnlyList<Row> Kpis { get; set; } = [];
+
+    /// <summary>The parameters that differ; empty when none do.</summary>
+    [Parameter] public IReadOnlyList<Row> Parameters { get; set; } = [];
+
+    /// <summary>Why the runs differ, or that they do not.</summary>
+    [Parameter, EditorRequired] public RunDifference Difference { get; set; }
+
+    private string Why => L[$"Cmp_Why_{Difference}"];
+
+    private static string Tone(Verdict verdict) => verdict switch
+    {
+        Verdict.Better => "cmp-better",
+        Verdict.Worse => "cmp-worse",
+        _ => "cmp-neutral"
+    };
+}

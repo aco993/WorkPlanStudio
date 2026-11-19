@@ -150,6 +150,14 @@
                 </div>
             </div>
 
+            @* What the last change did; see Components/RunComparisonCard.razor. *@
+            @if (_previousRun is { } previous && !_running)
+            {
+                <RunComparisonCard Kpis="ComparisonKpis(previous.Result)"
+                                   Parameters="ComparisonParameters(previous.Parameters)"
+                                   Difference="RunComparison.Difference(previous.Parameters, previous.Result.Kpis, _resultParameters, _result.Kpis)" />
+            }
+
             @* The chart and its text alternative; see Components/GanttChart.razor. *@
             <GanttChart Result="_result" />
 
@@ -394,12 +402,14 @@
         try
         {
             var parameters = _form.ToParameters();
+            var previous = _result is { HasData: true } ? (_result, _resultParameters) : ((ScheduleResult Result, SchedulingParameters Parameters)?)null;
             _result = await Scheduler.GenerateAsync(
                 parameters,
                 _form.MinutesPerWorkingDay,
                 new InlineProgress<ScheduleRunProgress>(OnProgress),
                 _runCancellation.Token);
             _resultParameters = parameters;
+            _previousRun = _result.HasData ? previous : null;
             _runAnnouncement = Announcement(_result);
         }
         catch (OperationCanceledException) when (_lifetimeCancellation.IsCancellationRequested)
@@ -539,6 +549,49 @@
             : value.ToString("0.###", CultureInfo.CurrentUICulture);
 
     /// <summary>
+
+    // ----- the previous run, for the comparison card -----
+
+    /// <summary>
+    /// The run before the one on screen, kept only once a second run has
+    /// succeeded. A cancelled or failed run leaves it alone, like everything else
+    /// that describes the schedule on screen.
+    /// </summary>
+    private (ScheduleResult Result, SchedulingParameters Parameters)? _previousRun;
+
+    private List<RunComparisonCard.Row> ComparisonKpis(ScheduleResult previous)
+    {
+        var now = _result!.Kpis;
+        var before = previous.Kpis;
+        string Format1(string kpi, double v, ScheduleKpis k) => kpi switch
+        {
+            "Makespan" or "Tardiness" => Hours((long)v),
+            "OnTime" => $"{(int)v}/{k.JobCount}",
+            _ => Percent(v)
+        };
+        return [.. RunComparison.Kpis(before, now).Select(c =>
+            new RunComparisonCard.Row(L[$"Sched_Kpi{c.Kpi}"], Format1(c.Kpi, c.Before, before), Format1(c.Kpi, c.After, now), c.Verdict))];
+    }
+
+    private List<RunComparisonCard.Row> ComparisonParameters(SchedulingParameters before)
+    {
+        var after = _resultParameters;
+        string Minutes(long seconds) => $"{Format.Number(seconds / 60m)} min";
+        RunComparisonCard.Row Row(string labelKey, string b, string a) => new(L[labelKey], b, a, Verdict.Unchanged);
+        return [.. RunComparison.ChangedParameters(before, after).Select(name => name switch
+        {
+            nameof(SchedulingParameters.DispatchRule) => Row("Sched_DispatchRule", DispatchLabel(before.DispatchRule), DispatchLabel(after.DispatchRule)),
+            nameof(SchedulingParameters.LocalSearchAcceptance) => Row("Run_Acceptance", AcceptanceLabel(before.LocalSearchAcceptance), AcceptanceLabel(after.LocalSearchAcceptance)),
+            nameof(SchedulingParameters.DueDateRule) => Row("Sched_DueRule", DueLabel(before.DueDateRule), DueLabel(after.DueDateRule)),
+            nameof(SchedulingParameters.TwkFlowFactor) => Row("Sched_TwkFactor", Format.Number((decimal)before.TwkFlowFactor, 1), Format.Number((decimal)after.TwkFlowFactor, 1)),
+            nameof(SchedulingParameters.NopSecondsPerOp) => Row("Sched_NopMinutes", Minutes(before.NopSecondsPerOp), Minutes(after.NopSecondsPerOp)),
+            nameof(SchedulingParameters.SlackSeconds) => Row("Sched_SlackMinutes", Minutes(before.SlackSeconds), Minutes(after.SlackSeconds)),
+            nameof(SchedulingParameters.ConstantAllowanceSeconds) => Row("Sched_ConMinutes", Minutes(before.ConstantAllowanceSeconds), Minutes(after.ConstantAllowanceSeconds)),
+            nameof(SchedulingParameters.MultiStartRuns) => Row("Sched_MultiStart", Format.Number(before.MultiStartRuns), Format.Number(after.MultiStartRuns)),
+            nameof(SchedulingParameters.LocalSearchMaxSteps) => Row("Sched_LocalSearch", Format.Number(before.LocalSearchMaxSteps), Format.Number(after.LocalSearchMaxSteps)),
+            _ => Row("Sched_Seed", before.Seed.ToString(CultureInfo.CurrentCulture), after.Seed.ToString(CultureInfo.CurrentCulture))
+        })];
+    }
 
     private string Hours(long seconds) => Format.Hours(seconds / 60m);
 

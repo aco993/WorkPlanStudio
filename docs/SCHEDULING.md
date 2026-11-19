@@ -461,6 +461,15 @@ rejection with a sentence rather than a stack trace.
    table and the KPI cards — and, on request, into a PDF, an Excel workbook or a
    CSV file ([ADR 0017](adr/0017-in-browser-export.md)).
 
+From the second run on, the page sets the run beside the one before it
+(`RunComparison`, `RunComparisonCard`): the four KPIs before and after, *better*
+or *worse* only where a direction is better in itself (utilisation is reported,
+not judged), and the parameters that changed. It also says why the runs differ.
+Same parameters and same figures is the determinism of §8 made visible; same
+parameters and different figures means the plant's data changed, not that the
+search wandered; a changed parameter that moved nothing is said in so many words.
+On the sample plant, switching EDD to FIFO is that last case, for the reason in §5.
+
 ## 10. Scope & possible extensions
 
 Kept out of scope on purpose, to stay simple and provably correct:
