@@ -29,6 +29,7 @@ to confirm a number, a CI floor meant to notice a suite shrinking.
 | Splitting the schedule page ([#97](https://github.com/aco993/WorkPlanStudio/pull/97)) moved the chat reset *after* the run: for one await the suggestions were clickable against the old context | a question asked as a run lands is silently wiped | the chat tests failing on three unrelated pull requests in one night | [#111](https://github.com/aco993/WorkPlanStudio/pull/111) |
 | Dependabot grouped `Microsoft.AspNetCore.Authorization` **11.0.0** (a .NET 11 package) with ten 10.0.x patches | the API fails at start-up | all 76 hosted API tests red on the dependency PR | [#112](https://github.com/aco993/WorkPlanStudio/pull/112) |
 | The persona switch was named "Working as" while it showed "Planner" — WCAG 2.5.3, level A, on every route | voice-control users cannot name the control | a newer axe in a Dependabot PR failing 38 of 76 browser tests | [#83](https://github.com/aco993/WorkPlanStudio/pull/83) |
+| The fix for NVDA hearing "Working asPlanner" was an `aria-label` — which no longer contained the visible text (the avatar's initial joined to the role) | WCAG 2.5.3 broken again, on every route, by the fix for a screen reader | axe's `label-content-name-mismatch` in the browser suite, 38 scans red | [#119](https://github.com/aco993/WorkPlanStudio/pull/119) |
 
 ## Caught by measuring instead of assuming
 
@@ -39,6 +40,7 @@ to confirm a number, a CI floor meant to notice a suite shrinking.
 | The engine's headline result was measured against the **wrong reference** (best dispatch order, not the optimum) | a claim about optimality that the code did not support | an independent exact solver written to check it | [ADR 0015](adr/0015-exact-solver.md) |
 | Only 43.8 % of the dashboard's text was 12 px or larger on a phone | unreadable labels for most people who open a portfolio link | the first mobile Lighthouse run | [#113](https://github.com/aco993/WorkPlanStudio/pull/113) |
 | 51 unnamed images, "Edit, Edit, Edit", a spoken "plus" — none of it an axe violation | noise for anyone using a screen reader | reading the accessibility tree route by route | [#117](https://github.com/aco993/WorkPlanStudio/pull/117) |
+| What NVDA said, which the tree did not show: every download percentage announced, "Working asPlanner", every icon button read twice | a screen-reader user hears noise for the whole first visit | NVDA 2026.3 itself, its debug log recording every utterance | [#119](https://github.com/aco993/WorkPlanStudio/pull/119) |
 | Turning off time-zone data saved 75 KB | export timestamps and "today" in UTC: yesterday's date near midnight | thinking through what reads `TimeZoneInfo.Local` before shipping | [PERFORMANCE.md](PERFORMANCE.md#four-levers-measured-none-shipped) |
 
 ## Caught in the author's own instruments

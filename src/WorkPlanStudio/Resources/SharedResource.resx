@@ -842,6 +842,15 @@
   <data name="Sched_Proof_Nothing" xml:space="preserve"><value>Nothing to prove — there is no schedule.</value></data>
   <data name="Sched_Proof_Failed" xml:space="preserve"><value>The optimality check could not be completed.</value></data>
   <data name="Sched_Proof_NotProvedNoBound" xml:space="preserve"><value>Not proved within {0}: the search closed neither the gap nor a useful bound.</value></data>
+  <data name="Cmp_Title" xml:space="preserve"><value>Compared with the previous run</value></data>
+  <data name="Cmp_To" xml:space="preserve"><value>to</value></data>
+  <data name="Cmp_Better" xml:space="preserve"><value>better</value></data>
+  <data name="Cmp_Worse" xml:space="preserve"><value>worse</value></data>
+  <data name="Cmp_Changed" xml:space="preserve"><value>What changed:</value></data>
+  <data name="Cmp_Why_Identical" xml:space="preserve"><value>Same parameters, same schedule: the search is deterministic, so running it again changes nothing.</value></data>
+  <data name="Cmp_Why_ParametersChanged" xml:space="preserve"><value>The differences below follow from the parameters you changed.</value></data>
+  <data name="Cmp_Why_DataChanged" xml:space="preserve"><value>The parameters are the same, so the difference comes from the plant's data: an order, a work center or a rule changed between the runs.</value></data>
+  <data name="Cmp_Why_ParametersChangedNoEffect" xml:space="preserve"><value>You changed a parameter, and not one figure moved: for this plant the two settings produce the same schedule.</value></data>
   <data name="Sched_Proof_Title" xml:space="preserve"><value>Is this the best possible schedule?</value></data>
   <data name="Sched_Proof_Lead" xml:space="preserve"><value>The schedule above comes from a search over the order jobs are dispatched in, and the best order is not always the best schedule. An exact branch-and-bound solver, sharing no code with that search, settles the question for plants small enough to finish while you wait.</value></data>
   <data name="Sched_Proof_Verdict_Optimal" xml:space="preserve"><value>Proved optimal</value></data>

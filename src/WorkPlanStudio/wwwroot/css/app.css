@@ -1111,3 +1111,19 @@ select.input { cursor: pointer; }
     .glance-list dt, .glance-kpi span,
     .badge, .data-table th, .mono { font-size: max(12px, .8rem); }
 }
+
+/* The previous run beside this one. Compact: it qualifies the KPI cards above it. */
+.run-comparison { padding: .9rem 1.2rem; margin: -.4rem 0 1.2rem; }
+.run-comparison-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: .2rem 1rem; }
+.run-comparison-head h2 { margin: 0; font-size: .95rem; }
+.run-comparison-why { margin: 0; color: var(--text-soft); font-size: .84rem; }
+.run-comparison-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: .5rem 1rem; margin: .7rem 0 0; }
+.cmp-kpi dt { font-size: .74rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; }
+.cmp-kpi dd { margin: .1rem 0 0; font-variant-numeric: tabular-nums; }
+.cmp-before { color: var(--text-muted); }
+.cmp-after { font-weight: 600; }
+.cmp-verdict { margin-left: .35rem; font-size: .74rem; font-weight: 600; padding: .05rem .45rem; border-radius: 100px; }
+.cmp-better .cmp-verdict { background: var(--green-soft); color: var(--green); }
+.cmp-worse .cmp-verdict { background: var(--red-soft); color: var(--red); }
+.run-comparison-changed { margin: .7rem 0 0; font-size: .86rem; color: var(--text-soft); }
+@media (max-width: 640px) { .cmp-kpi dt { font-size: max(12px, .8rem); } .cmp-verdict { font-size: max(12px, .8rem); } }

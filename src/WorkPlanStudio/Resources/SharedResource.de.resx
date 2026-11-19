@@ -842,6 +842,15 @@
   <data name="Sched_Proof_Nothing" xml:space="preserve"><value>Nichts zu beweisen — es gibt keinen Plan.</value></data>
   <data name="Sched_Proof_Failed" xml:space="preserve"><value>Die Optimalitätsprüfung konnte nicht abgeschlossen werden.</value></data>
   <data name="Sched_Proof_NotProvedNoBound" xml:space="preserve"><value>Innerhalb von {0} nicht bewiesen: die Suche hat weder die Lücke geschlossen noch eine brauchbare Schranke gefunden.</value></data>
+  <data name="Cmp_Title" xml:space="preserve"><value>Verglichen mit dem vorherigen Lauf</value></data>
+  <data name="Cmp_To" xml:space="preserve"><value>zu</value></data>
+  <data name="Cmp_Better" xml:space="preserve"><value>besser</value></data>
+  <data name="Cmp_Worse" xml:space="preserve"><value>schlechter</value></data>
+  <data name="Cmp_Changed" xml:space="preserve"><value>Was sich geändert hat:</value></data>
+  <data name="Cmp_Why_Identical" xml:space="preserve"><value>Dieselben Parameter, derselbe Plan: die Suche ist deterministisch, ein erneuter Lauf ändert nichts.</value></data>
+  <data name="Cmp_Why_ParametersChanged" xml:space="preserve"><value>Die Unterschiede unten folgen aus den Parametern, die Sie geändert haben.</value></data>
+  <data name="Cmp_Why_DataChanged" xml:space="preserve"><value>Die Parameter sind gleich, also kommt der Unterschied aus den Daten des Werks: ein Auftrag, ein Arbeitsplatz oder eine Regel hat sich zwischen den Läufen geändert.</value></data>
+  <data name="Cmp_Why_ParametersChangedNoEffect" xml:space="preserve"><value>Sie haben einen Parameter geändert, und keine Kennzahl hat sich bewegt: für dieses Werk ergeben beide Einstellungen denselben Plan.</value></data>
   <data name="Sched_Proof_Title" xml:space="preserve"><value>Ist das der bestmögliche Plan?</value></data>
   <data name="Sched_Proof_Lead" xml:space="preserve"><value>Der Plan oben stammt aus einer Suche über die Reihenfolge, in der Aufträge eingelastet werden – und die beste Reihenfolge ist nicht immer der beste Plan. Ein exakter Branch-and-Bound-Löser, der keinen Code mit dieser Suche teilt, beantwortet die Frage für Werke, die klein genug sind, um fertig zu werden, während Sie warten.</value></data>
   <data name="Sched_Proof_Verdict_Optimal" xml:space="preserve"><value>Optimalität bewiesen</value></data>
