@@ -131,14 +131,14 @@ public sealed class AViewerIsNotOfferedAnEditorTests : AppBunitContext
     {
         var guest = await ListAsync(WorkspaceRole.Guest, "guest-list.db");
 
-        // The name says what the button does and to which plan; the tooltip, which
-        // sits next to the row anyway, says only what it does.
+        // The name says what the button does and to which plan, and the tooltip
+        // says the same: a different title is read out by NVDA as a second text.
         Assert.All(
             guest.FindAll("tbody tr .actions-col button"),
             button =>
             {
                 Assert.StartsWith("Common_View WP-", button.GetAttribute("aria-label"), StringComparison.Ordinal);
-                Assert.Equal("Common_View", button.GetAttribute("title"));
+                Assert.Equal(button.GetAttribute("aria-label"), button.GetAttribute("title"));
             });
     }
 
@@ -150,6 +150,6 @@ public sealed class AViewerIsNotOfferedAnEditorTests : AppBunitContext
         Assert.Contains(
             planner.FindAll("tbody tr .actions-col button"),
             button => (button.GetAttribute("aria-label") ?? "").StartsWith("Common_Edit WP-", StringComparison.Ordinal)
-                      && button.GetAttribute("title") == "Common_Edit");
+                      && button.GetAttribute("title") == button.GetAttribute("aria-label"));
     }
 }

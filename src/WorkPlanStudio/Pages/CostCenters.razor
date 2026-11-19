@@ -84,18 +84,18 @@ else
                             <td class="num muted">@usage</td>
                             <td class="actions-col">
                                 <AuthorizeView Policy="@Permissions.ManageMasterData">
-                                    <button class="icon-btn" aria-label="@L["Common_EditItem", costCenter.Code]" title="@L["Common_Edit"]" @onclick="() => Edit(costCenter)">
+                                    <button class="icon-btn" aria-label="@L["Common_EditItem", costCenter.Code]" title="@L["Common_EditItem", costCenter.Code]" @onclick="() => Edit(costCenter)">
                                         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
                                     </button>
                                     @if (usage > 0)
                                     {
-                                        <button class="icon-btn" disabled aria-label="@L["Common_InUseItem", costCenter.Code, L["Md_CostCenters_InUse"]]" title="@L["Md_CostCenters_InUse"]">
+                                        <button class="icon-btn" disabled aria-label="@L["Common_InUseItem", costCenter.Code, L["Md_CostCenters_InUse"]]" title="@L["Common_InUseItem", costCenter.Code, L["Md_CostCenters_InUse"]]">
                                             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" /></svg>
                                         </button>
                                     }
                                     else
                                     {
-                                        <button class="icon-btn danger" aria-label="@L["Common_DeleteItem", costCenter.Code]" title="@L["Common_Delete"]" @onclick="() => AskDelete(costCenter)">
+                                        <button class="icon-btn danger" aria-label="@L["Common_DeleteItem", costCenter.Code]" title="@L["Common_DeleteItem", costCenter.Code]" @onclick="() => AskDelete(costCenter)">
                                             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" /></svg>
                                         </button>
                                     }

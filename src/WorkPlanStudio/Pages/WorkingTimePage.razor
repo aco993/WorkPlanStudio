@@ -401,7 +401,7 @@ else
                                 <td>@absence.Label</td>
                                 <td class="actions-col">
                                     <AuthorizeView Policy="@Permissions.ManageAbsences">
-                                        <button class="icon-btn danger" aria-label="@L["Common_DeleteItem", $"{absence.WorkCenter?.Code} {Format.DateTime(absence.Start)}"]" title="@L["Common_Delete"]" @onclick="() => RemoveAbsenceAsync(absence.Id)">
+                                        <button class="icon-btn danger" aria-label="@L["Common_DeleteItem", $"{absence.WorkCenter?.Code} {Format.DateTime(absence.Start)}"]" title="@L["Common_DeleteItem", $"{absence.WorkCenter?.Code} {Format.DateTime(absence.Start)}"]" @onclick="() => RemoveAbsenceAsync(absence.Id)">
                                             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" /></svg>
                                         </button>
                                     </AuthorizeView>

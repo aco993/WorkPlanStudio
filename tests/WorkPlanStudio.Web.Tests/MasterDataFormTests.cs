@@ -162,7 +162,8 @@ public sealed class MasterDataFormTests : AppBunitContext
         var row = cut.FindAll("tbody tr").Single(tr => tr.TextContent.Contains("WP-1001", StringComparison.Ordinal));
         var delete = row.QuerySelectorAll("button.icon-btn")[^1];
         Assert.True(delete.HasAttribute("disabled"));
-        Assert.Equal("WorkPlans_InUse", delete.GetAttribute("title"));
+        Assert.Equal("Common_InUseItem", delete.GetAttribute("title"));
+        Assert.Equal(delete.GetAttribute("aria-label"), delete.GetAttribute("title"));
 
         var service = new WorkPlanService(database);
         var plan = (await service.GetAllAsync(cancellationToken)).Single(p => p.PlanNumber == "WP-1001");

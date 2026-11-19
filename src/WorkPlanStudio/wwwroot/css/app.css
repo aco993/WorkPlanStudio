@@ -1095,7 +1095,10 @@ select.input { cursor: pointer; }
     background: var(--surface); color: var(--text); border: 1px solid var(--border); box-shadow: var(--shadow-sm);
     font-size: .82rem; font-weight: 500; white-space: nowrap;
 }
-.prerender-status::after { content: " " var(--blazor-load-percentage-text, ""); font-variant-numeric: tabular-nums; color: var(--text-muted); }
+/* The percentage is outside the live region: inside it, NVDA announced every
+   step - "1 %, 2 %, 75 %, 100 %". The region says the phase; the number is for
+   the eye. */
+.prerender-progress::after { content: " " var(--blazor-load-percentage-text, ""); font-variant-numeric: tabular-nums; color: var(--text-muted); }
 .prerender-snapshot { cursor: progress; }
 
 /* Legible on a phone. Lighthouse's mobile run measured 56 % of the dashboard's

@@ -302,7 +302,7 @@ else
                                     }
                                 </td>
                                 <td class="actions-col">
-                                    <button class="icon-btn danger" aria-label="@L["Editor_DeleteOperation", row.OperationNumber?.ToString(CultureInfo.CurrentCulture) ?? ""]" title="@L["Common_Delete"]" @onclick="() => RemoveOperation(row)">
+                                    <button class="icon-btn danger" aria-label="@L["Editor_DeleteOperation", row.OperationNumber?.ToString(CultureInfo.CurrentCulture) ?? ""]" title="@L["Editor_DeleteOperation", row.OperationNumber?.ToString(CultureInfo.CurrentCulture) ?? ""]" @onclick="() => RemoveOperation(row)">
                                         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" /></svg>
                                     </button>
                                 </td>

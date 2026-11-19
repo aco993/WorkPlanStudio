@@ -92,19 +92,19 @@ else
                         <td class="num">@Format.Euro(p.TotalCost)</td>
                         <td class="actions-col" @onclick:stopPropagation="true">
                             @* "Edit" for a persona that cannot edit is a label that lies about where the button goes. *@
-                            <button class="icon-btn" aria-label="@($"{OpenLabel} {p.PlanNumber}")" title="@OpenLabel" @onclick="() => Open(p.Id)">
+                            <button class="icon-btn" aria-label="@($"{OpenLabel} {p.PlanNumber}")" title="@($"{OpenLabel} {p.PlanNumber}")" @onclick="() => Open(p.Id)">
                                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
                             </button>
                             <AuthorizeView Policy="@Permissions.ManageMasterData">
                                 @if (_orderCounts.GetValueOrDefault(p.Id) > 0)
                                 {
-                                    <button class="icon-btn" disabled aria-label="@L["Common_InUseItem", p.PlanNumber, L["WorkPlans_InUse"]]" title="@L["WorkPlans_InUse"]">
+                                    <button class="icon-btn" disabled aria-label="@L["Common_InUseItem", p.PlanNumber, L["WorkPlans_InUse"]]" title="@L["Common_InUseItem", p.PlanNumber, L["WorkPlans_InUse"]]">
                                         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" /></svg>
                                     </button>
                                 }
                                 else
                                 {
-                                    <button class="icon-btn danger" aria-label="@L["Common_DeleteItem", p.PlanNumber]" title="@L["Common_Delete"]" @onclick="() => AskDelete(p)">
+                                    <button class="icon-btn danger" aria-label="@L["Common_DeleteItem", p.PlanNumber]" title="@L["Common_DeleteItem", p.PlanNumber]" @onclick="() => AskDelete(p)">
                                         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" /></svg>
                                     </button>
                                 }

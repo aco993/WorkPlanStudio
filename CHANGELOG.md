@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **What NVDA actually said.** Run against Chrome with NVDA 2026.3, the app announced
+  every step of the download percentage ("1 %… 2 %… 75 %…") because the number sat
+  inside a live region, read the persona switch as "Working asPlanner", and read every
+  icon button's tooltip as a second text ("Edit ASM-500, button, Edit"). The
+  percentage is outside the region now, the switch has one name, and an icon button's
+  tooltip is its name — a test holds that at the source.
+
 ## [1.1.1] — 2026-11-18
 
 Two things a person meets before reading a line of code: what a link answers,

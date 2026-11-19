@@ -24,8 +24,14 @@
         76 browser tests red at once, because this control is in the layout on
         every route.
     *@
-    <summary class="persona-summary" title="@L["Persona_Title"]">
-        <span class="sr-only">@L["Persona_Title"]</span>
+    @* The name comes from the content, so the visible role is part of it (WCAG
+       2.5.3, which axe checks). Blazor drops the whitespace between elements, and
+       the hidden label and the role reached NVDA as one word - "Working asPlanner",
+       measured with NVDA 2026.3 - so the space is an explicit text node. An
+       aria-label was tried first and failed axe's label-content-name-mismatch:
+       the visible text there is the avatar's initial joined to the role. *@
+    <summary class="persona-summary" title="@($"{L["Persona_Title"]} {L[$"Role_{Auth.CurrentRole}"]}")">
+        <span class="sr-only">@L["Persona_Title"]</span>@(" ")
         <span class="persona-avatar role-@Auth.CurrentRole.ToString().ToLowerInvariant()" aria-hidden="true">@Initial(Auth.CurrentRole)</span>
         <span class="persona-name">@L[$"Role_{Auth.CurrentRole}"]</span>
         <svg class="persona-caret" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
