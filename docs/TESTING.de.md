@@ -33,12 +33,12 @@ Die Zahlen wurden auf diesem Stand durch Ausführen jeder Suite gemessen; siehe
 | --- | --- | --: | --- | :---: | --- |
 | Engine: Unit, Property, Optimalität, exakter Löser, Architektur, Budgets | `tests/WorkPlanStudio.Scheduling.Tests` | **294** | Determinismus, Zulässigkeit, Regeln, Kalender und Sperrzeiten, Eingabeprüfung, allokationsfreie Bewertung, die Optimalitätsstudie über zwanzig Instanzen, das LP-Modell, ein abhängigkeitsfreier Kern | nein | ~5 s |
 | Arbeitszeit: Unit, Property, Architektur, Budgets | `tests/WorkPlanStudio.WorkingTime.Tests` | **255** | Feiertage aller 16 Länder über 1990–2200, Schichtmodelle, jede ArbZG-Vorschrift mit ihrem Parameter, die Ausgleichszeiträume, beide Zeitumstellungen, die Invarianten des Zeitleistenbauers | nein | ~1 s |
-| Daten, Mapping, Berechtigungen, Import, Komponenten, Assistent, Fernzugriff | `tests/WorkPlanStudio.Web.Tests` | **1 014** | echte SQLite-Bedingungen und Schemaaufwertungen, das Alles-oder-nichts-Mapping, die Rollenrichtlinien als geschlossene Menge, das Versprechen des Imports (Vorschau = Übernahme), lokalisierte Komponentenzustände, der zerlegte Lauf, der Optimalitätsbeweis, der Chat gegen feindliche Antworten | ja¹ | ~5 s |
+| Daten, Mapping, Berechtigungen, Import, Komponenten, Assistent, Fernzugriff | `tests/WorkPlanStudio.Web.Tests` | **1 015** | echte SQLite-Bedingungen und Schemaaufwertungen, das Alles-oder-nichts-Mapping, die Rollenrichtlinien als geschlossene Menge, das Versprechen des Imports (Vorschau = Übernahme), lokalisierte Komponentenzustände, der zerlegte Lauf, der Optimalitätsbeweis, der Chat gegen feindliche Antworten | ja¹ | ~5 s |
 | Backend: HTTP-Integration gegen eine echte SQLite-Datei | `tests/WorkPlanStudio.Api.Tests` | **93** | Anmeldung, Kontosperre, Ratenbegrenzung, Rotation und Wiederverwendungserkennung der Refresh-Tokens, 401/403 je Route, Concurrency-Stempel — und dass der Server den Plan erzeugt, den auch der Browser erzeugt hätte | nein | ~3 s |
 | Export-Writer: CSV, xlsx, PDF | `tests/WorkPlanStudio.Export.Tests` | **154** | die Bytes, zurückgelesen: Formel-Injektion, Maskierung, die Teile der Arbeitsmappe, die Objekttabelle des PDF, die Datumsregeln beider Sprachen | nein | <1 s |
 | End-to-End, Barrierefreiheit, Bildvergleich | `tests/WorkPlanStudio.E2E` | **102** | echtes Chromium: Planänderungen, Determinismus, Sprache, Arbeitszeit im Gantt, Fertigungsaufträge von Anfang bis Ende, Speicherwiederherstellung, Rollen, Farbschema, Tastatur, Mobilgerät, der Chat in beiden Sprachen; axe WCAG 2.2 AA auf jeder Route in hell, dunkel und auf Deutsch; neun Bildschirm-Baselines | Browser² | ~75 s |
 
-**1 810 Unit- und Integrationstests, dazu 102 Browsertests.** Zehn der Browsertests
+**1 811 Unit- und Integrationstests, dazu 102 Browsertests.** Zehn der Browsertests
 sind die Pixelvergleiche, und sie werden außerhalb von Linux mit einer Begründung
 *übersprungen*, die [ADR 0021](adr/0021-visual-baselines-linux-only.md) nennt, statt
 gegen eine Baseline zu vergleichen, die niemand erzeugt hat.
@@ -331,11 +331,24 @@ Was falsch war, obwohl keine Regel es meldet — auf der Live-Seite vor dieser �
 Erneut gegen den korrigierten Build: null unbenannte Bilder, derselbe vollständige
 Tab-Gang.
 
-**Nicht gemacht: eine Sitzung mit einem echten Screenreader.** NVDA ist auf der
-Maschine, auf der das gemacht wurde, nicht installiert, und der Baum ist, was ein
-Screenreader liest, nicht was er sagt — Ausführlichkeit, Lesereihenfolge über
-Live-Regionen und der wandernde Fokus des Gantt im Lesemodus lernt man nur durch
-Zuhören. Diese Sitzung ist der ehrliche nächste Schritt.
+**Dann mit NVDA selbst.** Am 19.11.2026 lief NVDA 2026.3 (portable Kopie, stummer
+Sprachausgabe, Debug-Protokoll — das Protokoll hält jede Äußerung fest) gegen Chrome,
+während die Seiten mit Tab durchlaufen wurden: einmal auf der Live-Seite, einmal auf
+einem lokalen Build mit den Korrekturen unten. Was es sagte, das der Baum nicht gezeigt
+hatte:
+
+| Auf der Live-Seite gehört | Ursache | Nach der Korrektur gehört |
+| --- | --- | --- |
+| „Starting the application 1 %… 2 %… 75 %… 100 %“ | der Prozentwert war CSS-Inhalt in der `role="status"`-Region, also war jeder Schritt eine neue Ansage | „WorkPlan Studio · downloading the application“, einmal |
+| „Working asPlanner, Schalter“ | Blazor entfernt den Leerraum zwischen verborgener Beschriftung und sichtbarer Rolle | „Working as Planner, Schalter“ |
+| „Edit ASM-500, Schalter, Edit“ | ein `title`, der vom Namen abweicht, wird als zweiter Text vorgelesen | „Edit ASM-500, Schalter“ |
+| die Details einer Gantt-Marke doppelt | dieselbe Ursache | einmal |
+
+`ScreenReaderNamesTests` hält jetzt auch den Tooltip jeder Symbolschaltfläche an ihrem
+Namen fest. Weiterhin nicht abgedeckt: Lesen im Lesemodus mit NVDAs eigenen Tasten (nur
+Tab wurde gesteuert), und in einem lokalen Lauf hörte NVDA den Startbildschirm statt des
+beim Build gerenderten Bildes, das es auf der Live-Seite gehört hatte — die
+Browserprüfung dieses Builds bestand, die Ursache wurde nicht gefunden.
 
 ### 📏 Zielgröße — der Teil, den axe nicht sieht
 

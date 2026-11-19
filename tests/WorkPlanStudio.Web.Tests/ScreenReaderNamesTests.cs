@@ -62,4 +62,31 @@ public sealed partial class ScreenReaderNamesTests
 
         Assert.True(offenders.Count == 0, "an icon button named only \"Edit\" or \"Delete\":\n" + string.Join('\n', offenders));
     }
+
+    /// <summary>
+    /// NVDA reads a <c>title</c> that differs from the name as a second text:
+    /// "Edit ASM-500, button, Edit", measured with NVDA 2026.3. An icon button's
+    /// tooltip is its name, word for word.
+    /// </summary>
+    [Fact]
+    public void An_icon_buttons_tooltip_is_its_name()
+    {
+        var offenders = RazorLines()
+            .Where(l => l.Text.Contains("class=\"icon-btn", StringComparison.Ordinal)
+                     && l.Text.Contains("aria-label=\"", StringComparison.Ordinal)
+                     && l.Text.Contains(" title=\"", StringComparison.Ordinal))
+            .Where(l =>
+            {
+                var a = l.Text.IndexOf("aria-label=\"", StringComparison.Ordinal) + "aria-label=\"".Length;
+                var e = l.Text.IndexOf("\" title=\"", a, StringComparison.Ordinal);
+                if (e < 0)
+                    return false;   // title before aria-label: compared by hand, not here
+                var label = l.Text[a..e];
+                return !l.Text[(e + "\" title=\"".Length)..].StartsWith(label + "\"", StringComparison.Ordinal);
+            })
+            .Select(l => $"{l.File}:{l.Line}")
+            .ToList();
+
+        Assert.True(offenders.Count == 0, "an icon button whose tooltip says something other than its name:\n" + string.Join('\n', offenders));
+    }
 }

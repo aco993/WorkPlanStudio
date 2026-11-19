@@ -83,7 +83,9 @@ public sealed class FourSmallTruthsTests : AppBunitContext
         var delete = used.QuerySelectorAll("button.icon-btn")[^1];
 
         Assert.True(delete.HasAttribute("disabled"));
-        Assert.Equal("WorkPlans_InUse", delete.GetAttribute("title"));
+        Assert.Equal("Common_InUseItem", delete.GetAttribute("title"));
+        // The tooltip is the accessible name, so NVDA has no second, different text to read out.
+        Assert.Equal(delete.GetAttribute("aria-label"), delete.GetAttribute("title"));
     }
 
     [Fact]
@@ -106,7 +108,9 @@ public sealed class FourSmallTruthsTests : AppBunitContext
         var delete = row.QuerySelectorAll("button.icon-btn")[^1];
 
         Assert.False(delete.HasAttribute("disabled"));
-        Assert.Equal("Common_Delete", delete.GetAttribute("title"));
+        Assert.Equal("Common_DeleteItem", delete.GetAttribute("title"));
+        // The tooltip is the accessible name, so NVDA has no second, different text to read out.
+        Assert.Equal(delete.GetAttribute("aria-label"), delete.GetAttribute("title"));
     }
 
     // ----- 3. "no room left" is not the same sentence as "something went wrong" -----

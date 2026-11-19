@@ -46,7 +46,7 @@
         .find((t) => t.dataset.prerenderRoute === route && t.dataset.prerenderCulture === culture);
     if (!template) { discard(); return; }
 
-    const status = holder.querySelector('.prerender-status');
+    const status = holder.querySelector('.prerender-status-text');
     if (status && culture === 'de-DE' && status.dataset.de) { status.textContent = status.dataset.de; }
     holder.querySelector('.prerender-snapshot').appendChild(template.content.cloneNode(true));
     holder.hidden = false;

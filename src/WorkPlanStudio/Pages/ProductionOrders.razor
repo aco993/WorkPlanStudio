@@ -115,7 +115,7 @@ else
                                     @if (order.Status == ProductionOrderStatus.Draft)
                                     {
                                         <button class="btn btn-outline" @onclick="() => ReleaseAsync(order)">@L["Orders_Release"]</button>
-                                        <button class="icon-btn danger" aria-label="@L["Common_DeleteItem", order.OrderNumber]" title="@L["Common_Delete"]" @onclick="() => AskDelete(order)">
+                                        <button class="icon-btn danger" aria-label="@L["Common_DeleteItem", order.OrderNumber]" title="@L["Common_DeleteItem", order.OrderNumber]" @onclick="() => AskDelete(order)">
                                             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" /></svg>
                                         </button>
                                     }

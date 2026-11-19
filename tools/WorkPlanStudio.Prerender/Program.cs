@@ -213,7 +213,7 @@ namespace WorkPlanStudio.Prerender
             var block = new StringBuilder();
             block.AppendLine(Marker);
             block.AppendLine("    <div id=\"prerendered\" hidden>");
-            block.AppendLine("        <p class=\"prerender-status\" role=\"status\" aria-live=\"polite\" data-de=\"Die Anwendung wird gestartet …\">Starting the application …</p>");
+            block.AppendLine("        <p class=\"prerender-status\"><span class=\"prerender-status-text\" role=\"status\" aria-live=\"polite\" data-de=\"Die Anwendung wird gestartet …\">Starting the application …</span><span class=\"prerender-progress\" aria-hidden=\"true\"></span></p>");
             block.AppendLine("        <div class=\"prerender-snapshot\" inert></div>");
             block.AppendLine("    </div>");
             foreach (var snapshot in snapshots)

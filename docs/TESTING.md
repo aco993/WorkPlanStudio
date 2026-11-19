@@ -31,12 +31,12 @@ Counts measured on this tip by running each suite; see *Running the tests* below
 | --- | --- | --: | --- | :---: | --- |
 | Engine: unit, property, optimality, exact solver, architecture, budget | `tests/WorkPlanStudio.Scheduling.Tests` | **294** | determinism, feasibility, rules, calendars and blackouts, input validation, zero-allocation scoring, the twenty-instance optimality study, the LP model, a dependency-free core | no | ~5 s |
 | Working time: unit, property, architecture, budget | `tests/WorkPlanStudio.WorkingTime.Tests` | **255** | holidays for all 16 states across 1990–2200, shift patterns, every ArbZG rule with its parameter, the averaging windows, both daylight-saving transitions, the timeline builder's invariants | no | ~1 s |
-| Data, mapper, authorization, import, components, assistant, remote | `tests/WorkPlanStudio.Web.Tests` | **1 014** | real SQLite constraints and schema upgrades, the all-or-nothing mapper, the persona policies as a closed set, the CSV import's preview-equals-commit promise, localized component states, the sliced run, the optimality proof, the chat against hostile responses | yes¹ | ~5 s |
+| Data, mapper, authorization, import, components, assistant, remote | `tests/WorkPlanStudio.Web.Tests` | **1 015** | real SQLite constraints and schema upgrades, the all-or-nothing mapper, the persona policies as a closed set, the CSV import's preview-equals-commit promise, localized component states, the sliced run, the optimality proof, the chat against hostile responses | yes¹ | ~5 s |
 | Backend: HTTP integration against a real SQLite file | `tests/WorkPlanStudio.Api.Tests` | **93** | login, lockout, rate limiting, refresh-token rotation and reuse detection, 401/403 per route, concurrency stamps, and that the server produces the schedule the browser would have | no | ~3 s |
 | Export writers: CSV, xlsx, PDF | `tests/WorkPlanStudio.Export.Tests` | **154** | the bytes, read back: formula injection, quoting, the workbook's parts, the PDF's object table, both cultures' date rules | no | <1 s |
 | End-to-end, accessibility, visual regression | `tests/WorkPlanStudio.E2E` | **102** | real Chromium: schedule changes, determinism, language, working time on the Gantt, production orders end to end, storage recovery, personas, theme, keyboard, mobile, the chat in both languages; axe WCAG 2.2 AA on every route in light, dark and German; nine screen baselines | browser² | ~75 s |
 
-**1 810 unit and integration tests, plus 102 browser tests.** Ten of the browser
+**1 811 unit and integration tests, plus 102 browser tests.** Ten of the browser
 tests are the pixel comparisons, and they *skip* off Linux with a reason naming
 [ADR 0021](adr/0021-visual-baselines-linux-only.md) rather than comparing against
 a baseline nothing produced.
@@ -309,10 +309,23 @@ What was wrong, though no rule flags it — on the live site before this change:
 
 Re-run on the fixed build: zero unnamed images, the same complete Tab walk.
 
-**Not done: a session with a real screen reader.** NVDA is not installed on the
-machine this was done on, and the tree is what a screen reader reads, not what it
-says — verbosity, reading order across live regions and the Gantt's roving focus
-in browse mode are only learned by listening. That session is the honest next step.
+**Then with NVDA itself.** On 2026-11-19 NVDA 2026.3 (portable copy, silent
+synthesiser, debug log — the log records every utterance) was run against Chrome while
+the pages were walked with Tab: once on the live site, once on a local build with the
+fixes below. What it said that the tree had not shown:
+
+| Heard on the live site | Cause | Heard after the fix |
+| --- | --- | --- |
+| "Starting the application 1 %… 2 %… 75 %… 100 %" | the percentage was CSS content inside the `role="status"` region, so every step was a new announcement | "WorkPlan Studio · downloading the application", once |
+| "Working asPlanner, button" | Blazor drops the whitespace between the hidden label and the visible role | "Working as Planner, button" |
+| "Edit ASM-500, button, Edit" | a `title` that differs from the name is read as a second text | "Edit ASM-500, button" |
+| a Gantt mark's details read twice | same cause | read once |
+
+`ScreenReaderNamesTests` now also holds every icon button's tooltip to its name. Still
+not covered: browse-mode reading with NVDA's own keys (only Tab was driven), and in one
+local run NVDA heard the boot screen rather than the build-time picture, which on the
+live site it had heard — the in-browser check of that build passed, and the cause was
+not found.
 
 ### 📏 Target size — the part axe cannot see
 

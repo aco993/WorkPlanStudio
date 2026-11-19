@@ -24,8 +24,10 @@
         76 browser tests red at once, because this control is in the layout on
         every route.
     *@
-    <summary class="persona-summary" title="@L["Persona_Title"]">
-        <span class="sr-only">@L["Persona_Title"]</span>
+    @* aria-label rather than a hidden span: Blazor drops the whitespace between
+       elements, so the two texts reached NVDA as one word - "Working asPlanner",
+       measured with NVDA 2026.3. The visible role stays inside the name. *@
+    <summary class="persona-summary" title="@($"{L["Persona_Title"]} {L[$"Role_{Auth.CurrentRole}"]}")" aria-label="@($"{L["Persona_Title"]} {L[$"Role_{Auth.CurrentRole}"]}")">
         <span class="persona-avatar role-@Auth.CurrentRole.ToString().ToLowerInvariant()" aria-hidden="true">@Initial(Auth.CurrentRole)</span>
         <span class="persona-name">@L[$"Role_{Auth.CurrentRole}"]</span>
         <svg class="persona-caret" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
