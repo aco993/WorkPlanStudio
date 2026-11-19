@@ -173,6 +173,7 @@ The top bar lets you be the **Planner** (everything), the **Supervisor** (releas
 | --- | --- | --- |
 | Project overview | this README | [README.de.md](README.de.md) |
 | Architecture | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | [docs/ARCHITECTURE.de.md](docs/ARCHITECTURE.de.md) |
+| Caught (what the checks found) | [docs/CAUGHT.md](docs/CAUGHT.md) | [docs/CAUGHT.de.md](docs/CAUGHT.de.md) |
 | Scheduling algorithm | [docs/SCHEDULING.md](docs/SCHEDULING.md) | [docs/SCHEDULING.de.md](docs/SCHEDULING.de.md) |
 | Schedule assistant and chat | [docs/AI-ASSISTANT.md](docs/AI-ASSISTANT.md) | [docs/AI-ASSISTANT.de.md](docs/AI-ASSISTANT.de.md) |
 | Testing strategy | [docs/TESTING.md](docs/TESTING.md) | [docs/TESTING.de.md](docs/TESTING.de.md) |
@@ -210,6 +211,7 @@ This is a public **portfolio** project. It uses a generic manufacturing domain a
 | **Front-end** | `Pages/`, `wwwroot/css/app.css` | Blazor WebAssembly, a tokenised design system, a Gantt that works without a mouse, WCAG AA in two languages |
 | **DevOps** | `.github/workflows` | per-layer CI, browser suite, CodeQL, performance, coverage badges, least-privilege gated deploy |
 | **Documentation** | `docs/`, ADRs, `AGENTS.md` | decisions recorded, numbers measured, limitations stated |
+| **Judgment** | [`docs/CAUGHT.md`](docs/CAUGHT.md) | every defect and wrong claim the checks caught — including the author's own first guesses — and what caught it |
 
 Short on time? The fastest tour is `AGENTS.md` → `SchedulingEngine.cs` → `Exact/DisjunctiveBranchAndBound.cs` → `WorkingTimelineBuilder.cs` → `ScheduleMapper.cs` → `Pages/Schedule.razor`.
 
@@ -327,7 +329,7 @@ The deployable site is in `publish/wwwroot/` — 114 files, 21.0 MB, plus 6.1 MB
 
 ## AI-assisted development disclosure
 
-AI tools were used intensively to generate and review code, tests and documentation. The project is not represented as entirely hand-written. The author remains responsible for the specification, verification, debugging, tests, integration and final engineering decisions, and can explain every accepted part. No percentage of "AI-written lines" is claimed because that number is neither known nor meaningful; AI output is accepted only after review and executable evidence.
+AI tools were used intensively to generate and review code, tests and documentation. The project is not represented as entirely hand-written. The author remains responsible for the specification, verification, debugging, tests, integration and final engineering decisions, and can explain every accepted part. No percentage of "AI-written lines" is claimed because that number is neither known nor meaningful; AI output is accepted only after review and executable evidence. **[docs/CAUGHT.md](docs/CAUGHT.md)** is the record of what that evidence caught — every defect and wrong claim, what found it, and where the fix is.
 
 ## License
 
