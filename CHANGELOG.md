@@ -7,7 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] — 2026-11-19
+
+Two things a reviewer asks of a project built with AI help: whether the author can
+tell when it is wrong, and whether it has been checked by the people it is for. This
+release answers the first with a ledger of what the checks caught, and the second
+with a real screen reader. And a planner gets to see what a change did.
+
 ### Added
+
+- **What the checks caught** — `docs/CAUGHT.md` (EN/DE): every real defect and wrong
+  claim, what it would have cost, what caught it and where the fix is, grouped by the
+  kind of instrument that found it, including the author's own first guesses and the
+  bugs in the author's own tools. Linked from the AI disclosure.
 
 - **Each run beside the one before it.** From the second run on, the schedule page
   shows the four KPIs before and after, *better* or *worse* only where a direction is
@@ -1014,7 +1026,8 @@ Initial public release.
 - **CI/CD** — per-layer test workflows on pull requests and a test-gated
   GitHub Pages deployment.
 
-[Unreleased]: https://github.com/aco993/WorkPlanStudio/compare/v1.1.1...HEAD
+[Unreleased]: https://github.com/aco993/WorkPlanStudio/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/aco993/WorkPlanStudio/compare/v1.1.1...v1.2.0
 [1.1.1]: https://github.com/aco993/WorkPlanStudio/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/aco993/WorkPlanStudio/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/aco993/WorkPlanStudio/compare/v0.4.1...v1.0.0

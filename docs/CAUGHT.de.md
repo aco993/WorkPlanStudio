@@ -31,6 +31,7 @@ dass eine Suite schrumpft.
 | Das Aufteilen der Planungsseite ([#97](https://github.com/aco993/WorkPlanStudio/pull/97)) verschob das Zurücksetzen des Chats *hinter* den Lauf: für ein `await` waren die Vorschläge gegen den alten Kontext klickbar | eine Frage, die mit dem Ende eines Laufs zusammenfällt, verschwindet still | die Chat-Tests, die in einer Nacht auf drei unabhängigen Pull Requests scheiterten | [#111](https://github.com/aco993/WorkPlanStudio/pull/111) |
 | Dependabot bündelte `Microsoft.AspNetCore.Authorization` **11.0.0** (ein .NET-11-Paket) mit zehn 10.0.x-Patches | die API scheitert beim Start | alle 76 gehosteten API-Tests rot auf dem Abhängigkeits-PR | [#112](https://github.com/aco993/WorkPlanStudio/pull/112) |
 | Der Rollenschalter hieß „Working as“, zeigte aber „Planner“ — WCAG 2.5.3, Stufe A, auf jeder Route | Sprachsteuerung kann das Element nicht benennen | ein neueres axe in einem Dependabot-PR, das 38 von 76 Browsertests scheitern ließ | [#83](https://github.com/aco993/WorkPlanStudio/pull/83) |
+| Die Korrektur für NVDAs „Working asPlanner“ war ein `aria-label` — das den sichtbaren Text nicht mehr enthielt (Initiale des Avatars plus Rolle) | WCAG 2.5.3 erneut verletzt, auf jeder Route, durch die Korrektur für einen Screenreader | axes `label-content-name-mismatch` in der Browser-Suite, 38 Scans rot | [#119](https://github.com/aco993/WorkPlanStudio/pull/119) |
 
 ## Gefunden durch Messen statt Annehmen
 
@@ -41,6 +42,7 @@ dass eine Suite schrumpft.
 | Das Kernergebnis der Engine war gegen den **falschen Maßstab** gemessen (beste Einlastungsreihenfolge statt Optimum) | eine Aussage zur Optimalität, die der Code nicht trug | ein unabhängiger exakter Löser, geschrieben, um sie zu prüfen | [ADR 0015](adr/0015-exact-solver.md) |
 | Nur 43,8 % des Texts der Übersicht waren auf dem Telefon 12 px oder größer | unlesbare Beschriftungen für die meisten, die einen Portfolio-Link öffnen | der erste mobile Lighthouse-Lauf | [#113](https://github.com/aco993/WorkPlanStudio/pull/113) |
 | 51 unbenannte Bilder, „Bearbeiten, Bearbeiten, Bearbeiten“, ein gesprochenes „plus“ — nichts davon ein axe-Verstoß | Lärm für alle, die einen Screenreader nutzen | Lesen des Barrierefreiheitsbaums Route für Route | [#117](https://github.com/aco993/WorkPlanStudio/pull/117) |
+| Was NVDA sagte, das der Baum nicht zeigte: jeder Download-Prozentwert angesagt, „Working asPlanner“, jede Symbolschaltfläche doppelt | Lärm für Screenreader-Nutzer während des gesamten ersten Besuchs | NVDA 2026.3 selbst, sein Debug-Protokoll mit jeder Äußerung | [#119](https://github.com/aco993/WorkPlanStudio/pull/119) |
 | Zeitzonendaten abschalten sparte 75 KB | Export-Zeitstempel und „heute“ in UTC: kurz vor Mitternacht das Datum von gestern | Durchdenken, was `TimeZoneInfo.Local` liest, vor dem Ausliefern | [PERFORMANCE.de.md](PERFORMANCE.de.md#vier-hebel-gemessen-keiner-übernommen) |
 
 ## Gefunden in den eigenen Instrumenten des Autors
