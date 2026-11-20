@@ -58,7 +58,7 @@
             which was an accurate description of a defect.
         *@
         <div class="gantt" @ref="_chart" role="region" aria-label="@L["Sched_Gantt"]" aria-describedby="gantt-help" tabindex="0"
-             style="--gantt-zoom:@_zoom">
+             style="--gantt-zoom:@_zoom;--gantt-ticks:@AxisTicks().Count()">
             @for (var lane = 0; lane < Result.Rows.Count; lane++)
             {
                 var laneIndex = lane;

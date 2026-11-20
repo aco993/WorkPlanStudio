@@ -578,7 +578,9 @@ select.input { cursor: pointer; }
 /* 32px, so a bar inset by 4 is 24 tall and clears 2.5.8 in that dimension.
    Their width is the one thing here that cannot be padded - it is the
    operation's duration - see docs/TESTING.md on target size. */
-.gantt-track { position: relative; flex: 1; height: 40px; background: var(--surface-2); border-radius: 6px; min-width: 340px; }
+/* Never narrower than its tick labels need: on a phone a week at 340 px put
+   "Tue 2 Jun" on top of "Wed 3 Jun"; the chart scrolls instead. */
+.gantt-track { position: relative; flex: 1; height: 40px; background: var(--surface-2); border-radius: 6px; min-width: max(340px, calc(var(--gantt-ticks, 0) * 4.4rem)); }
 .gantt-grid { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--border-strong); opacity: .45; }
 /* Bars and closed stretches are <button>s: they carry the only explanation of why
    a machine ran or stood still, so they have to be reachable by something other
@@ -610,7 +612,7 @@ select.input { cursor: pointer; }
 .gantt-table-toggle { margin-left: auto; }
 .gantt-axis { display: flex; align-items: center; gap: .8rem; margin-top: 2px; height: 20px; }
 .gantt-axis .gantt-label { background: var(--surface); }
-.gantt-axis .gantt-track { height: 20px; background: none; min-width: 340px; }
+.gantt-axis .gantt-track { height: 20px; background: none; }
 .gantt-tick { position: absolute; top: 0; transform: translateX(-50%); font-size: max(12px, .78rem); color: var(--text-muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .gantt-zoom { display: inline-flex; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
 .gantt-zoom .btn { border-radius: 0; min-width: 44px; }
