@@ -524,6 +524,9 @@
   <data name="Ui_GanttHelp" xml:space="preserve"><value>Pfeiltasten wechseln zwischen Arbeitsgängen und geschlossenen Zeiten, Eingabetaste liest den fokussierten Eintrag vor, Escape blendet ihn aus.</value></data>
   <data name="Ui_GanttShowTable" xml:space="preserve"><value>Als Tabelle anzeigen</value></data>
   <data name="Ui_GanttHideTable" xml:space="preserve"><value>Tabelle ausblenden</value></data>
+  <data name="Ui_GanttZoom" xml:space="preserve"><value>Zoom</value></data>
+  <data name="Ui_GanttZoomFit" xml:space="preserve"><value>Einpassen</value></data>
+  <data name="Ui_GanttZoomTimes" xml:space="preserve"><value>{0}×</value></data>
   <data name="Ui_GanttTableCaption" xml:space="preserve"><value>Alle Arbeitsgänge und geschlossenen Zeiten des Diagramms, Arbeitsplatz für Arbeitsplatz</value></data>
   <data name="Ui_ColStart" xml:space="preserve"><value>Beginn</value></data>
   <data name="Ui_ColEnd" xml:space="preserve"><value>Ende</value></data>

@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **A Gantt chart you can read.** A week drawn across one card left most operations a
+  few pixels wide, and every bar printed its order number for the edge to cut to
+  "PO-10" or "P"; the lane names were cut the same way. Now a bar shows what its own
+  width can carry — the job's letter (the same one the jobs table uses), then the
+  order number, then the operation — and a key under the chart maps letters to
+  orders. Lanes show the work-center code in bold with its name beneath, pinned on
+  the left. A **Fit / 2× / 4×** control widens the time axis inside the chart's own
+  scroll area, with finer ticks as it zooms. Axis and label text is at least 12 px,
+  lanes are taller, and closed-time shading is lighter so the bars read first.
+
 ## [1.2.0] — 2026-11-19
 
 Two things a reviewer asks of a project built with AI help: whether the author can

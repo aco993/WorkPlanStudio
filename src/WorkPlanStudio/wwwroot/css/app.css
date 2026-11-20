@@ -557,22 +557,47 @@ select.input { cursor: pointer; }
 .btn-ico { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 
 /* Gantt chart */
-.gantt { display: flex; flex-direction: column; gap: 6px; overflow-x: auto; scroll-behavior: smooth; }
+/* --gantt-zoom is how many card-widths the time axis spans (the Fit / 2x / 4x
+   control). Rows and the axis grow with it inside the chart's own scroll area;
+   the lane names are sticky, so a zoomed chart never loses which machine is which. */
+.gantt { --gantt-label-w: 168px; display: flex; flex-direction: column; gap: 6px; overflow-x: auto; scroll-behavior: smooth; padding-bottom: 2px; }
+.gantt-row, .gantt-axis {
+    flex-shrink: 0;
+    width: calc((100% - var(--gantt-label-w) - .8rem) * var(--gantt-zoom, 1) + var(--gantt-label-w) + .8rem);
+}
 .gantt:focus-visible, .chat-thread:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; border-radius: var(--radius-sm); }
 .gantt-row { display: flex; align-items: center; gap: .8rem; }
-.gantt-label { width: 150px; flex-shrink: 0; font-size: .8rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gantt-label {
+    width: var(--gantt-label-w); flex-shrink: 0; align-self: stretch;
+    display: flex; flex-direction: column; justify-content: center; line-height: 1.2;
+    position: sticky; left: 0; z-index: 6; background: var(--surface); padding-right: .2rem;
+}
+.gantt-lane-code, .gantt-lane-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gantt-lane-code { font-size: .86rem; font-weight: 700; color: var(--text); font-family: "Cascadia Code", "Consolas", ui-monospace, monospace; }
+.gantt-lane-name { font-size: max(12px, .78rem); color: var(--text-muted); }
 /* 32px, so a bar inset by 4 is 24 tall and clears 2.5.8 in that dimension.
    Their width is the one thing here that cannot be padded - it is the
    operation's duration - see docs/TESTING.md on target size. */
-.gantt-track { position: relative; flex: 1; height: 32px; background: var(--surface-2); border-radius: 6px; min-width: 340px; }
-.gantt-grid { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--border-strong); opacity: .7; }
+.gantt-track { position: relative; flex: 1; height: 40px; background: var(--surface-2); border-radius: 6px; min-width: 340px; }
+.gantt-grid { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--border-strong); opacity: .45; }
 /* Bars and closed stretches are <button>s: they carry the only explanation of why
    a machine ran or stood still, so they have to be reachable by something other
    than a mouse pointer. A sliver of a bar is still a 24 px-tall target, and the
    roving tabindex (see Schedule.razor) keeps the whole chart to one tab stop. */
 .gantt-bar, .gantt-closed { border: 0; font: inherit; margin: 0; background-color: transparent; }
-.gantt-bar { position: absolute; top: 4px; bottom: 4px; min-width: 3px; border-radius: 4px; display: flex; align-items: center; padding: 0 .4rem; overflow: hidden; box-shadow: var(--shadow-sm); cursor: pointer; }
-.gantt-bar span { font-size: .7rem; font-weight: 600; color: #fff; white-space: nowrap; text-shadow: 0 1px 1px rgba(0, 0, 0, .3); }
+/* A bar is a size container, so its label shows what its own width can carry:
+   nothing on a sliver, the job's letter, then the order number, then the
+   operation. A fixed label cut at the edge ("PO-10", "P") said less than the
+   letter does. */
+.gantt-bar { position: absolute; top: 4px; bottom: 4px; min-width: 3px; border-radius: 5px; display: flex; align-items: center; box-sizing: border-box; padding: 0; overflow: hidden; box-shadow: 0 1px 2px rgba(0, 0, 0, .25), inset 0 0 0 1px rgba(255, 255, 255, .18); cursor: pointer; container-type: inline-size; }
+.gantt-bar-text { display: none; align-items: baseline; gap: .35rem; padding: 0 .35rem; min-width: 0; color: #fff; white-space: nowrap; font-size: max(12px, .8rem); font-weight: 600; text-shadow: 0 1px 1px rgba(0, 0, 0, .35); }
+.gantt-bar-letter { font-weight: 800; }
+.gantt-bar-ref { font-family: "Cascadia Code", "Consolas", ui-monospace, monospace; }
+.gantt-bar-op { font-weight: 500; opacity: .9; }
+.gantt-bar-ref, .gantt-bar-op { display: none; }
+@container (min-width: 20px) { .gantt-bar-text { display: inline-flex; } }
+@container (min-width: 88px) { .gantt-bar-ref { display: inline; } }
+@container (min-width: 156px) { .gantt-bar-op { display: inline; } }
 .gantt-bar:focus-visible, .gantt-closed:focus-visible { outline: 3px solid var(--primary); outline-offset: 1px; z-index: 5; }
 .gantt-bar[aria-pressed="true"], .gantt-closed[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--primary); z-index: 4; }
 
@@ -583,14 +608,24 @@ select.input { cursor: pointer; }
 .gantt-detail:empty { padding: 0; background: none; }
 .gantt-hint { font-size: .76rem; color: var(--text-muted); margin-top: .6rem; }
 .gantt-table-toggle { margin-left: auto; }
-.gantt-axis { display: flex; align-items: center; gap: .8rem; margin-top: 2px; height: 16px; }
-.gantt-axis .gantt-track { height: 16px; background: none; min-width: 340px; }
-.gantt-tick { position: absolute; top: 0; transform: translateX(-50%); font-size: .68rem; color: var(--text-soft); white-space: nowrap; }
+.gantt-axis { display: flex; align-items: center; gap: .8rem; margin-top: 2px; height: 20px; }
+.gantt-axis .gantt-label { background: var(--surface); }
+.gantt-axis .gantt-track { height: 20px; background: none; min-width: 340px; }
+.gantt-tick { position: absolute; top: 0; transform: translateX(-50%); font-size: max(12px, .78rem); color: var(--text-muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.gantt-zoom { display: inline-flex; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
+.gantt-zoom .btn { border-radius: 0; min-width: 44px; }
+.gantt-zoom .btn + .btn { border-left: 1px solid var(--border); }
+.gantt-zoom .btn[aria-pressed="true"] { background: var(--primary-soft); color: var(--primary); font-weight: 600; }
+.gantt-jobs { list-style: none; display: flex; flex-wrap: wrap; gap: .35rem 1rem; margin: .8rem 0 0; padding: 0; font-size: max(12px, .8rem); color: var(--text-muted); }
+.gantt-jobs li { display: inline-flex; align-items: center; }
+.gantt-jobs .mono { font-size: inherit; }
+.gantt-jobs li.late .mono { color: var(--red); font-weight: 600; }
+.gantt-jobs .color-dot { width: 18px; height: 18px; margin-right: .35rem; font-size: .7rem; }
 .gantt-legend-note { font-size: .76rem; }
 
 /* a late job's bars get a red ring so tightening the targets is immediately visible */
 .gantt-bar.late { outline: 2px solid var(--red); outline-offset: -2px; }
-.gantt-head-meta { display: flex; align-items: center; gap: .9rem; }
+.gantt-head-meta { display: flex; align-items: center; flex-wrap: wrap; justify-content: flex-end; gap: .6rem .9rem; }
 .gantt-legend { display: inline-flex; align-items: center; gap: .35rem; font-size: .76rem; color: var(--red); font-weight: 600; }
 .gantt-legend-swatch { width: 12px; height: 12px; border-radius: 3px; }
 .gantt-legend-swatch.late { background: var(--red-soft); outline: 2px solid var(--red); outline-offset: -2px; }
@@ -741,16 +776,17 @@ select.input { cursor: pointer; }
 /* ----- Working time: calendars on the Gantt ----- */
 .gantt-closed {
     position: absolute; top: 0; bottom: 0; min-width: 3px; padding: 0;
-    background: repeating-linear-gradient(135deg, rgba(100, 108, 128, .18) 0 4px, transparent 4px 8px);
-    border-left: 1px solid rgba(100, 108, 128, .18);
+    background: repeating-linear-gradient(135deg, rgba(100, 108, 128, .10) 0 2px, transparent 2px 7px);
+    border-left: 1px solid rgba(100, 108, 128, .14);
     cursor: pointer;
 }
-.gantt-closed.closed-break { background: repeating-linear-gradient(135deg, rgba(79, 70, 229, .16) 0 3px, transparent 3px 6px); }
-.gantt-closed.closed-sunday, .gantt-closed.closed-holiday { background: rgba(180, 83, 9, .14); }
-.gantt-closed.closed-absence { background: repeating-linear-gradient(135deg, rgba(220, 38, 38, .16) 0 4px, transparent 4px 8px); }
-.gantt-closed.closed-rest { background: rgba(21, 128, 61, .12); }
+/* Closed time is context, not the subject: light enough that the bars read first. */
+.gantt-closed.closed-break { background: repeating-linear-gradient(135deg, rgba(79, 70, 229, .12) 0 2px, transparent 2px 6px); }
+.gantt-closed.closed-sunday, .gantt-closed.closed-holiday { background: rgba(180, 83, 9, .09); }
+.gantt-closed.closed-absence { background: repeating-linear-gradient(135deg, rgba(220, 38, 38, .13) 0 2px, transparent 2px 7px); }
+.gantt-closed.closed-rest { background: rgba(21, 128, 61, .08); }
 .gantt-legend-swatch.closed { display: inline-block; vertical-align: -2px; margin-right: .3rem; background: repeating-linear-gradient(135deg, rgba(100, 108, 128, .35) 0 3px, transparent 3px 6px); border: 1px solid var(--border-strong); }
-.gantt-bar.paused { background-image: repeating-linear-gradient(135deg, rgba(255, 255, 255, .22) 0 6px, transparent 6px 12px); }
+.gantt-bar.paused { background-image: repeating-linear-gradient(135deg, rgba(255, 255, 255, .16) 0 3px, transparent 3px 9px); }
 
 /* ----- Working time page ----- */
 .wt-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1rem; align-items: start; margin-bottom: 1rem; }
@@ -1110,6 +1146,8 @@ select.input { cursor: pointer; }
     .persona-desc, .persona-hint, .persona-avatar,
     .glance-list dt, .glance-kpi span,
     .badge, .data-table th, .mono { font-size: max(12px, .8rem); }
+    /* the lane column gives way to the time axis; the code stays whole, the name may not */
+    .gantt { --gantt-label-w: 112px; }
 }
 
 /* The previous run beside this one. Compact: it qualifies the KPI cards above it. */
