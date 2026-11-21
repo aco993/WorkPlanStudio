@@ -120,22 +120,55 @@ public sealed class GanttReadabilityTests : AppBunitContext
             Assert.Contains($"{GanttChart.JobLetter(job.ColorIndex)}{job.Reference}", key.TextContent, StringComparison.Ordinal);
     }
 
+    /// <summary>
+    /// A 40-hour run from Monday 06:00 offers the whole plan and a day, not a week:
+    /// a week view of it would be the whole plan again.
+    /// </summary>
     [Fact]
-    public async Task The_chart_opens_fitted_and_zooming_in_widens_it_and_adds_ticks()
+    public void A_run_is_offered_only_the_spans_it_does_not_fit_in()
     {
         var cut = RenderChart();
 
-        var zoom = cut.FindAll(".gantt-zoom button");
-        Assert.Equal(3, zoom.Count);
-        Assert.Equal("true", zoom[0].GetAttribute("aria-pressed"));
-        Assert.Contains("--gantt-zoom:1", cut.Find(".gantt").GetAttribute("style"), StringComparison.Ordinal);
-        var fitted = cut.FindAll(".gantt-tick").Count;
-
-        await cut.InvokeAsync(() => cut.FindAll(".gantt-zoom button")[2].Click());
-
-        cut.WaitForAssertion(() => Assert.Contains("--gantt-zoom:4", cut.Find(".gantt").GetAttribute("style"), StringComparison.Ordinal));
-        Assert.Equal("true", cut.FindAll(".gantt-zoom button")[2].GetAttribute("aria-pressed"));
-        Assert.Equal("false", cut.FindAll(".gantt-zoom button")[0].GetAttribute("aria-pressed"));
-        Assert.True(cut.FindAll(".gantt-tick").Count > fitted, "a closer view should mark time more finely");
+        var spans = cut.FindAll(".gantt-zoom button").Select(b => b.TextContent).ToList();
+        Assert.Equal(["Ui_GanttViewAll", "Ui_GanttViewDay"], spans);
+        Assert.Equal("true", cut.FindAll(".gantt-zoom button")[0].GetAttribute("aria-pressed"));
+        Assert.Contains("--gantt-zoom:1;", cut.Find(".gantt").GetAttribute("style"), StringComparison.Ordinal);
+        Assert.Empty(cut.FindAll(".gantt-period"));
     }
+
+    [Fact]
+    public async Task The_day_view_shows_one_calendar_day_with_hours_and_steps_to_the_next()
+    {
+        var cut = RenderChart();
+        var whole = cut.FindAll(".gantt-tick").Count;
+
+        await cut.InvokeAsync(() => cut.FindAll(".gantt-zoom button")[1].Click());
+
+        // One day fills the card: the 40-hour run spans 40/24 of it, and the axis marks hours.
+        cut.WaitForAssertion(() => Assert.Contains("--gantt-zoom:1.667;", cut.Find(".gantt").GetAttribute("style"), StringComparison.Ordinal));
+        Assert.True(cut.FindAll(".gantt-tick").Count > whole, "a day should be marked more finely than the whole run");
+        Assert.Equal(Format.DayMonth(new DateTime(2026, 6, 1)), cut.Find(".gantt-period-label").TextContent);
+        Assert.True(cut.FindAll(".gantt-step")[0].HasAttribute("disabled"), "there is no day before the first");
+        Assert.Equal(0d, LastScroll());
+
+        await cut.InvokeAsync(() => cut.FindAll(".gantt-step")[1].Click());
+
+        cut.WaitForAssertion(() => Assert.Equal(Format.DayMonth(new DateTime(2026, 6, 2)), cut.Find(".gantt-period-label").TextContent));
+        Assert.True(cut.FindAll(".gantt-step")[1].HasAttribute("disabled"), "the run ends on Tuesday");
+        // Tuesday starts 18 h into the run, but the track can only scroll until its last day-width is in view.
+        Assert.Equal(1 - 24.0 / 40, LastScroll(), 3);
+    }
+
+    [Fact]
+    public async Task Full_screen_is_asked_of_the_browser_for_the_chart_card()
+    {
+        var cut = RenderChart();
+
+        await cut.InvokeAsync(() => cut.Find(".gantt-fullscreen").Click());
+
+        Assert.Contains(JSInterop.Invocations, i => i.Identifier == "workplanGantt.fullScreen");
+    }
+
+    private double LastScroll() =>
+        Assert.IsType<double>(JSInterop.Invocations.Last(i => i.Identifier == "workplanGantt.scrollTo").Arguments[1]);
 }

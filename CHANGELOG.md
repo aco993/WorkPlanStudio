@@ -15,9 +15,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   width can carry — the job's letter (the same one the jobs table uses), then the
   order number, then the operation — and a key under the chart maps letters to
   orders. Lanes show the work-center code in bold with its name beneath, pinned on
-  the left. A **Fit / 2× / 4×** control widens the time axis inside the chart's own
-  scroll area, with finer ticks as it zooms. Axis and label text is at least 12 px,
-  lanes are taller, and closed-time shading is lighter so the bars read first.
+  the left. Axis and label text is at least 12 px, lanes are taller, and closed-time
+  shading is lighter so the bars read first.
+
+- **Day, week and month views of the Gantt chart, and full screen.** Besides the
+  whole plan, the chart shows one calendar day (midnight to midnight, hours on the
+  axis), week (Monday to Sunday) or month, with ‹ › to step through them. A span is
+  offered only when the run does not fit in one, so a seven-day run has no month
+  view. The chart stays one chart — the narrower span widens the time axis and
+  scrolls to the window — so the keyboard model and the table are unchanged.
+  **Full screen** gives the chart the whole screen with taller lanes; where a browser
+  will not put an element in full screen (Safari on an iPhone) the card covers the
+  window instead, and Escape leaves either.
 
 ## [1.2.0] — 2026-11-19
 
