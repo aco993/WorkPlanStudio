@@ -62,6 +62,9 @@ public sealed class GanttReadabilityTests : AppBunitContext
         Arrange(TwoLanes());
         var cut = Render<SchedulePage>();
         cut.WaitForAssertion(() => Assert.Equal(2, cut.FindAll(".gantt-bar").Count));
+        // The first run is still finishing when the bars appear, and a click
+        // dispatched against a render that is about to be replaced is lost.
+        cut.WaitForAssertion(() => Assert.Empty(cut.FindAll(".page-head .btn-primary[disabled]")));
         return cut;
     }
 
@@ -118,7 +121,7 @@ public sealed class GanttReadabilityTests : AppBunitContext
     }
 
     [Fact]
-    public void The_chart_opens_fitted_and_zooming_in_widens_it_and_adds_ticks()
+    public async Task The_chart_opens_fitted_and_zooming_in_widens_it_and_adds_ticks()
     {
         var cut = RenderChart();
 
@@ -128,9 +131,9 @@ public sealed class GanttReadabilityTests : AppBunitContext
         Assert.Contains("--gantt-zoom:1", cut.Find(".gantt").GetAttribute("style"), StringComparison.Ordinal);
         var fitted = cut.FindAll(".gantt-tick").Count;
 
-        cut.FindAll(".gantt-zoom button")[2].Click();
+        await cut.InvokeAsync(() => cut.FindAll(".gantt-zoom button")[2].Click());
 
-        Assert.Contains("--gantt-zoom:4", cut.Find(".gantt").GetAttribute("style"), StringComparison.Ordinal);
+        cut.WaitForAssertion(() => Assert.Contains("--gantt-zoom:4", cut.Find(".gantt").GetAttribute("style"), StringComparison.Ordinal));
         Assert.Equal("true", cut.FindAll(".gantt-zoom button")[2].GetAttribute("aria-pressed"));
         Assert.Equal("false", cut.FindAll(".gantt-zoom button")[0].GetAttribute("aria-pressed"));
         Assert.True(cut.FindAll(".gantt-tick").Count > fitted, "a closer view should mark time more finely");
