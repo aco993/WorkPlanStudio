@@ -54,6 +54,7 @@ Die Werkzeuge, die Fehler finden, haben selbst Fehler, und die werden genauso fe
 | Der Zielgrößen-Test maß eine 13-px-Checkbox statt des Labels, das den Klick annimmt, und meldete fünf Fehler, die es nicht gab | Vergleich seiner Ausgabe mit der Seite |
 | Eine Tab-Reihenfolge-Prüfung brach beim ersten wiederholten Namen („Bearbeiten“) ab und meldete fünf Stationen statt sechsundzwanzig | die unplausibel niedrigen Zahlen |
 | Die Testzahlen der Dokumentation waren verrutscht (867 behauptet, 986 gelaufen), und die CI-Untergrenzen lagen bis zu 8 % unter der Wahrheit | jede Suite laufen lassen, bevor eine Zahl geschrieben wird ([#102](https://github.com/aco993/WorkPlanStudio/pull/102)) |
+| Ein neuer Gantt-Test klickte den Zoom, während der erste Lauf der Seite noch endete; der Klick ging etwa jedes dritte Mal verloren | main wurde beim Merge rot, der ihn einführte, nachdem er im Pull Request bestanden hatte ([#122](https://github.com/aco993/WorkPlanStudio/pull/122)) |
 
 ## Wie das zu lesen ist
 
