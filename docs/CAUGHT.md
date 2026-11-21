@@ -52,7 +52,7 @@ The tools that catch defects have defects too, and those are recorded the same w
 | The target-size test measured a 13 px checkbox instead of the label that receives the click, reporting five defects that did not exist | comparing its output with the page |
 | A tab-order audit stopped at the first repeated name ("Edit") and reported five stops where there were twenty-six | the counts being implausibly low |
 | The documentation's test counts had drifted (867 claimed, 986 run) and the CI floors were up to 8 % below the truth | running every suite before writing a number ([#102](https://github.com/aco993/WorkPlanStudio/pull/102)) |
-| A new Gantt test clicked the zoom while the page's first run was still finishing; the click was lost about one time in three | main going red on the merge that added it, after passing on the pull request ([#122](https://github.com/aco993/WorkPlanStudio/pull/122)) |
+| A new Gantt test clicked the zoom while the page's first run was still finishing; now and then the click was lost | main going red on the merge that added it, after passing on the pull request ([#122](https://github.com/aco993/WorkPlanStudio/pull/122)) |
 
 ## How to read this
 
