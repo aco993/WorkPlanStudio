@@ -15,7 +15,7 @@
     The keyboard model it drives lives in GanttCursor, with its own tests.
 *@
 
-<section class="card">
+<section class="card gantt-card" @ref="_card">
     <div class="card-head">
         <h2>@L["Sched_Gantt"]</h2>
         <div class="gantt-head-meta">
@@ -31,17 +31,6 @@
             {
                 <span class="muted gantt-legend-note">@string.Format(L["Sched_TotalPaused"], Hours(Result.TotalPausedSeconds))</span>
             }
-            @* Fit shows the whole run; the closer views widen the track inside its
-               own scroll area so a short operation is wide enough to carry its
-               order number, while the lane names stay pinned on the left. *@
-            <div class="gantt-zoom" role="group" aria-label="@L["Ui_GanttZoom"]">
-                @foreach (var z in ZoomLevels)
-                {
-                    var level = z;
-                    <button type="button" class="btn btn-ghost btn-sm" aria-pressed="@(_zoom == level ? "true" : "false")"
-                            @onclick="() => _zoom = level">@ZoomLabel(level)</button>
-                }
-            </div>
             <button type="button" class="btn btn-ghost btn-sm gantt-table-toggle" aria-expanded="@(_showTable ? "true" : "false")"
                     aria-controls="gantt-table" @onclick="() => _showTable = !_showTable">
                 @(_showTable ? L["Ui_GanttHideTable"] : L["Ui_GanttShowTable"])
@@ -49,6 +38,41 @@
         </div>
     </div>
     <div class="card-body">
+        @*
+            The whole run, or one calendar month, week or day of it. A narrower
+            span widens the track inside the chart's own scroll area and scrolls
+            to the window, so the bars, the keyboard model and the table stay one
+            chart; the lane names stay pinned on the left.
+        *@
+        <div class="gantt-toolbar">
+            @if (Spans.Count > 1)
+            {
+                <div class="gantt-zoom" role="group" aria-label="@L["Ui_GanttView"]">
+                    @foreach (var s in Spans)
+                    {
+                        var span = s;
+                        <button type="button" class="btn btn-ghost btn-sm" aria-pressed="@(_span == span ? "true" : "false")"
+                                @onclick="() => SetSpan(span)">@L[$"Ui_GanttView{span}"]</button>
+                    }
+                </div>
+            }
+            @if (_span != GanttSpan.All)
+            {
+                <div class="gantt-period">
+                    <button type="button" class="btn btn-ghost btn-sm gantt-step" aria-label="@L["Ui_GanttPrev"]" title="@L["Ui_GanttPrev"]"
+                            disabled="@(WindowIndex == 0)" @onclick="() => Step(-1)"><span aria-hidden="true">‹</span></button>
+                    <span class="gantt-period-label" aria-live="polite">@WindowLabel</span>
+                    <button type="button" class="btn btn-ghost btn-sm gantt-step" aria-label="@L["Ui_GanttNext"]" title="@L["Ui_GanttNext"]"
+                            disabled="@(WindowIndex >= Windows.Count - 1)" @onclick="() => Step(1)"><span aria-hidden="true">›</span></button>
+                </div>
+            }
+            @* The chart is squeezed between the navigation and the parameters; this
+               gives it the screen. Which label shows is CSS's call, from the card's
+               own state, so a press of Escape cannot leave the button lying. *@
+            <button type="button" class="btn btn-ghost btn-sm gantt-fullscreen" @onclick="ToggleFullScreen">
+                <span class="gantt-fs-enter">@L["Ui_GanttFullScreen"]</span><span class="gantt-fs-exit">@L["Ui_GanttExitFullScreen"]</span>
+            </button>
+        </div>
         @*
             Every bar and every closed stretch is a button carrying the full
             explanation as its accessible name, with a roving tabindex: the
@@ -58,7 +82,7 @@
             which was an accurate description of a defect.
         *@
         <div class="gantt" @ref="_chart" role="region" aria-label="@L["Sched_Gantt"]" aria-describedby="gantt-help" tabindex="0"
-             style="--gantt-zoom:@_zoom;--gantt-ticks:@AxisTicks().Count()">
+             style="--gantt-zoom:@ZoomCss;--gantt-ticks:@AxisTicks().Count()">
             @for (var lane = 0; lane < Result.Rows.Count; lane++)
             {
                 var laneIndex = lane;
@@ -196,12 +220,83 @@
 
     private ScheduleResult? _drawn;
 
-    // How many times the width of the card the time axis is drawn at.
-    private static readonly int[] ZoomLevels = [1, 2, 4];
-    private int _zoom = 1;
+    // Which stretch of the run is in view, and whether the chart still has to be
+    // scrolled to it once the new width has been drawn.
+    private ElementReference _card;
+    private GanttSpan _span = GanttSpan.All;
+    private int _windowIndex;
+    private bool _scrollOnRender;
 
-    private string ZoomLabel(int level) =>
-        level == 1 ? L["Ui_GanttZoomFit"] : string.Format(CultureInfo.CurrentCulture, L["Ui_GanttZoomTimes"], level);
+    private IReadOnlyList<GanttSpan> Spans => GanttTimeWindow.Offered(Result.MakespanSeconds, Result.Horizon);
+
+    private IReadOnlyList<GanttWindow> Windows => GanttTimeWindow.Windows(_span, Result.MakespanSeconds, Result.Horizon);
+
+    private int WindowIndex => Math.Clamp(_windowIndex, 0, Windows.Count - 1);
+
+    private GanttWindow Window => Windows[WindowIndex];
+
+    /// <summary>How many card-widths the whole run spans so that one window fills the card.</summary>
+    private double Zoom => _span == GanttSpan.All || Result.MakespanSeconds <= 0
+        ? 1
+        : Math.Max(1, (double)Result.MakespanSeconds / Window.Length);
+
+    private string ZoomCss => Zoom.ToString("0.###", CultureInfo.InvariantCulture);
+
+    /// <summary>Where the window starts, as a fraction of the track, kept inside what can be scrolled to.</summary>
+    private double ScrollFraction
+    {
+        get
+        {
+            long makespan = Result.MakespanSeconds;
+            if (_span == GanttSpan.All || makespan <= 0)
+                return 0;
+            double fraction = Math.Max(0, Window.StartSeconds) / (double)makespan;
+            return Math.Clamp(fraction, 0, Math.Max(0, 1 - 1 / Zoom));
+        }
+    }
+
+    private string WindowLabel
+    {
+        get
+        {
+            var window = Window;
+            if (Result.Horizon is not { } horizon)
+                return $"{L[$"Ui_GanttView{_span}"]} {WindowIndex + 1}";
+
+            var start = horizon.AddSeconds(window.StartSeconds);
+            return _span switch
+            {
+                GanttSpan.Day => Format.DayMonth(start),
+                GanttSpan.Week => $"{Format.DayMonth(start)} – {Format.DayMonth(horizon.AddSeconds(window.EndSeconds).AddDays(-1))}",
+                _ => start.ToString("MMMM yyyy", CultureInfo.CurrentCulture)
+            };
+        }
+    }
+
+    private void SetSpan(GanttSpan span)
+    {
+        if (span == _span)
+            return;
+
+        // Open the narrower view where the work starts, not on a Sunday before it.
+        _span = span;
+        _windowIndex = GanttTimeWindow.IndexOf(Windows, FirstBarStart());
+        _scrollOnRender = true;
+    }
+
+    private void Step(int delta)
+    {
+        _windowIndex = Math.Clamp(WindowIndex + delta, 0, Windows.Count - 1);
+        _scrollOnRender = true;
+    }
+
+    private long FirstBarStart()
+    {
+        var starts = Result.Rows.SelectMany(r => r.Bars).Select(b => b.StartSeconds).ToList();
+        return starts.Count > 0 ? starts.Min() : 0;
+    }
+
+    private async Task ToggleFullScreen() => await JS.InvokeVoidAsync("workplanGantt.fullScreen", _card);
 
     /// <summary>The same letter the jobs table puts in its colour dot.</summary>
     public static char JobLetter(int colorIndex) => (char)('A' + colorIndex % 26);
@@ -226,6 +321,11 @@
         _drawn = Result;
         _cursor.Rebuild(Result?.Rows);
         _detail = null;
+
+        // A new run keeps the reader's span if it still applies; its place in it is clamped.
+        if (Result is not null && !Spans.Contains(_span))
+            _span = GanttSpan.All;
+        _scrollOnRender = true;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -234,6 +334,12 @@
         {
             _installed = true;
             await JS.InvokeVoidAsync("workplanGantt.install", _chart);
+        }
+
+        if (_scrollOnRender && Result is { HasData: true })
+        {
+            _scrollOnRender = false;
+            await JS.InvokeVoidAsync("workplanGantt.scrollTo", _chart, ScrollFraction);
         }
 
         if (_focusOnRender && _cursor.Focus is { } cell)
@@ -335,9 +441,10 @@
         if (makespan <= 0)
             yield break;
 
-        // The span one card-width covers: zoomed in, the ticks get denser too.
-        long visible = makespan / Math.Max(1, _zoom);
+        // The span one card-width covers: a day gets hours, a week gets days.
+        long visible = _span == GanttSpan.All ? makespan : Window.Length;
         long step = visible <= 12 * HourSeconds ? 2 * HourSeconds
+                  : visible <= 30 * HourSeconds ? 4 * HourSeconds
                   : visible <= 3 * DaySeconds ? 6 * HourSeconds
                   : visible <= 15 * DaySeconds ? DaySeconds
                   : DaySeconds * (long)Math.Ceiling(visible / (14.0 * DaySeconds));

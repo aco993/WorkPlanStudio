@@ -396,6 +396,50 @@ window.workplanGantt = {
         chart.addEventListener('keydown', (event) => {
             if (this.keys.includes(event.key)) { event.preventDefault(); }
         });
+    },
+    // Scroll the chart so that a window of the run (a day, a week) starts at the
+    // left edge of the time axis. The fraction is kept on the element and applied
+    // again whenever the chart changes size - full screen, a rotated phone - so
+    // the window stays in view instead of drifting by the change in width.
+    scrollTo: function (chart, fraction) {
+        if (!chart) { return; }
+        chart.dataset.fraction = String(fraction);
+        const apply = () => {
+            const track = chart.querySelector('.gantt-row .gantt-track');
+            if (!track) { return; }
+            const f = parseFloat(chart.dataset.fraction || '0');
+            chart.scrollTo({ left: f * track.offsetWidth, behavior: 'auto' });
+        };
+        apply();
+        if (!chart.ganttResize && 'ResizeObserver' in window) {
+            chart.ganttResize = new ResizeObserver(apply);
+            chart.ganttResize.observe(chart);
+        }
+    },
+    // Full screen for the chart's card. Where the browser will not put an element
+    // in full screen (Safari on an iPhone), the card covers the window instead,
+    // and Escape takes it back, as it would leave a real full screen.
+    fullScreen: function (card) {
+        if (!card) { return; }
+        if (document.fullscreenElement === card) { document.exitFullscreen(); return; }
+        if (card.classList.contains('is-expanded')) { this.collapse(card); return; }
+        const cover = () => {
+            card.classList.add('is-expanded');
+            card.ganttEscape = (event) => { if (event.key === 'Escape') { this.collapse(card); } };
+            document.addEventListener('keydown', card.ganttEscape);
+        };
+        if (document.fullscreenEnabled && card.requestFullscreen) {
+            card.requestFullscreen().catch(cover);
+        } else {
+            cover();
+        }
+    },
+    collapse: function (card) {
+        card.classList.remove('is-expanded');
+        if (card.ganttEscape) {
+            document.removeEventListener('keydown', card.ganttEscape);
+            card.ganttEscape = null;
+        }
     }
 };
 

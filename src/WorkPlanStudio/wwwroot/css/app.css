@@ -618,6 +618,26 @@ select.input { cursor: pointer; }
 .gantt-zoom .btn { border-radius: 0; min-width: 44px; }
 .gantt-zoom .btn + .btn { border-left: 1px solid var(--border); }
 .gantt-zoom .btn[aria-pressed="true"] { background: var(--primary-soft); color: var(--primary); font-weight: 600; }
+/* Span, period and full screen above the chart, wrapping on a phone. */
+.gantt-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .9rem; margin-bottom: .8rem; }
+.gantt-period { display: inline-flex; align-items: center; gap: .2rem; }
+.gantt-step { min-width: 32px; font-size: 1.05rem; line-height: 1; }
+.gantt-period-label { min-width: 10.5rem; text-align: center; font-weight: 600; font-size: max(12px, .86rem); font-variant-numeric: tabular-nums; }
+.gantt-fullscreen { margin-left: auto; }
+.gantt-fs-exit { display: none; }
+
+/* The card given the whole screen: the browser's full screen where it allows
+   one, the window where it does not. :is() keeps the rule alive in a browser
+   that does not know :fullscreen. Taller lanes, a wider lane column and larger
+   labels, because the room is the point. */
+:is(.gantt-card:fullscreen, .gantt-card.is-expanded) { overflow: auto; background: var(--surface); padding: 1rem 1.5rem; margin: 0; border-radius: 0; }
+.gantt-card.is-expanded { position: fixed; inset: 0; z-index: 1000; }
+:is(.gantt-card:fullscreen, .gantt-card.is-expanded) .gantt { --gantt-label-w: 210px; }
+:is(.gantt-card:fullscreen, .gantt-card.is-expanded) .gantt-track { height: 54px; }
+:is(.gantt-card:fullscreen, .gantt-card.is-expanded) .gantt-axis .gantt-track { height: 22px; }
+:is(.gantt-card:fullscreen, .gantt-card.is-expanded) .gantt-bar-text { font-size: .9rem; }
+:is(.gantt-card:fullscreen, .gantt-card.is-expanded) .gantt-fs-enter { display: none; }
+:is(.gantt-card:fullscreen, .gantt-card.is-expanded) .gantt-fs-exit { display: inline; }
 .gantt-jobs { list-style: none; display: flex; flex-wrap: wrap; gap: .35rem 1rem; margin: .8rem 0 0; padding: 0; font-size: max(12px, .8rem); color: var(--text-muted); }
 .gantt-jobs li { display: inline-flex; align-items: center; }
 .gantt-jobs .mono { font-size: inherit; }

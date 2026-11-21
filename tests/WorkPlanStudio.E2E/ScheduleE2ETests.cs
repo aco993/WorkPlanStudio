@@ -298,6 +298,48 @@ public sealed class ScheduleE2ETests : IClassFixture<PlaywrightFixture>
         Assert.Contains(ticks, t => t.Contains("4 Jun", StringComparison.Ordinal));
     }
 
+    /// <summary>
+    /// The day view is the chart scrolled to one calendar day, so this checks what
+    /// only a browser can: that the chart really scrolls to the day it names, and
+    /// that full screen gives the card the window.
+    /// </summary>
+    [Fact]
+    public async Task The_day_view_scrolls_to_the_day_it_names_and_full_screen_takes_the_window()
+    {
+        var (context, schedule) = await OpenAsync();
+        await using var _ = context;
+        var page = schedule.Page;
+        var chart = page.Locator(".gantt");
+        await page.Locator(".gantt-bar").First.WaitForAsync();
+
+        await page.GetByRole(AriaRole.Button, new() { Name = "Day", Exact = true }).ClickAsync();
+        await Assertions.Expect(page.Locator(".gantt-period-label")).ToHaveTextAsync("Mon 1 Jun");
+        Assert.Equal(0, await chart.EvaluateAsync<double>("c => c.scrollLeft"));
+
+        await page.GetByRole(AriaRole.Button, new() { Name = "Next period" }).ClickAsync();
+        await Assertions.Expect(page.Locator(".gantt-period-label")).ToHaveTextAsync("Tue 2 Jun");
+        // Tuesday 00:00 is 18 h into a run that starts on Monday at 06:00.
+        // The run is --gantt-zoom days long, so 18 h is 18 / (zoom * 24) of the track.
+        await page.WaitForFunctionAsync(
+            """
+            () => {
+                const c = document.querySelector('.gantt');
+                const track = c.querySelector('.gantt-row .gantt-track');
+                const expected = track.offsetWidth * 18 / (parseFloat(c.style.getPropertyValue('--gantt-zoom')) * 24);
+                return Math.abs(c.scrollLeft - expected) <= 2;
+            }
+            """, null, new() { Timeout = 5_000 });
+
+        var card = page.Locator(".gantt-card");
+        var before = (await card.BoundingBoxAsync())!.Width;
+        await page.GetByRole(AriaRole.Button, new() { Name = "Full screen", Exact = true }).ClickAsync();
+        await Assertions.Expect(page.GetByRole(AriaRole.Button, new() { Name = "Exit full screen", Exact = true })).ToBeVisibleAsync();
+        Assert.True((await card.BoundingBoxAsync())!.Width > before, "full screen should widen the chart's card");
+
+        await page.GetByRole(AriaRole.Button, new() { Name = "Exit full screen", Exact = true }).ClickAsync();
+        await Assertions.Expect(page.GetByRole(AriaRole.Button, new() { Name = "Full screen", Exact = true })).ToBeVisibleAsync();
+    }
+
     [Fact]
     public async Task Changing_the_state_changes_the_holidays_and_the_schedule()
     {
