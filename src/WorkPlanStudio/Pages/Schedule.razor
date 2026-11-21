@@ -484,7 +484,7 @@
     /// jobs on the chart and in the table, which fails for a colour-blind reader, a
     /// greyscale print and a forced-colours theme alike.
     /// </summary>
-    private static char JobLetter(int colorIndex) => (char)('A' + colorIndex % 26);
+    private static char JobLetter(int colorIndex) => GanttChart.JobLetter(colorIndex);
 
     private string Announcement(ScheduleResult result) =>
         result.HasData

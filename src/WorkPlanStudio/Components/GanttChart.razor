@@ -31,6 +31,17 @@
             {
                 <span class="muted gantt-legend-note">@string.Format(L["Sched_TotalPaused"], Hours(Result.TotalPausedSeconds))</span>
             }
+            @* Fit shows the whole run; the closer views widen the track inside its
+               own scroll area so a short operation is wide enough to carry its
+               order number, while the lane names stay pinned on the left. *@
+            <div class="gantt-zoom" role="group" aria-label="@L["Ui_GanttZoom"]">
+                @foreach (var z in ZoomLevels)
+                {
+                    var level = z;
+                    <button type="button" class="btn btn-ghost btn-sm" aria-pressed="@(_zoom == level ? "true" : "false")"
+                            @onclick="() => _zoom = level">@ZoomLabel(level)</button>
+                }
+            </div>
             <button type="button" class="btn btn-ghost btn-sm gantt-table-toggle" aria-expanded="@(_showTable ? "true" : "false")"
                     aria-controls="gantt-table" @onclick="() => _showTable = !_showTable">
                 @(_showTable ? L["Ui_GanttHideTable"] : L["Ui_GanttShowTable"])
@@ -46,13 +57,21 @@
             Before this the chart's own legend said "hover for the reason",
             which was an accurate description of a defect.
         *@
-        <div class="gantt" @ref="_chart" role="region" aria-label="@L["Sched_Gantt"]" aria-describedby="gantt-help" tabindex="0">
+        <div class="gantt" @ref="_chart" role="region" aria-label="@L["Sched_Gantt"]" aria-describedby="gantt-help" tabindex="0"
+             style="--gantt-zoom:@_zoom;--gantt-ticks:@AxisTicks().Count()">
             @for (var lane = 0; lane < Result.Rows.Count; lane++)
             {
                 var laneIndex = lane;
                 var row = Result.Rows[laneIndex];
                 <div class="gantt-row">
-                    <div class="gantt-label" title="@row.WorkCenterName">@row.WorkCenterName</div>
+                    @{ var (laneCode, laneName) = SplitLane(row.WorkCenterName); }
+                    <div class="gantt-label" title="@row.WorkCenterName">
+                        <span class="gantt-lane-code">@laneCode</span>
+                        @if (laneName is not null)
+                        {
+                            <span class="gantt-lane-name">@laneName</span>
+                        }
+                    </div>
                     <div class="gantt-track">
                         @for (var c = 0; c < row.Closed.Count; c++)
                         {
@@ -87,7 +106,10 @@
                                     tabindex="@(_cursor.IsFocused(key) ? "0" : "-1")"
                                     @onclick="() => Activate(key)"
                                     @onkeydown="args => OnCellKey(args, key)">
-                                <span aria-hidden="true">@bar.JobReference</span>
+                                @* What fits is shown: the job's letter from the jobs table,
+                                   then its order number, then the operation. The full
+                                   sentence is the name; this is only the label. *@
+                                <span class="gantt-bar-text" aria-hidden="true"><b class="gantt-bar-letter">@JobLetter(bar.ColorIndex)</b><span class="gantt-bar-ref">@bar.JobReference</span><span class="gantt-bar-op">@L["Field_OperationNo"] @bar.StepNumber</span></span>
                             </button>
                         }
                     </div>
@@ -103,6 +125,15 @@
                 </div>
             </div>
         </div>
+
+        @* The key to the letters on the bars. Hidden from assistive technology:
+           every bar's name already says which order it belongs to. *@
+        <ul class="gantt-jobs" aria-hidden="true">
+            @foreach (var job in Result.Jobs)
+            {
+                <li class="@(job.IsLate ? "late" : null)"><span class="color-dot job-color-@job.ColorIndex">@JobLetter(job.ColorIndex)</span><span class="mono">@job.Reference</span></li>
+            }
+        </ul>
 
         @* Rendered whether or not anything is selected: a live region inserted
            already populated is not announced by any screen reader. *@
@@ -164,6 +195,26 @@
     private bool _focusOnRender;
 
     private ScheduleResult? _drawn;
+
+    // How many times the width of the card the time axis is drawn at.
+    private static readonly int[] ZoomLevels = [1, 2, 4];
+    private int _zoom = 1;
+
+    private string ZoomLabel(int level) =>
+        level == 1 ? L["Ui_GanttZoomFit"] : string.Format(CultureInfo.CurrentCulture, L["Ui_GanttZoomTimes"], level);
+
+    /// <summary>The same letter the jobs table puts in its colour dot.</summary>
+    public static char JobLetter(int colorIndex) => (char)('A' + colorIndex % 26);
+
+    /// <summary>
+    /// "ASM-500 — Manual Assembly" as a code and a name on two lines, so the code
+    /// is never the part an ellipsis takes. A name without the dash is all code.
+    /// </summary>
+    public static (string Code, string? Name) SplitLane(string workCenterName)
+    {
+        var at = workCenterName.IndexOf(" — ", StringComparison.Ordinal);
+        return at <= 0 ? (workCenterName, null) : (workCenterName[..at], workCenterName[(at + 3)..]);
+    }
 
     protected override void OnParametersSet()
     {
@@ -284,18 +335,20 @@
         if (makespan <= 0)
             yield break;
 
-        long step = makespan <= 36 * HourSeconds ? 6 * HourSeconds
-                  : makespan <= 15 * DaySeconds ? DaySeconds
-                  : DaySeconds * (long)Math.Ceiling(makespan / (14.0 * DaySeconds));
+        // The span one card-width covers: zoomed in, the ticks get denser too.
+        long visible = makespan / Math.Max(1, _zoom);
+        long step = visible <= 12 * HourSeconds ? 2 * HourSeconds
+                  : visible <= 3 * DaySeconds ? 6 * HourSeconds
+                  : visible <= 15 * DaySeconds ? DaySeconds
+                  : DaySeconds * (long)Math.Ceiling(visible / (14.0 * DaySeconds));
 
         long first = step;
         if (Result?.Horizon is { } horizon)
         {
             // Snap to the next boundary of `step` in wall-clock time.
             long offset = (long)horizon.TimeOfDay.TotalSeconds;
+            // Always in (0, step]: a start on a boundary puts the first tick one step in.
             first = step - offset % step;
-            if (first == step && offset != 0) first = step - offset;
-            if (first <= 0) first += step;
         }
 
         for (long t = first; t < makespan; t += step)
