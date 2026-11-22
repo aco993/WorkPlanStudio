@@ -159,6 +159,29 @@ public sealed class GanttReadabilityTests : AppBunitContext
         Assert.Equal(1 - 24.0 / 40, LastScroll(), 3);
     }
 
+    /// <summary>
+    /// Scrolled to Tuesday, the midnight label sits on the left edge of the time axis,
+    /// where a centred label lost its first half under the lane names ("ed 3 Jun").
+    /// </summary>
+    [Fact]
+    public async Task The_label_at_the_left_edge_of_a_day_reads_from_the_edge()
+    {
+        Arrange(TwoLanes() with { MakespanSeconds = 96 * 3600 });
+        var cut = Render<SchedulePage>();
+        cut.WaitForAssertion(() => Assert.Equal(2, cut.FindAll(".gantt-bar").Count));
+        cut.WaitForAssertion(() => Assert.Empty(cut.FindAll(".page-head .btn-primary[disabled]")));
+
+        await cut.InvokeAsync(() => cut.FindAll(".gantt-zoom button").Single(b => b.TextContent == "Ui_GanttViewDay").Click());
+        // Monday's window starts at midnight, six hours before the run: no tick sits on the edge.
+        cut.WaitForAssertion(() => Assert.NotNull(cut.Find(".gantt-period-label")));
+        Assert.Empty(cut.FindAll(".gantt-tick-start"));
+
+        await cut.InvokeAsync(() => cut.FindAll(".gantt-step")[1].Click());
+
+        cut.WaitForAssertion(() => Assert.Equal(Format.DayMonth(new DateTime(2026, 6, 2)), cut.Find(".gantt-tick-start").TextContent));
+        Assert.Single(cut.FindAll(".gantt-tick-start"));
+    }
+
     [Fact]
     public async Task Full_screen_is_asked_of_the_browser_for_the_chart_card()
     {
