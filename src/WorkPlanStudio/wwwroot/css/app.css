@@ -614,6 +614,8 @@ select.input { cursor: pointer; }
 .gantt-axis .gantt-label { background: var(--surface); }
 .gantt-axis .gantt-track { height: 20px; background: none; }
 .gantt-tick { position: absolute; top: 0; transform: translateX(-50%); font-size: max(12px, .78rem); color: var(--text-muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+/* The tick at the left edge of a day or week view reads from the edge, not across it. */
+.gantt-tick.gantt-tick-start { transform: none; padding-left: 4px; }
 .gantt-zoom { display: inline-flex; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
 .gantt-zoom .btn { border-radius: 0; min-width: 44px; }
 .gantt-zoom .btn + .btn { border-left: 1px solid var(--border); }

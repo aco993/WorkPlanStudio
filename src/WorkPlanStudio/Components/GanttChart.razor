@@ -144,7 +144,7 @@
                 <div class="gantt-track">
                     @foreach (var d in AxisTicks())
                     {
-                        <span class="gantt-tick" style="left:@Pct(d)%">@AxisLabel(d)</span>
+                        <span class="@(IsAtLeftEdge(d) ? "gantt-tick gantt-tick-start" : "gantt-tick")" style="left:@Pct(d)%">@AxisLabel(d)</span>
                     }
                 </div>
             </div>
@@ -253,6 +253,20 @@
             double fraction = Math.Max(0, Window.StartSeconds) / (double)makespan;
             return Math.Clamp(fraction, 0, Math.Max(0, 1 - 1 / Zoom));
         }
+    }
+
+    /// <summary>
+    /// Whether a tick sits where the chart was scrolled to: the window's own start,
+    /// when scrolling could reach it. A label centred on that edge loses its first
+    /// half under the pinned lane names ("ed 3 Jun"), so that one is set from the
+    /// edge instead.
+    /// </summary>
+    private bool IsAtLeftEdge(long seconds)
+    {
+        if (_span == GanttSpan.All || seconds != Window.StartSeconds || Result.MakespanSeconds <= 0)
+            return false;
+        double unclamped = Window.StartSeconds / (double)Result.MakespanSeconds;
+        return Math.Abs(ScrollFraction - unclamped) < 1e-9;
     }
 
     private string WindowLabel
