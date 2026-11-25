@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Main is tested after an auto-merge too.** A Dependabot pull request merged by
+  auto-merge is merged by `GITHUB_TOKEN`, and GitHub starts no workflow for that
+  token's events: after #125, main's head had no CI, no browser suite and no
+  deployment. `main-catch-up.yml` checks main's head every hour and dispatches the
+  workflows it is missing - the one kind of event that token may start - without
+  a long-lived secret.
+
 ### Changed
 
 - **A Gantt chart you can read.** A week drawn across one card left most operations a
