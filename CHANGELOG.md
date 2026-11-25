@@ -7,14 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Fixed
+## [1.3.0] — 2026-11-25
 
-- **Main is tested after an auto-merge too.** A Dependabot pull request merged by
-  auto-merge is merged by `GITHUB_TOKEN`, and GitHub starts no workflow for that
-  token's events: after #125, main's head had no CI, no browser suite and no
-  deployment. `main-catch-up.yml` checks main's head every hour and dispatches the
-  workflows it is missing - the one kind of event that token may start - without
-  a long-lived secret.
+The Gantt chart is the screen the project is built around, and it was the one a
+first look found hard to read. This release makes it legible at a glance, gives it
+day, week and month views and the whole screen, and closes a gap that let a merged
+commit sit on main without ever being tested.
 
 ### Changed
 
@@ -26,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   orders. Lanes show the work-center code in bold with its name beneath, pinned on
   the left. Axis and label text is at least 12 px, lanes are taller, and closed-time
   shading is lighter so the bars read first.
+  ([#121](https://github.com/aco993/WorkPlanStudio/pull/121))
 
 - **Day, week and month views of the Gantt chart, and full screen.** Besides the
   whole plan, the chart shows one calendar day (midnight to midnight, hours on the
@@ -36,6 +35,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   **Full screen** gives the chart the whole screen with taller lanes; where a browser
   will not put an element in full screen (Safari on an iPhone) the card covers the
   window instead, and Escape leaves either.
+  ([#123](https://github.com/aco993/WorkPlanStudio/pull/123))
+
+### Fixed
+
+- **Main is tested after an auto-merge too.** A Dependabot pull request merged by
+  auto-merge is merged by `GITHUB_TOKEN`, and GitHub starts no workflow for that
+  token's events: after #125, main's head had no CI, no browser suite and no
+  deployment. `main-catch-up.yml` checks main's head every hour and dispatches the
+  workflows it is missing - the one kind of event that token may start - without
+  a long-lived secret. ([#127](https://github.com/aco993/WorkPlanStudio/pull/127))
+
+- **The first label of a day view, whole.** Scrolled to a day, the midnight label
+  sat on the left edge, centred, and lost its first half under the lane names
+  ("ed 3 Jun"). It now reads from the edge.
+  ([#124](https://github.com/aco993/WorkPlanStudio/pull/124))
+
+- **A test that turned main red.** The new zoom test clicked while the page's first
+  run was still finishing, and now and then the click was lost; it passed on its
+  pull request and failed on main. It waits for the page now, and the miss is in
+  `docs/CAUGHT.md`. ([#122](https://github.com/aco993/WorkPlanStudio/pull/122))
+
+- **Progress reports in the order they were made.** The import progress test took
+  its reports through `Progress<T>`, which in a test runner posts each one to the
+  thread pool, so they could arrive out of order; a loaded runner recorded 750 as
+  the first. A recorder now takes them as they are made.
+  ([#128](https://github.com/aco993/WorkPlanStudio/pull/128))
 
 ## [1.2.0] — 2026-11-19
 
@@ -1056,7 +1081,8 @@ Initial public release.
 - **CI/CD** — per-layer test workflows on pull requests and a test-gated
   GitHub Pages deployment.
 
-[Unreleased]: https://github.com/aco993/WorkPlanStudio/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/aco993/WorkPlanStudio/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/aco993/WorkPlanStudio/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/aco993/WorkPlanStudio/compare/v1.1.1...v1.2.0
 [1.1.1]: https://github.com/aco993/WorkPlanStudio/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/aco993/WorkPlanStudio/compare/v1.0.0...v1.1.0
