@@ -17,6 +17,10 @@ name: Dependabot auto-merge
 #     should read the release notes for, so those stay manual;
 #   • anything that is not Dependabot's, which the actor check enforces.
 #
+# A merge made this way starts no workflow on main (GitHub's rule for events
+# caused by GITHUB_TOKEN), so main-catch-up.yml runs main's workflows on such a
+# head afterwards.
+#
 # The version metadata comes from dependabot/fetch-metadata rather than from
 # parsing the title, because a title is prose and this decides whether code
 # merges without a human.

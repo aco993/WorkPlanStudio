@@ -1,0 +1,76 @@
+name: Main catch-up
+
+# A commit that reaches main through auto-merge is merged by GITHUB_TOKEN, and
+# GitHub starts no workflow for an event that token caused: not the push to
+# main, not even the pull request's "closed". So when Dependabot's #125 merged,
+# main's head had no CI, no browser suite and no deployment at all - the pull
+# request had been tested, the commit on main never was, and the site kept
+# serving the previous build.
+#
+# The one thing GITHUB_TOKEN may start is a workflow_dispatch. So this looks
+# at main's head once an hour and, if a workflow that runs on every push to
+# main has no run for it, dispatches that workflow on main. A commit pushed by
+# a person already has its runs and is left alone; a commit younger than
+# fifteen minutes is left alone too, because its runs may simply not be
+# registered yet.
+#
+# The alternative - merging with a GitHub App or a personal token, whose events
+# do start workflows - needs a long-lived secret with write access to the
+# repository. This needs none.
+
+on:
+  schedule:
+    - cron: '23 * * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  catch-up:
+    name: Run main's workflows on a head that has none
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: write     # to dispatch the workflows
+      contents: read
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+      # Every workflow that runs on a push to main and can be dispatched.
+      # CodeQL is left out: it re-scans on its own schedule.
+      WORKFLOWS: ci.yml e2e.yml deploy.yml quality.yml performance.yml sbom.yml
+    steps:
+      - name: Dispatch what main's head is missing
+        run: |
+          set -euo pipefail
+          sha=$(gh api "repos/$GH_REPO/commits/main" --jq .sha)
+          committed=$(gh api "repos/$GH_REPO/commits/$sha" --jq .commit.committer.date)
+          age=$(( $(date -u +%s) - $(date -u -d "$committed" +%s) ))
+          echo "main is ${sha:0:7}, committed ${age}s ago"
+          if [ "$age" -lt 900 ]; then
+            echo "Too recent to judge; its runs may not be registered yet."
+            exit 0
+          fi
+
+          dispatched=""
+          for workflow in $WORKFLOWS; do
+            runs=$(gh run list --workflow "$workflow" --commit "$sha" --limit 1 --json databaseId --jq length)
+            if [ "$runs" = "0" ]; then
+              gh workflow run "$workflow" --ref main
+              dispatched="$dispatched $workflow"
+            fi
+          done
+
+          {
+            echo "### main at \`${sha:0:7}\`"
+            if [ -n "$dispatched" ]; then
+              echo "Dispatched, because the head had no run of them:$dispatched"
+            else
+              echo "Every workflow already has a run for this commit."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
