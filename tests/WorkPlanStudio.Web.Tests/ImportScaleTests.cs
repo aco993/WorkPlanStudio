@@ -50,8 +50,7 @@ public sealed class ImportScaleTests
         Assert.Equal(Rows, header.Value!.DataRecords);
 
         var map = ColumnMap.Guess(ImportSchemas.For(ImportEntityKind.CostCenters), header.Value.Columns);
-        var reported = new List<int>();
-        var progress = new Progress<int>(reported.Add);
+        var progress = new ProgressRecorder();
 
         var clock = Stopwatch.StartNew();
         var planned = await shop.Importer.PlanAsync(
@@ -135,26 +134,19 @@ public sealed class ImportScaleTests
         var header = await shop.Importer.InspectAsync(content, null, cancellationToken);
         var map = ColumnMap.Guess(ImportSchemas.For(ImportEntityKind.CostCenters), header.Value!.Columns);
 
-        var reported = new List<int>();
+        var progress = new ProgressRecorder();
         await shop.Importer.PlanAsync(
             content,
             new ImportOptions(ImportEntityKind.CostCenters),
             map,
-            new Progress<int>(reported.Add),
+            progress,
             cancellationToken);
 
-        // Progress<T> posts to the captured context, so the reports arrive as the
-        // continuations run rather than synchronously; what matters is that the
-        // first one is early, the last one is the whole file, and there are not so
-        // many that each one costs the browser a throttled timer.
-        //
-        // A single Task.Yield() used to stand in for that wait, which is not a
-        // wait: it drains the queue on an idle machine and does not on a busy
-        // one, so this test passed here and failed on a loaded CI runner with a
-        // list that was correct but not finished arriving. The condition is the
-        // last report, so wait for the condition.
-        await WaitForFinalReportAsync(reported, Rows, cancellationToken);
-
+        // What matters is that the first report is early, the last one is the whole
+        // file, and there are not so many that each one costs the browser a
+        // throttled timer. The recorder takes each report as the service makes it,
+        // so the list is complete and in order the moment PlanAsync returns.
+        var reported = progress.Values;
         Assert.InRange(reported.Count, 5, 30);
         Assert.InRange(reported[0], 1, 500);
         Assert.Equal(Rows, reported[^1]);
@@ -162,29 +154,34 @@ public sealed class ImportScaleTests
     }
 
     /// <summary>
-    /// Waits until the last posted progress report is <paramref name="expected"/>,
-    /// or fails saying what did arrive.
+    /// Records progress reports as they are made, in the order they are made.
     /// </summary>
     /// <remarks>
-    /// Polling rather than a fixed delay: the reports are posted to the captured
-    /// context and arrive when its continuations run, so there is no moment this
-    /// test can compute in advance. A sleep long enough for the slowest runner
-    /// would be wasted on every other one.
+    /// Not <see cref="Progress{T}"/>. With no synchronization context, as in a test
+    /// runner, it posts each report to the thread pool, so reports can arrive out of
+    /// order and from several threads at once into a list that is not thread-safe.
+    /// A loaded CI runner recorded 750 as the first of them. In the browser there is
+    /// one thread and the order holds; this recorder gives the test the same order
+    /// without waiting for anything.
     /// </remarks>
-    private static async Task WaitForFinalReportAsync(
-        List<int> reported, int expected, CancellationToken cancellationToken)
+    private sealed class ProgressRecorder : IProgress<int>
     {
-        var deadline = DateTime.UtcNow.AddSeconds(10);
-        while (DateTime.UtcNow < deadline)
+        private readonly List<int> _values = [];
+
+        public IReadOnlyList<int> Values
         {
-            if (reported.Count > 0 && reported[^1] == expected)
-                return;
-            await Task.Delay(10, cancellationToken);
+            get
+            {
+                lock (_values)
+                    return [.. _values];
+            }
         }
 
-        Assert.Fail(
-            $"progress never reached {expected}; {reported.Count} report(s) arrived" +
-            (reported.Count > 0 ? $", the last of them {reported[^1]}" : ""));
+        public void Report(int value)
+        {
+            lock (_values)
+                _values.Add(value);
+        }
     }
 
     /// <summary>
